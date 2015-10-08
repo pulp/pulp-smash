@@ -1,0 +1,20 @@
+sudo: false
+language: python
+python:
+    - 2.7
+    - 3.3
+    - 3.4
+    - 3.5
+install:
+    - pip install -r requirements.txt -r requirements-dev.txt
+script:
+    - make lint
+    - make test-coverage
+    - make docs-html
+    - make docs-clean
+    - make package
+    - make package-clean
+after_success:
+    coveralls
+notifications:
+    irc: "chat.freenode.net#robottelo"

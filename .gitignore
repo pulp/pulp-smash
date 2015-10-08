@@ -1,0 +1,16 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Generated documentation
+/docs/_build/
+
+# Created by `make package`. `pulp_smash.egg_info` is also used when another
+# package does a `pip install -e …/pulp_smash`.
+/build/
+/dist/
+/pulp_smash.egg-info/
+
+# Coverage information
+/.coverage
+/htmlcov/

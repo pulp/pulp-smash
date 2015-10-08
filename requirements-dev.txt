@@ -1,0 +1,13 @@
+# For `make lint`
+flake8
+pylint
+
+# For `make test-coverage`
+coveralls
+
+# For `make test`
+mock
+unittest2
+
+# For `make package`
+wheel
