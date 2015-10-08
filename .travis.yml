@@ -8,7 +8,8 @@ python:
 install:
     - pip install -r requirements.txt -r requirements-dev.txt
 script:
-    - make lint
+    # See: https://github.com/PulpQE/pulp-smash/issues/1
+    - if [[ "$TRAVIS_PYTHON_VERSION" == 3.5 ]]; then flake8 .; else make lint; fi
     - make test-coverage
     - make docs-html
     - make docs-clean
