@@ -9,5 +9,8 @@ coveralls
 mock
 unittest2
 
+# For `make docs-html` and `make docs-clean`
+sphinx
+
 # For `make package`
 wheel
