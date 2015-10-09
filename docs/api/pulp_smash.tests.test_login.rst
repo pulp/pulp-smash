@@ -1,6 +1,6 @@
 `pulp_smash.tests.test_login`
 =============================
 
-Parent document: :mod:`pulp_smash.tests`.
+Location: :doc:`/index` → :doc:`/api` → :doc:`/api/pulp_smash.tests.test_login`
 
 .. automodule:: pulp_smash.tests.test_login

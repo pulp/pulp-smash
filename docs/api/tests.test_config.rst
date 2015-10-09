@@ -1,6 +1,6 @@
 `tests.test_config`
-==========================
+===================
 
-Parent document: :mod:`tests`.
+Location: :doc:`/index` → :doc:`/api` → :doc:`/api/tests.test_config`
 
 .. automodule:: tests.test_config

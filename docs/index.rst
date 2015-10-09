@@ -1,17 +1,26 @@
 Pulp Smash
 ==========
 
-Pulp Smash is a GPL-licensed Python library that facilitates easy testing of
-Pulp. It lets you execute a workflow like this::
+Pulp Smash is a test suite for `Pulp`_. It lets you execute a workflow like
+this::
 
     pip install pulp_smash
-    python -m pulp_smash  # prompts for configuration options
+    python -m pulp_smash  # follow the instructions
 
-Pulp Smash is very new. Please bear with the bare-bones documentation system.
+Pulp Smash is a GPL-licensed Python library, but no knowledge of Python is
+required to execute the tests. Just install the application, run it, and follow
+the prompts.
 
-.. contents::
+.. _Pulp: http://www.pulpproject.org/
+
+.. Everything above this comment should also be in the README, word for word.
+
+Documentation contents:
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
 
-    api/index
+    installation
+    usage
+    about
+    api

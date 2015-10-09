@@ -1,13 +1,6 @@
 `pulp_smash.tests`
 ==================
 
-Parent document: :mod:`pulp_smash`.
-
-Child documents:
-
-.. toctree::
-
-    pulp_smash.tests.test_content_applicability
-    pulp_smash.tests.test_login
+Location: :doc:`/index` → :doc:`/api` → :doc:`/api/pulp_smash.tests`
 
 .. automodule:: pulp_smash.tests

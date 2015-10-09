@@ -1,6 +1,7 @@
 `pulp_smash.tests.test_content_applicability`
 =============================================
 
-Parent document: :mod:`pulp_smash.tests`.
+Location: :doc:`/index` → :doc:`/api` →
+:doc:`/api/pulp_smash.tests.test_content_applicability`
 
 .. automodule:: pulp_smash.tests.test_content_applicability

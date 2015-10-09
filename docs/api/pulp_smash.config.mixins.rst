@@ -1,6 +1,6 @@
 `pulp_smash.config.mixins`
 ==========================
 
-Parent document: :mod:`pulp_smash.config`.
+Location: :doc:`/index` → :doc:`/api` → :doc:`/api/pulp_smash.config.mixins`
 
 .. automodule:: pulp_smash.config.mixins
