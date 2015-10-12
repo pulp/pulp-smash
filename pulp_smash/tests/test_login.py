@@ -14,6 +14,15 @@ from unittest2 import TestCase
 
 LOGIN_KEYS = {'certificate', 'key'}
 LOGIN_PATH = '/pulp/api/v2/actions/login/'
+ERROR_KEYS = {
+    '_href',
+    'error',
+    'error_message',
+    'exception',
+    'href',  # Present prior to Pulp 3.0 for backward compatibility.
+    'http_status',
+    'traceback',
+}
 
 
 class LoginSuccessTestCase(TestCase):
@@ -58,4 +67,4 @@ class LoginFailureTestCase(TestCase):
         "certificate" keys.
 
         """
-        self.assertNotEqual(set(self.response.json().keys()), LOGIN_KEYS)
+        self.assertEqual(set(self.response.json().keys()), ERROR_KEYS)
