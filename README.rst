@@ -11,9 +11,13 @@ Pulp Smash is a GPL-licensed Python library, but no knowledge of Python is
 required to execute the tests. Just install the application, run it, and follow
 the prompts.
 
-Documentation can be generated locally::
+.. _Pulp: http://www.pulpproject.org/
+
+.. Everything above this comment should also be in docs/index.rst, word for
+   word.
+
+The `full documentation <http://pulp-smash.readthedocs.org/en/latest/>`_ is
+available on ReadTheDocs. It can also be generated locally::
 
     pip install -r requirements.txt -r requirements-dev.txt
     make docs-html
-
-.. _Pulp: http://www.pulpproject.org/
