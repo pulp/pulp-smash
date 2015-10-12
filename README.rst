@@ -15,3 +15,5 @@ Documentation can be generated locally::
 
     pip install -r requirements.txt -r requirements-dev.txt
     make docs-html
+
+.. _Pulp: http://www.pulpproject.org/
