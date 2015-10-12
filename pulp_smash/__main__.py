@@ -20,7 +20,7 @@ MESSAGE = tuple((
     }}''',
     '''\
     Customize the "base_url" and "auth" keys as needed. You may also want to
-    add `"verify": False`. Doing so makes Pulp Smash ignore SSL verification
+    add `"verify": false`. Doing so makes Pulp Smash ignore SSL verification
     errors.
     ''',
     '''\
