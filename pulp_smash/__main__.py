@@ -45,8 +45,8 @@ def main():
     """Provide usage instructions to the user."""
     cfg_path = join(
         # pylint:disable=protected-access
-        BaseDirectory.save_config_path(ServerConfig._xdg_config_dir),
-        ServerConfig._xdg_config_file
+        BaseDirectory.save_config_path(ServerConfig()._xdg_config_dir),
+        ServerConfig()._xdg_config_file
     )
     wrapper = textwrap.TextWrapper()
     message = ''

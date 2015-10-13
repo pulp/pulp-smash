@@ -31,9 +31,11 @@ class LoginSuccessTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         """Successfully log in to the server."""
-        config = get_config()
-        base_url = config.pop('base_url')
-        cls.response = requests.post(base_url + LOGIN_PATH, **config)
+        cfg = get_config()
+        cls.response = requests.post(
+            cfg.base_url + LOGIN_PATH,
+            **cfg.get_requests_kwargs()
+        )
 
     def test_status_code(self):
         """Assert that the response has an HTTP 200 status code."""
@@ -53,10 +55,12 @@ class LoginFailureTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         """Unsuccessfully log in to the server."""
-        config = get_config()
-        base_url = config.pop('base_url')
-        config['auth'] = ('', '')
-        cls.response = requests.post(base_url + LOGIN_PATH, **config)
+        cfg = get_config()
+        cfg.auth = ('', '')
+        cls.response = requests.post(
+            cfg.base_url + LOGIN_PATH,
+            **cfg.get_requests_kwargs()
+        )
 
     def test_status_code(self):
         """Assert that the response has an HTTP 401 status code."""

@@ -22,14 +22,17 @@ class SuccessTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         """Make calls to the server and save the responses."""
-        config = get_config()
-        base_url = config.pop('base_url')
+        cfg = get_config()
         path_json_pairs = (
             (CONSUMER, {'consumer_criteria': {}}),
             (REPO, {'repo_criteria': {}})
         )
         cls.responses = tuple((
-            requests.post(base_url + path, json=json, **config)
+            requests.post(
+                cfg.base_url + path,
+                json=json,
+                **cfg.get_requests_kwargs()
+            )
             for path, json in path_json_pairs
         ))
 
@@ -55,14 +58,17 @@ class FailureTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         """Make calls to the server and save the responses."""
-        config = get_config()
-        base_url = config.pop('base_url')
+        cfg = get_config()
         path_json_pairs = (
             (CONSUMER, {'consumer_criteriaa': {}}),
             (REPO, {'repo_criteriaa': {}})
         )
         cls.responses = tuple((
-            requests.post(base_url + path, json=json, **config)
+            requests.post(
+                cfg.base_url + path,
+                json=json,
+                **cfg.get_requests_kwargs()
+            )
             for path, json in path_json_pairs
         ))
 
