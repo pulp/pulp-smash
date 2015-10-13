@@ -11,34 +11,7 @@ Why does Pulp Smash exist? What are its goals, and what does it *not* do?
 Why Pulp Smash?
 ---------------
 
-Pulp Smash exists to make testing Pulp easy. It supersedes `Pulp Automation`_.
-Why greenfield a new library instead of improving the existing one? Because
-there are significant issues with the existing library. To name a few:
-
-* Pulp Automation can only be installed and used on a limited set of systems. It
-  includes hard-coded references to system-wide directories and files including:
-
-  * ``/usr/bin/pulp-consumer``
-  * ``/usr/lib/python2.7/site-packages``
-  * ``/usr/local/bin/geninventory``
-  * ``/usr/share/pulp_auto``
-
-  It also includes references to system-specific tools such as ``yum``.
-* The installer script places files in system-wide locations. This is something
-  that only a system package manager should do.
-* Pulp Automation only works with Python 2.7. The hard-coded references to
-  ``/usr/lib/python2.7/site-packages`` indicate that expanding compatibility is
-  a difficult task.
-* Many tests need to be re-written from scratch. Compare
-  :mod:`pulp_smash.tests.test_login` with the equivalent module in Pulp
-  Automation, `tests.general_tests.test_01_log_in`_.
-* The existing code is simply poor quality. Pylint complains about thirteen
-  unique issues when run against `pulp_auto.repo`_, including redefined
-  builtins, dangerous default values, unused arguments and missing docstrings.
-* Pulp Automation suffers from feature creep. It includes code for working with
-  Ansible, EC2, Docker and Jenkins.
-
-In light of the issues listed above, green-fielding seems appropriate.
+Pulp Smash exists to make testing Pulp easy.
 
 Scope and Limitations
 ---------------------
