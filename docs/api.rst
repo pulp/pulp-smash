@@ -13,7 +13,7 @@ developers, not a gospel.
     api/pulp_smash
     api/pulp_smash.config
     api/pulp_smash.tests
-    api/pulp_smash.tests.test_content_applicability
-    api/pulp_smash.tests.test_login
+    api/pulp_smash.tests.platform.api_v2.test_content_applicability
+    api/pulp_smash.tests.platform.api_v2.test_login
     api/tests
     api/tests.test_config
