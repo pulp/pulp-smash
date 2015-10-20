@@ -32,6 +32,12 @@ MESSAGE = tuple((
     configuration file found is used. Settings are not cascaded.
     ''',
     '''\
+    A non-default configuration file can be selected with an environment
+    variable like so: `PULP_SMASH_CONFIG_FILE=alternate-{} python -m unittest2
+    discover pulp_smash.tests`. This variable should be a file name, not a
+    path.
+    ''',
+    '''\
     The provided command will run all tests, but any subset of tests may also
     be selected. For example, you may also run `python -m unittest2
     pulp_smash.tests.test_login`. Consult the unittest2 documentation for test
@@ -43,10 +49,11 @@ MESSAGE = tuple((
 
 def main():
     """Provide usage instructions to the user."""
+    cfg = ServerConfig()
     cfg_path = join(
         # pylint:disable=protected-access
-        BaseDirectory.save_config_path(ServerConfig()._xdg_config_dir),
-        ServerConfig()._xdg_config_file
+        BaseDirectory.save_config_path(cfg._xdg_config_dir),
+        cfg._xdg_config_file
     )
     wrapper = textwrap.TextWrapper()
     message = ''
@@ -57,7 +64,11 @@ def main():
     wrapper.initial_indent = '* '
     wrapper.subsequent_indent = '  '
     message += '\n\n' + wrapper.fill(textwrap.dedent(MESSAGE[4]))
-    message += '\n\n' + wrapper.fill(textwrap.dedent(MESSAGE[5]))
+    message += '\n\n' + wrapper.fill(
+        # pylint:disable=protected-access
+        textwrap.dedent(MESSAGE[5].format(cfg._xdg_config_file))
+    )
+    message += '\n\n' + wrapper.fill(textwrap.dedent(MESSAGE[6]))
     print(message)
 
 

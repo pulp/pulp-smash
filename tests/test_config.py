@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 import json
+import os
 from itertools import permutations
 from mock import mock_open, patch
 from pulp_smash import config
@@ -52,6 +53,27 @@ class InitTestCase(TestCase):
         for attr in ('_section', '_xdg_config_file', '_xdg_config_dir'):
             with self.subTest(attr):
                 self.assertIsNotNone(getattr(self.cfg, attr))
+
+
+class PulpSmashConfigFileTestCase(TestCase):
+    """Verify the ``PULP_SMASH_CONFIG_FILE`` environment var is respected."""
+
+    def test_var_set(self):
+        """Set the environment variable."""
+        os_environ = {'PULP_SMASH_CONFIG_FILE': type('')(randint(1, 1000))}
+        with patch.dict(os.environ, os_environ, clear=True):
+            cfg = ServerConfig()
+        self.assertEqual(
+            cfg._xdg_config_file,  # pylint:disable=protected-access
+            os_environ['PULP_SMASH_CONFIG_FILE']
+        )
+
+    def test_var_unset(self):
+        """Do not set the environment variable."""
+        with patch.dict(os.environ, {}, clear=True):
+            cfg = ServerConfig()
+        # pylint:disable=protected-access
+        self.assertEqual(cfg._xdg_config_file, 'settings.json')
 
 
 class ReadTestCase(TestCase):

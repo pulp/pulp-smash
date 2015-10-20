@@ -11,7 +11,7 @@ information.
 from __future__ import unicode_literals
 
 import json
-from os.path import isfile, join
+import os
 from threading import Lock
 from xdg import BaseDirectory
 
@@ -92,6 +92,12 @@ class ServerConfig(object):
     <http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_.
     Please read the specification for insight into the logic of those methods.
 
+    In addition, the file-facing methods respect the ``PULP_SMASH_CONFIG_FILE``
+    environment variable. By default, the methods work with a file named
+    ``settings.json``, but the environment variable overrides that default. If
+    set, the environment variable should be a file name like ``settings2.json``
+    (or a relative path), *not* an absolute path.
+
     :param base_url: A string. A protocol, hostname and optionally a port. For
         example, ``'http://example.com:250'``. Do not append a trailing slash.
     :param auth: A two-tuple. Credentials to use when communicating with the
@@ -110,7 +116,10 @@ class ServerConfig(object):
         self.verify = verify
 
         self._section = 'default'
-        self._xdg_config_file = 'settings.json'
+        self._xdg_config_file = os.environ.get(
+            'PULP_SMASH_CONFIG_FILE',
+            'settings.json'
+        )
         self._xdg_config_dir = 'pulp_smash'
 
     def __repr__(self):
@@ -147,7 +156,7 @@ class ServerConfig(object):
             xdg_config_file = self._xdg_config_file
         if xdg_config_dir is None:
             xdg_config_dir = self._xdg_config_dir
-        path = join(
+        path = os.path.join(
             BaseDirectory.save_config_path(xdg_config_dir),
             xdg_config_file
         )
@@ -297,8 +306,8 @@ def _get_config_file_path(xdg_config_dir, xdg_config_file):
 
     """
     for config_dir in BaseDirectory.load_config_paths(xdg_config_dir):
-        path = join(config_dir, xdg_config_file)
-        if isfile(path):
+        path = os.path.join(config_dir, xdg_config_file)
+        if os.path.isfile(path):
             return path
     raise ConfigFileNotFoundError(
         'No configuration files could be located after searching for a file '
