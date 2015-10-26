@@ -88,8 +88,7 @@ class RepoExistsTestCase(TestCase):
         """Test if server returned 200.
         """
         self.assertEqual(self.repo.last_response.status_code, 200,
-                         self.repo.last_response.json()
-                         )
+                         self.repo.last_response.json())
 
     def test_body(self):
         """Test if repo has all set attributes: id, description and display_name.
@@ -161,8 +160,8 @@ class RepoUpdateTestCase(TestCase):
     def test_body(self):
         """Test that repository description and display names are correct.
         """
-        self.assertTrue(all(self.repo.last_response.json()['result'][key]
-                            == self.__class__.__name__
+        self.assertTrue(all(self.repo.last_response.json()['result'][key] ==
+                            self.__class__.__name__
                             for key in ['id', 'display_name', 'description']),
                         self.repo.last_response.json().keys())
 

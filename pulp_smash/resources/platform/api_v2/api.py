@@ -60,6 +60,7 @@ class Repository:
     :distributors: Array of objects containing values of distributor_type_id,
         repo_plugin_config, auto_publish, and distributor_id
         """
+
     def __init__(self, **kwargs):
         self.data_keys = kwargs
         self.cfg = get_config()
