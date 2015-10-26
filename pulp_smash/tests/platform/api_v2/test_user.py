@@ -75,15 +75,15 @@ class CreateTestCase(TestCase):
 
     def test_attrs(self):
         """Assert that each user has the requested attributes."""
-        bodies = [body.copy() for body in self.bodies]
+        bodies = [body.copy() for body in self.bodies]  # Do not edit originals
         for body in bodies:
-            body.pop('password', None)
+            body.pop('password', None)  # Pulp should not disclose passwords
         for i, body in enumerate(bodies):
             with self.subTest(body):
-                # First check response keys…
+                # e.g. {'login'} <= {'login', 'name', '_href', …}
                 attrs = self.responses[i].json()
                 self.assertLessEqual(set(body.keys()), set(attrs.keys()))
-                # …then check response values.
+                # Only check attributes we set. Ignore other returned attrs.
                 attrs = {key: attrs[key] for key in body.keys()}
                 self.assertEqual(body, attrs)
 
@@ -108,6 +108,7 @@ class ReadUpdateDeleteTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         """Create three users and read, update and delete them respectively."""
+        # Create three users and save the locations of each.
         cls.update_body = {'delta': {
             'name': _rand_str(),
             'password': _rand_str(),
@@ -123,6 +124,8 @@ class ReadUpdateDeleteTestCase(TestCase):
             )
             response.raise_for_status()
             cls.paths.append(response.json()['_href'])
+
+        # Read, update and delete the three users, respectively.
         cls.read_response = requests.get(
             cls.cfg.base_url + cls.paths[0],
             **cls.cfg.get_requests_kwargs()
@@ -223,7 +226,8 @@ class SearchTestCase(TestCase):
         Search for:
 
         * Nothing at all.
-        * All super-users.
+        * All users having only the super-users role.
+        * All users having no roles.
         * A user by their login.
         * A non-existent user by their login.
 
