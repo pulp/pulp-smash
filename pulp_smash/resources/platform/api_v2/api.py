@@ -15,7 +15,7 @@ REPOSITORY_PATH = "/pulp/api/v2/repositories/{}/"  # .format(<repo_id>)
 REPOSITORY_PATH = "/pulp/api/v2/repositories/{}/"  # .format(<repo_id>)
 POLL_TASK_PATH = "/pulp/api/v2/tasks/{}/"  # .format(<task_id>)
 
-# Repository related variables
+#  Repository related variables
 REPORT_KEYS = {
     'result',
     'error',
@@ -40,7 +40,7 @@ TASK_FINISHED_STATES = {
 }
 
 
-class Repository:
+class Repository(object):
     """Provides interface for easy manipulation with pulp repositories.
     `Create repo` accepts following kwarg parameters:
         .. _Create repo:
@@ -63,6 +63,7 @@ class Repository:
 
     def __init__(self, **kwargs):
         self.data_keys = kwargs
+        self.last_response = None
         self.cfg = get_config()
 
     def create_repo(self, **kwargs):
@@ -128,24 +129,23 @@ class Repository:
         )
 
 
-class Task:
+class Task(object):
     """Handles tasks related operations. So far only waiting for given tasks
     to immediate finish is implemented.
     """
     cfg = get_config()
 
-    def __init__(cls):
+    def __init__(self):
         pass
 
     @classmethod
-    def _wait_for_task(self, task, timeout, frequency):
+    def _wait_for_task(cls, task, timeout, frequency):
         """Wait for single task to finish its execution on server.
         :param task: Dictionary containtin task_id and path to task
             on pulp server.
         :param timeout: Timeout in seconds for each task to complete.
         :param frequency: Task polling frequency in seconds.
         """
-        # TODO: Handle other task states
         task_timeout = time.time() + timeout
         while time.time() <= task_timeout:
             time.sleep(frequency)
@@ -171,7 +171,7 @@ class Task:
                             response.text)
 
     @classmethod
-    def wait_for_tasks(self, report, timeout=120, frequency=0.5):
+    def wait_for_tasks(cls, report, timeout=120, frequency=0.5):
         """Wait for all populated tasks to finish.
         :param report: Call response -- report -- with list of populated tasks.
         :param timeout: Timeout in seconds for each task to complete.
@@ -180,4 +180,4 @@ class Task:
         if not all(key in report.json().keys() for key in REPORT_KEYS):
             raise Exception("Missing key in Call report: ", report.text)
         for task in report.json()["spawned_tasks"]:
-            self._wait_for_task(task, timeout, frequency)
+            cls._wait_for_task(task, timeout, frequency)
