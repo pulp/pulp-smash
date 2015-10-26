@@ -96,7 +96,7 @@ class RepoExistsTestCase(TestCase):
         """
         self.assertTrue(
             all(self.repo.last_response.json()[key] == self.__class__.__name__
-                        for key in ['id', 'display_name', 'description']))
+                for key in ['id', 'display_name', 'description']))
 
     @classmethod
     def tearDownClass(cls):
@@ -162,8 +162,8 @@ class RepoUpdateTestCase(TestCase):
         """Test that repository description and display names are correct.
         """
         self.assertTrue(all(self.repo.last_response.json()['result'][key]
-                        == self.__class__.__name__
-                        for key in ['id', 'display_name', 'description']),
+                            == self.__class__.__name__
+                            for key in ['id', 'display_name', 'description']),
                         self.repo.last_response.json().keys())
 
     @classmethod
