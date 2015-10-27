@@ -1,5 +1,6 @@
 # For `make lint`
 flake8
+flake8-docstrings
 flake8-quotes
 pylint
 

@@ -106,11 +106,12 @@ class ServerConfig(object):
         the server?
 
     """
+
     # Used to lock access to the configuration file when performing destructive
     # operations, such as saving.
     _file_lock = Lock()
 
-    def __init__(self, base_url=None, auth=None, verify=None):
+    def __init__(self, base_url=None, auth=None, verify=None):  # noqa
         self.base_url = base_url
         self.auth = auth
         self.verify = verify
@@ -122,7 +123,7 @@ class ServerConfig(object):
         )
         self._xdg_config_dir = 'pulp_smash'
 
-    def __repr__(self):
+    def __repr__(self):  # noqa
         attrs = {attr: getattr(self, attr) for attr in _PUBLIC_ATTRS}
         return '{}({})'.format(
             type(self).__name__,

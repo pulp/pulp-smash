@@ -50,10 +50,7 @@ class SuccessTestCase(TestCase):
 
 
 class FailureTestCase(TestCase):
-    """Unsuccessfully generate content applicability for consumers and
-    repos.
-
-    """
+    """Fail to generate content applicability for consumers and repos."""
 
     @classmethod
     def setUpClass(cls):

@@ -37,7 +37,7 @@ def _search_logins(response):
 
 
 class CreateTestCase(TestCase):
-    """Can we create users? No prior assumptions are made."""
+    """Establish that we can create users. No prior assumptions are made."""
 
     @classmethod
     def setUpClass(cls):
@@ -98,7 +98,7 @@ class CreateTestCase(TestCase):
 
 
 class ReadUpdateDeleteTestCase(TestCase):
-    """Can we read, update and delete users?
+    """Establish that we can read, update and delete users.
 
     This test case assumes that the assertions in :class:`CreateTestCase` are
     valid.
@@ -141,7 +141,7 @@ class ReadUpdateDeleteTestCase(TestCase):
         )
 
     def test_status_codes(self):
-        """Do the read, update and delete responses have 200 status codes?"""
+        """Ensure read, update and delete responses have 200 status codes."""
         for attr in ('read_response', 'update_response', 'delete_response'):
             with self.subTest(attr):
                 self.assertEqual(getattr(self, attr).status_code, 200)
@@ -212,7 +212,7 @@ class ReadUpdateDeleteTestCase(TestCase):
 
 
 class SearchTestCase(TestCase):
-    """Can we search for users?
+    """Establish that we can search for users.
 
     This test case assumes that the assertions in
     :class:`ReadUpdateDeleteTestCase` are valid.
