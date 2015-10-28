@@ -18,11 +18,9 @@ from __future__ import unicode_literals
 
 import requests
 from pulp_smash.config import get_config
+from pulp_smash.constants import LOGIN_PATH, USER_PATH
 from random import randint
 from unittest2 import TestCase
-
-
-USER_PATH = '/pulp/api/v2/users/'
 
 
 def _rand_str():
@@ -182,7 +180,7 @@ class ReadUpdateDeleteTestCase(TestCase):
         """Assert that one can log in with a user with an updated password."""
         login = self.update_response.json()['login']
         requests.post(
-            self.cfg.base_url + '/pulp/api/v2/actions/login/',
+            self.cfg.base_url + LOGIN_PATH,
             auth=(login, self.update_body['delta']['password']),
             verify=self.cfg.verify,
         ).raise_for_status()

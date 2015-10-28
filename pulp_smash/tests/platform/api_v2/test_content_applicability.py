@@ -11,9 +11,9 @@ import requests
 from pulp_smash.config import get_config
 from unittest2 import TestCase
 
-CALL_REPORT_KEYS = {'error', 'result', 'spawned_tasks'}
-CONSUMER = '/pulp/api/v2/consumers/actions/content/regenerate_applicability/'
-REPO = '/pulp/api/v2/repositories/actions/content/regenerate_applicability/'
+_CALL_REPORT_KEYS = {'error', 'result', 'spawned_tasks'}
+_CONSUMER = '/pulp/api/v2/consumers/actions/content/regenerate_applicability/'
+_REPO = '/pulp/api/v2/repositories/actions/content/regenerate_applicability/'
 
 
 class SuccessTestCase(TestCase):
@@ -24,8 +24,8 @@ class SuccessTestCase(TestCase):
         """Make calls to the server and save the responses."""
         cfg = get_config()
         path_json_pairs = (
-            (CONSUMER, {'consumer_criteria': {}}),
-            (REPO, {'repo_criteria': {}})
+            (_CONSUMER, {'consumer_criteria': {}}),
+            (_REPO, {'repo_criteria': {}})
         )
         cls.responses = tuple((
             requests.post(
@@ -46,7 +46,10 @@ class SuccessTestCase(TestCase):
         """Assert that the responses are JSON and appear to be call reports."""
         for i, response in enumerate(self.responses):
             with self.subTest(i):
-                self.assertEqual(set(response.json().keys()), CALL_REPORT_KEYS)
+                self.assertEqual(
+                    set(response.json().keys()),
+                    _CALL_REPORT_KEYS,
+                )
 
 
 class FailureTestCase(TestCase):
@@ -57,8 +60,8 @@ class FailureTestCase(TestCase):
         """Make calls to the server and save the responses."""
         cfg = get_config()
         path_json_pairs = (
-            (CONSUMER, {'consumer_criteriaa': {}}),
-            (REPO, {'repo_criteriaa': {}})
+            (_CONSUMER, {'consumer_criteriaa': {}}),
+            (_REPO, {'repo_criteriaa': {}})
         )
         cls.responses = tuple((
             requests.post(
@@ -79,4 +82,4 @@ class FailureTestCase(TestCase):
         """Assert that the responses are JSON and appear to be call reports."""
         for i, resp in enumerate(self.responses):
             with self.subTest(i):
-                self.assertNotEqual(set(resp.json().keys()), CALL_REPORT_KEYS)
+                self.assertNotEqual(set(resp.json().keys()), _CALL_REPORT_KEYS)

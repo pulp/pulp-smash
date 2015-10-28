@@ -9,27 +9,16 @@ from __future__ import unicode_literals
 
 import requests
 from pulp_smash.config import get_config
+from pulp_smash.constants import ERROR_KEYS, LOGIN_PATH
 from unittest2 import TestCase
 
+# Upon successfully logging in, the response should contain these keys.
+_LOGIN_KEYS = {'certificate', 'key'}
 
-LOGIN_PATH = '/pulp/api/v2/actions/login/'
-
-#: Upon successfully logging in, the response should contain these keys.
-LOGIN_KEYS = {'certificate', 'key'}
-
-#: Responses with a non-200 status code should contain these keys.
-#:
-#: See:
-#: https://pulp.readthedocs.org/en/latest/dev-guide/conventions/exceptions.html
-ERROR_KEYS = {
-    '_href',
-    'error',
-    'error_message',
-    'exception',
-    'href',  # Present prior to Pulp 3.0 for backward compatibility.
-    'http_status',
-    'traceback',
-}
+# Failed login attempts produce a non-standard response.
+#
+# The ``href`` key is present prior to Pulp 3.0 for backward compatibility.
+_LOGIN_ERROR_KEYS = ERROR_KEYS | {'href'}
 
 
 class LoginSuccessTestCase(TestCase):
@@ -49,12 +38,11 @@ class LoginSuccessTestCase(TestCase):
         self.assertEqual(self.response.status_code, 200)
 
     def test_body(self):
-        """Assert that the response is valid JSON and has correct keys.
-
-        The "correct keys" are defined in :data:`LOGIN_KEYS`.
-
-        """
-        self.assertEqual(set(self.response.json().keys()), LOGIN_KEYS)
+        """Assert that the response is valid JSON and has correct keys."""
+        self.assertEqual(
+            frozenset(self.response.json().keys()),
+            _LOGIN_KEYS,
+        )
 
 
 class LoginFailureTestCase(TestCase):
@@ -75,9 +63,8 @@ class LoginFailureTestCase(TestCase):
         self.assertEqual(self.response.status_code, 401)
 
     def test_body(self):
-        """Assert that the response is valid JSON and has correct keys.
-
-        The "correct keys" are defined in :data:`ERROR_KEYS`.
-
-        """
-        self.assertEqual(set(self.response.json().keys()), ERROR_KEYS)
+        """Assert that the response is valid JSON and has correct keys."""
+        self.assertEqual(
+            frozenset(self.response.json().keys()),
+            _LOGIN_ERROR_KEYS,
+        )
