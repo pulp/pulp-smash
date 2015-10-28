@@ -18,6 +18,7 @@ developers, not a gospel.
     api/pulp_smash.tests.platform.api_v2
     api/pulp_smash.tests.platform.api_v2.test_content_applicability
     api/pulp_smash.tests.platform.api_v2.test_login
+    api/pulp_smash.tests.platform.api_v2.test_search
     api/pulp_smash.tests.platform.api_v2.test_user
     api/tests
     api/tests.test_config
