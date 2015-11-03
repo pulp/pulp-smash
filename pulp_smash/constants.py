@@ -35,6 +35,14 @@ REPOSITORY_PATH = '/pulp/api/v2/repositories/'
 
 """
 
+REPOSITORY_PATH = '/pulp/api/v2/repositories/'
+"""See: `Repository APIs`_.
+
+.. _Repository APIs:
+    http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/index.html
+
+"""
+
 USER_PATH = '/pulp/api/v2/users/'
 """See: `User APIs`_.
 
