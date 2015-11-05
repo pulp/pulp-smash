@@ -171,7 +171,7 @@ class ReprTestCase(TestCase):
             for arglist in permutations(self.attrs.items())
         )
         targets = (
-            "ServerConfig({})".format(arglist) for arglist in arglists
+            'ServerConfig({})'.format(arglist) for arglist in arglists
         )
         self.assertIn(self.result, targets)
 

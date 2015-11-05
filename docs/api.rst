@@ -12,6 +12,7 @@ developers, not a gospel.
 
     api/pulp_smash
     api/pulp_smash.config
+    api/pulp_smash.constants
     api/pulp_smash.tests
     api/pulp_smash.tests.platform
     api/pulp_smash.tests.platform.api_v2

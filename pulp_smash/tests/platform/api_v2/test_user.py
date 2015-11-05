@@ -18,11 +18,9 @@ from __future__ import unicode_literals
 
 import requests
 from pulp_smash.config import get_config
+from pulp_smash.constants import LOGIN_PATH, USER_PATH
 from random import randint
 from unittest2 import TestCase
-
-
-USER_PATH = '/pulp/api/v2/users/'
 
 
 def _rand_str():
@@ -37,7 +35,7 @@ def _search_logins(response):
 
 
 class CreateTestCase(TestCase):
-    """Can we create users? No prior assumptions are made."""
+    """Establish that we can create users. No prior assumptions are made."""
 
     @classmethod
     def setUpClass(cls):
@@ -75,15 +73,15 @@ class CreateTestCase(TestCase):
 
     def test_attrs(self):
         """Assert that each user has the requested attributes."""
-        bodies = [body.copy() for body in self.bodies]
+        bodies = [body.copy() for body in self.bodies]  # Do not edit originals
         for body in bodies:
-            body.pop('password', None)
+            body.pop('password', None)  # Pulp should not disclose passwords
         for i, body in enumerate(bodies):
             with self.subTest(body):
-                # First check response keys…
+                # e.g. {'login'} <= {'login', 'name', '_href', …}
                 attrs = self.responses[i].json()
                 self.assertLessEqual(set(body.keys()), set(attrs.keys()))
-                # …then check response values.
+                # Only check attributes we set. Ignore other returned attrs.
                 attrs = {key: attrs[key] for key in body.keys()}
                 self.assertEqual(body, attrs)
 
@@ -98,7 +96,7 @@ class CreateTestCase(TestCase):
 
 
 class ReadUpdateDeleteTestCase(TestCase):
-    """Can we read, update and delete users?
+    """Establish that we can read, update and delete users.
 
     This test case assumes that the assertions in :class:`CreateTestCase` are
     valid.
@@ -108,6 +106,7 @@ class ReadUpdateDeleteTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         """Create three users and read, update and delete them respectively."""
+        # Create three users and save the locations of each.
         cls.update_body = {'delta': {
             'name': _rand_str(),
             'password': _rand_str(),
@@ -123,6 +122,8 @@ class ReadUpdateDeleteTestCase(TestCase):
             )
             response.raise_for_status()
             cls.paths.append(response.json()['_href'])
+
+        # Read, update and delete the three users, respectively.
         cls.read_response = requests.get(
             cls.cfg.base_url + cls.paths[0],
             **cls.cfg.get_requests_kwargs()
@@ -138,7 +139,7 @@ class ReadUpdateDeleteTestCase(TestCase):
         )
 
     def test_status_codes(self):
-        """Do the read, update and delete responses have 200 status codes?"""
+        """Ensure read, update and delete responses have 200 status codes."""
         for attr in ('read_response', 'update_response', 'delete_response'):
             with self.subTest(attr):
                 self.assertEqual(getattr(self, attr).status_code, 200)
@@ -179,7 +180,7 @@ class ReadUpdateDeleteTestCase(TestCase):
         """Assert that one can log in with a user with an updated password."""
         login = self.update_response.json()['login']
         requests.post(
-            self.cfg.base_url + '/pulp/api/v2/actions/login/',
+            self.cfg.base_url + LOGIN_PATH,
             auth=(login, self.update_body['delta']['password']),
             verify=self.cfg.verify,
         ).raise_for_status()
@@ -209,7 +210,7 @@ class ReadUpdateDeleteTestCase(TestCase):
 
 
 class SearchTestCase(TestCase):
-    """Can we search for users?
+    """Establish that we can search for users.
 
     This test case assumes that the assertions in
     :class:`ReadUpdateDeleteTestCase` are valid.
@@ -223,7 +224,8 @@ class SearchTestCase(TestCase):
         Search for:
 
         * Nothing at all.
-        * All super-users.
+        * All users having only the super-users role.
+        * All users having no roles.
         * A user by their login.
         * A non-existent user by their login.
 
