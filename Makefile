@@ -19,7 +19,13 @@ docs-clean:
 
 lint:
 	flake8 .
-	pylint --reports=n --disable=I docs/conf.py pulp_smash tests setup.py
+	pylint --reports=n --disable=I docs/conf.py tests setup.py \
+		pulp_smash/__init__.py \
+		pulp_smash/__main__.py \
+		pulp_smash/config.py \
+		pulp_smash/constants.py \
+		pulp_smash/utils.py
+	pylint --reports=n --disable=I,duplicate-code pulp_smash/tests/
 
 test:
 	python $(TEST_OPTIONS)
