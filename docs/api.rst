@@ -21,6 +21,6 @@ developers, not a gospel.
     api/pulp_smash.tests.platform.api_v2.test_repository
     api/pulp_smash.tests.platform.api_v2.test_search
     api/pulp_smash.tests.platform.api_v2.test_user
-    api/pulp_smash.util
+    api/pulp_smash.utils
     api/tests
     api/tests.test_config

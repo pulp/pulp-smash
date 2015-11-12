@@ -23,10 +23,6 @@ from pulp_smash.constants import REPOSITORY_PATH, ERROR_KEYS
 from pulp_smash.utils import rand_str
 from unittest2 import TestCase
 
-# pylint:disable=duplicate-code
-# Once https://github.com/PulpQE/pulp-smash/pull/28#discussion_r44172668
-# is resolved, pylint can be re-enabled.
-
 
 class CreateSuccessTestCase(TestCase):
     """Establish that we can create repositories."""
