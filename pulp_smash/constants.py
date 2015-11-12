@@ -17,6 +17,8 @@ ERROR_KEYS = frozenset((
 .. _Exception Handling:
     https://pulp.readthedocs.org/en/latest/dev-guide/conventions/exceptions.html
 
+The ``href`` key is present prior to Pulp 3.0 for backward compatibility.
+
 """
 
 LOGIN_PATH = '/pulp/api/v2/actions/login/'
