@@ -31,7 +31,7 @@ test:
 	python $(TEST_OPTIONS)
 
 test-coverage:
-	coverage run --source pulp_smash.config $(TEST_OPTIONS)
+	coverage run --source pulp_smash.config,pulp_smash.utils $(TEST_OPTIONS)
 
 package:
 	./setup.py sdist bdist_wheel --universal

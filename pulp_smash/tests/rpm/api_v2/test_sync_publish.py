@@ -37,7 +37,7 @@ import requests
 from itertools import chain
 from pulp_smash.config import get_config
 from pulp_smash.constants import REPOSITORY_PATH
-from pulp_smash.utils import rand_str
+from pulp_smash.utils import uuid4
 from time import sleep
 from unittest2 import TestCase
 
@@ -230,12 +230,12 @@ def _add_yum_distributor(server_config, href, responses=None):
         server_config.base_url + href + 'distributors/',
         json={
             'auto_publish': False,
-            'distributor_id': rand_str(),
+            'distributor_id': uuid4(),
             'distributor_type_id': 'yum_distributor',
             'distributor_config': {
                 'http': True,
                 'https': True,
-                'relative_url': '/' + rand_str(),
+                'relative_url': '/' + uuid4(),
             },
         },
         **server_config.get_requests_kwargs()
@@ -264,7 +264,7 @@ def _publish_repo(server_config, href, distributor_id, responses=None):
 def _gen_rpm_repo_body():
     """Return a semi-random dict that can be used for creating an RPM repo."""
     return {
-        'id': rand_str(),
+        'id': uuid4(),
         'importer_config': {},
         'importer_type_id': 'yum_importer',
         'notes': {'_repo-type': 'rpm-repo'},
@@ -334,7 +334,7 @@ class CreateTestCase(_BaseTestCase):
         """Create two RPM repositories, with and without feeds."""
         super(CreateTestCase, cls).setUpClass()
         cls.bodies = tuple((_gen_rpm_repo_body() for _ in range(2)))
-        cls.bodies[1]['importer_config'] = {'feed': rand_str()}  # invalid feed
+        cls.bodies[1]['importer_config'] = {'feed': uuid4()}  # invalid feed
         cls.attrs_iter = tuple((
             _create_repo(cls.cfg, body) for body in cls.bodies
         ))
@@ -427,7 +427,7 @@ class SyncInvalidFeedTestCase(_BaseTestCase):
         """Create an RPM repository with an invalid feed and sync it."""
         super(SyncInvalidFeedTestCase, cls).setUpClass()
         body = _gen_rpm_repo_body()
-        body['importer_config']['feed'] = rand_str()  # set an invalid feed
+        body['importer_config']['feed'] = uuid4()  # set an invalid feed
         cls.attrs_iter = (_create_repo(cls.cfg, body),)  # things to delete
         cls.sync_repo = []  # raw responses
         cls.task_bodies = tuple(chain.from_iterable(  # response bodies

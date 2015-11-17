@@ -2,9 +2,9 @@
 """Utility functions for Pulp tests."""
 from __future__ import unicode_literals
 
-from uuid import uuid4
+import uuid
 
 
-def rand_str():
-    """Return a randomized string."""
-    return type('')(uuid4())
+def uuid4():
+    """Return a random UUID, as a unicode string."""
+    return type('')(uuid.uuid4())

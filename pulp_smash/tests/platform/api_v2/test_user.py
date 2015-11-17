@@ -19,13 +19,8 @@ from __future__ import unicode_literals
 import requests
 from pulp_smash.config import get_config
 from pulp_smash.constants import LOGIN_PATH, USER_PATH
-from random import randint
+from pulp_smash.utils import uuid4
 from unittest2 import TestCase
-
-
-def _rand_str():
-    """Return a randomized string."""
-    return type('')(randint(-100000, 100000))
 
 
 def _search_logins(response):
@@ -47,8 +42,8 @@ class CreateTestCase(TestCase):
         """
         cls.cfg = get_config()
         cls.bodies = (
-            {'login': _rand_str()},
-            {key: _rand_str() for key in {'login', 'password', 'name'}},
+            {'login': uuid4()},
+            {key: uuid4() for key in {'login', 'password', 'name'}},
         )
         cls.responses = tuple((
             requests.post(
@@ -108,8 +103,8 @@ class ReadUpdateDeleteTestCase(TestCase):
         """Create three users and read, update and delete them respectively."""
         # Create three users and save the locations of each.
         cls.update_body = {'delta': {
-            'name': _rand_str(),
-            'password': _rand_str(),
+            'name': uuid4(),
+            'password': uuid4(),
             'roles': ['super-users'],
         }}
         cls.cfg = get_config()
@@ -117,7 +112,7 @@ class ReadUpdateDeleteTestCase(TestCase):
         for _ in range(3):
             response = requests.post(
                 cls.cfg.base_url + USER_PATH,
-                json={'login': _rand_str()},
+                json={'login': uuid4()},
                 **cls.cfg.get_requests_kwargs()
             )
             response.raise_for_status()
@@ -232,7 +227,7 @@ class SearchTestCase(TestCase):
         """
         # Create a user and note information about it.
         cls.cfg = get_config()
-        cls.login = _rand_str()
+        cls.login = uuid4()
         response = requests.post(
             cls.cfg.base_url + USER_PATH,
             json={'login': cls.login},
@@ -254,7 +249,7 @@ class SearchTestCase(TestCase):
             {'criteria': {'filters': {'roles': ['super-users']}}},
             {'criteria': {'filters': {'roles': []}}},
             {'criteria': {'filters': {'login': cls.login}}},
-            {'criteria': {'filters': {'login': _rand_str()}}},
+            {'criteria': {'filters': {'login': uuid4()}}},
         ))
         cls.responses = tuple((
             requests.post(

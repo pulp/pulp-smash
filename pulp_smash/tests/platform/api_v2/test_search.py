@@ -32,7 +32,7 @@ from __future__ import unicode_literals
 import requests
 from pulp_smash.config import get_config
 from pulp_smash.constants import USER_PATH
-from random import randint
+from pulp_smash.utils import uuid4
 from unittest2 import TestCase, skip
 
 from sys import version_info
@@ -49,7 +49,7 @@ def _create_user(server_config):
     """Create a user with a random login. Return the decoded JSON response."""
     response = requests.post(
         server_config.base_url + USER_PATH,
-        json={'login': type('')(randint(-999999, 999999))},
+        json={'login': uuid4()},
         **server_config.get_requests_kwargs()
     )
     response.raise_for_status()

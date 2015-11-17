@@ -20,7 +20,7 @@ import requests
 
 from pulp_smash.config import get_config
 from pulp_smash.constants import REPOSITORY_PATH, ERROR_KEYS
-from pulp_smash.utils import rand_str
+from pulp_smash.utils import uuid4
 from unittest2 import TestCase
 
 
@@ -38,12 +38,12 @@ class CreateSuccessTestCase(TestCase):
         cls.cfg = get_config()
         cls.url = cls.cfg.base_url + REPOSITORY_PATH
         cls.bodies = (
-            {'id': rand_str()},
+            {'id': uuid4()},
             {
-                'id': rand_str(),
-                'display_name': rand_str(),
-                'description': rand_str(),
-                'notes': {rand_str(): rand_str()},
+                'id': uuid4(),
+                'display_name': uuid4(),
+                'description': uuid4(),
+                'notes': {uuid4(): uuid4()},
             },
 
         )
@@ -103,7 +103,7 @@ class CreateFailureTestCase(TestCase):
         """
         cls.cfg = get_config()
         cls.url = cls.cfg.base_url + REPOSITORY_PATH
-        identical_id = rand_str()
+        identical_id = uuid4()
         cls.bodies = (
             (201, {'id': identical_id}),
             (400, {'id': None}),
@@ -181,11 +181,11 @@ class ReadUpdateDeleteSuccessTestCase(TestCase):
         cls.cfg = get_config()
         cls.update_body = {
             'delta': {
-                'display_name': rand_str(),
-                'description': rand_str()
+                'display_name': uuid4(),
+                'description': uuid4()
             }
         }
-        cls.bodies = [{'id': rand_str()} for _ in range(3)]
+        cls.bodies = [{'id': uuid4()} for _ in range(3)]
         cls.paths = []
         for body in cls.bodies:
             response = requests.post(
