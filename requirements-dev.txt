@@ -7,10 +7,6 @@ pylint
 # For `make test-coverage`
 coveralls
 
-# For `make test`
-mock
-unittest2
-
 # For `make docs-html` and `make docs-clean`
 sphinx
 

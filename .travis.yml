@@ -6,6 +6,7 @@ python:
     - 3.4
     - 3.5
 install:
+    - ./setup.py test; git clean -dfx
     - pip install -r requirements.txt -r requirements-dev.txt
 script:
     # See: https://github.com/PulpQE/pulp-smash/issues/1
