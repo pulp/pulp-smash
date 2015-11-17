@@ -34,7 +34,6 @@ from __future__ import unicode_literals
 
 import os
 import requests
-from itertools import chain
 from pulp_smash.config import get_config
 from pulp_smash.constants import REPOSITORY_PATH
 from pulp_smash.utils import uuid4
@@ -275,16 +274,38 @@ class _TaskTimedOutException(Exception):
     """Indicates that polling a task timed out."""
 
 
-def _poll_tasks(server_config, href):
-    """Wait for a tree of tasks to complete. Return JSON-decoded responses.
+def _poll_spawned_tasks(server_config, call_report):
+    """Recursively wait for spawned tasks to complete. Yield response bodies.
 
-    Wait for a task to complete. When it completes, recursively wait for all of
-    its children to complete.
+    Recursively wait for each of the spawned tasks listed in the given `call
+    report`_ to complete. For each task that completes, yield a response body
+    representing that task's final state.
 
     :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param href: The path to the root task you'd like to monitor. This is
-        typically accessible at ``['spawned_tasks'][0]['_href']``.
-    :returns: An generator yielding each of the JSON-decoded response bodies.
+    :param call_report: A dict-like object with a `call report`_ structure.
+    :returns: A generator yielding task bodies.
+    :raises _TaskTimedOutException: If a task takes too long to complete.
+
+    .. call report:
+        http://pulp.readthedocs.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
+
+    """
+    hrefs = (task['_href'] for task in call_report['spawned_tasks'])
+    for href in hrefs:
+        for final_task_state in _poll_task(server_config, href):
+            yield final_task_state
+
+
+def _poll_task(server_config, href):
+    """Wait for a task and its children to complete. Yield response bodies.
+
+    Poll the task at ``href``, waiting for the task to complete. When a
+    response is received indicating that the task is complete, yield that
+    response body and recursively poll each child task.
+
+    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
+    :param href: The path to a task you'd like to monitor recursively.
+    :returns: An generator yielding response bodies.
     :raises _TaskTimedOutException: If a task takes too long to complete.
 
     """
@@ -300,7 +321,7 @@ def _poll_tasks(server_config, href):
         if attrs['state'] in _TASK_END_STATES:
             yield attrs
             for spawned_task in attrs['spawned_tasks']:
-                yield _poll_tasks(server_config, spawned_task['_href'])
+                yield _poll_task(server_config, spawned_task['_href'])
             break
         poll_counter += 1
         if poll_counter > poll_limit:
@@ -384,14 +405,8 @@ class SyncValidFeedTestCase(_BaseTestCase):
         body['importer_config']['feed'] = _VALID_FEED
         cls.attrs_iter = (_create_repo(cls.cfg, body),)  # things to delete
         cls.sync_repo = []  # raw responses
-        cls.task_bodies = tuple(chain.from_iterable(  # response bodies
-            _poll_tasks(cls.cfg, spawned_task['_href'])
-            for spawned_task in _sync_repo(
-                cls.cfg,
-                cls.attrs_iter[0]['_href'],
-                cls.sync_repo,
-            )['spawned_tasks']
-        ))
+        report = _sync_repo(cls.cfg, cls.attrs_iter[0]['_href'], cls.sync_repo)
+        cls.task_bodies = tuple(_poll_spawned_tasks(cls.cfg, report))
 
     def test_start_sync_code(self):
         """Assert the call to sync a repository returns an HTTP 202."""
@@ -430,14 +445,8 @@ class SyncInvalidFeedTestCase(_BaseTestCase):
         body['importer_config']['feed'] = uuid4()  # set an invalid feed
         cls.attrs_iter = (_create_repo(cls.cfg, body),)  # things to delete
         cls.sync_repo = []  # raw responses
-        cls.task_bodies = tuple(chain.from_iterable(  # response bodies
-            _poll_tasks(cls.cfg, spawned_task['_href'])
-            for spawned_task in _sync_repo(
-                cls.cfg,
-                cls.attrs_iter[0]['_href'],
-                cls.sync_repo,
-            )['spawned_tasks']
-        ))
+        report = _sync_repo(cls.cfg, cls.attrs_iter[0]['_href'], cls.sync_repo)
+        cls.task_bodies = tuple(_poll_spawned_tasks(cls.cfg, report))
 
     def test_start_sync_code(self):
         """Assert the call to sync a repository returns an HTTP 202."""
@@ -529,8 +538,7 @@ class PublishTestCase(_BaseTestCase):
             cls.attrs_iter[0]['_href'],
             cls.responses['import'],
         )
-        for spawned_task in cls.bodies['import']['spawned_tasks']:
-            _poll_tasks(cls.cfg, spawned_task['_href'])
+        _poll_spawned_tasks(cls.cfg, cls.bodies['import'])
         cls.bodies['upload_free'] = _delete(
             cls.cfg,
             cls.bodies['upload_malloc']['_href'],
@@ -544,8 +552,7 @@ class PublishTestCase(_BaseTestCase):
             cls.attrs_iter[1]['_href'],
             cls.responses['copy'],
         )
-        for spawned_task in cls.bodies['copy']['spawned_tasks']:
-            _poll_tasks(cls.cfg, spawned_task['_href'])
+        _poll_spawned_tasks(cls.cfg, cls.bodies['copy'])
 
         # Add a distributor to the first repository, then publish the repo to
         # the distributor. Poll the publish request.
@@ -560,8 +567,7 @@ class PublishTestCase(_BaseTestCase):
             cls.bodies['distribute']['id'],
             cls.responses['publish'],
         )
-        for spawned_task in cls.bodies['publish']['spawned_tasks']:
-            _poll_tasks(cls.cfg, spawned_task['_href'])
+        _poll_spawned_tasks(cls.cfg, cls.bodies['publish'])
 
         # Download the RPM. The [1:] strips a leading slash.
         url = ''.join((
