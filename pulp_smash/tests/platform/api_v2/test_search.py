@@ -32,7 +32,7 @@ from __future__ import unicode_literals
 import requests
 from pulp_smash.config import get_config
 from pulp_smash.constants import USER_PATH
-from pulp_smash.utils import uuid4
+from pulp_smash.utils import create_user, delete, uuid4
 from unittest2 import TestCase, skip
 
 from sys import version_info
@@ -45,15 +45,11 @@ else:
 _SEARCH_PATH = USER_PATH + 'search/'
 
 
-def _create_user(server_config):
-    """Create a user with a random login. Return the decoded JSON response."""
-    response = requests.post(
-        server_config.base_url + USER_PATH,
-        json={'login': uuid4()},
-        **server_config.get_requests_kwargs()
-    )
-    response.raise_for_status()
-    return response.json()
+def _create_users(server_config, num):
+    """Create ``num`` users with random logins. Return tuple of attributes."""
+    return tuple((
+        create_user(server_config, {'login': uuid4()}) for _ in range(num)
+    ))
 
 
 def _search_get(server_config, query):
@@ -95,10 +91,7 @@ class _BaseTestCase(TestCase):
     def tearDownClass(cls):
         """Destroy all resources created in :meth:`setUpClass`."""
         for attrs in cls.attrs_iter:
-            requests.delete(
-                cls.cfg.base_url + attrs['_href'],
-                **cls.cfg.get_requests_kwargs()
-            ).raise_for_status()
+            delete(cls.cfg, attrs['_href'])
 
 
 class MinimalTestCase(_BaseTestCase):
@@ -115,7 +108,7 @@ class MinimalTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create one user. Execute searches."""
         super(MinimalTestCase, cls).setUpClass()
-        cls.attrs_iter = (_create_user(cls.cfg),)
+        cls.attrs_iter = _create_users(cls.cfg, 1)
         cls.responses = {
             'get': _search_get(cls.cfg, ''),
             'post': _search_post(cls.cfg, {'criteria': {}}),
@@ -146,7 +139,7 @@ class SortTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create two users. Execute searches."""
         super(SortTestCase, cls).setUpClass()
-        cls.attrs_iter = tuple((_create_user(cls.cfg) for _ in range(2)))
+        cls.attrs_iter = _create_users(cls.cfg, 2)
         for order in ('ascending', 'descending'):
             query = {'sort': [['id', order]]}
             cls.responses.update({
@@ -185,7 +178,7 @@ class FieldTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create one user. Execute searches."""
         super(FieldTestCase, cls).setUpClass()
-        cls.attrs_iter = (_create_user(cls.cfg),)
+        cls.attrs_iter = _create_users(cls.cfg, 1)
         cls.responses = {
             'get': _search_get(cls.cfg, '?field=name'),
             'post': _search_post(cls.cfg, {'criteria': {'fields': ['name']}}),
@@ -215,7 +208,7 @@ class FieldsTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create one user. Execute searches."""
         super(FieldsTestCase, cls).setUpClass()
-        cls.attrs_iter = (_create_user(cls.cfg),)
+        cls.attrs_iter = _create_users(cls.cfg, 1)
         cls.responses = {
             'get': _search_get(cls.cfg, '?field=login&field=roles'),
             'post': _search_post(
@@ -247,7 +240,7 @@ class FiltersIdTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create two users. Search for one user."""
         super(FiltersIdTestCase, cls).setUpClass()
-        cls.attrs_iter = tuple((_create_user(cls.cfg) for _ in range(2)))
+        cls.attrs_iter = _create_users(cls.cfg, 2)
         cls.id_ = cls.attrs_iter[0]['id']
         query = {'filters': {'id': cls.id_}}
         cls.responses = {
@@ -281,7 +274,7 @@ class FiltersIdsTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create three users. Search for the first two users."""
         super(FiltersIdsTestCase, cls).setUpClass()
-        cls.attrs_iter = tuple((_create_user(cls.cfg) for _ in range(3)))
+        cls.attrs_iter = _create_users(cls.cfg, 3)
         cls.ids = [attrs['id'] for attrs in cls.attrs_iter[0:1]]
         query = {'filters': {'id': {'$in': cls.ids}}}
         cls.responses = {
@@ -317,7 +310,7 @@ class LimitSkipTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create two users. Execute searches."""
         super(LimitSkipTestCase, cls).setUpClass()
-        cls.attrs_iter = tuple((_create_user(cls.cfg) for _ in range(2)))
+        cls.attrs_iter = _create_users(cls.cfg, 2)
         cls.ids = [attrs['id'] for attrs in cls.attrs_iter]
         for criterion in ('limit', 'skip'):
             query = {'filters': {'id': {'$in': cls.ids}}, criterion: 1}

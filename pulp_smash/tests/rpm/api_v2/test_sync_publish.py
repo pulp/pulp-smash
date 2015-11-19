@@ -35,9 +35,13 @@ from __future__ import unicode_literals
 import os
 import requests
 from pulp_smash.config import get_config
-from pulp_smash.constants import REPOSITORY_PATH
-from pulp_smash.utils import uuid4
-from time import sleep
+from pulp_smash.utils import (
+    create_repository,
+    delete,
+    handle_response,
+    poll_spawned_tasks,
+    uuid4,
+)
 from unittest2 import TestCase
 
 
@@ -50,61 +54,12 @@ else:
 
 _VALID_FEED = 'http://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/zoo/'
 _INVALID_FEED = 'https://example.com'
-_TASK_END_STATES = ('canceled', 'error', 'finished', 'skipped', 'timed out')
 _RPM_URL = (
     'https://repos.fedorapeople.org'
     '/pulp/pulp/demo_repos/zoo/bear-4.1-1.noarch.rpm'
 )
 _REPO_PUBLISH_PATH = '/pulp/repos/'  # + relative_url + unit_name.rpm.arch
 _CONTENT_UPLOADS_PATH = '/pulp/api/v2/content/uploads/'
-
-
-def _handle_response(response, responses):
-    """Implement a common response handling algorithm for server responses.
-
-    1. Raise an exception if ``response`` has an HTTP 4XX or 5XX status code.
-    2. Append ``response`` to ``responses`` if the latter is not ``None``.
-    3. Return the JSON-decoded content in ``response``.
-
-    """
-    response.raise_for_status()
-    if responses is not None:
-        responses.append(response)
-    return response.json()
-
-
-def _delete(server_config, href, responses=None):
-    """Delete some resource.
-
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param href: A string. The path to the resource being deleted.
-    :param responses: A list, or some other object that supports the ``append``
-        method. If given, all server responses are appended to this object.
-    :returns: The server's JSON-decoded response.
-
-    """
-    return _handle_response(requests.delete(
-        server_config.base_url + href,
-        **server_config.get_requests_kwargs()
-    ), responses)
-
-
-def _create_repo(server_config, body, responses=None):
-    """Create a repository.
-
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param body: A dict of values to encode as JSON and pass with the creation
-        request.
-    :param responses: A list, or some other object that supports the ``append``
-        method. If given, all server responses are appended to this object.
-    :returns: The server's JSON-decoded response.
-
-    """
-    return _handle_response(requests.post(
-        server_config.base_url + REPOSITORY_PATH,
-        json=body,
-        **server_config.get_requests_kwargs()
-    ), responses)
 
 
 def _sync_repo(server_config, href, responses=None):
@@ -117,7 +72,7 @@ def _sync_repo(server_config, href, responses=None):
     :returns: The server's JSON-decoded response.
 
     """
-    return _handle_response(requests.post(
+    return handle_response(requests.post(
         server_config.base_url + href + 'actions/sync/',
         json={'override_config': {}},
         **server_config.get_requests_kwargs()
@@ -126,7 +81,7 @@ def _sync_repo(server_config, href, responses=None):
 
 def _get_importers(server_config, href, responses=None):
     """Read a repository's importers."""
-    return _handle_response(requests.get(
+    return handle_response(requests.get(
         server_config.base_url + href + 'importers/',
         **server_config.get_requests_kwargs()
     ), responses)
@@ -134,7 +89,7 @@ def _get_importers(server_config, href, responses=None):
 
 def _get_units(server_config, href, responses=None):
     """Search for a repository's units."""
-    return _handle_response(requests.post(
+    return handle_response(requests.post(
         server_config.base_url + href + 'search/units/',
         json={'criteria': {}},
         **server_config.get_requests_kwargs()
@@ -150,7 +105,7 @@ def _start_content_upload(server_config, responses=None):
     :returns: The server's JSON-decoded response.
 
     """
-    return _handle_response(requests.post(
+    return handle_response(requests.post(
         server_config.base_url + _CONTENT_UPLOADS_PATH,
         **server_config.get_requests_kwargs()
     ), responses)
@@ -167,7 +122,7 @@ def _upload_file(server_config, href, content, responses=None):
     :returns: The server's JSON-decoded response.
 
     """
-    return _handle_response(requests.put(
+    return handle_response(requests.put(
         server_config.base_url + href + '0/',
         data=content,
         **server_config.get_requests_kwargs()
@@ -185,7 +140,7 @@ def _import_rpm_to_repo(server_config, upload_id, href, responses=None):
     :returns: The server's JSON-decoded response.
 
     """
-    return _handle_response(requests.post(
+    return handle_response(requests.post(
         server_config.base_url + href + 'actions/import_upload/',
         json={'unit_key': {}, 'unit_type_id': 'rpm', 'upload_id': upload_id},
         **server_config.get_requests_kwargs()
@@ -204,7 +159,7 @@ def _copy_repo(server_config, source_repo_id, href, responses=None):
     :returns: The server's JSON-decoded response.
 
     """
-    return _handle_response(requests.post(
+    return handle_response(requests.post(
         server_config.base_url + href + 'actions/associate/',
         json={'source_repo_id': source_repo_id},
         **server_config.get_requests_kwargs()
@@ -225,7 +180,7 @@ def _add_yum_distributor(server_config, href, responses=None):
     :returns: The server's JSON-decoded response.
 
     """
-    return _handle_response(requests.post(
+    return handle_response(requests.post(
         server_config.base_url + href + 'distributors/',
         json={
             'auto_publish': False,
@@ -253,7 +208,7 @@ def _publish_repo(server_config, href, distributor_id, responses=None):
     :returns: The server's JSON-decoded response.
 
     """
-    return _handle_response(requests.post(
+    return handle_response(requests.post(
         server_config.base_url + href + 'actions/publish/',
         json={'id': distributor_id},
         **server_config.get_requests_kwargs()
@@ -270,67 +225,6 @@ def _gen_rpm_repo_body():
     }
 
 
-class _TaskTimedOutException(Exception):
-    """Indicates that polling a task timed out."""
-
-
-def _poll_spawned_tasks(server_config, call_report):
-    """Recursively wait for spawned tasks to complete. Yield response bodies.
-
-    Recursively wait for each of the spawned tasks listed in the given `call
-    report`_ to complete. For each task that completes, yield a response body
-    representing that task's final state.
-
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param call_report: A dict-like object with a `call report`_ structure.
-    :returns: A generator yielding task bodies.
-    :raises _TaskTimedOutException: If a task takes too long to complete.
-
-    .. call report:
-        http://pulp.readthedocs.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
-
-    """
-    hrefs = (task['_href'] for task in call_report['spawned_tasks'])
-    for href in hrefs:
-        for final_task_state in _poll_task(server_config, href):
-            yield final_task_state
-
-
-def _poll_task(server_config, href):
-    """Wait for a task and its children to complete. Yield response bodies.
-
-    Poll the task at ``href``, waiting for the task to complete. When a
-    response is received indicating that the task is complete, yield that
-    response body and recursively poll each child task.
-
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param href: The path to a task you'd like to monitor recursively.
-    :returns: An generator yielding response bodies.
-    :raises _TaskTimedOutException: If a task takes too long to complete.
-
-    """
-    poll_limit = 10
-    poll_counter = 0
-    while True:
-        response = requests.get(
-            server_config.base_url + href,
-            **server_config.get_requests_kwargs()
-        )
-        response.raise_for_status()
-        attrs = response.json()
-        if attrs['state'] in _TASK_END_STATES:
-            yield attrs
-            for spawned_task in attrs['spawned_tasks']:
-                yield _poll_task(server_config, spawned_task['_href'])
-            break
-        poll_counter += 1
-        if poll_counter > poll_limit:
-            raise _TaskTimedOutException(
-                'Task {} is ongoing after {} polls.'.format(href, poll_limit)
-            )
-        sleep(5)
-
-
 class _BaseTestCase(TestCase):
     """Provide a server config, and tear down created resources."""
 
@@ -344,7 +238,7 @@ class _BaseTestCase(TestCase):
     def tearDownClass(cls):
         """Delete created resources."""
         for attrs in cls.attrs_iter:
-            _delete(cls.cfg, attrs['_href'])
+            delete(cls.cfg, attrs['_href'])
 
 
 class CreateTestCase(_BaseTestCase):
@@ -357,7 +251,7 @@ class CreateTestCase(_BaseTestCase):
         cls.bodies = tuple((_gen_rpm_repo_body() for _ in range(2)))
         cls.bodies[1]['importer_config'] = {'feed': uuid4()}  # invalid feed
         cls.attrs_iter = tuple((
-            _create_repo(cls.cfg, body) for body in cls.bodies
+            create_repository(cls.cfg, body) for body in cls.bodies
         ))
         cls.importers_iter = tuple((
             _get_importers(cls.cfg, attrs['_href']) for attrs in cls.attrs_iter
@@ -403,10 +297,10 @@ class SyncValidFeedTestCase(_BaseTestCase):
         super(SyncValidFeedTestCase, cls).setUpClass()
         body = _gen_rpm_repo_body()
         body['importer_config']['feed'] = _VALID_FEED
-        cls.attrs_iter = (_create_repo(cls.cfg, body),)  # things to delete
+        cls.attrs_iter = (create_repository(cls.cfg, body),)  # see parent cls
         cls.sync_repo = []  # raw responses
         report = _sync_repo(cls.cfg, cls.attrs_iter[0]['_href'], cls.sync_repo)
-        cls.task_bodies = tuple(_poll_spawned_tasks(cls.cfg, report))
+        cls.task_bodies = tuple(poll_spawned_tasks(cls.cfg, report))
 
     def test_start_sync_code(self):
         """Assert the call to sync a repository returns an HTTP 202."""
@@ -443,10 +337,10 @@ class SyncInvalidFeedTestCase(_BaseTestCase):
         super(SyncInvalidFeedTestCase, cls).setUpClass()
         body = _gen_rpm_repo_body()
         body['importer_config']['feed'] = uuid4()  # set an invalid feed
-        cls.attrs_iter = (_create_repo(cls.cfg, body),)  # things to delete
+        cls.attrs_iter = (create_repository(cls.cfg, body),)  # see parent cls
         cls.sync_repo = []  # raw responses
         report = _sync_repo(cls.cfg, cls.attrs_iter[0]['_href'], cls.sync_repo)
-        cls.task_bodies = tuple(_poll_spawned_tasks(cls.cfg, report))
+        cls.task_bodies = tuple(poll_spawned_tasks(cls.cfg, report))
 
     def test_start_sync_code(self):
         """Assert the call to sync a repository returns an HTTP 202."""
@@ -518,7 +412,7 @@ class PublishTestCase(_BaseTestCase):
 
         # Create two repos. Start an upload request. Upload RPM to upload area.
         cls.attrs_iter = tuple((
-            _create_repo(cls.cfg, _gen_rpm_repo_body()) for _ in range(2)
+            create_repository(cls.cfg, _gen_rpm_repo_body()) for _ in range(2)
         ))
         cls.bodies['upload_malloc'] = _start_content_upload(
             cls.cfg,
@@ -538,8 +432,8 @@ class PublishTestCase(_BaseTestCase):
             cls.attrs_iter[0]['_href'],
             cls.responses['import'],
         )
-        _poll_spawned_tasks(cls.cfg, cls.bodies['import'])
-        cls.bodies['upload_free'] = _delete(
+        poll_spawned_tasks(cls.cfg, cls.bodies['import'])
+        cls.bodies['upload_free'] = delete(
             cls.cfg,
             cls.bodies['upload_malloc']['_href'],
             cls.responses['upload_free'],
@@ -552,7 +446,7 @@ class PublishTestCase(_BaseTestCase):
             cls.attrs_iter[1]['_href'],
             cls.responses['copy'],
         )
-        _poll_spawned_tasks(cls.cfg, cls.bodies['copy'])
+        poll_spawned_tasks(cls.cfg, cls.bodies['copy'])
 
         # Add a distributor to the first repository, then publish the repo to
         # the distributor. Poll the publish request.
@@ -567,7 +461,7 @@ class PublishTestCase(_BaseTestCase):
             cls.bodies['distribute']['id'],
             cls.responses['publish'],
         )
-        _poll_spawned_tasks(cls.cfg, cls.bodies['publish'])
+        poll_spawned_tasks(cls.cfg, cls.bodies['publish'])
 
         # Download the RPM. The [1:] strips a leading slash.
         url = ''.join((

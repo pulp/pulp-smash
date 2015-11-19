@@ -20,7 +20,8 @@ import requests
 
 from pulp_smash.config import get_config
 from pulp_smash.constants import REPOSITORY_PATH, ERROR_KEYS
-from pulp_smash.utils import uuid4
+from pulp_smash.utils import create_repository, delete, uuid4
+from requests.exceptions import HTTPError
 from unittest2 import TestCase
 
 
@@ -36,23 +37,14 @@ class CreateSuccessTestCase(TestCase):
 
         """
         cls.cfg = get_config()
-        cls.url = cls.cfg.base_url + REPOSITORY_PATH
         cls.bodies = (
             {'id': uuid4()},
-            {
-                'id': uuid4(),
-                'display_name': uuid4(),
-                'description': uuid4(),
-                'notes': {uuid4(): uuid4()},
-            },
-
+            {key: uuid4() for key in ('id', 'display_name', 'description')},
         )
-        cls.responses = tuple((
-            requests.post(
-                cls.url,
-                json=body,
-                **cls.cfg.get_requests_kwargs()
-            )
+        cls.bodies[1]['notes'] = {uuid4(): uuid4()}
+        cls.responses = []
+        cls.attrs_iter = tuple((  # 1:1 correlation with cls.bodies
+            create_repository(cls.cfg, body, cls.responses)
             for body in cls.bodies
         ))
 
@@ -64,30 +56,28 @@ class CreateSuccessTestCase(TestCase):
 
     def test_location_header(self):
         """Assert that the Location header is correctly set in the response."""
-        for i, response in enumerate(self.responses):
-            with self.subTest(self.bodies[i]):
-                self.assertEqual(
-                    self.url + self.bodies[i]['id'] + '/',
-                    response.headers['Location']
+        for response, attrs in zip(self.responses, self.attrs_iter):
+            with self.subTest((response, attrs)):
+                url = '{}{}{}/'.format(
+                    self.cfg.base_url,
+                    REPOSITORY_PATH,
+                    attrs['id'],
                 )
+                self.assertEqual(response.headers['Location'], url)
 
     def test_attributes(self):
         """Assert that each repository has the requested attributes."""
-        for i, body in enumerate(self.bodies):
-            with self.subTest(body):
-                attributes = self.responses[i].json()
-                self.assertLessEqual(set(body.keys()), set(attributes.keys()))
-                attributes = {key: attributes[key] for key in body.keys()}
-                self.assertEqual(body, attributes)
+        for body, attrs in zip(self.bodies, self.attrs_iter):
+            with self.subTest((body, attrs)):
+                self.assertLessEqual(set(body.keys()), set(attrs.keys()))
+                attrs = {key: attrs[key] for key in body.keys()}
+                self.assertEqual(body, attrs)
 
     @classmethod
     def tearDownClass(cls):
         """Delete the created repositories."""
-        for response in cls.responses:
-            requests.delete(
-                cls.cfg.base_url + response.json()['_href'],
-                **cls.cfg.get_requests_kwargs()
-            ).raise_for_status()
+        for attrs in cls.attrs_iter:
+            delete(cls.cfg, attrs['_href'])
 
 
 class CreateFailureTestCase(TestCase):
@@ -102,69 +92,53 @@ class CreateFailureTestCase(TestCase):
 
         """
         cls.cfg = get_config()
-        cls.url = cls.cfg.base_url + REPOSITORY_PATH
-        identical_id = uuid4()
+        cls.attrs_iter = (create_repository(cls.cfg, {'id': uuid4()}),)
         cls.bodies = (
-            (201, {'id': identical_id}),
-            (400, {'id': None}),
-            (400, ['Incorrect data type']),
-            (400, {'missing_required_keys': 'id'}),
-            (409, {'id': identical_id}),
+            {'id': None},  # 400
+            ['Incorrect data type'],  # 400
+            {'missing_required_keys': 'id'},  # 400
+            {'id': cls.attrs_iter[0]['id']},  # 409
         )
-        cls.responses = tuple((
-            requests.post(
-                cls.url,
-                json=body[1],
-                **cls.cfg.get_requests_kwargs()
-            )
-            for body in cls.bodies
-        ))
+        cls.status_codes = (400, 400, 400, 409)
+        cls.responses = []
+        for body in cls.bodies:
+            try:
+                create_repository(cls.cfg, body, cls.responses)
+            except HTTPError:
+                pass
 
     def test_status_code(self):
         """Assert that each response has the expected HTTP status code."""
-        for i, response in enumerate(self.responses):
-            with self.subTest(self.bodies[i]):
-                self.assertEqual(response.status_code, self.bodies[i][0])
+        for response, status_code in zip(self.responses, self.status_codes):
+            with self.subTest((response, status_code)):
+                self.assertEqual(response.status_code, status_code)
 
     def test_location_header(self):
         """Assert that the Location header is correctly set in the response."""
         for i, response in enumerate(self.responses):
-            with self.subTest(self.bodies[i]):
-                if self.bodies[i][0] == 201:
-                    self.assertEqual(
-                        self.url + self.bodies[i][1]['id'] + '/',
-                        response.headers['Location']
-                    )
-                else:
-                    self.assertNotIn('Location', response.headers)
+            with self.subTest(i=i):
+                self.assertNotIn('Location', response.headers)
 
     def test_exception_keys_json(self):
         """Assert the JSON body returned contains the correct keys."""
         for i, response in enumerate(self.responses):
-            if self.bodies[i][0] >= 400:
-                response_body = response.json()
-                with self.subTest(self.bodies[i]):
-                    for error_key in ERROR_KEYS:
-                        with self.subTest(error_key):
-                            self.assertIn(error_key, response_body)
+            with self.subTest(i=i):
+                self.assertEqual(
+                    frozenset(response.json().keys()),
+                    ERROR_KEYS,
+                )
 
     def test_exception_json_http_status(self):
         """Assert the JSON body returned contains the correct HTTP code."""
-        for i, response in enumerate(self.responses):
-            if self.bodies[i][0] >= 400:
-                with self.subTest(self.bodies[i]):
-                    json_status = response.json()['http_status']
-                    self.assertEqual(json_status, self.bodies[i][0])
+        for response, status_code in zip(self.responses, self.status_codes):
+            with self.subTest((response, status_code)):
+                self.assertEqual(response.json()['http_status'], status_code)
 
     @classmethod
     def tearDownClass(cls):
         """Delete the created repositories."""
-        for response in cls.responses:
-            if response.status_code == 201:
-                requests.delete(
-                    cls.cfg.base_url + response.json()['_href'],
-                    **cls.cfg.get_requests_kwargs()
-                ).raise_for_status()
+        for attrs in cls.attrs_iter:
+            delete(cls.cfg, attrs['_href'])
 
 
 class ReadUpdateDeleteSuccessTestCase(TestCase):
@@ -179,81 +153,61 @@ class ReadUpdateDeleteSuccessTestCase(TestCase):
     def setUpClass(cls):
         """Create three repositories to read, update, and delete."""
         cls.cfg = get_config()
-        cls.update_body = {
-            'delta': {
-                'display_name': uuid4(),
-                'description': uuid4()
-            }
-        }
-        cls.bodies = [{'id': uuid4()} for _ in range(3)]
-        cls.paths = []
-        for body in cls.bodies:
-            response = requests.post(
-                cls.cfg.base_url + REPOSITORY_PATH,
-                json=body,
-                **cls.cfg.get_requests_kwargs()
-            )
-            response.raise_for_status()
-            cls.paths.append(response.json()['_href'])
+        cls.attrs_iter = tuple((
+            create_repository(cls.cfg, {'id': uuid4()}) for _ in range(3)
+        ))
+        cls.update_body = {'delta': {
+            key: uuid4() for key in ('description', 'display_name')
+        }}
 
         # Read, update, and delete the three repositories, respectively.
-        cls.read_response = requests.get(
-            cls.cfg.base_url + cls.paths[0],
+        cls.responses = {}
+        cls.responses['read'] = requests.get(
+            cls.cfg.base_url + cls.attrs_iter[0]['_href'],
             **cls.cfg.get_requests_kwargs()
         )
-        cls.update_response = requests.put(
-            cls.cfg.base_url + cls.paths[1],
+        cls.responses['update'] = requests.put(
+            cls.cfg.base_url + cls.attrs_iter[1]['_href'],
             json=cls.update_body,
             **cls.cfg.get_requests_kwargs()
         )
-        cls.delete_response = requests.delete(
-            cls.cfg.base_url + cls.paths[2],
+        cls.responses['delete'] = requests.delete(
+            cls.cfg.base_url + cls.attrs_iter[2]['_href'],
             **cls.cfg.get_requests_kwargs()
         )
 
-    def test_status_code(self):
-        """Assert that each response has a 200 status code."""
-        expected_status_codes = zip(
-            ('read_response', 'update_response', 'delete_response'),
-            (200, 200, 202)
-        )
-        for attr, expected_status in expected_status_codes:
-            with self.subTest(attr):
-                self.assertEqual(
-                    getattr(self, attr).status_code,
-                    expected_status
-                )
+    def test_status_codes(self):
+        """Assert each response has a correct HTTP status code."""
+        for action, code in zip(('read', 'update', 'delete'), (200, 200, 202)):
+            with self.subTest((action, code)):
+                self.assertEqual(self.responses[action].status_code, code)
 
-    def test_read_attributes(self):
-        """Assert that the read repository has the correct attributes."""
-        attributes = self.read_response.json()
-        self.assertLessEqual(
-            set(self.bodies[0].keys()),
-            set(attributes.keys())
-        )
-        attributes = {key: attributes[key] for key in self.bodies[0].keys()}
-        self.assertEqual(self.bodies[0], attributes)
+    def test_read(self):
+        """Assert the "read" response body contains the correct attributes."""
+        create_attrs = self.attrs_iter[0]
+        read_attrs = self.responses['read'].json()
+        self.assertLessEqual(set(create_attrs.keys()), set(read_attrs.keys()))
+        read_attrs = {key: read_attrs[key] for key in create_attrs.keys()}
+        self.assertEqual(create_attrs, read_attrs)
 
-    def test_update_attributes_spawned_tasks(self):  # noqa pylint:disable=invalid-name
-        """Assert that `spawned_tasks` is present and no tasks were created."""
-        response = self.update_response.json()
-        self.assertIn('spawned_tasks', response)
-        self.assertListEqual([], response['spawned_tasks'])
+    def test_update_spawned_tasks(self):
+        """Assert the "update" response body mentions no spawned tasks."""
+        attrs = self.responses['update'].json()
+        self.assertIn('spawned_tasks', attrs)
+        self.assertListEqual([], attrs['spawned_tasks'])
 
     def test_update_attributes_result(self):
-        """Assert that `result` is present and has the correct attributes."""
-        response = self.update_response.json()
-        self.assertIn('result', response)
+        """Assert the "update" response body has the correct attributes."""
+        attrs = self.responses['update'].json()
+        self.assertIn('result', attrs)
         for key, value in self.update_body['delta'].items():
-            with self.subTest(key):
-                self.assertIn(key, response['result'])
-                self.assertEqual(value, response['result'][key])
+            with self.subTest(key=key):
+                self.assertIn(key, attrs['result'])
+                self.assertEqual(value, attrs['result'][key])
 
     @classmethod
     def tearDownClass(cls):
         """Delete the created repositories."""
-        for path in cls.paths[:2]:
-            requests.delete(
-                cls.cfg.base_url + path,
-                **cls.cfg.get_requests_kwargs()
-            ).raise_for_status()
+        cls.attrs_iter = cls.attrs_iter[:-1]  # pop last item
+        for attrs in cls.attrs_iter:
+            delete(cls.cfg, attrs['_href'])

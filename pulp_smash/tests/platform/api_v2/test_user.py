@@ -19,7 +19,7 @@ from __future__ import unicode_literals
 import requests
 from pulp_smash.config import get_config
 from pulp_smash.constants import LOGIN_PATH, USER_PATH
-from pulp_smash.utils import uuid4
+from pulp_smash.utils import create_user, delete, uuid4
 from unittest2 import TestCase
 
 
@@ -45,36 +45,31 @@ class CreateTestCase(TestCase):
             {'login': uuid4()},
             {key: uuid4() for key in {'login', 'password', 'name'}},
         )
-        cls.responses = tuple((
-            requests.post(
-                cls.cfg.base_url + USER_PATH,
-                json=body,
-                **cls.cfg.get_requests_kwargs()
-            )
-            for body in cls.bodies
+        cls.responses = []
+        cls.attrs_iter = tuple((
+            create_user(cls.cfg, body, cls.responses) for body in cls.bodies
         ))
 
     def test_status_code(self):
         """Assert that each response has an HTTP 201 status code."""
-        for i, response in enumerate(self.responses):
-            with self.subTest(self.bodies[i]):
+        for body, response in zip(self.bodies, self.responses):
+            with self.subTest(body=body):
                 self.assertEqual(response.status_code, 201)
 
     def test_password(self):
         """Assert that responses do not contain passwords."""
-        for i, response in enumerate(self.responses):
-            with self.subTest(self.bodies[i]):
-                self.assertNotIn('password', response.json())
+        for body, attrs in zip(self.bodies, self.attrs_iter):
+            with self.subTest(body=body):
+                self.assertNotIn('password', attrs)
 
     def test_attrs(self):
         """Assert that each user has the requested attributes."""
         bodies = [body.copy() for body in self.bodies]  # Do not edit originals
         for body in bodies:
             body.pop('password', None)  # Pulp should not disclose passwords
-        for i, body in enumerate(bodies):
-            with self.subTest(body):
+        for body, attrs in zip(bodies, self.attrs_iter):
+            with self.subTest(body=body):
                 # e.g. {'login'} <= {'login', 'name', '_href', …}
-                attrs = self.responses[i].json()
                 self.assertLessEqual(set(body.keys()), set(attrs.keys()))
                 # Only check attributes we set. Ignore other returned attrs.
                 attrs = {key: attrs[key] for key in body.keys()}
@@ -83,11 +78,8 @@ class CreateTestCase(TestCase):
     @classmethod
     def tearDownClass(cls):
         """Delete the created users."""
-        for response in cls.responses:
-            requests.delete(
-                cls.cfg.base_url + response.json()['_href'],
-                **cls.cfg.get_requests_kwargs()
-            ).raise_for_status()
+        for attrs in cls.attrs_iter:
+            delete(cls.cfg, attrs['_href'])
 
 
 class ReadUpdateDeleteTestCase(TestCase):
@@ -108,36 +100,31 @@ class ReadUpdateDeleteTestCase(TestCase):
             'roles': ['super-users'],
         }}
         cls.cfg = get_config()
-        cls.paths = []
-        for _ in range(3):
-            response = requests.post(
-                cls.cfg.base_url + USER_PATH,
-                json={'login': uuid4()},
-                **cls.cfg.get_requests_kwargs()
-            )
-            response.raise_for_status()
-            cls.paths.append(response.json()['_href'])
+        cls.attrs_iter = tuple((
+            create_user(cls.cfg, {'login': uuid4()}) for _ in range(3)
+        ))
 
         # Read, update and delete the three users, respectively.
-        cls.read_response = requests.get(
-            cls.cfg.base_url + cls.paths[0],
+        cls.responses = {}
+        cls.responses['read'] = requests.get(
+            cls.cfg.base_url + cls.attrs_iter[0]['_href'],
             **cls.cfg.get_requests_kwargs()
         )
-        cls.update_response = requests.put(
-            cls.cfg.base_url + cls.paths[1],
+        cls.responses['update'] = requests.put(
+            cls.cfg.base_url + cls.attrs_iter[1]['_href'],
             json=cls.update_body,
             **cls.cfg.get_requests_kwargs()
         )
-        cls.delete_response = requests.delete(
-            cls.cfg.base_url + cls.paths[2],
+        cls.responses['delete'] = requests.delete(
+            cls.cfg.base_url + cls.attrs_iter[2]['_href'],
             **cls.cfg.get_requests_kwargs()
         )
 
     def test_status_codes(self):
         """Ensure read, update and delete responses have 200 status codes."""
-        for attr in ('read_response', 'update_response', 'delete_response'):
-            with self.subTest(attr):
-                self.assertEqual(getattr(self, attr).status_code, 200)
+        for action in ('read', 'update', 'delete'):
+            with self.subTest(action=action):
+                self.assertEqual(self.responses[action].status_code, 200)
 
     def test_password_in_responses(self):
         """Ensure read and update responses do not contain a password.
@@ -145,35 +132,34 @@ class ReadUpdateDeleteTestCase(TestCase):
         Target https://bugzilla.redhat.com/show_bug.cgi?id=1020300.
 
         """
-        for response in (self.read_response, self.update_response):
-            with self.subTest(response):
-                self.assertNotIn('password', response.json())
+        for action in ('read', 'update'):
+            with self.subTest(action=action):
+                self.assertNotIn('password', self.responses[action].json())
 
     def test_use_deleted_user(self):
         """Assert that one cannot read, update or delete a deleted user."""
-        http_actions = ('get', 'put', 'delete')
+        url = self.cfg.base_url + self.attrs_iter[-1]['_href']  # deleted user
+        methods = ('get', 'put', 'delete')
         responses = tuple((
-            getattr(requests, http_action)(
-                self.cfg.base_url + self.paths[-1],
-                **self.cfg.get_requests_kwargs()
-            )
-            for http_action in http_actions
+            getattr(requests, method)(url, **self.cfg.get_requests_kwargs())
+            for method in methods
         ))
-        for i, response in enumerate(responses):
-            with self.subTest(http_actions[i]):
+        for method, response in zip(methods, responses):
+            with self.subTest(method=method):
                 self.assertEqual(response.status_code, 404)
 
     def test_updated_user(self):
         """Assert that the updated user has the assigned attributes."""
-        attrs = self.update_response.json()
-        for key in set(self.update_body['delta'].keys()) - {'password'}:
-            with self.subTest(key):
-                self.assertIn(key, attrs.keys())
-                self.assertEqual(self.update_body['delta'][key], attrs[key])
+        delta = self.update_body['delta'].copy()  # we requested this
+        del delta['password']
+        attrs = self.responses['update'].json()  # the server responded w/this
+        self.assertLessEqual(set(delta.keys()), set(attrs.keys()))
+        attrs = {key: attrs[key] for key in delta.keys()}
+        self.assertEqual(delta, attrs)
 
     def test_updated_user_password(self):
         """Assert that one can log in with a user with an updated password."""
-        login = self.update_response.json()['login']
+        login = self.responses['update'].json()['login']
         requests.post(
             self.cfg.base_url + LOGIN_PATH,
             auth=(login, self.update_body['delta']['password']),
@@ -184,7 +170,7 @@ class ReadUpdateDeleteTestCase(TestCase):
         """Verify that one cannot create a duplicate user."""
         response = requests.post(
             self.cfg.base_url + USER_PATH,
-            json={'login': self.read_response.json()['login']},
+            json={'login': self.responses['read'].json()['login']},
             **self.cfg.get_requests_kwargs()
         )
         self.assertEqual(response.status_code, 409)
@@ -197,11 +183,8 @@ class ReadUpdateDeleteTestCase(TestCase):
         it is possible to delete a super-user.
 
         """
-        for path in cls.paths[0:1]:
-            requests.delete(
-                cls.cfg.base_url + path,
-                **cls.cfg.get_requests_kwargs()
-            ).raise_for_status()
+        for attrs in cls.attrs_iter[:2]:
+            delete(cls.cfg, attrs['_href'])
 
 
 class SearchTestCase(TestCase):
@@ -228,13 +211,7 @@ class SearchTestCase(TestCase):
         # Create a user and note information about it.
         cls.cfg = get_config()
         cls.login = uuid4()
-        response = requests.post(
-            cls.cfg.base_url + USER_PATH,
-            json={'login': cls.login},
-            **cls.cfg.get_requests_kwargs()
-        )
-        response.raise_for_status()
-        cls.path = response.json()['_href']
+        cls.path = create_user(cls.cfg, {'login': cls.login})['_href']
 
         # Make user a super-user.
         requests.put(
@@ -289,7 +266,4 @@ class SearchTestCase(TestCase):
     @classmethod
     def tearDownClass(cls):
         """Delete created users."""
-        requests.delete(
-            cls.cfg.base_url + cls.path,
-            **cls.cfg.get_requests_kwargs()
-        ).raise_for_status()
+        delete(cls.cfg, cls.path)
