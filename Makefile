@@ -20,7 +20,7 @@ docs-clean:
 	@cd docs; $(MAKE) clean
 
 lint-flake8:
-	flake8 . --ignore D100,D104
+	flake8 . --ignore D203
 
 lint-pylint:
 	pylint --reports=n --disable=I docs/conf.py tests setup.py \
