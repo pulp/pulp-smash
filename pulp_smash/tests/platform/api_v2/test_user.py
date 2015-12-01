@@ -138,15 +138,19 @@ class ReadUpdateDeleteTestCase(TestCase):
 
     def test_use_deleted_user(self):
         """Assert that one cannot read, update or delete a deleted user."""
-        url = self.cfg.base_url + self.attrs_iter[-1]['_href']  # deleted user
-        methods = ('get', 'put', 'delete')
-        responses = tuple((
-            getattr(requests, method)(url, **self.cfg.get_requests_kwargs())
-            for method in methods
-        ))
-        for method, response in zip(methods, responses):
-            with self.subTest(method=method):
-                self.assertEqual(response.status_code, 404)
+        actions_kwargs = {}
+        for action in ('get', 'put', 'delete'):
+            actions_kwargs[action] = self.cfg.get_requests_kwargs()
+            actions_kwargs[action]['url'] = (
+                self.cfg.base_url + self.attrs_iter[-1]['_href']
+            )
+        actions_kwargs['put']['json'] = {}
+        for action, kwargs in actions_kwargs.items():
+            with self.subTest(action=action):
+                self.assertEqual(
+                    getattr(requests, action)(**kwargs).status_code,
+                    404
+                )
 
     def test_updated_user(self):
         """Assert that the updated user has the assigned attributes."""
