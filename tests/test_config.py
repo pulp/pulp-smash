@@ -8,7 +8,8 @@ from itertools import permutations
 from mock import mock_open, patch
 from pulp_smash import config
 from pulp_smash.config import ServerConfig, _public_attrs
-from random import choice, randint
+from pulp_smash.utils import uuid4
+from random import choice
 from unittest2 import TestCase
 
 from sys import version_info
@@ -29,8 +30,8 @@ def _gen_attrs():
     :returns: A dict. It populates all attributes in a ``ServerConfig``.
 
     """
-    attrs = {key: randint(-1000, 1000) for key in ('base_url', 'verify')}
-    attrs['auth'] = [randint(-1000, 1000), randint(-1000, 1000)]
+    attrs = {key: uuid4() for key in ('base_url', 'verify')}
+    attrs['auth'] = [uuid4() for _ in range(2)]
     return attrs
 
 
@@ -59,7 +60,7 @@ class PulpSmashConfigFileTestCase(TestCase):
 
     def test_var_set(self):
         """Set the environment variable."""
-        os_environ = {'PULP_SMASH_CONFIG_FILE': type('')(randint(1, 1000))}
+        os_environ = {'PULP_SMASH_CONFIG_FILE': uuid4()}
         with patch.dict(os.environ, os_environ, clear=True):
             cfg = ServerConfig()
         self.assertEqual(
@@ -159,17 +160,14 @@ class ReprTestCase(TestCase):
 
     def test_is_sane(self):
         """Assert that the result is in an expected set of results."""
-        # arglists = (
-        #     'key3=val3, key2=val2, key1=val1',
-        #     'key3=val3, key1=val1, key2=val2',
-        #     …
-        # )
-        arglists = (
-            ', '.join('{}={}'.format(key, val) for key, val in arglist)
-            for arglist in permutations(self.attrs.items())
+        # permutations() → (((k1, v1), (k2, v2)), ((k2, v2), (k1, v1)))
+        # kwargs_iter = ('k1=v1, k2=v2', 'k2=v2, k1=v1)
+        kwargs_iter = (
+            ', '.join(key + '=' + repr(val) for key, val in two_tuples)
+            for two_tuples in permutations(self.attrs.items())
         )
-        targets = (
-            'ServerConfig({})'.format(arglist) for arglist in arglists
+        targets = tuple(
+            'ServerConfig({})'.format(arglist) for arglist in kwargs_iter
         )
         self.assertIn(self.result, targets)
 
@@ -219,7 +217,7 @@ class SaveTestCase(TestCase):
         # `cfg` is the existing config file. We generate a new config as
         # `attrs` and save it into section `section`.
         cfg = {'existing': {}}
-        section = type('')(randint(1, 1000))
+        section = uuid4()
         attrs = _gen_attrs()
         open_ = mock_open(read_data=json.dumps(cfg))
         with patch.object(builtins, 'open', open_):
