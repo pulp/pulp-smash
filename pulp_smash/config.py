@@ -125,13 +125,10 @@ class ServerConfig(object):
 
     def __repr__(self):  # noqa
         attrs = {attr: getattr(self, attr) for attr in _PUBLIC_ATTRS}
-        return '{}({})'.format(
-            type(self).__name__,
-            ', '.join(
-                '{0}={1}'.format(key, repr(value))
-                for key, value in attrs.items()
-            )
+        str_kwargs = ', '.join(
+            '{}={}'.format(key, repr(value)) for key, value in attrs.items()
         )
+        return '{}({})'.format(type(self).__name__, str_kwargs)
 
     def save(self, section=None, xdg_config_file=None, xdg_config_dir=None):
         """Save ``self`` as a top-level section of a configuration file.
