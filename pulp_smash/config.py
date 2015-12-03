@@ -21,8 +21,13 @@ from xdg import BaseDirectory
 # avoid a config file by fetching values from the UI.
 _CONFIG = None
 
-# Publc ServerConfig attributes.
-_PUBLIC_ATTRS = ('base_url', 'auth', 'verify')
+
+def _public_attrs(obj):
+    """Return a copy of the public elements in ``vars(obj)``."""
+    return {
+        key: val for key, val in vars(obj).copy().items()
+        if not key.startswith('_')
+    }
 
 
 def get_config():
@@ -39,9 +44,7 @@ def get_config():
     global _CONFIG  # pylint:disable=global-statement
     if _CONFIG is None:
         _CONFIG = ServerConfig().read()
-    return ServerConfig(
-        **{attr: getattr(_CONFIG, attr) for attr in _PUBLIC_ATTRS}
-    )
+    return ServerConfig(**_public_attrs(_CONFIG))
 
 
 class ConfigFileNotFoundError(Exception):
@@ -124,7 +127,7 @@ class ServerConfig(object):
         self._xdg_config_dir = 'pulp_smash'
 
     def __repr__(self):  # noqa
-        attrs = {attr: getattr(self, attr) for attr in _PUBLIC_ATTRS}
+        attrs = _public_attrs(self)
         str_kwargs = ', '.join(
             '{}={}'.format(key, repr(value)) for key, value in attrs.items()
         )
@@ -147,7 +150,7 @@ class ServerConfig(object):
         # What will we write out?
         if section is None:
             section = self._section
-        attrs = {attr: getattr(self, attr) for attr in _PUBLIC_ATTRS}
+        attrs = _public_attrs(self)
 
         # What file is being manipulated?
         if xdg_config_file is None:
@@ -279,7 +282,7 @@ class ServerConfig(object):
         gains or loses attributes.
 
         """
-        attrs = {attr: getattr(self, attr) for attr in _PUBLIC_ATTRS}
+        attrs = _public_attrs(self)
         del attrs['base_url']
         if attrs['auth'] is not None:
             attrs['auth'] = tuple(attrs['auth'])

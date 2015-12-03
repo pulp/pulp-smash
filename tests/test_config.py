@@ -7,7 +7,7 @@ import os
 from itertools import permutations
 from mock import mock_open, patch
 from pulp_smash import config
-from pulp_smash.config import ServerConfig, _PUBLIC_ATTRS
+from pulp_smash.config import ServerConfig, _public_attrs
 from random import choice, randint
 from unittest2 import TestCase
 
@@ -45,8 +45,7 @@ class InitTestCase(TestCase):
 
     def test_public_attrs(self):
         """Assert that public attributes have correct values."""
-        attrs = {attr: getattr(self.cfg, attr) for attr in _PUBLIC_ATTRS}
-        self.assertEqual(self.kwargs, attrs)
+        self.assertEqual(self.kwargs, _public_attrs(self.cfg))
 
     def test_private_attrs(self):
         """Assert that private attributes have been set."""
@@ -90,8 +89,7 @@ class ReadTestCase(TestCase):
 
     def test_attrs(self):
         """Assert that config file values are assigned to a config obj."""
-        attrs = {attr: getattr(self.cfg, attr) for attr in _PUBLIC_ATTRS}
-        self.assertEqual(self.attrs, attrs)
+        self.assertEqual(self.attrs, _public_attrs(self.cfg))
 
     def test_open(self):
         """Assert that ``open`` was called once."""
