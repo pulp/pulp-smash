@@ -9,7 +9,7 @@ from mock import mock_open, patch
 from pulp_smash import config
 from pulp_smash.config import ServerConfig, _public_attrs
 from pulp_smash.utils import uuid4
-from random import choice
+from random import choice, randint
 from unittest2 import TestCase
 
 from sys import version_info
@@ -32,6 +32,7 @@ def _gen_attrs():
     """
     attrs = {key: uuid4() for key in ('base_url', 'verify')}
     attrs['auth'] = [uuid4() for _ in range(2)]
+    attrs['version'] = '.'.join(type('')(randint(1, 150)) for _ in range(4))
     return attrs
 
 
@@ -46,7 +47,9 @@ class InitTestCase(TestCase):
 
     def test_public_attrs(self):
         """Assert that public attributes have correct values."""
-        self.assertEqual(self.kwargs, _public_attrs(self.cfg))
+        attrs = _public_attrs(self.cfg)
+        attrs['version'] = type('')(attrs['version'])
+        self.assertEqual(self.kwargs, attrs)
 
     def test_private_attrs(self):
         """Assert that private attributes have been set."""
@@ -90,7 +93,9 @@ class ReadTestCase(TestCase):
 
     def test_attrs(self):
         """Assert that config file values are assigned to a config obj."""
-        self.assertEqual(self.attrs, _public_attrs(self.cfg))
+        attrs = _public_attrs(self.cfg)
+        attrs['version'] = type('')(attrs['version'])
+        self.assertEqual(self.attrs, attrs)
 
     def test_open(self):
         """Assert that ``open`` was called once."""
@@ -135,7 +140,8 @@ class GetRequestsKwargsTestCase(TestCase):
     def test_kwargs(self):
         """Assert that the method returns correct values."""
         attrs = self.attrs.copy()
-        del attrs['base_url']
+        for key in ('base_url', 'version'):
+            del attrs[key]
         attrs['auth'] = tuple(attrs['auth'])
         self.assertEqual(attrs, self.kwargs)
 

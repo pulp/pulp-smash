@@ -13,6 +13,7 @@ from __future__ import unicode_literals
 import json
 import os
 from copy import deepcopy
+from packaging.version import Version
 from threading import Lock
 from xdg import BaseDirectory
 
@@ -115,10 +116,14 @@ class ServerConfig(object):
     # operations, such as saving.
     _file_lock = Lock()
 
-    def __init__(self, base_url=None, auth=None, verify=None):  # noqa
+    def __init__(self, base_url=None, auth=None, verify=None, version=None):  # noqa
         self.base_url = base_url
         self.auth = auth
         self.verify = verify
+        if version is None:
+            self.version = Version('1!0')
+        else:
+            self.version = Version(version)
 
         self._section = 'default'
         self._xdg_config_file = os.environ.get(
@@ -129,6 +134,7 @@ class ServerConfig(object):
 
     def __repr__(self):  # noqa
         attrs = _public_attrs(self)
+        attrs['version'] = type('')(attrs['version'])
         str_kwargs = ', '.join(
             '{}={}'.format(key, repr(value)) for key, value in attrs.items()
         )
@@ -152,6 +158,7 @@ class ServerConfig(object):
         if section is None:
             section = self._section
         attrs = _public_attrs(self)
+        attrs['version'] = type('')(attrs['version'])
 
         # What file is being manipulated?
         if xdg_config_file is None:
@@ -284,7 +291,8 @@ class ServerConfig(object):
 
         """
         attrs = _public_attrs(self)
-        del attrs['base_url']
+        for key in ('base_url', 'version'):
+            del attrs[key]
         if attrs['auth'] is not None:
             attrs['auth'] = tuple(attrs['auth'])
         return attrs
