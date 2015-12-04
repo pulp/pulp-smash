@@ -262,8 +262,16 @@ class ServerConfig(object):
             xdg_config_dir = self._xdg_config_dir
         path = _get_config_file_path(xdg_config_dir, xdg_config_file)
 
+        # Instantiate a config and populate it with values from the settings
+        # file. We tell the config object which file it has been populated from
+        # so calls to its `save` method and other methods hit the same file.
         with open(path) as config_file:
-            return type(self)(**json.load(config_file)[section])
+            cfg = type(self)(**json.load(config_file)[section])
+        # pylint:disable=protected-access
+        cfg._section = section
+        cfg._xdg_config_file = xdg_config_file
+        cfg._xdg_config_dir = xdg_config_dir
+        return cfg
 
     def get_requests_kwargs(self):
         """Get kwargs for use by the Requests functions.
