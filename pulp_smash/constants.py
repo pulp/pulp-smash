@@ -11,7 +11,6 @@ CALL_REPORT_KEYS = frozenset(('error', 'result', 'spawned_tasks'))
 
 """
 
-
 ERROR_KEYS = frozenset((
     '_href',
     'error',
@@ -23,8 +22,19 @@ ERROR_KEYS = frozenset((
 ))
 """See: `Exception Handling`_.
 
+The ``href`` will be dropped in Pulp 3.0. It is retained in earlier versions
+for backward compatibility.
+
 .. _Exception Handling:
     https://pulp.readthedocs.org/en/latest/dev-guide/conventions/exceptions.html
+
+"""
+
+LOGIN_KEYS = frozenset(('certificate', 'key'))
+"""See: `User Certificates`_.
+
+.. _User Certificates:
+    http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/authentication.html#user-certificates
 
 """
 

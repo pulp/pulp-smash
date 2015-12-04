@@ -9,16 +9,8 @@ from __future__ import unicode_literals
 
 import requests
 from pulp_smash.config import get_config
-from pulp_smash.constants import ERROR_KEYS, LOGIN_PATH
+from pulp_smash.constants import ERROR_KEYS, LOGIN_KEYS, LOGIN_PATH
 from unittest2 import TestCase
-
-# Upon successfully logging in, the response should contain these keys.
-_LOGIN_KEYS = {'certificate', 'key'}
-
-# Failed login attempts produce a non-standard response.
-#
-# The ``href`` key is present prior to Pulp 3.0 for backward compatibility.
-_LOGIN_ERROR_KEYS = ERROR_KEYS | {'href'}
 
 
 class LoginSuccessTestCase(TestCase):
@@ -39,10 +31,7 @@ class LoginSuccessTestCase(TestCase):
 
     def test_body(self):
         """Assert that the response is valid JSON and has correct keys."""
-        self.assertEqual(
-            frozenset(self.response.json().keys()),
-            _LOGIN_KEYS,
-        )
+        self.assertEqual(frozenset(self.response.json().keys()), LOGIN_KEYS)
 
 
 class LoginFailureTestCase(TestCase):
@@ -64,7 +53,4 @@ class LoginFailureTestCase(TestCase):
 
     def test_body(self):
         """Assert that the response is valid JSON and has correct keys."""
-        self.assertEqual(
-            frozenset(self.response.json().keys()),
-            _LOGIN_ERROR_KEYS,
-        )
+        self.assertEqual(frozenset(self.response.json().keys()), ERROR_KEYS)
