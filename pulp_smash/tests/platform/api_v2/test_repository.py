@@ -20,7 +20,7 @@ import requests
 
 from pulp_smash.config import get_config
 from pulp_smash.constants import REPOSITORY_PATH, ERROR_KEYS
-from pulp_smash.utils import create_repository, delete, uuid4
+from pulp_smash.utils import create_repository, delete, require, uuid4
 from requests.exceptions import HTTPError
 from unittest2 import TestCase
 
@@ -54,6 +54,7 @@ class CreateSuccessTestCase(TestCase):
             with self.subTest(self.bodies[i]):
                 self.assertEqual(response.status_code, 201)
 
+    @require('2.7')  # https://pulp.plan.io/issues/695
     def test_location_header(self):
         """Assert that the Location header is correctly set in the response."""
         for response, attrs in zip(self.responses, self.attrs_iter):
