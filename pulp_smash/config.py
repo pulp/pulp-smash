@@ -12,6 +12,7 @@ from __future__ import unicode_literals
 
 import json
 import os
+from copy import deepcopy
 from threading import Lock
 from xdg import BaseDirectory
 
@@ -44,7 +45,7 @@ def get_config():
     global _CONFIG  # pylint:disable=global-statement
     if _CONFIG is None:
         _CONFIG = ServerConfig().read()
-    return ServerConfig(**_public_attrs(_CONFIG))
+    return deepcopy(_CONFIG)
 
 
 class ConfigFileNotFoundError(Exception):
