@@ -4,6 +4,8 @@ from __future__ import unicode_literals
 
 import requests
 import uuid
+from functools import wraps
+from packaging.version import Version
 from pulp_smash.constants import REPOSITORY_PATH, USER_PATH
 from time import sleep
 
@@ -143,3 +145,48 @@ def poll_task(server_config, href):
                 'Task {} is ongoing after {} polls.'.format(href, poll_limit)
             )
         sleep(5)
+
+
+def require(version_string):
+    """A decorator for optionally skipping test methods.
+
+    This decorator concisely encapsulates a common pattern for skipping tests.
+    It can be used like so:
+
+    >>> from pulp_smash.config import get_config
+    >>> from pulp_smash.utils import require
+    >>> from unittest import TestCase
+    >>> class MyTestCase(TestCase):
+    ...
+    ...     @classmethod
+    ...     def setUpClass(cls):
+    ...         cls.cfg = get_config()
+    ...
+    ...     @require('2.7')  # References `self.cfg`
+    ...     def test_foo(self):
+    ...         pass  # Add a test for Pulp 2.7+ here.
+
+    Notice that ``cls.cfg`` is assigned to. This is a **requirement**.
+
+    :param version_string: A PEP 440 compatible version string.
+
+    """
+    # Running the test suite can take a long time. Let's parse the version
+    # string now instead of waiting until the test is running.
+    min_version = Version(version_string)
+
+    def plain_decorator(test_method):
+        """An argument-less decorator. Accepts the function being wrapped."""
+        @wraps(test_method)
+        def new_test_method(self, *args, **kwargs):
+            """A wrapper around a test method."""
+            if self.cfg.version < min_version:
+                self.skipTest(
+                    'This test requires Pulp {} or later, but Pulp {} is '
+                    'being tested. If this seems wrong, try checking the '
+                    '"settings" option in the Pulp Smash configuration file.'
+                    .format(version_string, self.cfg.version)
+                )
+            return test_method(self, *args, **kwargs)
+        return new_test_method
+    return plain_decorator
