@@ -65,6 +65,7 @@ class ServerConfig(object):
     ...     base_url='https://pulp.example.com',
     ...     auth=('username', 'password'),
     ...     verify=False,  # Disable SSL verification
+    ...     version='2.7.5',
     ... )
     >>> response = requests.post(
     ...     cfg.base_url + '/pulp/api/v2/actions/login/',

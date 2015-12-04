@@ -16,12 +16,17 @@ MESSAGE = tuple((
     '''\
     {"default": {
         "base_url": "https://pulp.example.com",
-        "auth": ["username", "password"]
+        "auth": ["username", "password"],
+        "verify": true,
+        "version": "2.7.5"
     }}''',
     '''\
-    Customize the "base_url" and "auth" keys as needed. You may also want to
-    add `"verify": false`. Doing so makes Pulp Smash ignore SSL verification
-    errors.
+    The `verify` and `version` keys are completely optional. By default, Pulp
+    Smash respects SSL verification procedures, but the `verify` option can be
+    used to explicitly enable or disable SSL verification. By default, Pulp
+    Smash assumes that the Pulp server under test is the absolute latest
+    development version, but the `version` option can be used to explicitly run
+    tests suitable for an older version of Pulp.
     ''',
     '''\
     Notes:
