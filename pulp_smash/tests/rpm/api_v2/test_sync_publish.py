@@ -35,6 +35,7 @@ from __future__ import unicode_literals
 import os
 import requests
 from pulp_smash.config import get_config
+from pulp_smash.constants import CALL_REPORT_KEYS
 from pulp_smash.utils import (
     create_repository,
     delete,
@@ -512,8 +513,8 @@ class PublishTestCase(_BaseTestCase):
         for step in {'import', 'copy', 'publish'}:
             with self.subTest(step=step):
                 self.assertEqual(
-                    set(self.bodies[step].keys()),
-                    {'error', 'result', 'spawned_tasks'},
+                    frozenset(self.bodies[step].keys()),
+                    CALL_REPORT_KEYS,
                 )
 
     def test_call_reports_values(self):

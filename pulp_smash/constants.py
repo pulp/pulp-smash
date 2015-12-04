@@ -3,6 +3,15 @@
 from __future__ import unicode_literals
 
 
+CALL_REPORT_KEYS = frozenset(('error', 'result', 'spawned_tasks'))
+"""See: `Call Report`_.
+
+.. _Call Report:
+    http://pulp.readthedocs.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
+
+"""
+
+
 ERROR_KEYS = frozenset((
     '_href',
     'error',

@@ -9,9 +9,9 @@ from __future__ import unicode_literals
 
 import requests
 from pulp_smash.config import get_config
+from pulp_smash.constants import CALL_REPORT_KEYS
 from unittest2 import TestCase
 
-_CALL_REPORT_KEYS = {'error', 'result', 'spawned_tasks'}
 _CONSUMER = '/pulp/api/v2/consumers/actions/content/regenerate_applicability/'
 _REPO = '/pulp/api/v2/repositories/actions/content/regenerate_applicability/'
 
@@ -47,8 +47,8 @@ class SuccessTestCase(TestCase):
         for i, response in enumerate(self.responses):
             with self.subTest(i):
                 self.assertEqual(
-                    set(response.json().keys()),
-                    _CALL_REPORT_KEYS,
+                    frozenset(response.json().keys()),
+                    CALL_REPORT_KEYS,
                 )
 
 
@@ -82,4 +82,7 @@ class FailureTestCase(TestCase):
         """Assert that the responses are JSON and appear to be call reports."""
         for i, resp in enumerate(self.responses):
             with self.subTest(i):
-                self.assertNotEqual(set(resp.json().keys()), _CALL_REPORT_KEYS)
+                self.assertNotEqual(
+                    frozenset(resp.json().keys()),
+                    CALL_REPORT_KEYS,
+                )
