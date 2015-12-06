@@ -103,6 +103,24 @@ class DeleteTestCase(CommonAssertionsMixin, TestCase):
         cls.mocks = {'handle_response': hand_resp, 'request': request}
 
 
+class PublishRepositoryTestCase(CommonAssertionsMixin, TestCase):
+    """Test :meth:`pulp_smash.utils.publish_repository`."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Mock out dependencies and call the function under test."""
+        inputs = {
+            'server_config': ServerConfig('http://example.com'),
+            'href': utils.uuid4(),
+            'distributor_id': None,
+            'responses': None,
+        }
+        with mock.patch.object(utils, 'handle_response') as hand_resp:
+            with mock.patch.object(requests, 'post') as request:
+                cls.output = utils.publish_repository(**inputs)
+        cls.mocks = {'handle_response': hand_resp, 'request': request}
+
+
 class SyncRepositoryTestCase(CommonAssertionsMixin, TestCase):
     """Test :meth:`pulp_smash.utils.sync_repository`."""
 

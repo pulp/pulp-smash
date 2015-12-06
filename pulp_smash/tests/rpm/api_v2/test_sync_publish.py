@@ -41,6 +41,7 @@ from pulp_smash.utils import (
     delete,
     handle_response,
     poll_spawned_tasks,
+    publish_repository,
     sync_repository,
     uuid4,
 )
@@ -177,25 +178,6 @@ def _add_yum_distributor(server_config, href, responses=None):
                 'relative_url': '/' + uuid4(),
             },
         },
-        **server_config.get_requests_kwargs()
-    ), responses)
-
-
-def _publish_repo(server_config, href, distributor_id, responses=None):
-    """Publish a repository.
-
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param href: A string. The path to the repository to which a distributor
-        shall be added.
-    :param distributor_id: The ID of the distributor performing the publish.
-    :param responses: A list, or some other object that supports the ``append``
-        method. If given, all server responses are appended to this object.
-    :returns: The server's JSON-decoded response.
-
-    """
-    return handle_response(requests.post(
-        server_config.base_url + href + 'actions/publish/',
-        json={'id': distributor_id},
         **server_config.get_requests_kwargs()
     ), responses)
 
@@ -448,7 +430,7 @@ class PublishTestCase(_BaseTestCase):
             cls.attrs_iter[0]['_href'],
             cls.responses['distribute'],
         )
-        cls.bodies['publish'] = _publish_repo(
+        cls.bodies['publish'] = publish_repository(
             cls.cfg,
             cls.attrs_iter[0]['_href'],
             cls.bodies['distribute']['id'],
