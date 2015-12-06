@@ -72,6 +72,22 @@ def delete(server_config, href, responses=None):
     ), responses)
 
 
+def get_importers(server_config, href, responses=None):
+    """Read a repository's importers.
+
+    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
+    :param href: A string. The path to a repository.
+    :param responses: Same as :meth:`handle_response`.
+    :returns: Same as :meth:`handle_response`.
+    :raises: Same as :meth:`handle_response`.
+
+    """
+    return handle_response(requests.get(
+        server_config.base_url + href + 'importers/',
+        **server_config.get_requests_kwargs()
+    ), responses)
+
+
 def handle_response(response, responses=None):
     """Optionally record ``response``, verify its status code, and decode body.
 

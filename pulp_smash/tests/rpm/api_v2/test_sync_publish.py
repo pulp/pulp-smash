@@ -39,6 +39,7 @@ from pulp_smash.constants import CALL_REPORT_KEYS
 from pulp_smash.utils import (
     create_repository,
     delete,
+    get_importers,
     handle_response,
     poll_spawned_tasks,
     publish_repository,
@@ -63,14 +64,6 @@ _RPM_URL = (
 )
 _REPO_PUBLISH_PATH = '/pulp/repos/'  # + relative_url + unit_name.rpm.arch
 _CONTENT_UPLOADS_PATH = '/pulp/api/v2/content/uploads/'
-
-
-def _get_importers(server_config, href, responses=None):
-    """Read a repository's importers."""
-    return handle_response(requests.get(
-        server_config.base_url + href + 'importers/',
-        **server_config.get_requests_kwargs()
-    ), responses)
 
 
 def _get_units(server_config, href, responses=None):
@@ -221,7 +214,7 @@ class CreateTestCase(_BaseTestCase):
             create_repository(cls.cfg, body) for body in cls.bodies
         ))
         cls.importers_iter = tuple((
-            _get_importers(cls.cfg, attrs['_href']) for attrs in cls.attrs_iter
+            get_importers(cls.cfg, attrs['_href']) for attrs in cls.attrs_iter
         ))
 
     def test_id_notes(self):
