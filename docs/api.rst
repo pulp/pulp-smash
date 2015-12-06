@@ -27,3 +27,4 @@ developers, not a gospel.
     api/pulp_smash.utils
     api/tests
     api/tests.test_config
+    api/tests.test_utils
