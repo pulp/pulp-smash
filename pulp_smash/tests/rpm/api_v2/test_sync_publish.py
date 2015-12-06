@@ -41,6 +41,7 @@ from pulp_smash.utils import (
     delete,
     handle_response,
     poll_spawned_tasks,
+    sync_repository,
     uuid4,
 )
 from unittest2 import TestCase
@@ -61,23 +62,6 @@ _RPM_URL = (
 )
 _REPO_PUBLISH_PATH = '/pulp/repos/'  # + relative_url + unit_name.rpm.arch
 _CONTENT_UPLOADS_PATH = '/pulp/api/v2/content/uploads/'
-
-
-def _sync_repo(server_config, href, responses=None):
-    """Trigger a repository sync.
-
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param href: A string. The path to an RPM repository.
-    :param responses: A list, or some other object that supports the ``append``
-        method. If given, all server responses are appended to this object.
-    :returns: The server's JSON-decoded response.
-
-    """
-    return handle_response(requests.post(
-        server_config.base_url + href + 'actions/sync/',
-        json={'override_config': {}},
-        **server_config.get_requests_kwargs()
-    ), responses)
 
 
 def _get_importers(server_config, href, responses=None):
@@ -300,7 +284,11 @@ class SyncValidFeedTestCase(_BaseTestCase):
         body['importer_config']['feed'] = _VALID_FEED
         cls.attrs_iter = (create_repository(cls.cfg, body),)  # see parent cls
         cls.sync_repo = []  # raw responses
-        report = _sync_repo(cls.cfg, cls.attrs_iter[0]['_href'], cls.sync_repo)
+        report = sync_repository(
+            cls.cfg,
+            cls.attrs_iter[0]['_href'],
+            cls.sync_repo,
+        )
         cls.task_bodies = tuple(poll_spawned_tasks(cls.cfg, report))
 
     def test_start_sync_code(self):
@@ -340,7 +328,11 @@ class SyncInvalidFeedTestCase(_BaseTestCase):
         body['importer_config']['feed'] = uuid4()  # set an invalid feed
         cls.attrs_iter = (create_repository(cls.cfg, body),)  # see parent cls
         cls.sync_repo = []  # raw responses
-        report = _sync_repo(cls.cfg, cls.attrs_iter[0]['_href'], cls.sync_repo)
+        report = sync_repository(
+            cls.cfg,
+            cls.attrs_iter[0]['_href'],
+            cls.sync_repo,
+        )
         cls.task_bodies = tuple(poll_spawned_tasks(cls.cfg, report))
 
     def test_start_sync_code(self):
