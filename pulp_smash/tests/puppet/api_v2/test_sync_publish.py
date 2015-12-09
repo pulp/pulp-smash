@@ -35,7 +35,7 @@ Assertions not explored in this module include:
 """
 from __future__ import unicode_literals
 
-from itertools import chain
+from itertools import product
 from packaging.version import Version
 from pulp_smash.config import get_config
 from pulp_smash.constants import CALL_REPORT_KEYS
@@ -50,7 +50,6 @@ from pulp_smash.utils import (
     uuid4,
 )
 from unittest2 import TestCase
-import hashlib
 import requests
 
 _VALID_PUPPET_FEED = 'http://forge.puppetlabs.com'
@@ -60,18 +59,7 @@ _PUPPET_QUERY_URL = (
     'http://forge.puppetlabs.com'
     '/v3/files/pulp-pulp-1.0.0.tar.gz'
 )
-_PUPPET_QUERY_PACKAGE = {
-    'name': 'pulp',
-    'author': 'pulp'
-}
-_PUPPET_DIRECT_URL = (
-    'https://repos.fedorapeople.org/'
-    'pulp/pulp/demo_repos/puppet_symlink/examplecorp-mymodule-0.1.0.tar.gz'
-)
-
-_TASK_END_STATES = ('canceled', 'error', 'finished', 'skipped', 'timed out')
-_REPO_PUBLISH_PATH = '/pulp/puppet/'  # + relative_url + puppet-module
-_CONTENT_UPLOADS_PATH = '/pulp/api/v2/content/uploads/'
+_PUPPET_QUERY_PACKAGE = {'author': 'pulp', 'name': 'pulp'}
 
 
 def _get_units(server_config, href, responses=None):
@@ -93,7 +81,7 @@ def _start_content_upload(server_config, responses=None):
 
     """
     return handle_response(requests.post(
-        server_config.base_url + _CONTENT_UPLOADS_PATH,
+        server_config.base_url + '/pulp/api/v2/content/uploads/',
         **server_config.get_requests_kwargs()
     ), responses)
 
@@ -140,7 +128,7 @@ def _query_repo_old(server_config, query_url, repo_id, responses=None):
 
     :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
     :param query_url: Url in Puppet Forge formatted URL. URL is formatted as
-                        '/api/v1/releases.json?module=modulename/author'
+        ``/api/v1/releases.json?module=modulename/author``.
     :param repo_id: id of queried repository
     :param responses: A list, or some other object that supports the ``append``
         method. If given, all server responses are appended to this object.
@@ -160,7 +148,7 @@ def _query_repo_middle(server_config, query_url, responses=None):
 
     :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
     :param query_url: Url in Puppet Forge formatted URL. URL is formatted as
-    '/pulp_puppet/forge/repository/repo_id/api/v1/releases.json?module=modulename/author'
+        ``/pulp_puppet/forge/repository/repo_id/api/v1/releases.json?module=modulename/author``.
     :param responses: A list, or some other object that supports the ``append``
         method. If given, all server responses are appended to this object.
     :returns: The server's JSON-decoded response.
@@ -177,7 +165,7 @@ def _query_repo_new(server_config, query_url, repo_id, responses=None):
 
     :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
     :param query_url: Url in Puppet Forge formatted URL. URL is formatted as
-        /v3/releases?module=modulename/author
+        ``/v3/releases?module=modulename/author``.
     :param repo_id: id of queried repository
     :param responses: A list, or some other object that supports the ``append``
         method. If given, all server responses are appended to this object.
@@ -209,7 +197,7 @@ def _import_puppet_module_into_repo(
         json={
             'unit_key': {},
             'unit_type_id': 'puppet_module',
-            'upload_id': upload_id
+            'upload_id': upload_id,
         },
         **server_config.get_requests_kwargs()
     ), responses)
@@ -280,7 +268,7 @@ class CreateTestCase(_BaseTestCase):
         super(CreateTestCase, cls).setUpClass()
         cls.bodies = tuple((_gen_puppet_repo_body() for _ in range(2)))
         cls.bodies[1]['importer_config'] = {
-            'feed': 'http://' + uuid4(),
+            'feed': 'http://' + uuid4(),  # Pulp checks for URI scheme
             'queries': [_VALID_PUPPET_QUERY],
         }
         cls.attrs_iter = tuple((
@@ -333,27 +321,24 @@ class SyncValidFeedTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create an puppet repositories with a valid feed and sync it."""
         super(SyncValidFeedTestCase, cls).setUpClass()
-        bodies = tuple((_gen_puppet_repo_body() for i in range(2)))
-        bodies[0]['importer_config'] = {
-            'feed': _VALID_PUPPET_FEED,
-            'queries': [_VALID_PUPPET_QUERY],
-        }
-        bodies[1]['importer_config'] = {
-            'feed': _VALID_PUPPET_FEED,
-            'queries': [_INVALID_PUPPET_QUERY],
-        }
+        bodies = tuple((_gen_puppet_repo_body() for _ in range(2)))
+        for i, query in enumerate((
+                _VALID_PUPPET_QUERY, _INVALID_PUPPET_QUERY)):
+            bodies[i]['importer_config'] = {
+                'feed': _VALID_PUPPET_FEED,
+                'queries': [query],
+            }
         cls.attrs_iter = tuple((
             create_repository(cls.cfg, body) for body in bodies
         ))
-        cls.sync_repo = []  # raw responses
-        cls.task_bodies = tuple((chain.from_iterable(  # response bodies
-            poll_spawned_tasks(cls.cfg, call_report)
-            for call_report in (sync_repository(
-                cls.cfg,
-                attr_iter['_href'],
-                cls.sync_repo
-            ) for attr_iter in cls.attrs_iter)
-        )))
+
+        # Trigger repository syncs and collect completed task states.
+        cls.sync_repo = []  # raw responses to "start syncing" commands
+        cls.task_bodies = []  # completed task states
+        for attrs in cls.attrs_iter:
+            report = sync_repository(cls.cfg, attrs['_href'], cls.sync_repo)
+            for task_body in poll_spawned_tasks(cls.cfg, report):
+                cls.task_bodies.append(task_body)
 
     def test_start_sync_code(self):
         """Assert the call to sync each repository returns an HTTP 202."""
@@ -365,21 +350,20 @@ class SyncValidFeedTestCase(_BaseTestCase):
         """Assert each task's "error" field is null."""
         for i, task_body in enumerate(self.task_bodies):
             with self.subTest(i=i):
-                self.assertEqual(task_body['error'], None)
+                self.assertIsNone(task_body['error'])
 
     def test_task_traceback(self):
         """Assert each task's "traceback" field is null."""
         for i, task_body in enumerate(self.task_bodies):
             with self.subTest(i=i):
-                self.assertEqual(task_body['traceback'], None)
+                self.assertIsNone(task_body['traceback'])
 
     def test_task_progress_report(self):
         """Assert no task's progress report contains error details."""
         for i, task_body in enumerate(self.task_bodies):
             with self.subTest(i=i):
-                self.assertEqual(
+                self.assertIsNone(
                     task_body['progress_report']['puppet_importer']['metadata']['error_message'],  # noqa pylint:disable=line-too-long
-                    None
                 )
 
 
@@ -393,15 +377,14 @@ class SyncInvalidFeedTestCase(_BaseTestCase):
         body = _gen_puppet_repo_body()
         body['importer_config'] = {'feed': 'http://' + uuid4()}
         cls.attrs_iter = (create_repository(cls.cfg, body),)
-        cls.sync_repo = []  # raw responses
-        cls.task_bodies = tuple((chain.from_iterable(  # response bodies
-            poll_spawned_tasks(cls.cfg, call_report)
-            for call_report in (sync_repository(
-                cls.cfg,
-                attr_iter['_href'],
-                cls.sync_repo
-            ) for attr_iter in cls.attrs_iter)
-        )))
+
+        # Trigger repository sync and collect completed task states.
+        cls.sync_repo = []  # raw responses to "start syncing" commands
+        cls.task_bodies = []
+        for attrs in cls.attrs_iter:
+            report = sync_repository(cls.cfg, attrs['_href'], cls.sync_repo)
+            for task_body in poll_spawned_tasks(cls.cfg, report):
+                cls.task_bodies.append(task_body)
 
     def test_start_sync_code(self):
         """Assert the call to sync a repository returns an HTTP 202."""
@@ -423,9 +406,8 @@ class SyncInvalidFeedTestCase(_BaseTestCase):
         """Assert each task's progress report contains error details."""
         for i, task_body in enumerate(self.task_bodies):
             with self.subTest(i=i):
-                self.assertNotEqual(
+                self.assertIsNotNone(
                     task_body['progress_report']['puppet_importer']['metadata']['error'],  # noqa pylint:disable=line-too-long
-                    None
                 )
 
     def test_number_tasks(self):
@@ -438,9 +420,9 @@ class PublishTestCase(_BaseTestCase):
 
     Test uploading custom puppet module to repository, copying content between
     repositories, querying puppet modules from pulp server and integrity of
-    downloaded modules. Three query formats are tested as are provided
-    by different puppet versions: puppet ver. <= 3.3, 3.3 < puppet ver. < 3.6
-    and puppet ver. > 3.6.
+    downloaded modules. Three query formats are tested as are provided by
+    different puppet versions: puppet ver. <= 3.3, 3.3 < puppet ver. < 3.6 and
+    puppet ver. > 3.6.
 
     """
 
@@ -467,17 +449,17 @@ class PublishTestCase(_BaseTestCase):
             'copy',
             'publish',
             'distribute',
-            'search units',
             'query units',
+            'search units',
         }
         cls.responses = {key: [] for key in steps}
         cls.bodies = {}
-        cls.original_puppets = []  # binary blobs
+        cls.puppet_modules = []  # binary blobs
 
-        # Download puppet modules.
+        # Download a puppet module.
         response = requests.get(_PUPPET_QUERY_URL)
         response.raise_for_status()
-        cls.original_puppets.append(response.content)
+        cls.puppet_modules.append(response.content)
 
         # Create two repos, start upload request, upload module to upload dir
         cls.attrs_iter = tuple((
@@ -491,20 +473,19 @@ class PublishTestCase(_BaseTestCase):
         cls.bodies['upload'] = _upload_file(
             cls.cfg,
             cls.bodies['upload_malloc']['_href'],
-            cls.original_puppets[0],
+            cls.puppet_modules[0],
             cls.responses['upload'],
         )
 
-        # Import uploaded puppet modules into first repo. Poll.
-        # Delete upload request.
+        # Import uploaded puppet module into first repo. Poll. Delete upload
+        # request.
         cls.bodies['import'] = _import_puppet_module_into_repo(
             cls.cfg,
             cls.bodies['upload_malloc']['upload_id'],
             cls.attrs_iter[0]['_href'],
             cls.responses['import'],
         )
-        for call_report in cls.bodies['import']:
-            poll_spawned_tasks(cls.cfg, call_report)
+        tuple(poll_spawned_tasks(cls.cfg, cls.bodies['import']))
         cls.bodies['upload_free'] = delete(
             cls.cfg,
             cls.bodies['upload_malloc']['_href'],
@@ -518,100 +499,85 @@ class PublishTestCase(_BaseTestCase):
             cls.attrs_iter[1]['_href'],
             cls.responses['copy'],
         )
-        for call_report in cls.bodies['copy']:
-            poll_spawned_tasks(cls.cfg, call_report)
+        tuple(poll_spawned_tasks(cls.cfg, cls.bodies['copy']))
 
-        # Add a distributor to the repositories, then publish repositories
-        # to the distributors. Poll the publish request.
-        cls.bodies['distribute'] = tuple((
-            _add_puppet_distributor(
+        # Add a distributor to each repository, then publish the repositories.
+        # Poll the publish requests.
+        for key in ('distribute', 'publish'):
+            cls.bodies[key] = []
+        for attrs in cls.attrs_iter:
+            cls.bodies['distribute'].append(_add_puppet_distributor(
                 cls.cfg,
-                attr['_href'],
-                cls.responses['distribute']
-            ) for attr in cls.attrs_iter
-        ))
-        cls.bodies['publish'] = tuple((
-            publish_repository(
+                attrs['_href'],
+                cls.responses['distribute'],
+            ))
+            cls.bodies['publish'].append(publish_repository(
                 cls.cfg,
-                cls.attrs_iter[i]['_href'],
-                cls.bodies['distribute'][i]['id'],
+                attrs['_href'],
+                cls.bodies['distribute'][-1]['id'],
                 cls.responses['publish'],
-            ) for i in range(2)  # Both tuples are always of size 2
-        ))
-        for publish_report in cls.bodies['publish']:
-            for call_report in publish_report:
-                poll_spawned_tasks(cls.cfg, call_report)
+            ))
+            tuple(poll_spawned_tasks(cls.cfg, cls.bodies['publish'][-1]))
 
-        # Form query as appears in puppet versions <=3.3
+        # Create queries for puppet version <= 3.3, 3.4–3.5, >= 3.6
         query_href_old = '/api/v1/releases.json?module={}/{}'.format(
             _PUPPET_QUERY_PACKAGE['name'],
             _PUPPET_QUERY_PACKAGE['author']
         )
-        # Form query as appears in puppet 3.3 < version < 3.6
-        # This is list joined by repository name, ie. 'repoid'.join()
-        query_href_middle = [
+        query_href_middle = [  # usage: `repo_id.join(query_href_middle)`
             '/pulp_puppet/forge/repository/',
             '/api/v1/releases.json?module={}/{}'.format(
                 _PUPPET_QUERY_PACKAGE['name'],
                 _PUPPET_QUERY_PACKAGE['author']
             )
         ]
-        # Form query as appears in new puppet version (>=3.6).
         query_href_new = '/v3/releases?module={}/{}'.format(
             _PUPPET_QUERY_PACKAGE['name'],
             _PUPPET_QUERY_PACKAGE['author']
         )
 
-        # Query server using url as in puppet <= 3.3
-        cls.bodies['query units'] = tuple()
-        cls.bodies['query units'] += tuple(
-            _query_repo_old(
+        # Query each of the two distributors using all three forms
+        cls.bodies['query units'] = []
+        for body in cls.bodies['distribute']:
+            cls.bodies['query units'].append(_query_repo_old(
                 cls.cfg,
                 query_href_old,
                 body['repo_id'],
                 cls.responses['query units']
-            ) for body in cls.bodies['distribute']
-        )
-
-        # Query server using url as in puppet 3.3 > pup. version < 3.6
-        cls.bodies['query units'] += tuple(
-            _query_repo_middle(
+            ))
+            cls.bodies['query units'].append(_query_repo_middle(
                 cls.cfg,
                 body['repo_id'].join(query_href_middle),
                 cls.responses['query units']
-            ) for body in cls.bodies['distribute']
-        )
-
-        # Query server using new url format (puppet >= 3.6)
-        if cls.cfg.version > Version('2.6'):
-            cls.bodies['query units'] += tuple(
-                _query_repo_new(
+            ))
+            if cls.cfg.version >= Version('2.7'):
+                cls.bodies['query units'].append(_query_repo_new(
                     cls.cfg,
                     query_href_new,
                     body['repo_id'],
                     cls.responses['query units']
-                ) for body in cls.bodies['distribute']
-            )
+                ))
 
-        module_uris = []  # Save modules' uri on server
-        for query_body in cls.bodies['query units']:
-            try:
-                module_uris.append(
-                    query_body['{}/{}'.format(
-                        _PUPPET_QUERY_PACKAGE['name'],
-                        _PUPPET_QUERY_PACKAGE['author'])][0]['file']
+        # Collect the paths to each puppet module for each distributor.
+        module_paths = []
+        for body in cls.bodies['query units']:
+            if set(body.keys()) == {'pagination', 'results'}:  # Puppet >= 3.6
+                module_paths.append(body['results'][0]['file_uri'])
+            else:  # Puppet <= 3.5
+                name_author = '{}/{}'.format(
+                    _PUPPET_QUERY_PACKAGE['name'],
+                    _PUPPET_QUERY_PACKAGE['author']
                 )
-            except KeyError:
-                module_uris.append(query_body['results'][0]['file_uri'])
+                module_paths.append(body[name_author][0]['file'])
 
-        # Download units from locations returned by query above
-        cls.downloaded_puppets = tuple((
-            requests.get(
-                cls.cfg.base_url +
-                module_uri,
+        # Download units from locations returned by queries above.
+        for path in module_paths:
+            response = requests.get(
+                cls.cfg.base_url + path,
                 **cls.cfg.get_requests_kwargs()
-            ) for module_uri in set(module_uris)
-        ))
+            )
+            response.raise_for_status()
+            cls.puppet_modules.append(response.content)
 
         # Search for all units in each of the two repositories.
         cls.bodies['search units'] = tuple((
@@ -638,8 +604,8 @@ class PublishTestCase(_BaseTestCase):
             ('copy', 202),
             ('distribute', 201),
             ('publish', 202),
-            ('search units', 200),
             ('query units', 200),
+            ('search units', 200),
         )
         for step, code in steps_codes:
             with self.subTest((step, code)):
@@ -648,31 +614,20 @@ class PublishTestCase(_BaseTestCase):
 
     def test_call_reports_keys(self):
         """Verify each call report has the correct keys."""
-        for step in {'import', 'copy'}:
-            with self.subTest(step=step):
-                self.assertEqual(
-                    set(self.bodies[step].keys()),
-                    CALL_REPORT_KEYS
-                )
-        # same for publish
-        for body in self.bodies['publish']:
-            with self.subTest(call_report=body):
-                self.assertEqual(
-                    set(body.keys()),
-                    CALL_REPORT_KEYS
-                )
+        bodies = [self.bodies[key] for key in ('import', 'copy')]
+        bodies.extend(self.bodies['publish'][:])
+        for i, body in enumerate(bodies):
+            with self.subTest(i=i):
+                self.assertEqual(set(body.keys()), CALL_REPORT_KEYS)
 
     def test_call_reports_values(self):
         """Verify no call report contains any errors."""
-        for step in {'import', 'copy'}:
-            for attr in ('result', 'error'):
-                with self.subTest((step, attr)):
-                    self.assertIsNone(self.bodies[step][attr])
-        # same for publish
-        for body in self.bodies['publish']:
-            for attr in ('result', 'error'):
-                with self.subTest((body, attr)):
-                    self.assertIsNone(body[attr])
+        bodies = [self.bodies[key] for key in ('import', 'copy')]
+        bodies.extend(self.bodies['publish'][:])  # i.e. ['publish'].copy()
+        for i, body in enumerate(bodies):
+            for body, key in product(bodies, ('result', 'error')):
+                with self.subTest((i, key)):
+                    self.assertIsNone(body[key])  # bodies[i][key]
 
     def test_upload_malloc(self):
         """Verify the response body for starting an upload request."""
@@ -683,11 +638,11 @@ class PublishTestCase(_BaseTestCase):
 
     def test_upload(self):
         """Verify the response body for uploading module."""
-        self.assertEqual(self.bodies['upload'], None)
+        self.assertIsNone(self.bodies['upload'])
 
     def test_upload_free(self):
         """Verify  the response body for ending an upload request."""
-        self.assertEqual(self.bodies['upload_free'], None)
+        self.assertIsNone(self.bodies['upload_free'])
 
     def test_search_units(self):
         """Verify the two repositories have the same units."""
@@ -698,9 +653,6 @@ class PublishTestCase(_BaseTestCase):
 
     def test_units_integrity(self):
         """Verify integrity of modules downloaded from pulp server."""
-        for puppy in self.downloaded_puppets:
-            with self.subTest(response=puppy):
-                self.assertEqual(
-                    hashlib.sha256(self.original_puppets[0]).hexdigest(),
-                    hashlib.sha256(puppy.content).hexdigest()
-                )
+        for i, puppet_module in enumerate(self.puppet_modules[1:]):
+            with self.subTest(i=i):
+                self.assertEqual(self.puppet_modules[0], puppet_module)
