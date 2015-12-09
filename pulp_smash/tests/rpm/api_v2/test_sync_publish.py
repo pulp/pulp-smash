@@ -400,7 +400,7 @@ class PublishTestCase(_BaseTestCase):
             cls.attrs_iter[0]['_href'],
             cls.responses['import'],
         )
-        poll_spawned_tasks(cls.cfg, cls.bodies['import'])
+        tuple(poll_spawned_tasks(cls.cfg, cls.bodies['import']))
         cls.bodies['upload_free'] = delete(
             cls.cfg,
             cls.bodies['upload_malloc']['_href'],
@@ -414,7 +414,7 @@ class PublishTestCase(_BaseTestCase):
             cls.attrs_iter[1]['_href'],
             cls.responses['copy'],
         )
-        poll_spawned_tasks(cls.cfg, cls.bodies['copy'])
+        tuple(poll_spawned_tasks(cls.cfg, cls.bodies['copy']))
 
         # Add a distributor to the first repository, then publish the repo to
         # the distributor. Poll the publish request.
@@ -429,7 +429,7 @@ class PublishTestCase(_BaseTestCase):
             cls.bodies['distribute']['id'],
             cls.responses['publish'],
         )
-        poll_spawned_tasks(cls.cfg, cls.bodies['publish'])
+        tuple(poll_spawned_tasks(cls.cfg, cls.bodies['publish']))
 
         # Download the RPM. The [1:] strips a leading slash.
         url = ''.join((
