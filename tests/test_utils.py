@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 import mock
+import random
 import requests
 from pulp_smash import utils
 from pulp_smash.config import ServerConfig
@@ -153,3 +154,39 @@ class SyncRepositoryTestCase(CommonAssertionsMixin, TestCase):
             with mock.patch.object(requests, 'post') as request:
                 cls.output = utils.sync_repository(**inputs)
         cls.mocks = {'handle_response': hand_resp, 'request': request}
+
+
+class BugTestableTestCase(TestCase):
+    """Test :meth:`pulp_smash.utils.bug_is_testable` and its counterpart."""
+
+    def test_testable_status(self):
+        """Make the dependent function return a "testable" bug status."""
+        with mock.patch.object(
+            utils,
+            '_get_bug_status',
+            # pylint:disable=protected-access
+            return_value=random.sample(utils._TESTABLE_BUGS, 1)[0]
+        ):
+            with self.subTest():
+                self.assertTrue(utils.bug_is_testable(None))
+            with self.subTest():
+                self.assertFalse(utils.bug_is_untestable(None))
+
+    def test_untestable_status(self):
+        """Make the dependent function return a "untestable" bug status."""
+        with mock.patch.object(
+            utils,
+            '_get_bug_status',
+            # pylint:disable=protected-access
+            return_value=random.sample(utils._UNTESTABLE_BUGS, 1)[0]
+        ):
+            with self.subTest():
+                self.assertFalse(utils.bug_is_testable(None))
+            with self.subTest():
+                self.assertTrue(utils.bug_is_untestable(None))
+
+    def test_unknown_status(self):
+        """Make the dependent function return an unknown bug status."""
+        with mock.patch.object(utils, '_get_bug_status', return_value=None):
+            with self.assertRaises(utils.BugStatusUnknownError):
+                utils.bug_is_testable(None)
