@@ -17,6 +17,7 @@ The assumptions explored in this module have the following dependencies::
 from __future__ import unicode_literals
 
 import requests
+from packaging.version import Version
 from pulp_smash.config import get_config
 from pulp_smash.constants import LOGIN_PATH, USER_PATH
 from pulp_smash.utils import create_user, delete, uuid4
@@ -138,11 +139,15 @@ class ReadUpdateDeleteTestCase(TestCase):
 
     def test_use_deleted_user(self):
         """Assert that one cannot read, update or delete a deleted user."""
-        url = self.cfg.base_url + self.attrs_iter[-1]['_href']  # deleted user
         methods = ('get', 'put', 'delete')
+        kwargs_iter = tuple((self.cfg.get_requests_kwargs() for _ in methods))
+        for method, kwargs in zip(methods, kwargs_iter):
+            kwargs['url'] = self.cfg.base_url + self.attrs_iter[-1]['_href']
+            if method == 'put' and self.cfg.version >= Version('2.7'):
+                kwargs['json'] = {}
         responses = tuple((
-            getattr(requests, method)(url, **self.cfg.get_requests_kwargs())
-            for method in methods
+            getattr(requests, method)(**kwargs)
+            for method, kwargs in zip(methods, kwargs_iter)
         ))
         for method, response in zip(methods, responses):
             with self.subTest(method=method):
