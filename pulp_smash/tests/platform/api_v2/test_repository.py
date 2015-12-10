@@ -20,7 +20,13 @@ import requests
 
 from pulp_smash.config import get_config
 from pulp_smash.constants import REPOSITORY_PATH, ERROR_KEYS
-from pulp_smash.utils import create_repository, delete, require, uuid4
+from pulp_smash.utils import (
+    bug_is_untestable,
+    create_repository,
+    delete,
+    require,
+    uuid4,
+)
 from requests.exceptions import HTTPError
 from unittest2 import TestCase
 
@@ -110,30 +116,36 @@ class CreateFailureTestCase(TestCase):
 
     def test_status_code(self):
         """Assert that each response has the expected HTTP status code."""
-        for response, status_code in zip(self.responses, self.status_codes):
-            with self.subTest((response, status_code)):
+        for body, response, status_code in zip(
+                self.bodies, self.responses, self.status_codes):
+            with self.subTest(body=body):
+                if body == ['Incorrect data type'] and bug_is_untestable(1356):
+                    self.skipTest('https://pulp.plan.io/issues/1356')
                 self.assertEqual(response.status_code, status_code)
+
+    def test_body_status_code(self):
+        """Assert that each response body has the expected HTTP status code."""
+        for body, response, status_code in zip(
+                self.bodies, self.responses, self.status_codes):
+            with self.subTest(body=body):
+                if body == ['Incorrect data type'] and bug_is_untestable(1356):
+                    self.skipTest('https://pulp.plan.io/issues/1356')
+                self.assertEqual(response.json()['http_status'], status_code)
 
     def test_location_header(self):
         """Assert that the Location header is correctly set in the response."""
-        for i, response in enumerate(self.responses):
-            with self.subTest(i=i):
+        for body, response in zip(self.bodies, self.responses):
+            with self.subTest(body=body):
                 self.assertNotIn('Location', response.headers)
 
     def test_exception_keys_json(self):
         """Assert the JSON body returned contains the correct keys."""
-        for i, response in enumerate(self.responses):
-            with self.subTest(i=i):
+        for body, response in zip(self.bodies, self.responses):
+            with self.subTest(body=body):
                 self.assertEqual(
                     frozenset(response.json().keys()),
                     ERROR_KEYS,
                 )
-
-    def test_exception_json_http_status(self):
-        """Assert the JSON body returned contains the correct HTTP code."""
-        for response, status_code in zip(self.responses, self.status_codes):
-            with self.subTest((response, status_code)):
-                self.assertEqual(response.json()['http_status'], status_code)
 
     @classmethod
     def tearDownClass(cls):
