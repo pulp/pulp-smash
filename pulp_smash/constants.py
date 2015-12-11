@@ -16,17 +16,16 @@ ERROR_KEYS = frozenset((
     'error',
     'error_message',
     'exception',
-    'href',
     'http_status',
     'traceback',
 ))
 """See: `Exception Handling`_.
 
-The ``href`` will be dropped in Pulp 3.0. It is retained in earlier versions
-for backward compatibility.
+No ``href`` field should be present. See `Issue #1310`_.
 
 .. _Exception Handling:
     https://pulp.readthedocs.org/en/latest/dev-guide/conventions/exceptions.html
+.. _Issue #1310: https://pulp.plan.io/issues/1310
 
 """
 
