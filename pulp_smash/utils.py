@@ -319,7 +319,8 @@ def bug_is_testable(bug_id):
     :param bug_id: An integer bug ID, taken from https://pulp.plan.io.
     :returns: ``True`` if the bug is testable, or ``False`` otherwise.
     :raises: ``TypeError`` if ``bug_id`` is not an integer.
-    :raises BugStatusUnknownError: If the bug has an unknown status.
+    :raises pulp_smash.utils.BugStatusUnknownError: If the bug has a status
+        Pulp Smash does not recognize.
     :raises: BugTrackerUnavailableWarning: If the bug tracker cannot be
         contacted.
 
