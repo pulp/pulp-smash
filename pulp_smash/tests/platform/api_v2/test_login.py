@@ -10,7 +10,7 @@ from __future__ import unicode_literals
 import requests
 from pulp_smash.config import get_config
 from pulp_smash.constants import ERROR_KEYS, LOGIN_PATH
-from unittest2 import TestCase
+from unittest2 import TestCase, skip
 
 # Upon successfully logging in, the response should contain these keys.
 _LOGIN_KEYS = {'certificate', 'key'}

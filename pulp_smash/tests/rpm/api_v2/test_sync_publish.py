@@ -38,7 +38,7 @@ from pulp_smash.config import get_config
 from pulp_smash.constants import REPOSITORY_PATH
 from pulp_smash.utils import uuid4
 from time import sleep
-from unittest2 import TestCase
+from unittest2 import TestCase, skip
 
 
 from sys import version_info

@@ -7,28 +7,39 @@ The assumptions explored in this module have the following dependencies::
         ├── It is impossible to create a repository with a duplicate ID
         │   or other invalid attributes.
         ├── It is possible to read a repository.
-        │    ├── it is possible to view an empty list of distributors as part of a repo
-        │    └── it is possible to view an empty list of importers as part of a repo
+        │    ├── it is possible to view an empty list of distributors as part
+        │    │     of a repo
+        │    └── it is possible to view an empty list of importers as
+        │          part of a repo
         ├── It is possible to update a repository.
         ├── It is possible to delete a repository.
-        ├── It is possible to create a typed repo (with importers and distributors)
+        ├── It is possible to create a typed repo (with importers and
+        │    distributors)
         │   ├─── it is possible to read distributors of a repo (via repo call)
         │   ├─── it is possible to read importers of a repo (via repo call)
-        │   ├─── it is possible to read distributors of a repo (via distributors call)
-        │   ├─── it is possible to read importers of a repo (via importers call)
-        │   ├─── it is possible to read an individual distributor of a repo (via distributor call)
-        │   └─── it is possible to read an individual importer of a repo (via importer call)
+        │   ├─── it is possible to read distributors of a repo (via
+        │   │      distributors call)
+        │   ├─── it is possible to read importers of a repo (via
+        │   │      importers call)
+        │   ├─── it is possible to read an individual distributor of a repo
+        │   │      (via distributor call)
+        │   └─── it is possible to read an individual importer of a repo
+        │         (via importer call)
         ├── It is possible to add a distributor to an untyped repo
         │   ├─── it is possible to read distributors of a repo (via repo call)
-        │   ├─── it is possible to read distributors of a repo (via distributors call)
-        │   ├─── it is possible to read an individual distributor of a repo (via distributor call)
+        │   ├─── it is possible to read distributors of a repo
+        │   │      (via distributors call)
+        │   ├─── it is possible to read an individual distributor of a repo
+        │   │      (via distributor call)
         │   ├─── It is possible to update a distributor on a repo.
         │   │    └─── it is possible to read the updated distributor
         │   └─── It is possible to delete a distributor from a repo.
         └── It is possible to add an importer to an untyped repo
             ├─── it is possible to read importers of a repo (via repo call)
-            ├─── it is possible to read importers of a repo (via importers call)
-            ├─── it is possible to read an individual importer of a repo (via importer call)
+            ├─── it is possible to read importers of a repo
+            │      (via importers call)
+            ├─── it is possible to read an individual importer of a repo
+            │      (via importer call)
             ├─── It is possible to update a distributor on a repo.
             │    └─── it is possible to read the updated distributor
             └─── It is possible to delete a distributor from a repo.
@@ -45,7 +56,7 @@ import requests
 from pulp_smash.config import get_config
 from pulp_smash.constants import REPOSITORY_PATH, ERROR_KEYS
 from pulp_smash.utils import uuid4
-from unittest2 import TestCase
+from unittest2 import TestCase, skip
 
 from sys import version_info
 if version_info.major == 2:
@@ -90,7 +101,8 @@ class RepoBaseTest(TestCase):
         if isinstance(query, dict):
             query = urlencode(query)
         if query is not None:
-            full_url = "{base}{path}?{query}".format(base=cls.cfg.base_url, path=path, query=query)
+            full_url = "{base}{path}?{query}".format(base=cls.cfg.base_url,
+                                                     path=path, query=query)
         else:
             full_url = "{base}{path}".format(base=cls.cfg.base_url, path=path)
         return requests.get(full_url, **cls.cfg.get_requests_kwargs())
@@ -275,7 +287,8 @@ class ReadUpdateDeleteSuccessTestCase(RepoBaseTest):
 
         # Read, update, and delete the three repositories, respectively.
         cls.read_response = cls.get(cls.paths[0])
-        cls.distributors_response = cls.get(cls.paths[0], query="distributors=true")
+        cls.distributors_response = cls.get(
+            cls.paths[0], query="distributors=true")
         cls.importers_response = cls.get(cls.paths[0], query="importers=true")
         cls.details_response = cls.get(cls.paths[0], query="details=true")
         cls.update_response = requests.put(
@@ -291,8 +304,9 @@ class ReadUpdateDeleteSuccessTestCase(RepoBaseTest):
     def test_status_code(self):
         """Assert that each response has a 200 status code."""
         expected_status_codes = [
-            ('read_response', 200), ('update_response', 200), ('delete_response', 202),
-            ('distributors_response', 200), ('importers_response', 200), ('details_response', 200)
+            ('read_response', 200), ('update_response', 200),
+            ('delete_response', 202), ('distributors_response', 200),
+            ('importers_response', 200), ('details_response', 200)
         ]
         for attr, expected_status in expected_status_codes:
             with self.subTest(attr):
@@ -312,7 +326,7 @@ class ReadUpdateDeleteSuccessTestCase(RepoBaseTest):
         self.assertEqual(self.bodies[0], attributes)
 
     def test_distributors_response(self):
-        """Assert that the read with distributors has the correct attributes."""
+        """Assert that the read with distributors has correct attributes."""
         repo_with_distributors = self.distributors_response.json()
         self.assertTrue('distributors' in repo_with_distributors)
         self.assertEqual(repo_with_distributors['distributors'], [])
@@ -412,10 +426,14 @@ class CreateISORepoSuccessCase(TestCase):
         for i, body in enumerate(self.bodies):
             with self.subTest(body):
                 attributes = self.responses[i].json()
-                excluded_keys = set(['distributors', 'importer_type_id', 'importer_config'])
-                expected_body = {key: body[key] for key in set(body.keys()) - excluded_keys}
-                self.assertLessEqual(expected_body.keys(), set(attributes.keys()))
-                attributes = {key: attributes[key] for key in expected_body.keys()}
+                excluded_keys = set(
+                    ['distributors', 'importer_type_id', 'importer_config'])
+                expected_body = {key: body[key]
+                                 for key in set(body.keys()) - excluded_keys}
+                self.assertLessEqual(
+                    expected_body.keys(), set(attributes.keys()))
+                attributes = {key: attributes[key]
+                              for key in expected_body.keys()}
                 self.assertDictEqual(expected_body, attributes)
 
     @classmethod
@@ -475,7 +493,8 @@ class ReadUpdateDeleteISORepo(RepoBaseTest):
 
         # All 3 options for reads
         cls.read_response = cls.get(cls.paths[0])
-        cls.distributors_response = cls.get(cls.paths[0], query="distributors=true")
+        cls.distributors_response = cls.get(
+            cls.paths[0], query="distributors=true")
         cls.importers_response = cls.get(cls.paths[0], query="importers=true")
         cls.details_response = cls.get(cls.paths[0], query="details=true")
 
@@ -508,21 +527,24 @@ class ReadUpdateDeleteISORepo(RepoBaseTest):
         """Assert that the read repository has the correct attributes."""
         read_request = self.bodies[0]
         attributes = self.read_response.json()
-        excluded_keys = set(['distributors', 'importer_type_id', 'importer_config'])
-        expected_body = {key: read_request[key] for key in set(read_request.keys()) - excluded_keys}
+        excluded_keys = set(
+            ['distributors', 'importer_type_id', 'importer_config'])
+        expected_body = {key: read_request[key]
+                         for key in set(read_request.keys()) - excluded_keys}
         self.assertLessEqual(expected_body.keys(), set(attributes.keys()))
         attributes = {key: attributes[key] for key in expected_body.keys()}
         self.assertDictEqual(expected_body, attributes)
 
     def test_distributors_response(self):
-        """Assert that the read with distributors has the correct attributes."""
+        """Assert that the read with distributors has correct attributes."""
         repo_with_distributors = self.distributors_response.json()
         self.assertTrue('distributors' in repo_with_distributors)
         self.assertEqual(len(repo_with_distributors['distributors']), 1)
 
-        expected_distributor = self._build_expected(SERIALIZED_ISO_DISTRIBUTOR,
-                                                    repo_with_distributors['id'])
-        self.assertLessEqual(expected_distributor, repo_with_distributors['distributors'][0])
+        expected_distributor = self._build_expected(
+            SERIALIZED_ISO_DISTRIBUTOR, repo_with_distributors['id'])
+        self.assertLessEqual(
+            expected_distributor, repo_with_distributors['distributors'][0])
 
     def test_importers_response(self):
         """Assert that the read with importers has the correct attributes."""
@@ -532,7 +554,8 @@ class ReadUpdateDeleteISORepo(RepoBaseTest):
 
         expected_importer = self._build_expected(SERIALIZED_ISO_IMPORTER,
                                                  repo_with_importers['id'])
-        self.assertLessEqual(expected_importer, repo_with_importers['importers'][0])
+        self.assertLessEqual(
+            expected_importer, repo_with_importers['importers'][0])
 
     def test_details_response(self):
         """Assert that the read with details has the correct attributes."""
@@ -542,11 +565,13 @@ class ReadUpdateDeleteISORepo(RepoBaseTest):
 
         expected_importer = self._build_expected(SERIALIZED_ISO_IMPORTER,
                                                  repo_with_details['id'])
-        self.assertLessEqual(expected_importer, repo_with_details['importers'][0])
+        self.assertLessEqual(
+            expected_importer, repo_with_details['importers'][0])
 
         expected_distributor = self._build_expected(SERIALIZED_ISO_DISTRIBUTOR,
                                                     repo_with_details['id'])
-        self.assertLessEqual(expected_distributor, repo_with_details['distributors'][0])
+        self.assertLessEqual(
+            expected_distributor, repo_with_details['distributors'][0])
 
     def test_update_attributes_spawned_tasks(self):  # noqa pylint:disable=invalid-name
         """Assert that `spawned_tasks` is present and no tasks were created."""
@@ -622,7 +647,8 @@ class ISOImporterDistributorCreateSuccess(RepoBaseTest):
             importer_create_body = {'importer_type_id': ISO_IMPORTER_TYPE_ID}
             repo_importers_path = path + "importers/"
             response = requests.post(
-                "{base}{path}".format(base=cls.cfg.base_url, path=repo_importers_path),
+                "{base}{path}".format(base=cls.cfg.base_url,
+                                      path=repo_importers_path),
                 json=importer_create_body,
                 **cls.cfg.get_requests_kwargs()
             )
@@ -645,13 +671,16 @@ class ISOImporterDistributorCreateSuccess(RepoBaseTest):
             **cls.cfg.get_requests_kwargs()
         )
 
-        iso_distributors_path = '{base}distributors/'.format(base=cls.repo_paths[0])
+        iso_distributors_path = '{base}distributors/'.format(
+            base=cls.repo_paths[0])
         iso_imp_path = '{base}importers/'.format(base=cls.repo_paths[0])
 
         # Perform reads on the created objects
         cls.read_response = cls.get(cls.repo_paths[0])
-        cls.repo_distributors_response = cls.get(cls.repo_paths[0], query="distributors=true")
-        cls.repo_importers_response = cls.get(cls.repo_paths[0], query="importers=true")
+        cls.repo_distributors_response = cls.get(cls.repo_paths[0],
+                                                 query="distributors=true")
+        cls.repo_importers_response = cls.get(cls.repo_paths[0],
+                                              query="importers=true")
         cls.details_response = cls.get(cls.repo_paths[0], query="details=true")
         cls.all_dists = cls.get(iso_distributors_path)
         cls.one_distributor = cls.get(cls.dist_paths[0])
@@ -676,10 +705,11 @@ class ISOImporterDistributorCreateSuccess(RepoBaseTest):
                 self.assertEqual(response.status_code, 201)
         expected_status_codes = [
             ('dist_update_response', 202), ('read_response', 200),
-            ('repo_distributors_response', 200), ('repo_importers_response', 200),
-            ('details_response', 200), ('all_dists', 200), ('one_distributor', 200),
-            ('all_importers', 200), ('one_importer', 200), ('dist_delete_response', 202),
-            ('get_updated_distributor', 200)
+            ('repo_distributors_response', 200),
+            ('repo_importers_response', 200), ('details_response', 200),
+            ('all_dists', 200),  ('one_distributor', 200),
+            ('all_importers', 200), ('one_importer', 200),
+            ('dist_delete_response', 202), ('get_updated_distributor', 200)
         ]
         for attr, expected_status in expected_status_codes:
             with self.subTest(attr):
@@ -692,21 +722,24 @@ class ISOImporterDistributorCreateSuccess(RepoBaseTest):
         """Assert that the read repository has the correct attributes."""
         read_request = self.repo_create_bodies[0]
         attributes = self.read_response.json()
-        excluded_keys = set(['distributors', 'importer_type_id', 'importer_config'])
-        expected_body = {key: read_request[key] for key in set(read_request.keys()) - excluded_keys}
+        excluded_keys = set(
+            ['distributors', 'importer_type_id', 'importer_config'])
+        expected_body = {key: read_request[key]
+                         for key in set(read_request.keys()) - excluded_keys}
         self.assertLessEqual(expected_body.keys(), set(attributes.keys()))
         attributes = {key: attributes[key] for key in expected_body.keys()}
         self.assertDictEqual(expected_body, attributes)
 
     def test_repo_distributors_response(self):
-        """Assert that the read repository with distributors has the correct attributes."""
+        """Assert that read repos with distributors has correct attributes."""
         repo_with_distributors = self.repo_distributors_response.json()
         self.assertTrue('distributors' in repo_with_distributors)
         self.assertEqual(len(repo_with_distributors['distributors']), 1)
 
-        expected_distributor = self._build_expected(SERIALIZED_ISO_DISTRIBUTOR,
-                                                    repo_with_distributors['id'])
-        self.assertLessEqual(expected_distributor, repo_with_distributors['distributors'][0])
+        expected_distributor = self._build_expected(
+            SERIALIZED_ISO_DISTRIBUTOR, repo_with_distributors['id'])
+        self.assertLessEqual(
+            expected_distributor, repo_with_distributors['distributors'][0])
 
     def test_all_distributors_response(self):
         """Assert that read distributors has the correct attributes."""
@@ -727,12 +760,15 @@ class ISOImporterDistributorCreateSuccess(RepoBaseTest):
         self.assertLessEqual(expected_distributor, one_distributor)
 
     def test_updated_distributor_response(self):
-        """Assert that the update distributor response has the correct attributes."""
+        """Assert that update distributor response has correct attributes."""
         one_distributor = self.get_updated_distributor.json()
         expected_auto_publish = self.dist_update_body['delta']['auto_publish']
-        expected_rel_url = self.dist_update_body['distributor_config']['relative_url']
-        self.assertTrue(one_distributor['auto_publish'] is expected_auto_publish)
-        self.assertEqual(one_distributor['config']['relative_url'], expected_rel_url)
+        expected_rel_url = \
+            self.dist_update_body['distributor_config']['relative_url']
+        self.assertTrue(
+            one_distributor['auto_publish'] is expected_auto_publish)
+        self.assertEqual(
+            one_distributor['config']['relative_url'], expected_rel_url)
 
     def test_repo_importers_response(self):
         """Assert that the read with importers has the correct attributes."""
@@ -742,7 +778,8 @@ class ISOImporterDistributorCreateSuccess(RepoBaseTest):
 
         expected_importer = self._build_expected(SERIALIZED_ISO_IMPORTER,
                                                  repo_with_importers['id'])
-        self.assertLessEqual(expected_importer, repo_with_importers['importers'][0])
+        self.assertLessEqual(
+            expected_importer, repo_with_importers['importers'][0])
 
     def test_importers_response(self):
         """Assert that read importers has the correct attributes."""
@@ -763,18 +800,20 @@ class ISOImporterDistributorCreateSuccess(RepoBaseTest):
         self.assertLessEqual(expected_importer, one_importer)
 
     def test_details_response(self):
-        """Assert that repo with details includes importers and distributors."""
+        """Assert that repo with details has importers and distributors."""
         repo_with_details = self.details_response.json()
         self.assertTrue('distributors' in repo_with_details)
         self.assertTrue('importers' in repo_with_details)
 
         expected_importer = self._build_expected(SERIALIZED_ISO_IMPORTER,
                                                  repo_with_details['id'])
-        self.assertLessEqual(expected_importer, repo_with_details['importers'][0])
+        self.assertLessEqual(
+            expected_importer, repo_with_details['importers'][0])
 
         expected_distributor = self._build_expected(SERIALIZED_ISO_DISTRIBUTOR,
                                                     repo_with_details['id'])
-        self.assertLessEqual(expected_distributor, repo_with_details['distributors'][0])
+        self.assertLessEqual(
+            expected_distributor, repo_with_details['distributors'][0])
 
     def test_cannot_get_deleted_distributor(self):
         """Assert that deleted distributors cannot be read or updated."""
