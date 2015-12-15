@@ -45,9 +45,9 @@ MESSAGE = tuple((
     '''\
     The provided command will run all tests, but any subset of tests may also
     be selected. For example, you may also run `python -m unittest2
-    pulp_smash.tests.test_login`. Consult the unittest2 documentation for test
-    selection syntax, and consult the source code to see which test modules are
-    available.
+    pulp_smash.tests.platform.api_v2.test_login`. Consult the unittest2
+    documentation for test selection syntax, and consult the source code to see
+    which test modules are available.
     ''',
 ))
 
