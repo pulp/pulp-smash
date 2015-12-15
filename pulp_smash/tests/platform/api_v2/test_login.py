@@ -10,6 +10,7 @@ from __future__ import unicode_literals
 import requests
 from pulp_smash.config import get_config
 from pulp_smash.constants import ERROR_KEYS, LOGIN_KEYS, LOGIN_PATH
+from pulp_smash.utils import bug_is_untestable
 from unittest2 import TestCase
 
 
@@ -53,4 +54,6 @@ class LoginFailureTestCase(TestCase):
 
     def test_body(self):
         """Assert that the response is valid JSON and has correct keys."""
+        if bug_is_untestable(1412):
+            self.skipTest('https://pulp.plan.io/issues/1412')
         self.assertEqual(frozenset(self.response.json().keys()), ERROR_KEYS)
