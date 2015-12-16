@@ -23,9 +23,9 @@ _UNTESTABLE_BUGS = frozenset((
     'NEW',  # bug just entered into tracker
     'ASSIGNED',  # bug has been assigned to an engineer
     'POST',  # bug fix is being reviewed by dev ("posted for review")
-    'MODIFIED',  # bug fix has been accepted by dev
 ))
 _TESTABLE_BUGS = frozenset((
+    'MODIFIED',  # bug fix has been accepted by dev
     'ON_QA',  # bug fix is being reviewed by qe
     'VERIFIED',  # bug fix has been accepted by qe
     'CLOSED - CURRENTRELEASE',
