@@ -39,6 +39,7 @@ from pulp_smash.constants import CALL_REPORT_KEYS
 from pulp_smash.utils import (
     create_repository,
     delete,
+    get,
     get_importers,
     handle_response,
     poll_spawned_tasks,
@@ -257,7 +258,7 @@ class SyncValidFeedTestCase(_BaseTestCase):
         super(SyncValidFeedTestCase, cls).setUpClass()
         body = _gen_rpm_repo_body()
         body['importer_config']['feed'] = _VALID_FEED
-        cls.attrs_iter = (create_repository(cls.cfg, body),)  # see parent cls
+        cls.attrs_iter = (create_repository(cls.cfg, body),)
         cls.sync_repo = []  # raw responses
         report = sync_repository(
             cls.cfg,
@@ -265,6 +266,7 @@ class SyncValidFeedTestCase(_BaseTestCase):
             cls.sync_repo,
         )
         cls.task_bodies = tuple(poll_spawned_tasks(cls.cfg, report))
+        cls.repo_after_sync = get(cls.cfg, cls.attrs_iter[0]['_href'])
 
     def test_start_sync_code(self):
         """Assert the call to sync a repository returns an HTTP 202."""
@@ -290,6 +292,23 @@ class SyncValidFeedTestCase(_BaseTestCase):
                     len(task_body['progress_report']['yum_importer']['content']['error_details']),  # noqa pylint:disable=line-too-long
                     0
                 )
+
+    def test_unit_count_on_repo(self):
+        """Verify that the sync added the correct number of units to the repo.
+
+        Looks at the content counts on the repo.
+
+        This also verifies that the counts themselves are getting set on the
+        repo.
+
+        I obtained these numbers by looking at the metadata in the remote
+        repository.
+        """
+        counts = self.repo_after_sync.get('content_unit_counts', {})
+        self.assertEqual(counts.get('rpm'), 32)
+        self.assertEqual(counts.get('erratum'), 4)
+        self.assertEqual(counts.get('package_group'), 2)
+        self.assertEqual(counts.get('package_category'), 1)
 
 
 class SyncInvalidFeedTestCase(_BaseTestCase):

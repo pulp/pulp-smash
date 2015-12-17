@@ -124,6 +124,21 @@ def get_importers(server_config, href, responses=None):
     ), responses)
 
 
+def get(server_config, href, responses=None):
+    """Get a document from an HTTP API.
+
+    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
+    :param href: A string. The path to a document.
+    :param responses: Same as :meth:`handle_response`.
+    :returns: Same as :meth:`handle_response`.
+    :raises: Same as :meth:`handle_response`.
+    """
+    return handle_response(requests.get(
+        server_config.base_url + href,
+        **server_config.get_requests_kwargs()
+    ), responses)
+
+
 def handle_response(response, responses=None):
     """Optionally record ``response``, verify its status code, and decode body.
 
