@@ -40,6 +40,7 @@ from pulp_smash.utils import (
     create_repository,
     delete,
     get_importers,
+    get_repo,
     handle_response,
     poll_spawned_tasks,
     publish_repository,
@@ -265,6 +266,9 @@ class SyncValidFeedTestCase(_BaseTestCase):
             cls.sync_repo,
         )
         cls.task_bodies = tuple(poll_spawned_tasks(cls.cfg, report))
+        cls.repos_iter = tuple((
+            get_repo(cls.cfg, attrs['_href']) for attrs in cls.attrs_iter
+        ))
 
     def test_start_sync_code(self):
         """Assert the call to sync a repository returns an HTTP 202."""
@@ -290,6 +294,20 @@ class SyncValidFeedTestCase(_BaseTestCase):
                     len(task_body['progress_report']['yum_importer']['content']['error_details']),  # noqa pylint:disable=line-too-long
                     0
                 )
+
+    def test_unit_count_on_repo(self):
+        """
+        Verify that the sync added the correct number of units to the repo by
+        looking at the content counts on the repo.
+
+        This also verifies that the counts themselves are getting set on the
+        repo.
+        """
+        counts = self.repos_iter[0].get('content_unit_counts', {})
+        self.assertEqual(counts.get('rpm'), 32)
+        self.assertEqual(counts.get('erratum'), 4)
+        self.assertEqual(counts.get('package_group'), 2)
+        self.assertEqual(counts.get('package_category'), 1)
 
 
 class SyncInvalidFeedTestCase(_BaseTestCase):
