@@ -6,22 +6,23 @@ also contain read, update, and delete tests.
 
 """
 from __future__ import unicode_literals
-import unittest2
 
+import unittest2
+from packaging.version import Version
 from pulp_smash import config, utils
 
 
 def _gen_docker_repo_body():
     """Generate a Docker repo create body.
 
-    Return a semi-random dict that can be used to create a Docker
-    repository.
+    Return a semi-random dict that can be used to create a Docker repository.
 
     """
     return {
         'id': utils.uuid4(), 'importer_config': {},
         'importer_type_id': 'docker_importer',
-        'notes': {'_repo-type': 'docker-repo'}}
+        'notes': {'_repo-type': 'docker-repo'},
+    }
 
 
 class _BaseTestCase(unittest2.TestCase):
@@ -32,6 +33,8 @@ class _BaseTestCase(unittest2.TestCase):
         """Provide a server config and an iterable of resources to delete."""
         cls.cfg = config.get_config()
         cls.attrs_iter = tuple()
+        if cls.cfg.version < Version('2.8'):
+            raise unittest2.SkipTest('These tests require at least Pulp 2.8.')
 
     @classmethod
     def tearDownClass(cls):
