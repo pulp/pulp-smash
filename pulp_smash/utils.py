@@ -11,6 +11,12 @@ from pulp_smash.constants import REPOSITORY_PATH, USER_PATH
 from time import sleep
 
 
+try:  # try Python 3 import first
+    from urllib.parse import urljoin  # pylint:disable=no-name-in-module
+except ImportError:
+    from urlparse import urljoin  # pylint:disable=import-error
+
+
 _TASK_END_STATES = ('canceled', 'error', 'finished', 'skipped', 'timed out')
 
 # These are all possible values for a bug's "status" field.
@@ -69,7 +75,7 @@ def create_repository(server_config, body, responses=None):
 
     """
     return handle_response(requests.post(
-        server_config.base_url + REPOSITORY_PATH,
+        urljoin(server_config.base_url, REPOSITORY_PATH),
         json=body,
         **server_config.get_requests_kwargs()
     ), responses)
@@ -86,7 +92,7 @@ def create_user(server_config, body, responses=None):
 
     """
     return handle_response(requests.post(
-        server_config.base_url + USER_PATH,
+        urljoin(server_config.base_url, USER_PATH),
         json=body,
         **server_config.get_requests_kwargs()
     ), responses)
@@ -103,7 +109,7 @@ def delete(server_config, href, responses=None):
 
     """
     return handle_response(requests.delete(
-        server_config.base_url + href,
+        urljoin(server_config.base_url, href),
         **server_config.get_requests_kwargs()
     ), responses)
 
@@ -119,7 +125,7 @@ def get_importers(server_config, href, responses=None):
 
     """
     return handle_response(requests.get(
-        server_config.base_url + href + 'importers/',
+        urljoin(server_config.base_url, href + 'importers/'),
         **server_config.get_requests_kwargs()
     ), responses)
 
@@ -134,7 +140,7 @@ def get(server_config, href, responses=None):
     :raises: Same as :meth:`handle_response`.
     """
     return handle_response(requests.get(
-        server_config.base_url + href,
+        urljoin(server_config.base_url, href),
         **server_config.get_requests_kwargs()
     ), responses)
 
@@ -222,7 +228,7 @@ def publish_repository(server_config, href, distributor_id, responses=None):
 
     """
     return handle_response(requests.post(
-        server_config.base_url + href + 'actions/publish/',
+        urljoin(server_config.base_url, href + 'actions/publish/'),
         json={'id': distributor_id},
         **server_config.get_requests_kwargs()
     ), responses)
@@ -284,7 +290,7 @@ def sync_repository(server_config, href, responses=None):
 
     """
     return handle_response(requests.post(
-        server_config.base_url + href + 'actions/sync/',
+        urljoin(server_config.base_url, href + 'actions/sync/'),
         json={'override_config': {}},
         **server_config.get_requests_kwargs()
     ), responses)
