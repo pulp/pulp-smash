@@ -29,6 +29,7 @@ developers, not a gospel.
     api/pulp_smash.tests.puppet.api_v2.test_sync_publish
     api/pulp_smash.tests.rpm
     api/pulp_smash.tests.rpm.api_v2
+    api/pulp_smash.tests.rpm.api_v2.test_iso_crud
     api/pulp_smash.tests.rpm.api_v2.test_sync_publish
     api/pulp_smash.utils
     api/tests
