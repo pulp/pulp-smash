@@ -3,10 +3,11 @@
 
 The assumptions explored in this module have the following dependencies::
 
-        It is possible to create a repository.
+        It is possible to create an untyped repository.
         ├── It is impossible to create a repository with a duplicate ID
         │   or other invalid attributes.
-        ├── It is possible to read a repository.
+        ├── It is possible to read a repository, including its importers and
+        │   distributors.
         ├── It is possible to update a repository.
         └── It is possible to delete a repository.
 
@@ -29,6 +30,11 @@ from pulp_smash.utils import (
 )
 from requests.exceptions import HTTPError
 from unittest2 import TestCase
+
+try:  # try Python 3 first
+    from urllib.parse import urljoin  # pylint:disable=no-name-in-module
+except ImportError:
+    from urlparse import urljoin  # pylint:disable=import-error
 
 
 class CreateSuccessTestCase(TestCase):
@@ -166,7 +172,7 @@ class ReadUpdateDeleteSuccessTestCase(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Create three repositories to read, update, and delete."""
+        """Create three repositories and read, update, and delete them."""
         cls.cfg = get_config()
         cls.attrs_iter = tuple((
             create_repository(cls.cfg, {'id': uuid4()}) for _ in range(3)
@@ -175,27 +181,43 @@ class ReadUpdateDeleteSuccessTestCase(TestCase):
             key: uuid4() for key in ('description', 'display_name')
         }}
 
+        # For convenience
+        read_url = urljoin(cls.cfg.base_url, cls.attrs_iter[0]['_href'])
+
         # Read, update, and delete the three repositories, respectively.
         cls.responses = {}
         cls.responses['read'] = requests.get(
-            cls.cfg.base_url + cls.attrs_iter[0]['_href'],
+            read_url,
+            **cls.cfg.get_requests_kwargs()
+        )
+        cls.responses['read_importers'] = requests.get(
+            read_url + '?importers=true',
+            **cls.cfg.get_requests_kwargs()
+        )
+        cls.responses['read_distributors'] = requests.get(
+            read_url + '?distributors=true',
+            **cls.cfg.get_requests_kwargs()
+        )
+        cls.responses['read_details'] = requests.get(
+            read_url + '?details=true',
             **cls.cfg.get_requests_kwargs()
         )
         cls.responses['update'] = requests.put(
-            cls.cfg.base_url + cls.attrs_iter[1]['_href'],
+            urljoin(cls.cfg.base_url, cls.attrs_iter[1]['_href']),
             json=cls.update_body,
             **cls.cfg.get_requests_kwargs()
         )
         cls.responses['delete'] = requests.delete(
-            cls.cfg.base_url + cls.attrs_iter[2]['_href'],
+            urljoin(cls.cfg.base_url, cls.attrs_iter[2]['_href']),
             **cls.cfg.get_requests_kwargs()
         )
 
     def test_status_codes(self):
         """Assert each response has a correct HTTP status code."""
-        for action, code in zip(('read', 'update', 'delete'), (200, 200, 202)):
-            with self.subTest((action, code)):
-                self.assertEqual(self.responses[action].status_code, code)
+        for key, response in self.responses.items():
+            with self.subTest(key=key):
+                status_code = 202 if key == 'delete' else 200
+                self.assertEqual(response.status_code, status_code)
 
     def test_read(self):
         """Assert the "read" response body contains the correct attributes."""
@@ -205,11 +227,27 @@ class ReadUpdateDeleteSuccessTestCase(TestCase):
         read_attrs = {key: read_attrs[key] for key in create_attrs.keys()}
         self.assertEqual(create_attrs, read_attrs)
 
+    def test_read_imp_distrib(self):
+        """Assert reading with importers/distributors returns correct attrs."""
+        for key in ('importers', 'distributors'):
+            with self.subTest(key=key):
+                attrs = self.responses['read_' + key].json()
+                self.assertIn(key, attrs)
+                self.assertEqual(attrs[key], [])
+
+    def test_read_details(self):
+        """Assert the read with details has the correct attributes."""
+        attrs = self.responses['read_details'].json()
+        for key in ('importers', 'distributors'):
+            with self.subTest(key=key):
+                self.assertIn(key, attrs)
+                self.assertEqual(attrs[key], [])
+
     def test_update_spawned_tasks(self):
         """Assert the "update" response body mentions no spawned tasks."""
         attrs = self.responses['update'].json()
         self.assertIn('spawned_tasks', attrs)
-        self.assertListEqual([], attrs['spawned_tasks'])
+        self.assertEqual(attrs['spawned_tasks'], [])
 
     def test_update_attributes_result(self):
         """Assert the "update" response body has the correct attributes."""
