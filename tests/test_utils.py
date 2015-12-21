@@ -37,7 +37,6 @@ class CommonAssertionsMixin(object):
     ``self.output``                    The value returned by the function under
                                        test.
     =================================  ========================================
-
     """
 
     def test_requests_called(self):

@@ -12,7 +12,6 @@ The assumptions explored in this module have the following dependencies::
 
 .. _user:
     https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/user/index.html
-
 """
 from __future__ import unicode_literals
 
@@ -39,7 +38,6 @@ class CreateTestCase(TestCase):
 
         Create one user with the minimum required attributes, and another with
         all available attributes.
-
         """
         cls.cfg = get_config()
         cls.bodies = (
@@ -88,7 +86,6 @@ class ReadUpdateDeleteTestCase(TestCase):
 
     This test case assumes that the assertions in :class:`CreateTestCase` are
     valid.
-
     """
 
     @classmethod
@@ -131,7 +128,6 @@ class ReadUpdateDeleteTestCase(TestCase):
         """Ensure read and update responses do not contain a password.
 
         Target https://bugzilla.redhat.com/show_bug.cgi?id=1020300.
-
         """
         for action in ('read', 'update'):
             with self.subTest(action=action):
@@ -186,7 +182,6 @@ class ReadUpdateDeleteTestCase(TestCase):
 
         :meth:`setUpClass` makes a super-user. Thus, this method tests whether
         it is possible to delete a super-user.
-
         """
         for attrs in cls.attrs_iter[:2]:
             delete(cls.cfg, attrs['_href'])
@@ -197,7 +192,6 @@ class SearchTestCase(TestCase):
 
     This test case assumes that the assertions in
     :class:`ReadUpdateDeleteTestCase` are valid.
-
     """
 
     @classmethod
@@ -211,7 +205,6 @@ class SearchTestCase(TestCase):
         * All users having no roles.
         * A user by their login.
         * A non-existent user by their login.
-
         """
         # Create a user and note information about it.
         cls.cfg = get_config()

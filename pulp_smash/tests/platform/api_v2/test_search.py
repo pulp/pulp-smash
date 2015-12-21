@@ -25,7 +25,6 @@ The assumptions explored in this module have the following dependencies::
     https://pulp.readthedocs.org/en/latest/dev-guide/conventions/criteria.html
 .. _User APIs:
     https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/user/index.html
-
 """
 from __future__ import unicode_literals
 
@@ -101,7 +100,6 @@ class MinimalTestCase(_BaseTestCase):
     GET  no query parameters
     POST ``{'criteria': {}}``
     ==== ====
-
     """
 
     @classmethod
@@ -132,7 +130,6 @@ class SortTestCase(_BaseTestCase):
     POST ``{'criteria': {'sort': [['id', 'ascending']]}}``
     POST ``{'criteria': {'sort': [['id', 'descending']]}}``
     ==== ====
-
     """
 
     @classmethod
@@ -171,7 +168,6 @@ class FieldTestCase(_BaseTestCase):
     GET  ``{'field': 'name'}`` (urlencoded)
     POST ``{'criteria': {'fields': 'name'}}``
     ==== ====
-
     """
 
     @classmethod
@@ -201,7 +197,6 @@ class FieldsTestCase(_BaseTestCase):
     GET  ``field=login&field=roles``
     POST ``{'criteria': {'fields': ['login', 'roles']}}``
     ==== ====
-
     """
 
     @classmethod
@@ -233,7 +228,6 @@ class FiltersIdTestCase(_BaseTestCase):
     GET  ``{'filters': {'id': '…'}}`` (urlencoded)
     POST ``{'criteria': {'filters': {'id': '…'}}}``
     ==== ====
-
     """
 
     @classmethod
@@ -267,7 +261,6 @@ class FiltersIdsTestCase(_BaseTestCase):
     GET  ``{'filters': {'id': {'$in': ['…', '…']}}}``
     POST ``{'criteria': {'filters': {'id': {'$in': ['…', '…']}}}}``
     ==== ====
-
     """
 
     @classmethod
@@ -303,7 +296,6 @@ class LimitSkipTestCase(_BaseTestCase):
     POST ``{'criteria': {'filters': {'id': {'$in': [id1, id2]}}, 'limit': 1}}``
     POST ``{'criteria': {'filters': {'id': {'$in': [id1, id2]}}, 'skip': 1}}``
     ==== ====
-
     """
 
     @classmethod

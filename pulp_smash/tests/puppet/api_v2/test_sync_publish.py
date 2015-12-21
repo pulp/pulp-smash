@@ -31,7 +31,6 @@ Assertions not explored in this module include:
 
 .. _repositories:
    http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/cud.html
-
 """
 from __future__ import unicode_literals
 
@@ -78,7 +77,6 @@ def _start_content_upload(server_config, responses=None):
     :param responses: A list, or some other object that supports the ``append``
         method. If given, all server responses are appended to this object.
     :returns: The server's JSON-decoded response.
-
     """
     return handle_response(requests.post(
         server_config.base_url + '/pulp/api/v2/content/uploads/',
@@ -95,7 +93,6 @@ def _upload_file(server_config, href, content, responses=None):
     :param responses: A list, or some other object that supports the ``append``
         method. If given, all server responses are appended to this object.
     :returns: The server's JSON-decoded response.
-
     """
     return handle_response(requests.put(
         server_config.base_url + href + '0/',
@@ -114,7 +111,6 @@ def _copy_repo(server_config, source_repo_id, href, responses=None):
     :param responses: A list, or some other object that supports the ``append``
         method. If given, all server responses are appended to this object.
     :returns: The server's JSON-decoded response.
-
     """
     return handle_response(requests.post(
         server_config.base_url + href + 'actions/associate/',
@@ -133,7 +129,6 @@ def _query_repo_old(server_config, query_url, repo_id, responses=None):
     :param responses: A list, or some other object that supports the ``append``
         method. If given, all server responses are appended to this object.
     :returns: The server's JSON-decoded response.
-
     """
     kwargs = server_config.get_requests_kwargs()
     kwargs['auth'] = ('.', repo_id)
@@ -152,7 +147,6 @@ def _query_repo_middle(server_config, query_url, responses=None):
     :param responses: A list, or some other object that supports the ``append``
         method. If given, all server responses are appended to this object.
     :returns: The server's JSON-decoded response.
-
     """
     return handle_response(requests.get(
         server_config.base_url + query_url,
@@ -170,7 +164,6 @@ def _query_repo_new(server_config, query_url, repo_id, responses=None):
     :param responses: A list, or some other object that supports the ``append``
         method. If given, all server responses are appended to this object.
     :returns: The server's JSON-decoded response.
-
     """
     kwargs = server_config.get_requests_kwargs()
     kwargs['auth'] = ('repository', repo_id)
@@ -190,7 +183,6 @@ def _import_puppet_module_into_repo(
     :param responses: A list, or some other object that supports the ``append``
         method. If given, all server responses are appended to this object.
     :returns: The server's JSON-decoded response.
-
     """
     return handle_response(requests.post(
         server_config.base_url + href + 'actions/import_upload/',
@@ -215,7 +207,6 @@ def _add_puppet_distributor(server_config, href, responses=None):
     :param responses: A list, or some other object that supports the ``append``
         method. If given, all server responses are appended to this object.
     :returns: The server's JSON-decoded response.
-
     """
     return handle_response(requests.post(
         server_config.base_url + href + 'distributors/',
@@ -314,7 +305,6 @@ class SyncValidFeedTestCase(_BaseTestCase):
 
     Create two repositories wih valid feeds, one with valid and one with
     invalid query. Check that sync finish succesfully in both of them.
-
     """
 
     @classmethod
@@ -423,7 +413,6 @@ class PublishTestCase(_BaseTestCase):
     downloaded modules. Three query formats are tested as are provided by
     different puppet versions: puppet ver. <= 3.3, 3.3 < puppet ver. < 3.6 and
     puppet ver. > 3.6.
-
     """
 
     @classmethod
@@ -434,7 +423,6 @@ class PublishTestCase(_BaseTestCase):
         the first repository. Copy its content to the second repository. Add
         distributors to the repositories, publish repositories and download
         modules back from them.
-
         """
         super(PublishTestCase, cls).setUpClass()
         # The server's raw `responses` don't matter to us here in `setUpClass`.
@@ -590,7 +578,6 @@ class PublishTestCase(_BaseTestCase):
 
         This test does not verify Pulp behaviour. Rather, it helps to ensure
         that this test is written correctly.
-
         """
         self.assertEqual(set(self.responses.keys()), set(self.bodies.keys()))
 

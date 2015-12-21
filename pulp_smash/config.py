@@ -6,7 +6,6 @@ systems. For example, it needs to know the protocol, hostname and port of a
 Pulp server (e.g. 'https://example.com:250') and how to authenticate with that
 server. :class:`pulp_smash.config.ServerConfig` eases the task of managing that
 information.
-
 """
 from __future__ import unicode_literals
 
@@ -41,7 +40,6 @@ def get_config():
 
     :returns: A copy of the global server configuration object.
     :rtype: pulp_smash.config.ServerConfig
-
     """
     global _CONFIG  # pylint:disable=global-statement
     if _CONFIG is None:
@@ -110,7 +108,6 @@ class ServerConfig(object):
         server. For example: ``('username', 'password')``.
     :param verify: A boolean. Should SSL be verified when communicating with
         the server?
-
     """
 
     # Used to lock access to the configuration file when performing destructive
@@ -153,7 +150,6 @@ class ServerConfig(object):
         :param xdg_config_dir: A string. The XDG configuration directory in
             which the configuration file resides.
         :returns: Nothing.
-
         """
         # What will we write out?
         if section is None:
@@ -195,7 +191,6 @@ class ServerConfig(object):
         :param xdg_config_dir: A string. The XDG configuration directory in
             which the configuration file resides.
         :returns: Nothing.
-
         """
         # What will we delete?
         if section is None:
@@ -227,7 +222,6 @@ class ServerConfig(object):
             which the configuration file resides.
         :returns: An iterable of strings. Each string is the name of a
             configuration file section.
-
         """
         # What file is being manipulated?
         if xdg_config_file is None:
@@ -250,7 +244,6 @@ class ServerConfig(object):
         :returns: A new :class:`pulp_smash.config.ServerConfig` object. The
             current object is not modified by this method.
         :rtype: ServerConfig
-
         """
         # What section is being read?
         if section is None:
@@ -297,7 +290,6 @@ class ServerConfig(object):
         But this latter approach is more fragile. The user must remember to
         convert ``auth`` to a tuple, and it will require maintenance if ``cfg``
         gains or loses attributes.
-
         """
         attrs = _public_attrs(self)
         for key in ('base_url', 'version'):
@@ -322,7 +314,6 @@ def _get_config_file_path(xdg_config_dir, xdg_config_file):
     :returns: A string. A path to a configuration file.
     :raises pulp_smash.config.ConfigFileNotFoundError: If the requested
         configuration file cannot be found.
-
     """
     for config_dir in BaseDirectory.load_config_paths(xdg_config_dir):
         path = os.path.join(config_dir, xdg_config_file)

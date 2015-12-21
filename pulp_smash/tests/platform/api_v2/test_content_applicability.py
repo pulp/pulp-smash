@@ -3,7 +3,6 @@
 
 .. _content applicability:
     https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/consumer/applicability.html
-
 """
 from __future__ import unicode_literals
 

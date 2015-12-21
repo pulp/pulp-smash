@@ -13,7 +13,6 @@ The assumptions explored in this module have the following dependencies::
 
 .. _repository:
     https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/index.html
-
 """
 from __future__ import unicode_literals
 
@@ -46,7 +45,6 @@ class CreateSuccessTestCase(TestCase):
 
         Create one repository with the minimum required attributes, and a
         second with all available attributes except importers and distributors.
-
         """
         cls.cfg = get_config()
         cls.bodies = (
@@ -102,7 +100,6 @@ class CreateFailureTestCase(TestCase):
 
         Each repository is created to test a different failure scenario. The
         first repository is created in order to test duplicate ids.
-
         """
         cls.cfg = get_config()
         cls.attrs_iter = (create_repository(cls.cfg, {'id': uuid4()}),)
@@ -167,7 +164,6 @@ class ReadUpdateDeleteSuccessTestCase(TestCase):
 
     This test assumes that the assertions in :class:`CreateSuccessTestCase` are
     valid.
-
     """
 
     @classmethod

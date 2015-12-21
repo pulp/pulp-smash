@@ -28,7 +28,6 @@ def _gen_attrs():
     Example usage: ``ServerConfig(**_gen_attrs())``.
 
     :returns: A dict. It populates all attributes in a ``ServerConfig``.
-
     """
     attrs = {key: uuid4() for key in ('base_url', 'verify')}
     attrs['auth'] = [uuid4() for _ in range(2)]

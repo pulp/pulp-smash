@@ -6,7 +6,6 @@ For more information, see:
 
 * https://packaging.python.org/en/latest/index.html
 * https://docs.python.org/distutils/sourcedist.html
-
 """
 from __future__ import unicode_literals
 

@@ -3,7 +3,6 @@
 
 This module contains tests for creating Docker repositories. It is intended to
 also contain read, update, and delete tests.
-
 """
 from __future__ import unicode_literals
 
@@ -16,7 +15,6 @@ def _gen_docker_repo_body():
     """Generate a Docker repo create body.
 
     Return a semi-random dict that can be used to create a Docker repository.
-
     """
     return {
         'id': utils.uuid4(), 'importer_config': {},

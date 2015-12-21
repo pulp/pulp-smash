@@ -3,7 +3,6 @@
 
 .. _authentication:
     https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/authentication.html
-
 """
 from __future__ import unicode_literals
 

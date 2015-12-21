@@ -33,7 +33,6 @@ the other library generates ``InsecureRequestWarning`` warnings. The warnings
 raised by that application are suppressed by the filter created here. The
 ``warnings.catch_warnings`` context manager is not a good solution to this
 problem, as it is thread-unsafe.
-
 """
 from __future__ import unicode_literals
 

@@ -72,7 +72,6 @@ def create_repository(server_config, body, responses=None):
     :param responses: Same as :meth:`handle_response`.
     :returns: Same as :meth:`handle_response`.
     :raises: Same as :meth:`handle_response`.
-
     """
     return handle_response(requests.post(
         urljoin(server_config.base_url, REPOSITORY_PATH),
@@ -89,7 +88,6 @@ def create_user(server_config, body, responses=None):
     :param responses: Same as :meth:`handle_response`.
     :returns: Same as :meth:`handle_response`.
     :raises: Same as :meth:`handle_response`.
-
     """
     return handle_response(requests.post(
         urljoin(server_config.base_url, USER_PATH),
@@ -106,7 +104,6 @@ def delete(server_config, href, responses=None):
     :param responses: Same as :meth:`handle_response`.
     :returns: Same as :meth:`handle_response`.
     :raises: Same as :meth:`handle_response`.
-
     """
     return handle_response(requests.delete(
         urljoin(server_config.base_url, href),
@@ -122,7 +119,6 @@ def get_importers(server_config, href, responses=None):
     :param responses: Same as :meth:`handle_response`.
     :returns: Same as :meth:`handle_response`.
     :raises: Same as :meth:`handle_response`.
-
     """
     return handle_response(requests.get(
         urljoin(server_config.base_url, href + 'importers/'),
@@ -154,7 +150,6 @@ def handle_response(response, responses=None):
     :returns: The JSON-decoded body of the ``response``.
     :raises: ``requests.exceptions.HTTPError`` if ``response`` has an HTTP 3XX
         or 4XX status code.
-
     """
     if responses is not None:
         responses.append(response)
@@ -176,7 +171,6 @@ def poll_spawned_tasks(server_config, call_report):
 
     .. _call report:
         http://pulp.readthedocs.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
-
     """
     hrefs = (task['_href'] for task in call_report['spawned_tasks'])
     for href in hrefs:
@@ -196,7 +190,6 @@ def poll_task(server_config, href):
     :returns: An generator yielding response bodies.
     :raises pulp_smash.utils.TaskTimedOutException: If a task takes too long to
         complete.
-
     """
     poll_limit = 10
     poll_counter = 0
@@ -225,7 +218,6 @@ def publish_repository(server_config, href, distributor_id, responses=None):
     :param responses: Same as :meth:`handle_response`.
     :returns: Same as :meth:`handle_response`.
     :raises: Same as :meth:`handle_response`.
-
     """
     return handle_response(requests.post(
         urljoin(server_config.base_url, href + 'actions/publish/'),
@@ -256,7 +248,6 @@ def require(version_string):
     Notice that ``cls.cfg`` is assigned to. This is a **requirement**.
 
     :param version_string: A PEP 440 compatible version string.
-
     """
     # Running the test suite can take a long time. Let's parse the version
     # string now instead of waiting until the test is running.
@@ -287,7 +278,6 @@ def sync_repository(server_config, href, responses=None):
     :param responses: Same as :meth:`handle_response`.
     :returns: Same as :meth:`handle_response`.
     :raises: Same as :meth:`handle_response`.
-
     """
     return handle_response(requests.post(
         urljoin(server_config.base_url, href + 'actions/sync/'),
@@ -339,7 +329,6 @@ def bug_is_testable(bug_id):
         Pulp Smash does not recognize.
     :raises: BugTrackerUnavailableWarning: If the bug tracker cannot be
         contacted.
-
     """
     try:
         status = _get_bug_status(bug_id)
