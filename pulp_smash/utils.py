@@ -195,12 +195,7 @@ def poll_task(server_config, href):
     poll_limit = 10
     poll_counter = 0
     while True:
-        response = requests.get(
-            server_config.base_url + href,
-            **server_config.get_requests_kwargs()
-        )
-        response.raise_for_status()
-        attrs = response.json()
+        attrs = get(server_config, href)
         if attrs['state'] in _TASK_END_STATES:
             yield attrs
             for spawned_task in attrs['spawned_tasks']:
