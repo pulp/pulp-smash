@@ -8,6 +8,8 @@
 from __future__ import unicode_literals
 
 import requests
+from packaging.version import Version
+from pulp_smash import utils
 from pulp_smash.config import get_config
 from pulp_smash.constants import CALL_REPORT_KEYS
 from unittest2 import TestCase
@@ -22,16 +24,16 @@ class SuccessTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         """Make calls to the server and save the responses."""
-        cfg = get_config()
+        cls.cfg = get_config()
         path_json_pairs = (
             (_CONSUMER, {'consumer_criteria': {}}),
             (_REPO, {'repo_criteria': {}})
         )
         cls.responses = tuple((
             requests.post(
-                cfg.base_url + path,
+                cls.cfg.base_url + path,
                 json=json,
-                **cfg.get_requests_kwargs()
+                **cls.cfg.get_requests_kwargs()
             )
             for path, json in path_json_pairs
         ))
@@ -46,6 +48,9 @@ class SuccessTestCase(TestCase):
         """Assert that the responses are JSON and appear to be call reports."""
         for i, response in enumerate(self.responses):
             with self.subTest(i):
+                if (i == 1 and self.cfg.version >= Version('2.8') and
+                        utils.bug_is_untestable(1448)):
+                    self.skipTest('https://pulp.plan.io/issues/1448')
                 self.assertEqual(
                     frozenset(response.json().keys()),
                     CALL_REPORT_KEYS,
