@@ -49,15 +49,15 @@ class _BaseTestCase(unittest2.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Provide a server config and an empty iterable of resource hrefs."""
+        """Provide a server config and an empty set of resources to delete."""
         cls.cfg = config.get_config()
-        cls.hrefs = tuple()
+        cls.resources = set()  # a set of _href paths
 
     @classmethod
     def tearDownClass(cls):
-        """For each href in ``cls.hrefs``, delete that resource."""
-        for href in cls.hrefs:
-            utils.delete(cls.cfg, href)
+        """For each resource in ``cls.resources``, delete that resource."""
+        for resource in cls.resources:
+            utils.delete(cls.cfg, resource)
 
 
 class CreateTestCase(_BaseTestCase):
@@ -147,7 +147,7 @@ class ReadUpdateDeleteTestCase(_BaseTestCase):
             key: utils.create_repository(cls.cfg, body)['_href']
             for key, body in cls.bodies.items()
         }
-        cls.hrefs = (hrefs['read'], hrefs['update'])  # for tearDownClass()
+        cls.resources.update({hrefs[key] for key in {'read', 'update'}})
 
         # Read, update and delete them.
         cls.responses = {}
