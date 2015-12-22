@@ -191,7 +191,7 @@ def poll_task(server_config, href):
     :raises pulp_smash.utils.TaskTimedOutException: If a task takes too long to
         complete.
     """
-    poll_limit = 10
+    poll_limit = 24  # 24 * 5s == 120s
     poll_counter = 0
     while True:
         attrs = get(server_config, href)
@@ -205,6 +205,8 @@ def poll_task(server_config, href):
             raise TaskTimedOutException(
                 'Task {} is ongoing after {} polls.'.format(href, poll_limit)
             )
+        # This approach is dumb, in that we don't account for time spent
+        # waiting for the Pulp server to respond to us.
         sleep(5)
 
 
