@@ -33,9 +33,11 @@ from __future__ import unicode_literals
 
 import os
 import requests
+from packaging.version import Version
 from pulp_smash.config import get_config
 from pulp_smash.constants import CALL_REPORT_KEYS
 from pulp_smash.utils import (
+    bug_is_untestable,
     create_repository,
     delete,
     get,
@@ -268,12 +270,16 @@ class SyncValidFeedTestCase(_BaseTestCase):
 
     def test_task_error(self):
         """Assert each task's "error" field is null."""
+        if self.cfg.version >= Version('2.8') and bug_is_untestable(1455):
+            self.skipTest('https://pulp.plan.io/issues/1455')
         for i, task_body in enumerate(self.task_bodies):
             with self.subTest(i=i):
                 self.assertEqual(task_body['error'], None)
 
     def test_task_traceback(self):
         """Assert each task's "traceback" field is null."""
+        if self.cfg.version >= Version('2.8') and bug_is_untestable(1455):
+            self.skipTest('https://pulp.plan.io/issues/1455')
         for i, task_body in enumerate(self.task_bodies):
             with self.subTest(i=i):
                 self.assertEqual(task_body['traceback'], None)
@@ -298,6 +304,8 @@ class SyncValidFeedTestCase(_BaseTestCase):
         I obtained these numbers by looking at the metadata in the remote
         repository.
         """
+        if self.cfg.version >= Version('2.8') and bug_is_untestable(1455):
+            self.skipTest('https://pulp.plan.io/issues/1455')
         counts = self.repo_after_sync.get('content_unit_counts', {})
         self.assertEqual(counts.get('rpm'), 32)
         self.assertEqual(counts.get('erratum'), 4)
