@@ -122,6 +122,23 @@ class GetImportersTestCase(CommonAssertionsMixin, TestCase):
         cls.mocks = {'handle_response': hand_resp, 'request': request}
 
 
+class GetDistributorsTestCase(CommonAssertionsMixin, TestCase):
+    """Test :meth:`pulp_smash.utils.get_distributors`."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Mock out dependencies and call the function under test."""
+        inputs = {
+            'server_config': ServerConfig('http://example.com'),
+            'href': utils.uuid4(),
+            'responses': None,
+        }
+        with mock.patch.object(utils, 'handle_response') as hand_resp:
+            with mock.patch.object(requests, 'get') as request:
+                cls.output = utils.get_distributors(**inputs)
+        cls.mocks = {'handle_response': hand_resp, 'request': request}
+
+
 class GetTestCase(CommonAssertionsMixin, TestCase):
     """Test :meth:`pulp_smash.utils.get`."""
 
