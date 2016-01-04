@@ -220,3 +220,104 @@ class ReadUpdateDeleteTestCase(_BaseTestCase):
                 self.assertLessEqual(set(want.keys()), set(have.keys()))
                 have = {key: have[key] for key in want.keys()}
                 self.assertEqual(want, have)
+
+
+def _add_importer(server_config, href, json):
+    """Add an importer to a repository and wait for the task to complete."""
+    url = urljoin(server_config.base_url, href)
+    url = urljoin(url, 'importers/')
+    response = requests.post(
+        url,
+        json=json,
+        **server_config.get_requests_kwargs()
+    )
+    response.raise_for_status()
+    if response.status_code == 202:
+        utils.poll_spawned_tasks(server_config, response.json())
+    return response
+
+
+def _add_distributor(server_config, href, json):
+    """Add a distributor to a repository."""
+    url = urljoin(server_config.base_url, href)
+    url = urljoin(url, 'distributors/')
+    response = requests.post(
+        url,
+        json=json,
+        **server_config.get_requests_kwargs()
+    )
+    response.raise_for_status()
+    return response
+
+
+class AddImporterDistributorTestCase(_BaseTestCase):
+    """Add an importer and a distributor to an existing untyped repository.
+
+    See:
+
+    * `Associate an Importer to a Repository
+      <http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/cud.html#associate-an-importer-to-a-repository>`_
+    * `Associate a Distributor with a Repository
+      <http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/cud.html#associate-a-distributor-with-a-repository>`_
+
+
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create a repository and add an importer and distributor to it."""
+        # Create a repository.
+        super(AddImporterDistributorTestCase, cls).setUpClass()
+        href = utils.create_repository(cls.cfg, {'id': utils.uuid4()})['_href']
+        cls.resources.add(href)
+
+        # Read importers and distributors.
+        cls.imp_before = utils.get_importers(cls.cfg, href)
+        cls.distrib_before = utils.get_distributors(cls.cfg, href)
+
+        # Add an importer and a distributor.
+        cls.responses = {}
+        cls.responses['add importer'] = _add_importer(
+            cls.cfg,
+            href,
+            {'importer_type_id': _IMPORTER_TYPE_ID},
+        )
+        cls.responses['add distributor'] = _add_distributor(
+            cls.cfg,
+            href,
+            {
+                'distributor_config': {},
+                'distributor_id': utils.uuid4(),
+                'distributor_type_id': 'iso_distributor',
+            },
+        )
+
+        # Read importers and distributors again.
+        cls.imp_after = utils.get_importers(cls.cfg, href)
+        cls.distrib_after = utils.get_distributors(cls.cfg, href)
+
+    def test_add_importer(self):
+        """Check the HTTP status code for adding an importer."""
+        self.assertEqual(self.responses['add importer'].status_code, 202)
+
+    def test_add_distributor(self):
+        """Check the HTTP status code for adding a distributor."""
+        self.assertEqual(self.responses['add distributor'].status_code, 201)
+
+    def test_before(self):
+        """Check the repository's importers and distributors before adding any.
+
+        By default, the repository should have zero of each.
+        """
+        for i, attrs in enumerate((self.imp_before, self.distrib_before)):
+            with self.subTest(i=i):
+                self.assertEqual(len(attrs), 0, attrs)
+
+    def test_after(self):
+        """Check the repository's importers and distributors after adding any.
+
+        The repository should have one of each.
+        """
+        for i, attrs in enumerate((self.imp_after, self.distrib_after)):
+            with self.subTest(i=i):
+                self.assertEqual(len(attrs), 1, attrs)
