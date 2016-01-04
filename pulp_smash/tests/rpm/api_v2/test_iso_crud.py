@@ -2,15 +2,16 @@
 """Test CRUD for ISO RPM repositories."""
 from __future__ import unicode_literals
 
+try:  # try Python 3 import first
+    from urllib.parse import urljoin
+except ImportError:
+    from urlparse import urljoin  # pylint:disable=C0411,E0401
+
 import requests
 import unittest2
 from packaging.version import Version
-from pulp_smash import config, constants, utils
 
-try:  # try Python 3 import first
-    from urllib.parse import urljoin  # pylint:disable=no-name-in-module
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=import-error
+from pulp_smash import config, constants, utils
 
 
 _DISTRIBUTOR = {

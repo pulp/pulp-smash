@@ -32,8 +32,15 @@ Assertions not explored in this module include:
 from __future__ import unicode_literals
 
 import os
+try:  # try Python 3 import first
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse  # pylint:disable=C0411,E0401
+
 import requests
 from packaging.version import Version
+from unittest2 import TestCase
+
 from pulp_smash.config import get_config
 from pulp_smash.constants import CALL_REPORT_KEYS
 from pulp_smash.utils import (
@@ -48,14 +55,6 @@ from pulp_smash.utils import (
     sync_repository,
     uuid4,
 )
-from unittest2 import TestCase
-
-
-from sys import version_info
-if version_info.major == 2:
-    from urlparse import urlparse  # noqa pylint:disable=import-error,no-name-in-module
-else:
-    from urllib.parse import urlparse  # noqa pylint:disable=import-error,no-name-in-module
 
 
 _VALID_FEED = 'http://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/zoo/'

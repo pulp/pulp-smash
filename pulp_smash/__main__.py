@@ -4,8 +4,10 @@ from __future__ import print_function, unicode_literals
 
 import textwrap
 from os.path import join
-from pulp_smash.config import ServerConfig
+
 from xdg import BaseDirectory
+
+from pulp_smash.config import ServerConfig
 
 MESSAGE = tuple((
     '''\

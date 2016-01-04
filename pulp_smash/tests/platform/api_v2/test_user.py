@@ -16,11 +16,12 @@ The assumptions explored in this module have the following dependencies::
 from __future__ import unicode_literals
 
 import requests
+from unittest2 import TestCase
+
 from packaging.version import Version
 from pulp_smash.config import get_config
 from pulp_smash.constants import LOGIN_PATH, USER_PATH
 from pulp_smash.utils import create_user, delete, uuid4
-from unittest2 import TestCase
 
 
 def _search_logins(response):

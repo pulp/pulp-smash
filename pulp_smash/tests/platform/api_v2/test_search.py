@@ -28,17 +28,17 @@ The assumptions explored in this module have the following dependencies::
 """
 from __future__ import unicode_literals
 
+try:  # try Python 3 import first
+    from urllib.parse import urlencode
+except ImportError:
+    from urllib import urlencode  # pylint:disable=C0411,E0611
+
 import requests
+from unittest2 import TestCase, skip
+
 from pulp_smash.config import get_config
 from pulp_smash.constants import USER_PATH
 from pulp_smash.utils import create_user, delete, uuid4
-from unittest2 import TestCase, skip
-
-from sys import version_info
-if version_info.major == 2:
-    from urllib import urlencode  # pylint:disable=no-name-in-module
-else:
-    from urllib.parse import urlencode  # noqa pylint:disable=no-name-in-module,import-error
 
 
 _SEARCH_PATH = USER_PATH + 'search/'

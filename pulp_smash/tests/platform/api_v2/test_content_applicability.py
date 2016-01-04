@@ -8,10 +8,11 @@ from __future__ import unicode_literals
 
 import requests
 from packaging.version import Version
+from unittest2 import TestCase
+
 from pulp_smash import utils
 from pulp_smash.config import get_config
 from pulp_smash.constants import CALL_REPORT_KEYS
-from unittest2 import TestCase
 
 _CONSUMER = '/pulp/api/v2/consumers/actions/content/regenerate_applicability/'
 _REPO = '/pulp/api/v2/repositories/actions/content/regenerate_applicability/'

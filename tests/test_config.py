@@ -5,21 +5,18 @@ from __future__ import unicode_literals
 import json
 import os
 from itertools import permutations
+from random import choice, randint
+try:  # try Python 3 import first
+    import builtins
+except ImportError:
+    import __builtin__ as builtins  # pylint:disable=C0411,E0401
+
 from mock import mock_open, patch
+from unittest2 import TestCase
+
 from pulp_smash import config
 from pulp_smash.config import ServerConfig, _public_attrs
 from pulp_smash.utils import uuid4
-from random import choice, randint
-from unittest2 import TestCase
-
-from sys import version_info
-if version_info.major == 2:
-    # The `__builtins__` module (note the "s") also provides the `open`
-    # function. However, that module is an implementation detail for CPython 2,
-    # so it should not be relied on.
-    import __builtin__ as builtins  # pylint:disable=import-error
-else:
-    import builtins  # pylint:disable=import-error
 
 
 def _gen_attrs():

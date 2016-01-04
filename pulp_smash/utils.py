@@ -2,19 +2,19 @@
 """Utility functions for Pulp tests."""
 from __future__ import unicode_literals
 
-import requests
 import uuid
 import warnings
 from functools import wraps
-from packaging.version import Version
-from pulp_smash.constants import REPOSITORY_PATH, USER_PATH
 from time import sleep
-
-
 try:  # try Python 3 import first
-    from urllib.parse import urljoin  # pylint:disable=no-name-in-module
+    from urllib.parse import urljoin
 except ImportError:
-    from urlparse import urljoin  # pylint:disable=import-error
+    from urlparse import urljoin  # pylint:disable=C0411,E0401
+
+import requests
+from packaging.version import Version
+
+from pulp_smash.constants import REPOSITORY_PATH, USER_PATH
 
 
 _TASK_END_STATES = ('canceled', 'error', 'finished', 'skipped', 'timed out')

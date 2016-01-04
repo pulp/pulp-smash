@@ -7,10 +7,11 @@
 from __future__ import unicode_literals
 
 import requests
+from unittest2 import TestCase
+
 from pulp_smash.config import get_config
 from pulp_smash.constants import ERROR_KEYS, LOGIN_KEYS, LOGIN_PATH
 from pulp_smash.utils import bug_is_untestable
-from unittest2 import TestCase
 
 
 class LoginSuccessTestCase(TestCase):

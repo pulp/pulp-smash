@@ -12,8 +12,9 @@ from __future__ import unicode_literals
 import json
 import os
 from copy import deepcopy
-from packaging.version import Version
 from threading import Lock
+
+from packaging.version import Version
 from xdg import BaseDirectory
 
 

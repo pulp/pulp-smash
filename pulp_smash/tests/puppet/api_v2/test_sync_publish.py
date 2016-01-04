@@ -35,7 +35,11 @@ Assertions not explored in this module include:
 from __future__ import unicode_literals
 
 from itertools import product
+
+import requests
 from packaging.version import Version
+from unittest2 import TestCase
+
 from pulp_smash.config import get_config
 from pulp_smash.constants import CALL_REPORT_KEYS
 from pulp_smash.utils import (
@@ -48,8 +52,6 @@ from pulp_smash.utils import (
     sync_repository,
     uuid4,
 )
-from unittest2 import TestCase
-import requests
 
 _VALID_PUPPET_FEED = 'http://forge.puppetlabs.com'
 _VALID_PUPPET_QUERY = 'pulp-pulp'

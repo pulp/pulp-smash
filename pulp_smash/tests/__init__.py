@@ -36,8 +36,9 @@ problem, as it is thread-unsafe.
 """
 from __future__ import unicode_literals
 
-import requests
 from warnings import simplefilter
+
+import requests
 
 simplefilter(
     'ignore',

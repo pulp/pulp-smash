@@ -2,12 +2,14 @@
 """Unit tests for :mod:`pulp_smash.utils`."""
 from __future__ import unicode_literals
 
-import mock
 import random
+
+import mock
 import requests
+from unittest2 import TestCase
+
 from pulp_smash import utils
 from pulp_smash.config import ServerConfig
-from unittest2 import TestCase
 
 
 class UUID4TestCase(TestCase):

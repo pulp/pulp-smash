@@ -16,7 +16,14 @@ The assumptions explored in this module have the following dependencies::
 """
 from __future__ import unicode_literals
 
+try:  # try Python 3 first
+    from urllib.parse import urljoin
+except ImportError:
+    from urlparse import urljoin  # pylint:disable=C0411,E0401
+
 import requests
+from requests.exceptions import HTTPError
+from unittest2 import TestCase
 
 from pulp_smash.config import get_config
 from pulp_smash.constants import REPOSITORY_PATH, ERROR_KEYS
@@ -27,13 +34,6 @@ from pulp_smash.utils import (
     require,
     uuid4,
 )
-from requests.exceptions import HTTPError
-from unittest2 import TestCase
-
-try:  # try Python 3 first
-    from urllib.parse import urljoin  # pylint:disable=no-name-in-module
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=import-error
 
 
 class CreateSuccessTestCase(TestCase):
