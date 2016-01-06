@@ -27,13 +27,8 @@ from unittest2 import TestCase
 
 from pulp_smash.config import get_config
 from pulp_smash.constants import REPOSITORY_PATH, ERROR_KEYS
-from pulp_smash.utils import (
-    bug_is_untestable,
-    create_repository,
-    delete,
-    require,
-    uuid4,
-)
+from pulp_smash.selectors import bug_is_untestable, require
+from pulp_smash.utils import create_repository, delete, uuid4
 
 
 class CreateSuccessTestCase(TestCase):

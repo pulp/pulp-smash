@@ -10,7 +10,7 @@ import requests
 from packaging.version import Version
 from unittest2 import TestCase
 
-from pulp_smash import utils
+from pulp_smash import selectors
 from pulp_smash.config import get_config
 from pulp_smash.constants import CALL_REPORT_KEYS
 
@@ -49,7 +49,7 @@ class SuccessTestCase(TestCase):
         for i, response in enumerate(self.responses):
             with self.subTest(i):
                 if (i == 1 and self.cfg.version >= Version('2.8') and
-                        utils.bug_is_untestable(1448)):
+                        selectors.bug_is_untestable(1448)):
                     self.skipTest('https://pulp.plan.io/issues/1448')
                 self.assertEqual(
                     frozenset(response.json().keys()),

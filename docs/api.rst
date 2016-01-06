@@ -13,6 +13,7 @@ developers, not a gospel.
     api/pulp_smash
     api/pulp_smash.config
     api/pulp_smash.constants
+    api/pulp_smash.selectors
     api/pulp_smash.tests
     api/pulp_smash.tests.docker
     api/pulp_smash.tests.docker.api_v2
@@ -34,4 +35,5 @@ developers, not a gospel.
     api/pulp_smash.utils
     api/tests
     api/tests.test_config
+    api/tests.test_selectors
     api/tests.test_utils

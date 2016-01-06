@@ -43,8 +43,8 @@ from unittest2 import TestCase
 
 from pulp_smash.config import get_config
 from pulp_smash.constants import CALL_REPORT_KEYS
+from pulp_smash.selectors import bug_is_untestable
 from pulp_smash.utils import (
-    bug_is_untestable,
     create_repository,
     delete,
     get,

@@ -28,6 +28,7 @@ lint-pylint:
 		pulp_smash/__main__.py \
 		pulp_smash/config.py \
 		pulp_smash/constants.py \
+		pulp_smash/selectors.py \
 		pulp_smash/utils.py
 	pylint --reports=n --disable=I,duplicate-code pulp_smash/tests/
 

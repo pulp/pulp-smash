@@ -11,7 +11,7 @@ import requests
 import unittest2
 from packaging.version import Version
 
-from pulp_smash import config, constants, utils
+from pulp_smash import config, constants, selectors, utils
 
 
 _DISTRIBUTOR = {
@@ -207,7 +207,8 @@ class ReadUpdateDeleteTestCase(_BaseTestCase):
 
     def test_read_distributors(self):
         """Assert each read w/distributors contains info about distributors."""
-        if self.cfg.version < Version('2.8') and utils.bug_is_untestable(1452):
+        if (self.cfg.version < Version('2.8') and
+                selectors.bug_is_untestable(1452)):
             self.skipTest('https://pulp.plan.io/issues/1452')
         for key in {'read_distributors', 'read_details'}:
             with self.subTest(key=key):
