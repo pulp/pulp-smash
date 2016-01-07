@@ -11,6 +11,7 @@ developers, not a gospel.
 .. toctree::
 
     api/pulp_smash
+    api/pulp_smash.api
     api/pulp_smash.config
     api/pulp_smash.constants
     api/pulp_smash.selectors
