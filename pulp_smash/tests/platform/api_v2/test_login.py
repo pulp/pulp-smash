@@ -6,11 +6,9 @@
 """
 from __future__ import unicode_literals
 
-import requests
 from unittest2 import TestCase
 
-from pulp_smash import selectors
-from pulp_smash.config import get_config
+from pulp_smash import api, config, selectors
 from pulp_smash.constants import ERROR_KEYS, LOGIN_KEYS, LOGIN_PATH
 
 
@@ -20,11 +18,7 @@ class LoginSuccessTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         """Successfully log in to the server."""
-        cfg = get_config()
-        cls.response = requests.post(
-            cfg.base_url + LOGIN_PATH,
-            **cfg.get_requests_kwargs()
-        )
+        cls.response = api.Client(config.get_config()).post(LOGIN_PATH)
 
     def test_status_code(self):
         """Assert that the response has an HTTP 200 status code."""
@@ -41,12 +35,8 @@ class LoginFailureTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         """Unsuccessfully log in to the server."""
-        cfg = get_config()
-        cfg.auth = ('', '')
-        cls.response = requests.post(
-            cfg.base_url + LOGIN_PATH,
-            **cfg.get_requests_kwargs()
-        )
+        client = api.Client(config.get_config(), api.echo_handler)
+        cls.response = client.post(LOGIN_PATH, auth=('', ''))
 
     def test_status_code(self):
         """Assert that the response has an HTTP 401 status code."""
