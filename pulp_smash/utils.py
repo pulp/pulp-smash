@@ -11,7 +11,7 @@ except ImportError:
 
 import requests
 
-from pulp_smash.constants import REPOSITORY_PATH, USER_PATH
+from pulp_smash.constants import REPOSITORY_PATH
 
 
 _TASK_END_STATES = ('canceled', 'error', 'finished', 'skipped', 'timed out')
@@ -37,22 +37,6 @@ def create_repository(server_config, body, responses=None):
     """
     return handle_response(requests.post(
         urljoin(server_config.base_url, REPOSITORY_PATH),
-        json=body,
-        **server_config.get_requests_kwargs()
-    ), responses)
-
-
-def create_user(server_config, body, responses=None):
-    """Create a user. Return the response body.
-
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param body: An object to encode as JSON and pass as the request body.
-    :param responses: Same as :meth:`handle_response`.
-    :returns: Same as :meth:`handle_response`.
-    :raises: Same as :meth:`handle_response`.
-    """
-    return handle_response(requests.post(
-        urljoin(server_config.base_url, USER_PATH),
         json=body,
         **server_config.get_requests_kwargs()
     ), responses)

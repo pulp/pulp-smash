@@ -69,23 +69,6 @@ class CreateRepositoryTestCase(CommonAssertionsMixin, TestCase):
         cls.mocks = {'handle_response': hand_resp, 'request': request}
 
 
-class CreateUserTestCase(CommonAssertionsMixin, TestCase):
-    """Test :meth:`pulp_smash.utils.create_user`."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Mock out dependencies and call the function under test."""
-        inputs = {
-            'server_config': ServerConfig('http://example.com'),
-            'body': None,
-            'responses': None,
-        }
-        with mock.patch.object(utils, 'handle_response') as hand_resp:
-            with mock.patch.object(requests, 'post') as request:
-                cls.output = utils.create_user(**inputs)
-        cls.mocks = {'handle_response': hand_resp, 'request': request}
-
-
 class DeleteTestCase(CommonAssertionsMixin, TestCase):
     """Test :meth:`pulp_smash.utils.delete`."""
 
