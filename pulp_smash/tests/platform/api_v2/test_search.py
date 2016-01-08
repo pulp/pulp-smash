@@ -28,17 +28,13 @@ The assumptions explored in this module have the following dependencies::
 """
 from __future__ import unicode_literals
 
-try:  # try Python 3 import first
-    from urllib.parse import urlencode
-except ImportError:
-    from urllib import urlencode  # pylint:disable=C0411,E0611
+import random
 
-import requests
-from unittest2 import TestCase, skip
+import unittest2
 
-from pulp_smash.config import get_config
+from pulp_smash import api, config
 from pulp_smash.constants import USER_PATH
-from pulp_smash.utils import create_user, delete, uuid4
+from pulp_smash.utils import uuid4
 
 
 _SEARCH_PATH = USER_PATH + 'search/'
@@ -46,51 +42,33 @@ _SEARCH_PATH = USER_PATH + 'search/'
 
 def _create_users(server_config, num):
     """Create ``num`` users with random logins. Return tuple of attributes."""
-    return tuple((
-        create_user(server_config, {'login': uuid4()}) for _ in range(num)
-    ))
+    client = api.Client(server_config, api.json_handler)
+    users = (client.post(USER_PATH, {'login': uuid4()}) for _ in range(num))
+    return tuple(users)
 
 
-def _search_get(server_config, query):
-    """Search for users. ``query`` may be a raw query string or a dict."""
-    if isinstance(query, dict):
-        query = '?' + urlencode(query)
-    return requests.get(
-        server_config.base_url + _SEARCH_PATH + query,
-        **server_config.get_requests_kwargs()
-    )
-
-
-def _search_post(server_config, json):
-    """Search for users. ``json`` must be a JSON-encodable object."""
-    return requests.post(
-        server_config.base_url + _SEARCH_PATH,
-        json=json,
-        **server_config.get_requests_kwargs()
-    )
-
-
-class _BaseTestCase(TestCase):
-    """Provides functionality common to most test cases in this module."""
+class _BaseTestCase(unittest2.TestCase):
+    """Provide a server config to tests, and delete created resources."""
 
     @classmethod
     def setUpClass(cls):
-        """Set default values for the other methods on this class."""
-        cls.cfg = get_config()
-        cls.attrs_iter = ()  # ({'login': …, '_href': …}, {…})
-        cls.responses = {}  # {'get': …, 'post': …}
+        """Provide a server config and an empty set of resources to delete."""
+        cls.cfg = config.get_config()
+        cls.resources = set()  # a set of _href paths
+        cls.searches = {}
 
     def test_status_code(self):
-        """All responses should have HTTP 200 status codes."""
-        for action, response in self.responses.items():
-            with self.subTest(action=action):
+        """Assert each search has an HTTP 200 status code."""
+        for key, response in self.searches.items():
+            with self.subTest(key=key):
                 self.assertEqual(response.status_code, 200)
 
     @classmethod
     def tearDownClass(cls):
-        """Destroy all resources created in :meth:`setUpClass`."""
-        for attrs in cls.attrs_iter:
-            delete(cls.cfg, attrs['_href'])
+        """For each resource in ``cls.resources``, delete that resource."""
+        client = api.Client(cls.cfg)
+        for resource in cls.resources:
+            client.delete(resource)
 
 
 class MinimalTestCase(_BaseTestCase):
@@ -106,25 +84,26 @@ class MinimalTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create one user. Execute searches."""
         super(MinimalTestCase, cls).setUpClass()
-        cls.attrs_iter = _create_users(cls.cfg, 1)
-        cls.responses = {
-            'get': _search_get(cls.cfg, ''),
-            'post': _search_post(cls.cfg, {'criteria': {}}),
+        client = api.Client(cls.cfg)
+        cls.user = _create_users(cls.cfg, 1)[0]
+        cls.searches = {
+            'get': client.get(_SEARCH_PATH),
+            'post': client.post(_SEARCH_PATH, {'criteria': {}}),
         }
+        cls.resources.add(cls.user['_href'])  # mark for deletion
 
     def test_user_found(self):
-        """All responses should include the user we created."""
-        for action, response in self.responses.items():
-            with self.subTest(action=action):
-                response.raise_for_status()
-                self.assertIn(
-                    self.attrs_iter[0]['login'],
-                    {user['login'] for user in response.json()}
-                )
+        """Assert each search should include the user we created."""
+        for key, response in self.searches.items():
+            with self.subTest(key=key):
+                logins = {user['login'] for user in response.json()}
+                self.assertIn(self.user['login'], logins)
 
 
 class SortTestCase(_BaseTestCase):
     """Ask for sorted search results.
+
+    There is no specification for executing these searches with GET.
 
     ==== ====
     POST ``{'criteria': {'sort': [['id', 'ascending']]}}``
@@ -136,31 +115,26 @@ class SortTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create two users. Execute searches."""
         super(SortTestCase, cls).setUpClass()
-        cls.attrs_iter = _create_users(cls.cfg, 2)
-        for order in ('ascending', 'descending'):
-            query = {'sort': [['id', order]]}
-            cls.responses.update({
-                # No specification exists for these GET searches.
-                # 'get_' + order: _search_get(cls.cfg, 'unknown query'),
-                'post_' + order: _search_post(cls.cfg, {'criteria': query}),
-            })
+        cls.resources = {user['_href'] for user in _create_users(cls.cfg, 2)}
+        client = api.Client(cls.cfg)
+        for order in {'ascending', 'descending'}:
+            json = {'criteria': {'sort': [['id', order]]}}
+            cls.searches['post_' + order] = client.post(_SEARCH_PATH, json)
 
     def test_ascending(self):
-        """Ensure that ascending results are ordered from low to high."""
-        response = self.responses['post_ascending']
-        response.raise_for_status()
-        ids = [attrs['_id']['$oid'] for attrs in response.json()]
+        """Assert ascending results are ordered from low to high."""
+        results = self.searches['post_ascending'].json()
+        ids = [result['_id']['$oid'] for result in results]
         self.assertEqual(ids, sorted(ids))
 
     def test_descending(self):
-        """Ensure that descending results are ordered from high to low."""
-        response = self.responses['post_descending']
-        response.raise_for_status()
-        ids = [attrs['_id']['$oid'] for attrs in response.json()]
+        """Assert descending results are ordered from high to low."""
+        results = self.searches['post_descending'].json()
+        ids = [result['_id']['$oid'] for result in results]
         self.assertEqual(ids, sorted(ids, reverse=True))
 
 
-@skip('See: https://pulp.plan.io/issues/1332')
+@unittest2.skip('See: https://pulp.plan.io/issues/1332')
 class FieldTestCase(_BaseTestCase):
     """Ask for a single field in search results.
 
@@ -174,22 +148,25 @@ class FieldTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create one user. Execute searches."""
         super(FieldTestCase, cls).setUpClass()
-        cls.attrs_iter = _create_users(cls.cfg, 1)
-        cls.responses = {
-            'get': _search_get(cls.cfg, '?field=name'),
-            'post': _search_post(cls.cfg, {'criteria': {'fields': ['name']}}),
+        cls.resources = {_create_users(cls.cfg, 1)[0]['_href']}
+        client = api.Client(cls.cfg)
+        cls.searches = {
+            'get': client.get(_SEARCH_PATH, params={'field': 'name'}),
+            'post': client.post(
+                _SEARCH_PATH,
+                {'criteria': {'fields': ['name']}},
+            )
         }
 
     def test_field(self):
         """Only the requested key should be in each response."""
-        for action, response in self.responses.items():
-            with self.subTest(action=action):
-                response.raise_for_status()
-                for attrs in response.json():
-                    self.assertEqual(set(attrs.keys()), {'name'})
+        for method, response in self.searches.items():
+            with self.subTest(method=method):
+                for result in response.json():  # for result in results:
+                    self.assertEqual(set(result.keys()), {'name'})
 
 
-@skip('See: https://pulp.plan.io/issues/1332')
+@unittest2.skip('See: https://pulp.plan.io/issues/1332')
 class FieldsTestCase(_BaseTestCase):
     """Ask for several fields in search results.
 
@@ -203,26 +180,28 @@ class FieldsTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create one user. Execute searches."""
         super(FieldsTestCase, cls).setUpClass()
-        cls.attrs_iter = _create_users(cls.cfg, 1)
-        cls.responses = {
-            'get': _search_get(cls.cfg, '?field=login&field=roles'),
-            'post': _search_post(
-                cls.cfg,
+        cls.resources = {_create_users(cls.cfg, 1)[0]['_href']}
+        client = api.Client(cls.cfg)
+        cls.searches = {
+            'get': client.get(_SEARCH_PATH, params='?field=login&field=roles'),
+            'post': client.post(
+                _SEARCH_PATH,
                 {'criteria': {'fields': ['login', 'roles']}},
             ),
         }
 
     def test_fields(self):
         """Only the requested keys should be in each response."""
-        for action, response in self.responses.items():
+        for action, response in self.searches.items():
             with self.subTest(action=action):
-                response.raise_for_status()
-                for attrs in response.json():
-                    self.assertEqual(set(attrs.keys()), {'login', 'roles'})
+                for result in response.json():  # for result in results:
+                    self.assertEqual(set(result.keys()), {'login', 'roles'})
 
 
 class FiltersIdTestCase(_BaseTestCase):
     """Ask for a resource with a specific ID.
+
+    There is no specification for executing these searches with GET.
 
     ==== ====
     GET  ``{'filters': {'id': '…'}}`` (urlencoded)
@@ -234,28 +213,24 @@ class FiltersIdTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create two users. Search for one user."""
         super(FiltersIdTestCase, cls).setUpClass()
-        cls.attrs_iter = _create_users(cls.cfg, 2)
-        cls.id_ = cls.attrs_iter[0]['id']
-        query = {'filters': {'id': cls.id_}}
-        cls.responses = {
-            # No specification exists for these GET searches.
-            # 'get': _search_get(cls.cfg, 'unknown query'),
-            'post': _search_post(cls.cfg, {'criteria': query}),
-        }
+        users = _create_users(cls.cfg, 2)
+        cls.resources = {user['_href'] for user in users}
+        cls.user = random.choice(users)  # search for this user
+        json = {'criteria': {'filters': {'id': cls.user['id']}}}
+        cls.searches['post'] = api.Client(cls.cfg).post(_SEARCH_PATH, json)
 
     def test_result_ids(self):
-        """Check that the results have the correct IDs."""
-        for action, response in self.responses.items():
-            with self.subTest(action=action):
-                response.raise_for_status()
-                self.assertEqual(
-                    {attrs['_id']['$oid'] for attrs in response.json()},
-                    {self.id_}
-                )
+        """Assert the search results contain the correct IDs."""
+        for method, response in self.searches.items():
+            with self.subTest(method=method):
+                ids = {result['_id']['$oid'] for result in response.json()}
+                self.assertEqual({self.user['id']}, ids)
 
 
 class FiltersIdsTestCase(_BaseTestCase):
     """Ask for resources with one of several IDs.
+
+    There is no specification for executing these searches with GET.
 
     ==== ====
     GET  ``{'filters': {'id': {'$in': ['…', '…']}}}``
@@ -265,30 +240,28 @@ class FiltersIdsTestCase(_BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Create three users. Search for the first two users."""
+        """Create three users. Search for two users."""
         super(FiltersIdsTestCase, cls).setUpClass()
-        cls.attrs_iter = _create_users(cls.cfg, 3)
-        cls.ids = [attrs['id'] for attrs in cls.attrs_iter[0:1]]
-        query = {'filters': {'id': {'$in': cls.ids}}}
-        cls.responses = {
-            # No specification exists for these GET searches.
-            # 'get': _search_get(cls.cfg, 'unknown query'),
-            'post': _search_post(cls.cfg, {'criteria': query}),
-        }
+        users = _create_users(cls.cfg, 3)
+        cls.resources = {user['_href'] for user in users}
+        cls.user_ids = [user['id'] for user in random.sample(users, 2)]  # noqa pylint:disable=unsubscriptable-object
+        cls.searches['post'] = api.Client(cls.cfg).post(
+            _SEARCH_PATH,
+            {'criteria': {'filters': {'id': {'$in': cls.user_ids}}}},
+        )
 
     def test_result_ids(self):
-        """Check that the results have the correct IDs."""
-        for action, response in self.responses.items():
-            with self.subTest(action=action):
-                response.raise_for_status()
-                self.assertEqual(
-                    {attrs['_id']['$oid'] for attrs in response.json()},
-                    set(self.ids),
-                )
+        """Assert the search results contain the correct IDs."""
+        for method, response in self.searches.items():
+            with self.subTest(method=method):
+                ids = {result['_id']['$oid'] for result in response.json()}
+                self.assertEqual(set(self.user_ids), ids)
 
 
 class LimitSkipTestCase(_BaseTestCase):
     """Ask for search results to be limited or skipped.
+
+    There is no specification for executing these searches with GET.
 
     ==== ====
     GET  ``{'filters': {'id': {'$in': [id1, id2]}}, 'limit': 1}``
@@ -302,22 +275,19 @@ class LimitSkipTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create two users. Execute searches."""
         super(LimitSkipTestCase, cls).setUpClass()
-        cls.attrs_iter = _create_users(cls.cfg, 2)
-        cls.ids = [attrs['id'] for attrs in cls.attrs_iter]
-        for criterion in ('limit', 'skip'):
-            query = {'filters': {'id': {'$in': cls.ids}}, criterion: 1}
-            cls.responses.update({
-                # No specification exists for these GET searches.
-                # 'get_' + criterion: _search_get(cls.cfg, 'unknown query'),
-                'post_' + criterion: _search_post(cls.cfg, {'criteria': query})
-            })
+        users = _create_users(cls.cfg, 2)
+        cls.resources = {user['_href'] for user in users}
+        cls.user_ids = [user['id'] for user in users]
+        client = api.Client(cls.cfg)
+        for criterion in {'limit', 'skip'}:
+            key = 'post_' + criterion
+            query = {'filters': {'id': {'$in': cls.user_ids}}, criterion: 1}
+            cls.searches[key] = client.post(_SEARCH_PATH, {'criteria': query})
 
     def test_results(self):
         """Check that one of the two created users has been found."""
-        for action, response in self.responses.items():
-            with self.subTest(action=action):
-                response.raise_for_status()
-                # The search should yield one of the two users created.
-                found_ids = [attrs['_id']['$oid'] for attrs in response.json()]
-                self.assertEqual(len(found_ids), 1, found_ids)
-                self.assertIn(found_ids[0], self.ids)
+        for key, response in self.searches.items():
+            with self.subTest(key=key):
+                ids = [result['_id']['$oid'] for result in response.json()]
+                self.assertEqual(len(ids), 1, ids)
+                self.assertIn(ids[0], self.user_ids)
