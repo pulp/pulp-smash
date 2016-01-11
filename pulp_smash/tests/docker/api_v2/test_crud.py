@@ -8,7 +8,9 @@ from __future__ import unicode_literals
 
 import unittest2
 from packaging.version import Version
-from pulp_smash import config, utils
+
+from pulp_smash import api, config, utils
+from pulp_smash.constants import REPOSITORY_PATH
 
 
 def _gen_docker_repo_body():
@@ -30,15 +32,16 @@ class _BaseTestCase(unittest2.TestCase):
     def setUpClass(cls):
         """Provide a server config and an iterable of resources to delete."""
         cls.cfg = config.get_config()
-        cls.attrs_iter = tuple()
+        cls.resources = set()
         if cls.cfg.version < Version('2.8'):
             raise unittest2.SkipTest('These tests require at least Pulp 2.8.')
 
     @classmethod
     def tearDownClass(cls):
         """Delete created resources."""
-        for attrs in cls.attrs_iter:
-            utils.delete(cls.cfg, attrs['_href'])
+        client = api.Client(cls.cfg)
+        for resource in cls.resources:
+            client.delete(resource)
 
 
 class CreateTestCase(_BaseTestCase):
@@ -49,24 +52,24 @@ class CreateTestCase(_BaseTestCase):
         """Create two Docker repositories, with and without feeds."""
         super(CreateTestCase, cls).setUpClass()
         cls.bodies = tuple((_gen_docker_repo_body() for _ in range(2)))
-        cls.bodies[1]['importer_config'] = {
-            'feed': 'http://' + utils.uuid4(),  # Pulp checks for URI scheme
-        }
-        cls.attrs_iter = tuple((
-            utils.create_repository(cls.cfg, body) for body in cls.bodies
-        ))
-        cls.importers_iter = tuple((
-            utils.get_importers(cls.cfg, attrs['_href'])
-            for attrs in cls.attrs_iter
-        ))
+        cls.bodies[1]['importer_config'] = {'feed': 'http://' + utils.uuid4()}
+
+        client = api.Client(cls.cfg, api.json_handler)
+        cls.repos = []
+        cls.importers_iter = []
+        for body in cls.bodies:
+            repo = client.post(REPOSITORY_PATH, body)
+            cls.repos.append(repo)
+            cls.resources.add(repo['_href'])
+            cls.importers_iter.append(client.get(repo['_href'] + 'importers/'))
 
     def test_id_notes(self):
         """Validate the ``id`` and ``notes`` attributes for each repo."""
-        for key in ('id', 'notes'):
-            for body, attrs in zip(self.bodies, self.attrs_iter):
-                with self.subTest((key, body, attrs)):
-                    self.assertIn(key, attrs)
-                    self.assertEqual(body[key], attrs[key])
+        for body, repo in zip(self.bodies, self.repos):  # for input, output:
+            for key in {'id', 'notes'}:
+                with self.subTest(body=body):
+                    self.assertIn(key, repo)
+                    self.assertEqual(body[key], repo[key])
 
     def test_number_importers(self):
         """Each repository should have only one importer."""
@@ -78,7 +81,7 @@ class CreateTestCase(_BaseTestCase):
         """Validate the ``importer_type_id`` attribute of each importer."""
         key = 'importer_type_id'
         for body, importers in zip(self.bodies, self.importers_iter):
-            with self.subTest((body, importers)):
+            with self.subTest(body=body):
                 self.assertIn(key, importers[0])
                 self.assertEqual(body[key], importers[0][key])
 
@@ -86,6 +89,6 @@ class CreateTestCase(_BaseTestCase):
         """Validate the ``config`` attribute of each importer."""
         key = 'config'
         for body, importers in zip(self.bodies, self.importers_iter):
-            with self.subTest((body, importers)):
+            with self.subTest(body=body):
                 self.assertIn(key, importers[0])
                 self.assertEqual(body['importer_' + key], importers[0][key])
