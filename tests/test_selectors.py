@@ -5,12 +5,13 @@ from __future__ import unicode_literals
 import random
 
 import mock
-from unittest2 import TestCase
+import requests
+import unittest2
 
 from pulp_smash import selectors
 
 
-class BugTestableTestCase(TestCase):
+class BugIsTestableTestCase(unittest2.TestCase):
     """Test :meth:`pulp_smash.selectors.bug_is_testable` and its partner."""
 
     def test_testable_status(self):
@@ -48,3 +49,13 @@ class BugTestableTestCase(TestCase):
         ):
             with self.assertRaises(selectors.BugStatusUnknownError):
                 selectors.bug_is_testable(None)
+
+    def test_connection_error(self):
+        """Make the dependent function raise a connection error."""
+        with mock.patch.object(
+            selectors,
+            '_get_bug_status',
+            side_effect=requests.exceptions.ConnectionError
+        ):
+            with self.assertWarns(RuntimeWarning):
+                self.assertTrue(selectors.bug_is_testable(None))

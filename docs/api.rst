@@ -35,6 +35,7 @@ developers, not a gospel.
     api/pulp_smash.tests.rpm.api_v2.test_sync_publish
     api/pulp_smash.utils
     api/tests
+    api/tests.test_api
     api/tests.test_config
     api/tests.test_selectors
     api/tests.test_utils

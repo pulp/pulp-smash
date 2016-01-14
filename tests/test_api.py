@@ -106,3 +106,26 @@ class ClientTestCase(unittest2.TestCase):
         for meth, request in self.mocks.items():
             with self.subTest(meth=meth):
                 self.assertEqual(request.call_args[0][0], meth.upper())
+
+
+class ClientTestCase2(unittest2.TestCase):
+    """More tests for :class:`pulp_smash.api.Client`."""
+
+    def test_response_handler(self):
+        """Assert ``__init__`` saves the ``response_handler`` argument.
+
+        The argument should be saved as an instance attribute.
+        """
+        response_handler = mock.Mock()
+        client = api.Client(config.ServerConfig('base url'), response_handler)
+        self.assertIs(client.response_handler, response_handler)
+
+    def test_json_arg(self):
+        """Assert methods with a ``json`` argument pass on that argument."""
+        json = mock.Mock()
+        client = api.Client(config.ServerConfig('base url'))
+        for method in {'patch', 'post', 'put'}:
+            with self.subTest(method=method):
+                with mock.patch.object(client, 'request') as request:
+                    getattr(client, method)('some url', json)
+                self.assertIs(request.call_args[1]['json'], json)

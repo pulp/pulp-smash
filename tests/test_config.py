@@ -2,21 +2,19 @@
 """Unit tests for :mod:`pulp_smash.config`."""
 from __future__ import unicode_literals
 
+import itertools
 import json
 import os
-from itertools import permutations
-from random import choice, randint
+import random
 try:  # try Python 3 import first
     import builtins
 except ImportError:
     import __builtin__ as builtins  # pylint:disable=C0411,E0401
 
-from mock import mock_open, patch
-from unittest2 import TestCase
+import mock
+import unittest2
 
-from pulp_smash import config
-from pulp_smash.config import ServerConfig, _public_attrs
-from pulp_smash.utils import uuid4
+from pulp_smash import config, utils
 
 
 def _gen_attrs():
@@ -26,24 +24,44 @@ def _gen_attrs():
 
     :returns: A dict. It populates all attributes in a ``ServerConfig``.
     """
-    attrs = {key: uuid4() for key in ('base_url', 'verify')}
-    attrs['auth'] = [uuid4() for _ in range(2)]
-    attrs['version'] = '.'.join(type('')(randint(1, 150)) for _ in range(4))
+    attrs = {key: utils.uuid4() for key in ('base_url', 'verify')}
+    attrs['auth'] = [utils.uuid4() for _ in range(2)]
+    attrs['version'] = '.'.join(
+        type('')(random.randint(1, 150)) for _ in range(4)
+    )
     return attrs
 
 
-class InitTestCase(TestCase):
+class GetConfigTestCase(unittest2.TestCase):
+    """Test :func:`pulp_smash.config.get_config`."""
+
+    def test_cache_full(self):
+        """No config is read from disk if the cache is populated."""
+        with mock.patch.object(config, '_CONFIG'):
+            with mock.patch.object(config.ServerConfig, 'read') as read:
+                config.get_config()
+        self.assertEqual(read.call_count, 0)
+
+    def test_cache_empty(self):
+        """A config is read from disk if the cache is empty."""
+        with mock.patch.object(config, '_CONFIG', None):
+            with mock.patch.object(config.ServerConfig, 'read') as read:
+                config.get_config()
+        self.assertEqual(read.call_count, 1)
+
+
+class InitTestCase(unittest2.TestCase):
     """Test :class:`pulp_smash.config.ServerConfig` instantiation."""
 
     @classmethod
     def setUpClass(cls):
         """Generate some attributes and use them to instantiate a config."""
         cls.kwargs = _gen_attrs()
-        cls.cfg = ServerConfig(**cls.kwargs)
+        cls.cfg = config.ServerConfig(**cls.kwargs)
 
     def test_public_attrs(self):
         """Assert that public attributes have correct values."""
-        attrs = _public_attrs(self.cfg)
+        attrs = config._public_attrs(self.cfg)  # pylint:disable=W0212
         attrs['version'] = type('')(attrs['version'])
         self.assertEqual(self.kwargs, attrs)
 
@@ -54,14 +72,14 @@ class InitTestCase(TestCase):
                 self.assertIsNotNone(getattr(self.cfg, attr))
 
 
-class PulpSmashConfigFileTestCase(TestCase):
+class PulpSmashConfigFileTestCase(unittest2.TestCase):
     """Verify the ``PULP_SMASH_CONFIG_FILE`` environment var is respected."""
 
     def test_var_set(self):
         """Set the environment variable."""
-        os_environ = {'PULP_SMASH_CONFIG_FILE': uuid4()}
-        with patch.dict(os.environ, os_environ, clear=True):
-            cfg = ServerConfig()
+        os_environ = {'PULP_SMASH_CONFIG_FILE': utils.uuid4()}
+        with mock.patch.dict(os.environ, os_environ, clear=True):
+            cfg = config.ServerConfig()
         self.assertEqual(
             cfg._xdg_config_file,  # pylint:disable=protected-access
             os_environ['PULP_SMASH_CONFIG_FILE']
@@ -69,27 +87,29 @@ class PulpSmashConfigFileTestCase(TestCase):
 
     def test_var_unset(self):
         """Do not set the environment variable."""
-        with patch.dict(os.environ, {}, clear=True):
-            cfg = ServerConfig()
+        with mock.patch.dict(os.environ, {}, clear=True):
+            cfg = config.ServerConfig()
         # pylint:disable=protected-access
         self.assertEqual(cfg._xdg_config_file, 'settings.json')
 
 
-class ReadTestCase(TestCase):
+class ReadTestCase(unittest2.TestCase):
     """Test :meth:`pulp_smash.config.ServerConfig.read`."""
 
     @classmethod
     def setUpClass(cls):
         """Read a mock configuration file section. Save relevant objects."""
         cls.attrs = _gen_attrs()  # config section values
-        cls.open_ = mock_open(read_data=json.dumps({'default': cls.attrs}))
-        with patch.object(builtins, 'open', cls.open_):
-            with patch.object(config, '_get_config_file_path'):
-                cls.cfg = ServerConfig().read()
+        cls.open_ = mock.mock_open(
+            read_data=json.dumps({'default': cls.attrs})
+        )
+        with mock.patch.object(builtins, 'open', cls.open_):
+            with mock.patch.object(config, '_get_config_file_path'):
+                cls.cfg = config.ServerConfig().read()
 
     def test_attrs(self):
         """Assert that config file values are assigned to a config obj."""
-        attrs = _public_attrs(self.cfg)
+        attrs = config._public_attrs(self.cfg)  # pylint:disable=W0212
         attrs['version'] = type('')(attrs['version'])
         self.assertEqual(self.attrs, attrs)
 
@@ -98,21 +118,21 @@ class ReadTestCase(TestCase):
         self.assertEqual(self.open_.call_count, 1)
 
 
-class SectionsTestCase(TestCase):
+class SectionsTestCase(unittest2.TestCase):
     """Test :meth:`pulp_smash.config.ServerConfig.sections`."""
 
     @classmethod
     def setUpClass(cls):
         """Read a mock configuration file's sections. Save relevant objects."""
-        cls.config = choice((
+        cls.config = random.choice((
             {},
             {'foo': None},
             {'foo': None, 'bar': None, 'biz': None},
         ))
-        cls.open_ = mock_open(read_data=json.dumps(cls.config))
-        with patch.object(builtins, 'open', cls.open_):
-            with patch.object(config, '_get_config_file_path'):
-                cls.sections = ServerConfig().sections()
+        cls.open_ = mock.mock_open(read_data=json.dumps(cls.config))
+        with mock.patch.object(builtins, 'open', cls.open_):
+            with mock.patch.object(config, '_get_config_file_path'):
+                cls.sections = config.ServerConfig().sections()
 
     def test_sections(self):
         """Assert that the correct section names are returned."""
@@ -123,14 +143,14 @@ class SectionsTestCase(TestCase):
         self.assertEqual(self.open_.call_count, 1)
 
 
-class GetRequestsKwargsTestCase(TestCase):
+class GetRequestsKwargsTestCase(unittest2.TestCase):
     """Test :meth:`pulp_smash.config.ServerConfig.get_requests_kwargs`."""
 
     @classmethod
     def setUpClass(cls):
         """Create a mock server config and call the method under test."""
         cls.attrs = _gen_attrs()
-        cls.cfg = ServerConfig(**cls.attrs)
+        cls.cfg = config.ServerConfig(**cls.attrs)
         cls.kwargs = cls.cfg.get_requests_kwargs()
 
     def test_kwargs(self):
@@ -151,14 +171,14 @@ class GetRequestsKwargsTestCase(TestCase):
         self.assertIsInstance(self.kwargs['auth'], tuple)
 
 
-class ReprTestCase(TestCase):
+class ReprTestCase(unittest2.TestCase):
     """Test calling ``repr`` on a :class:`pulp_smash.config.ServerConfig`."""
 
     @classmethod
     def setUpClass(cls):
         """Generate attributes and call the method under test."""
         cls.attrs = _gen_attrs()
-        cls.result = repr(ServerConfig(**cls.attrs))
+        cls.result = repr(config.ServerConfig(**cls.attrs))
 
     def test_is_sane(self):
         """Assert that the result is in an expected set of results."""
@@ -166,7 +186,7 @@ class ReprTestCase(TestCase):
         # kwargs_iter = ('k1=v1, k2=v2', 'k2=v2, k1=v1)
         kwargs_iter = (
             ', '.join(key + '=' + repr(val) for key, val in two_tuples)
-            for two_tuples in permutations(self.attrs.items())
+            for two_tuples in itertools.permutations(self.attrs.items())
         )
         targets = tuple(
             'ServerConfig({})'.format(arglist) for arglist in kwargs_iter
@@ -175,43 +195,44 @@ class ReprTestCase(TestCase):
 
     def test_can_eval(self):
         """Assert that the result can be parsed by ``eval``."""
+        from pulp_smash.config import ServerConfig  # noqa
         # pylint:disable=eval-used
         self.assertEqual(self.result, repr(eval(self.result)))
 
 
-class DeleteTestCase(TestCase):
+class DeleteTestCase(unittest2.TestCase):
     """Test :meth:`pulp_smash.config.ServerConfig.delete`."""
 
     def test_delete_default(self):
         """Assert that the method can delete the default section."""
-        open_ = mock_open(read_data=json.dumps({'default': {}}))
-        with patch.object(builtins, 'open', open_):
-            with patch.object(config, '_get_config_file_path'):
-                ServerConfig().delete()
+        open_ = mock.mock_open(read_data=json.dumps({'default': {}}))
+        with mock.patch.object(builtins, 'open', open_):
+            with mock.patch.object(config, '_get_config_file_path'):
+                config.ServerConfig().delete()
         self.assertEqual(_get_written_json(open_), {})
 
     def test_delete_section(self):
         """Assert that the method can delete a specified section."""
         attrs = {'foo': {}, 'bar': {}}
-        section = choice(tuple(attrs.keys()))
-        open_ = mock_open(read_data=json.dumps(attrs))
-        with patch.object(builtins, 'open', open_):
-            with patch.object(config, '_get_config_file_path'):
-                ServerConfig().delete(section)
+        section = random.choice(tuple(attrs.keys()))
+        open_ = mock.mock_open(read_data=json.dumps(attrs))
+        with mock.patch.object(builtins, 'open', open_):
+            with mock.patch.object(config, '_get_config_file_path'):
+                config.ServerConfig().delete(section)
         del attrs[section]
         self.assertEqual(_get_written_json(open_), attrs)
 
 
-class SaveTestCase(TestCase):
+class SaveTestCase(unittest2.TestCase):
     """Test :meth:`pulp_smash.config.ServerConfig.save`."""
 
     def test_save_default(self):
         """Assert that the method can save the default section."""
         attrs = _gen_attrs()
-        open_ = mock_open(read_data=json.dumps({}))
-        with patch.object(builtins, 'open', open_):
-            with patch.object(config, '_get_config_file_path'):
-                ServerConfig(**attrs).save()
+        open_ = mock.mock_open(read_data=json.dumps({}))
+        with mock.patch.object(builtins, 'open', open_):
+            with mock.patch.object(config, '_get_config_file_path'):
+                config.ServerConfig(**attrs).save()
         self.assertEqual(_get_written_json(open_), {'default': attrs})
 
     def test_save_section(self):
@@ -219,12 +240,12 @@ class SaveTestCase(TestCase):
         # `cfg` is the existing config file. We generate a new config as
         # `attrs` and save it into section `section`.
         cfg = {'existing': {}}
-        section = uuid4()
+        section = utils.uuid4()
         attrs = _gen_attrs()
-        open_ = mock_open(read_data=json.dumps(cfg))
-        with patch.object(builtins, 'open', open_):
-            with patch.object(config, '_get_config_file_path'):
-                ServerConfig(**attrs).save(section)
+        open_ = mock.mock_open(read_data=json.dumps(cfg))
+        with mock.patch.object(builtins, 'open', open_):
+            with mock.patch.object(config, '_get_config_file_path'):
+                config.ServerConfig(**attrs).save(section)
         cfg[section] = attrs
         self.assertEqual(_get_written_json(open_), cfg)
 
