@@ -12,6 +12,7 @@ developers, not a gospel.
 
     api/pulp_smash
     api/pulp_smash.api
+    api/pulp_smash.cli
     api/pulp_smash.config
     api/pulp_smash.constants
     api/pulp_smash.selectors
@@ -36,6 +37,7 @@ developers, not a gospel.
     api/pulp_smash.utils
     api/tests
     api/tests.test_api
+    api/tests.test_cli
     api/tests.test_config
     api/tests.test_selectors
     api/tests.test_utils

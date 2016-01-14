@@ -30,6 +30,7 @@ lint-pylint:
 		pulp_smash/__init__.py \
 		pulp_smash/__main__.py \
 		pulp_smash/api.py \
+		pulp_smash/cli.py \
 		pulp_smash/config.py \
 		pulp_smash/constants.py \
 		pulp_smash/selectors.py \
@@ -42,7 +43,7 @@ test:
 	python $(TEST_OPTIONS)
 
 test-coverage:
-	coverage run --source pulp_smash.api,pulp_smash.config,pulp_smash.selectors,pulp_smash.utils \
+	coverage run --source pulp_smash.api,pulp_smash.cli,pulp_smash.config,pulp_smash.selectors,pulp_smash.utils \
 	$(TEST_OPTIONS)
 
 package:

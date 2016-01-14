@@ -20,15 +20,19 @@ MESSAGE = tuple((
         "base_url": "https://pulp.example.com",
         "auth": ["username", "password"],
         "verify": true,
-        "version": "2.7.5"
+        "version": "2.7.5",
+        "cli_transport": "local"
     }}''',
     '''\
-    The `verify` and `version` keys are completely optional. By default, Pulp
-    Smash respects SSL verification procedures, but the `verify` option can be
-    used to explicitly enable or disable SSL verification. By default, Pulp
-    Smash assumes that the Pulp server under test is the absolute latest
-    development version, but the `version` option can be used to explicitly run
-    tests suitable for an older version of Pulp.
+    The `verify`, `version` and `cli_transport` keys are optional. The `verify`
+    option can be used to explicitly enable or disable SSL verification. The
+    `version` option can be used to explicitly run tests suitable for an older
+    version of Pulp. By default, Pulp Smash assumes that the Pulp server under
+    test is the latest development version. The `cli_transport` key can be used
+    to explicitly choose how to contact the Pulp server when executing shell
+    commands. This can be set to "local" or "ssh". If omitted, Pulp Smash
+    guesses which transport to use by comparing the hostname in the `base_url`
+    against the current system's hostname.
     ''',
     '''\
     Notes:

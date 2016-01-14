@@ -24,7 +24,9 @@ def _gen_attrs():
 
     :returns: A dict. It populates all attributes in a ``ServerConfig``.
     """
-    attrs = {key: utils.uuid4() for key in ('base_url', 'verify')}
+    attrs = {
+        key: utils.uuid4() for key in ('base_url', 'cli_transport', 'verify')
+    }
     attrs['auth'] = [utils.uuid4() for _ in range(2)]
     attrs['version'] = '.'.join(
         type('')(random.randint(1, 150)) for _ in range(4)
@@ -156,7 +158,7 @@ class GetRequestsKwargsTestCase(unittest2.TestCase):
     def test_kwargs(self):
         """Assert that the method returns correct values."""
         attrs = self.attrs.copy()
-        for key in ('base_url', 'version'):
+        for key in ('base_url', 'cli_transport', 'version'):
             del attrs[key]
         attrs['auth'] = tuple(attrs['auth'])
         self.assertEqual(attrs, self.kwargs)

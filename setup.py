@@ -41,6 +41,13 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
     packages=find_packages(),
-    install_requires=['mock', 'packaging', 'pyxdg', 'requests', 'unittest2'],
+    install_requires=[
+        'mock',
+        'packaging',
+        'plumbum',
+        'pyxdg',
+        'requests',
+        'unittest2',
+    ],
     test_suite='tests',
 )

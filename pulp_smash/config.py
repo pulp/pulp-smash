@@ -52,7 +52,7 @@ class ConfigFileNotFoundError(Exception):
     """Indicates that the requested XDG configuration file cannot be found."""
 
 
-class ServerConfig(object):
+class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
     """Facts about a server, plus methods for manipulating those facts.
 
     This object stores a set of facts that are used when communicating with a
@@ -109,13 +109,36 @@ class ServerConfig(object):
         server. For example: ``('username', 'password')``.
     :param verify: A boolean. Should SSL be verified when communicating with
         the server?
+    :param version: A string, such as '1.2' or '0.8.rc3'. Defaults to '1!0'
+        (epoch 1, version 0). Must be compatible with the `packaging`_
+        library's ``packaging.version.Version`` class.
+    :param cli_transport: Either 'local' or 'ssh'. See
+        :class:`pulp_smash.cli.Client` for details.
+
+    .. _packaging: https://packaging.pypa.io/en/latest/
     """
+
+    # Pylint reasonably warns that this class has too many arguments and
+    # instance attributes. How can we fix that problem? This class has the dual
+    # responsibilities of housing information about a server and being able to
+    # (de)serialize that information from and to config files, and the first
+    # responsibility is the dangerous one. It's easy to let configuration
+    # options collect here. Most CLI options are pushed out into an ssh_config
+    # file. And the few API options that live here, like `verify`, just
+    # shouldn't be code.
 
     # Used to lock access to the configuration file when performing destructive
     # operations, such as saving.
     _file_lock = Lock()
 
-    def __init__(self, base_url=None, auth=None, verify=None, version=None):  # noqa
+    def __init__(  # pylint:disable=too-many-arguments
+            self,
+            base_url=None,
+            auth=None,
+            verify=None,
+            version=None,
+            cli_transport=None):
+        """Initialize this object with needed instance attributes."""
         self.base_url = base_url
         self.auth = auth
         self.verify = verify
@@ -123,6 +146,7 @@ class ServerConfig(object):
             self.version = Version('1!0')
         else:
             self.version = Version(version)
+        self.cli_transport = cli_transport
 
         self._section = 'default'
         self._xdg_config_file = os.environ.get(
@@ -293,7 +317,7 @@ class ServerConfig(object):
         gains or loses attributes.
         """
         attrs = _public_attrs(self)
-        for key in ('base_url', 'version'):
+        for key in ('base_url', 'cli_transport', 'version'):
             del attrs[key]
         if attrs['auth'] is not None:
             attrs['auth'] = tuple(attrs['auth'])
