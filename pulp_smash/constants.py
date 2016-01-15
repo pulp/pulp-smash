@@ -10,6 +10,13 @@ CALL_REPORT_KEYS = frozenset(('error', 'result', 'spawned_tasks'))
     http://pulp.readthedocs.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
 """
 
+CONTENT_UPLOAD_PATH = '/pulp/api/v2/content/uploads/'
+"""See: `Creating an Upload Request`_.
+
+.. _Creating an Upload Request:
+   http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/content/upload.html#creating-an-upload-request
+"""
+
 ERROR_KEYS = frozenset((
     '_href',
     'error',

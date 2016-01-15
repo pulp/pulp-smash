@@ -44,7 +44,11 @@ import unittest2
 from packaging.version import Version
 
 from pulp_smash import api, config, utils
-from pulp_smash.constants import CALL_REPORT_KEYS, REPOSITORY_PATH
+from pulp_smash.constants import (
+    CALL_REPORT_KEYS,
+    CONTENT_UPLOAD_PATH,
+    REPOSITORY_PATH,
+)
 
 _PUPPET_FEED = 'http://forge.puppetlabs.com'
 _PUPPET_MODULE = {
@@ -274,7 +278,7 @@ class PublishTestCase(_BaseTestCase):
 
         # Begin an upload request, upload a puppet module, move the puppet
         # module into a repository, and end the upload request.
-        cls.responses['malloc'] = client.post('/pulp/api/v2/content/uploads/')
+        cls.responses['malloc'] = client.post(CONTENT_UPLOAD_PATH)
         cls.responses['upload'] = client.put(
             urljoin(cls.responses['malloc'].json()['_href'], '0/'),
             data=cls.modules[0],
