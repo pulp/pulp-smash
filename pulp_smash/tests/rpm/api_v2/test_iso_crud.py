@@ -7,11 +7,11 @@ try:  # try Python 3 import first
 except ImportError:
     from urlparse import urljoin  # pylint:disable=C0411,E0401
 
-import requests
 import unittest2
 from packaging.version import Version
 
-from pulp_smash import config, constants, selectors, utils
+from pulp_smash import api, config, selectors, utils
+from pulp_smash.constants import REPOSITORY_PATH
 
 
 _DISTRIBUTOR = {
@@ -20,8 +20,6 @@ _DISTRIBUTOR = {
     'distributor_config': {},
     'auto_publish': True
 }
-_IMPORTER_TYPE_ID = 'iso_importer'
-
 _ISO_IMPORTER = {
     '_href': '/pulp/api/v2/repositories/{}/importers/iso_importer/',
     'id': 'iso_importer',
@@ -37,7 +35,7 @@ _ISO_DISTRIBUTOR = {
 }
 
 
-def _customize_href(template, repository_id):
+def _customize_template(template, repository_id):
     """Copy ``template`` and interpolate a repository ID into its ``_href``."""
     template = template.copy()
     template['_href'] = template['_href'].format(repository_id)
@@ -56,8 +54,9 @@ class _BaseTestCase(unittest2.TestCase):
     @classmethod
     def tearDownClass(cls):
         """For each resource in ``cls.resources``, delete that resource."""
+        client = api.Client(cls.cfg)
         for resource in cls.resources:
-            utils.delete(cls.cfg, resource)
+            client.delete(resource)
 
 
 class CreateTestCase(_BaseTestCase):
@@ -73,12 +72,10 @@ class CreateTestCase(_BaseTestCase):
             'distributors': [_DISTRIBUTOR],
             'id': utils.uuid4(),
             'importer_config': {},
-            'importer_type_id': _IMPORTER_TYPE_ID,
+            'importer_type_id': 'iso_importer',
             'notes': {utils.uuid4(): utils.uuid4()},
         }
-        responses = []
-        cls.attrs = utils.create_repository(cls.cfg, cls.body, responses)
-        cls.response = responses[0]  # `responses` only has one element
+        cls.response = api.Client(cls.cfg).post(REPOSITORY_PATH, cls.body)
 
     def test_status_code(self):
         """Assert the response has an HTTP 201 status code."""
@@ -86,7 +83,7 @@ class CreateTestCase(_BaseTestCase):
 
     def test_headers_location(self):
         """Assert the response's Location header is correct."""
-        path = constants.REPOSITORY_PATH + self.body['id'] + '/'
+        path = REPOSITORY_PATH + self.body['id'] + '/'
         self.assertEqual(
             self.response.headers['Location'],
             urljoin(self.cfg.base_url, path)
@@ -100,8 +97,9 @@ class CreateTestCase(_BaseTestCase):
             del body[attr]
 
         # First check attrs are present, then check values for attrs we set.
-        self.assertLessEqual(set(body.keys()), set(self.attrs.keys()))
-        attrs = {key: self.attrs[key] for key in body.keys()}
+        attrs = self.response.json()
+        self.assertLessEqual(set(body.keys()), set(attrs.keys()))
+        attrs = {key: attrs[key] for key in body.keys()}
         self.assertEqual(body, attrs)
 
 
@@ -112,14 +110,12 @@ class ReadUpdateDeleteTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create three repositories and read, update and delete them."""
         super(ReadUpdateDeleteTestCase, cls).setUpClass()
-
-        # Create repositories.
         cls.bodies = {
             'read': {
                 'distributors': [_DISTRIBUTOR],
                 'id': utils.uuid4(),
                 'importer_config': {},
-                'importer_type_id': _IMPORTER_TYPE_ID,
+                'importer_type_id': 'iso_importer',
                 'notes': {'this': 'one'},
             },
             'update': {  # like read, minus notes…
@@ -128,7 +124,7 @@ class ReadUpdateDeleteTestCase(_BaseTestCase):
                 'distributors': [_DISTRIBUTOR],
                 'id': utils.uuid4(),
                 'importer_config': {},
-                'importer_type_id': _IMPORTER_TYPE_ID,
+                'importer_type_id': 'iso_importer',
             },
             'delete': {  # like read…
                 'description': utils.uuid4(),  # plus this
@@ -136,40 +132,37 @@ class ReadUpdateDeleteTestCase(_BaseTestCase):
                 'distributors': [_DISTRIBUTOR],
                 'id': utils.uuid4(),
                 'importer_config': {},
-                'importer_type_id': _IMPORTER_TYPE_ID,
+                'importer_type_id': 'iso_importer',
                 'notes': {utils.uuid4(): utils.uuid4()},
             },
         }
         cls.update_body = {'delta': {
             key: utils.uuid4() for key in ('description', 'display_name')
         }}
-        hrefs = {
-            key: utils.create_repository(cls.cfg, body)['_href']
+        cls.responses = {}
+
+        # Create repositories.
+        client = api.Client(cls.cfg, api.json_handler)
+        repos = {
+            key: client.post(REPOSITORY_PATH, body)
             for key, body in cls.bodies.items()
         }
-        cls.resources.update({hrefs[key] for key in {'read', 'update'}})
+        for key in {'read', 'update'}:
+            cls.resources.add(repos[key]['_href'])
 
-        # Read, update and delete them.
-        cls.responses = {}
-        cls.responses['read'] = requests.get(
-            urljoin(cls.cfg.base_url, hrefs['read']),
-            **cls.cfg.get_requests_kwargs()
-        )
+        # Read, update and delete the repositories.
+        client.response_handler = api.safe_handler
+        cls.responses['read'] = client.get(repos['read']['_href'])
         for key in {'importers', 'distributors', 'details'}:
-            path = '{}?{}=true'.format(hrefs['read'], key)
-            cls.responses['read_' + key] = requests.get(
-                urljoin(cls.cfg.base_url, path),
-                **cls.cfg.get_requests_kwargs()
+            cls.responses['read_' + key] = client.get(
+                repos['read']['_href'],
+                params={key: True},
             )
-        cls.responses['update'] = requests.put(
-            urljoin(cls.cfg.base_url, hrefs['update']),
-            json=cls.update_body,
-            **cls.cfg.get_requests_kwargs()
+        cls.responses['update'] = client.put(
+            repos['update']['_href'],
+            cls.update_body,
         )
-        cls.responses['delete'] = requests.delete(
-            urljoin(cls.cfg.base_url, hrefs['delete']),
-            **cls.cfg.get_requests_kwargs()
-        )
+        cls.responses['delete'] = client.delete(repos['delete']['_href'])
 
     def test_status_code(self):
         """Assert each response has a correct HTTP status code."""
@@ -199,7 +192,7 @@ class ReadUpdateDeleteTestCase(_BaseTestCase):
                 self.assertIn('importers', attrs)
                 self.assertEqual(len(attrs['importers']), 1)
 
-                want = _customize_href(_ISO_IMPORTER, attrs['id'])
+                want = _customize_template(_ISO_IMPORTER, attrs['id'])
                 have = attrs['importers'][0]
                 self.assertLessEqual(set(want.keys()), set(have.keys()))
                 have = {key: have[key] for key in want.keys()}
@@ -216,39 +209,11 @@ class ReadUpdateDeleteTestCase(_BaseTestCase):
                 self.assertIn('distributors', attrs)
                 self.assertEqual(len(attrs['distributors']), 1)
 
-                want = _customize_href(_ISO_DISTRIBUTOR, attrs['id'])
+                want = _customize_template(_ISO_DISTRIBUTOR, attrs['id'])
                 have = attrs['distributors'][0]
                 self.assertLessEqual(set(want.keys()), set(have.keys()))
                 have = {key: have[key] for key in want.keys()}
                 self.assertEqual(want, have)
-
-
-def _add_importer(server_config, href, json):
-    """Add an importer to a repository and wait for the task to complete."""
-    url = urljoin(server_config.base_url, href)
-    url = urljoin(url, 'importers/')
-    response = requests.post(
-        url,
-        json=json,
-        **server_config.get_requests_kwargs()
-    )
-    response.raise_for_status()
-    if response.status_code == 202:
-        utils.poll_spawned_tasks(server_config, response.json())
-    return response
-
-
-def _add_distributor(server_config, href, json):
-    """Add a distributor to a repository."""
-    url = urljoin(server_config.base_url, href)
-    url = urljoin(url, 'distributors/')
-    response = requests.post(
-        url,
-        json=json,
-        **server_config.get_requests_kwargs()
-    )
-    response.raise_for_status()
-    return response
 
 
 class AddImporterDistributorTestCase(_BaseTestCase):
@@ -260,65 +225,62 @@ class AddImporterDistributorTestCase(_BaseTestCase):
       <http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/cud.html#associate-an-importer-to-a-repository>`_
     * `Associate a Distributor with a Repository
       <http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/cud.html#associate-a-distributor-with-a-repository>`_
-
-
     """
 
     @classmethod
     def setUpClass(cls):
-        """Create a repository and add an importer and distributor to it."""
-        # Create a repository.
+        """Create a repository and add an importer and distributor to it.
+
+        Do the following:
+
+        1. Create a repository.
+        2. Read the repository's importers and distributors.
+        3. Add an importer and distributor to the repo.
+        4. Re-read the repository's importers and distributors.
+        """
         super(AddImporterDistributorTestCase, cls).setUpClass()
-        href = utils.create_repository(cls.cfg, {'id': utils.uuid4()})['_href']
+
+        # Steps 1 and 2.
+        client = api.Client(cls.cfg, api.json_handler)
+        href = client.post(REPOSITORY_PATH, {'id': utils.uuid4()})['_href']
         cls.resources.add(href)
+        cls.pre_imp = client.get(urljoin(href, 'importers/'))
+        cls.pre_dist = client.get(urljoin(href, 'distributors/'))
 
-        # Read importers and distributors.
-        cls.imp_before = utils.get_importers(cls.cfg, href)
-        cls.distrib_before = utils.get_distributors(cls.cfg, href)
-
-        # Add an importer and a distributor.
-        cls.responses = {}
-        cls.responses['add importer'] = _add_importer(
-            cls.cfg,
-            href,
-            {'importer_type_id': _IMPORTER_TYPE_ID},
+        # Steps 3 and 4.
+        client.response_handler = api.safe_handler
+        cls.add_imp = client.post(
+            urljoin(href, 'importers/'),
+            {'importer_type_id': 'iso_importer'},
         )
-        cls.responses['add distributor'] = _add_distributor(
-            cls.cfg,
-            href,
+        cls.add_dist = client.post(
+            urljoin(href, 'distributors/'),
             {
                 'distributor_config': {},
                 'distributor_id': utils.uuid4(),
                 'distributor_type_id': 'iso_distributor',
             },
         )
-
-        # Read importers and distributors again.
-        cls.imp_after = utils.get_importers(cls.cfg, href)
-        cls.distrib_after = utils.get_distributors(cls.cfg, href)
+        client.response_handler = api.json_handler
+        cls.post_imp = client.get(urljoin(href, 'importers/'))
+        cls.post_dist = client.get(urljoin(href, 'distributors/'))
 
     def test_add_importer(self):
         """Check the HTTP status code for adding an importer."""
-        self.assertEqual(self.responses['add importer'].status_code, 202)
+        self.assertEqual(self.add_imp.status_code, 202)
 
     def test_add_distributor(self):
         """Check the HTTP status code for adding a distributor."""
-        self.assertEqual(self.responses['add distributor'].status_code, 201)
+        self.assertEqual(self.add_dist.status_code, 201)
 
     def test_before(self):
-        """Check the repository's importers and distributors before adding any.
-
-        By default, the repository should have zero of each.
-        """
-        for i, attrs in enumerate((self.imp_before, self.distrib_before)):
+        """Verify the repository has no importer or distributors initially."""
+        for i, attrs in enumerate((self.pre_imp, self.pre_dist)):
             with self.subTest(i=i):
                 self.assertEqual(len(attrs), 0, attrs)
 
     def test_after(self):
-        """Check the repository's importers and distributors after adding any.
-
-        The repository should have one of each.
-        """
-        for i, attrs in enumerate((self.imp_after, self.distrib_after)):
+        """Verify the repository ends up with one importer and distributor."""
+        for i, attrs in enumerate((self.post_imp, self.post_dist)):
             with self.subTest(i=i):
                 self.assertEqual(len(attrs), 1, attrs)
