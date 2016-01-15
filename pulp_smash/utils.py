@@ -11,8 +11,6 @@ except ImportError:
 
 import requests
 
-from pulp_smash.constants import REPOSITORY_PATH
-
 
 _TASK_END_STATES = ('canceled', 'error', 'finished', 'skipped', 'timed out')
 
@@ -24,98 +22,6 @@ class TaskTimedOutException(Exception):
 def uuid4():
     """Return a random UUID, as a unicode string."""
     return type('')(uuid.uuid4())
-
-
-def create_repository(server_config, body, responses=None):
-    """Create a repository. Return the response body.
-
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param body: An object to encode as JSON and pass as the request body.
-    :param responses: Same as :meth:`handle_response`.
-    :returns: Same as :meth:`handle_response`.
-    :raises: Same as :meth:`handle_response`.
-    """
-    return handle_response(requests.post(
-        urljoin(server_config.base_url, REPOSITORY_PATH),
-        json=body,
-        **server_config.get_requests_kwargs()
-    ), responses)
-
-
-def delete(server_config, href, responses=None):
-    """Delete some resource.
-
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param href: A string. The path to the resource being deleted.
-    :param responses: Same as :meth:`handle_response`.
-    :returns: Same as :meth:`handle_response`.
-    :raises: Same as :meth:`handle_response`.
-    """
-    return handle_response(requests.delete(
-        urljoin(server_config.base_url, href),
-        **server_config.get_requests_kwargs()
-    ), responses)
-
-
-def get_importers(server_config, href, responses=None):
-    """Read a repository's importers.
-
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param href: A string. The path to a repository.
-    :param responses: Same as :meth:`handle_response`.
-    :returns: Same as :meth:`handle_response`.
-    :raises: Same as :meth:`handle_response`.
-    """
-    return handle_response(requests.get(
-        urljoin(server_config.base_url, href + 'importers/'),
-        **server_config.get_requests_kwargs()
-    ), responses)
-
-
-def get_distributors(server_config, href, responses=None):
-    """Read a repository's distributors.
-
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param href: A string. The path to a repository.
-    :param responses: Same as :meth:`handle_response`.
-    :returns: Same as :meth:`handle_response`.
-    :raises: Same as :meth:`handle_response`.
-    """
-    return handle_response(requests.get(
-        urljoin(server_config.base_url, href + 'distributors/'),
-        **server_config.get_requests_kwargs()
-    ), responses)
-
-
-def get(server_config, href, responses=None):
-    """Get a document from an HTTP API.
-
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param href: A string. The path to a document.
-    :param responses: Same as :meth:`handle_response`.
-    :returns: Same as :meth:`handle_response`.
-    :raises: Same as :meth:`handle_response`.
-    """
-    return handle_response(requests.get(
-        urljoin(server_config.base_url, href),
-        **server_config.get_requests_kwargs()
-    ), responses)
-
-
-def handle_response(response, responses=None):
-    """Optionally record ``response``, verify its status code, and decode body.
-
-    :param response: An object returned by ``requests.request`` or similar.
-    :param responses: A list, or some other object with the ``append`` method.
-        If given, raw server responses are appended to this object.
-    :returns: The JSON-decoded body of the ``response``.
-    :raises: ``requests.exceptions.HTTPError`` if ``response`` has an HTTP 3XX
-        or 4XX status code.
-    """
-    if responses is not None:
-        responses.append(response)
-    response.raise_for_status()
-    return response.json()
 
 
 def poll_spawned_tasks(server_config, call_report):
@@ -155,7 +61,12 @@ def poll_task(server_config, href):
     poll_limit = 24  # 24 * 5s == 120s
     poll_counter = 0
     while True:
-        attrs = get(server_config, href)
+        response = requests.get(
+            urljoin(server_config.base_url, href),
+            **server_config.get_requests_kwargs()
+        )
+        response.raise_for_status()
+        attrs = response.json()
         if attrs['state'] in _TASK_END_STATES:
             yield attrs
             for spawned_task in attrs['spawned_tasks']:
@@ -169,37 +80,3 @@ def poll_task(server_config, href):
         # This approach is dumb, in that we don't account for time spent
         # waiting for the Pulp server to respond to us.
         sleep(5)
-
-
-def publish_repository(server_config, href, distributor_id, responses=None):
-    """Publish a repository.
-
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param href: A string. The path to the repository to which a distributor
-        shall be added.
-    :param distributor_id: The ID of the distributor performing the publish.
-    :param responses: Same as :meth:`handle_response`.
-    :returns: Same as :meth:`handle_response`.
-    :raises: Same as :meth:`handle_response`.
-    """
-    return handle_response(requests.post(
-        urljoin(server_config.base_url, href + 'actions/publish/'),
-        json={'id': distributor_id},
-        **server_config.get_requests_kwargs()
-    ), responses)
-
-
-def sync_repository(server_config, href, responses=None):
-    """Sync a repository.
-
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
-    :param href: A string. The path to a repository.
-    :param responses: Same as :meth:`handle_response`.
-    :returns: Same as :meth:`handle_response`.
-    :raises: Same as :meth:`handle_response`.
-    """
-    return handle_response(requests.post(
-        urljoin(server_config.base_url, href + 'actions/sync/'),
-        json={'override_config': {}},
-        **server_config.get_requests_kwargs()
-    ), responses)
