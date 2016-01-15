@@ -63,7 +63,7 @@ _PUPPET_MODULE_URL = (
 _PUPPET_QUERY = _PUPPET_MODULE['author'] + '-' + _PUPPET_MODULE['name']
 
 
-def _gen_puppet_repo_body():
+def _gen_repo():
     """Return a semi-random dict that used for creating a puppet repo."""
     return {
         'id': utils.uuid4(),
@@ -97,7 +97,7 @@ class CreateTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create two puppet repositories, with and without feed URLs."""
         super(CreateTestCase, cls).setUpClass()
-        cls.bodies = tuple((_gen_puppet_repo_body() for _ in range(2)))
+        cls.bodies = tuple((_gen_repo() for _ in range(2)))
         cls.bodies[1]['importer_config'] = {
             'feed': 'http://' + utils.uuid4(),  # Pulp checks for a URI scheme
             'queries': [_PUPPET_QUERY],
@@ -154,7 +154,7 @@ class SyncValidFeedTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create and sync two puppet repositories."""
         super(SyncValidFeedTestCase, cls).setUpClass()
-        bodies = tuple((_gen_puppet_repo_body() for _ in range(2)))
+        bodies = tuple((_gen_repo() for _ in range(2)))
         for i, query in enumerate((
                 _PUPPET_QUERY, _PUPPET_QUERY.replace('-', '_'))):
             bodies[i]['importer_config'] = {
@@ -206,7 +206,7 @@ class SyncInvalidFeedTestCase(_BaseTestCase):
         """Create a puppet repository with an invalid feed and sync it."""
         super(SyncInvalidFeedTestCase, cls).setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
-        body = _gen_puppet_repo_body()
+        body = _gen_repo()
         body['importer_config'] = {'feed': 'http://' + utils.uuid4()}
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
@@ -265,13 +265,12 @@ class PublishTestCase(_BaseTestCase):
         cls.modules = []  # Raw puppet modules.
 
         # Download a puppet module and create two repositories.
-        client = api.Client(cls.cfg)
-        cls.modules.append(client.get(_PUPPET_MODULE_URL).content)
-        repos = []
-        for _ in range(2):
-            repo = client.post(REPOSITORY_PATH, _gen_puppet_repo_body()).json()
-            repos.append(repo)
+        client = api.Client(cls.cfg, api.json_handler)
+        repos = [client.post(REPOSITORY_PATH, _gen_repo()) for _ in range(2)]
+        for repo in repos:
             cls.resources.add(repo['_href'])
+        client.response_handler = api.safe_handler
+        cls.modules.append(client.get(_PUPPET_MODULE_URL).content)
 
         # Begin an upload request, upload a puppet module, move the puppet
         # module into a repository, and end the upload request.
