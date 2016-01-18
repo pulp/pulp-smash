@@ -9,8 +9,8 @@ from __future__ import unicode_literals
 from packaging.version import Version
 from unittest2 import TestCase
 
-from pulp_smash import api, config, selectors
-from pulp_smash.constants import CALL_REPORT_KEYS
+from pulp_smash import api, config
+from pulp_smash.constants import CALL_REPORT_KEYS, GROUP_CALL_REPORT_KEYS
 
 _PATHS = {
     'consumer': '/pulp/api/v2/consumers/actions/content/regenerate_applicability/',  # noqa
@@ -19,7 +19,7 @@ _PATHS = {
 
 
 class SuccessTestCase(TestCase):
-    """Generate content applicability for updated consumers and repos."""
+    """Ask Pulp to regenerate content applicability for consumers and repos."""
 
     @classmethod
     def setUpClass(cls):
@@ -38,14 +38,20 @@ class SuccessTestCase(TestCase):
                 self.assertEqual(response.status_code, 202)
 
     def test_body(self):
-        """Assert each response is JSON and appears to be a call report."""
+        """Assert each response is JSON and has a correct structure.
+
+        Regenerating content applicability returns a call report in most cases.
+        For Pulp 2.8 and beyond, regenerating repository content applicability
+        returns a group call report. See `issue #1448
+        <https://pulp.plan.io/issues/1448>`_.
+        """
         for key, response in self.responses.items():
             with self.subTest(key=key):
-                if (key == 'repo' and self.cfg.version >= Version('2.8') and
-                        selectors.bug_is_untestable(1448)):
-                    self.skipTest('https://pulp.plan.io/issues/1448')
                 response_keys = frozenset(response.json().keys())
-                self.assertEqual(response_keys, CALL_REPORT_KEYS)
+                if key == 'repo' and self.cfg.version >= Version('2.8'):
+                    self.assertEqual(response_keys, GROUP_CALL_REPORT_KEYS)
+                else:
+                    self.assertEqual(response_keys, CALL_REPORT_KEYS)
 
 
 class FailureTestCase(TestCase):
