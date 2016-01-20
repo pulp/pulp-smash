@@ -13,6 +13,12 @@ except ImportError:
 import plumbum
 
 
+# A dict mapping hostnames to *nix service managers.
+#
+# For example: {'old.example.com': 'sysv', 'new.example.com', 'systemd'}
+_SERVICE_MANAGERS = {}
+
+
 def _get_hostname(urlstring):
     """Get the hostname from a URL string.
 
@@ -44,6 +50,10 @@ def _get_hostname(urlstring):
         return _get_hostname('//' + parts.path)
     else:
         return parts.hostname
+
+
+class NoKnownServiceManagerError(Exception):
+    """Indicates we cannot determine the service manager used by a system."""
 
 
 def echo_handler(completed_proc):
@@ -184,6 +194,119 @@ class Client(object):  # pylint:disable=too-few-public-methods
         .. _subprocess.Popen:
            https://docs.python.org/3/library/subprocess.html#subprocess.Popen
         """
+        # Let self.response_handler check return codes. See:
+        # https://plumbum.readthedocs.org/en/latest/api/commands.html#plumbum.commands.base.BaseCommand.run
+        kwargs.setdefault('retcode')
+
         code, stdout, stderr = self.machine[args[0]].run(args[1:], **kwargs)
         completed_process = CompletedProcess(args, code, stdout, stderr)
         return self.response_handler(completed_process)
+
+
+class Service(object):
+    """A service on a system.
+
+    Each instance of this class represents a single service running on a single
+    system. An example may help to clarify this idea:
+
+    >>> from pulp_smash import cli, config
+    >>> service = cli.Service(config.get_config(), 'httpd')
+    >>> completed_process = service.stop()
+    >>> completed_process = service.start()
+
+    In the example above, the ``service`` object represents the "httpd" service
+    on the host referenced by :func:`pulp_smash.config.get_config`.
+
+    Upon instantiation, a :class:`Service` object talks to its target
+    system and uses simple heuristics to determine which type of service
+    manager is used (SysV or systemd). As a result, it's possible to manage
+    services on significantly different systems with exactly the same commands:
+
+    >>> from pulp_smash import cli
+    >>> from pulp_smash.config import ServerConfig
+    >>> configs = ServerConfig().read('old'), ServerConfig().read('new')
+    >>> services = (cli.Service(config, 'httpd') for config in configs)
+    >>> [service.start().args for service in services]
+    ('service', 'httpd', 'start')
+    ('systemctl', 'start', 'httpd')
+
+    Upon instantiation, a :class:`Service` object also talks to its target
+    system and determines whether it is running as root. If not root, all
+    commands are prefixed with "sudo". Please ensure that Pulp Smash can either
+    execute commands as root or can successfully execute ``sudo``. You may need
+    to edit your ``~/.ssh/config`` file.
+
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        target system.
+    :param service: A string identifying the service. For example: ``'httpd'``.
+    :raises pulp_smash.cli.NoKnownServiceManagerError: If unable to find any
+        service manager on the target system.
+    """
+
+    def __init__(self, server_config, service):
+        """Initialize a new object."""
+        self._client = Client(server_config)
+        self._command_builder = None
+
+        # Set `self._command_builder`.
+        service_manager = self._get_service_manager(server_config)
+        prefix = self._get_prefix(server_config)
+        if service_manager == 'systemd':
+            self._command_builder = lambda verb: prefix + (
+                'systemctl', verb, service
+            )
+        elif service_manager == 'sysv':
+            self._command_builder = lambda verb: prefix + (
+                'service', service, verb
+            )
+        assert self._command_builder is not None
+
+    @staticmethod
+    def _get_prefix(server_config):
+        """Determine whether to prefix commands with "sudo"."""
+        if Client(server_config).run(('id', '-u')).stdout.strip() == '0':
+            return ()
+        else:
+            return ('sudo',)
+
+    @staticmethod
+    def _get_service_manager(server_config):
+        """Talk to the target system and determine the type of service manager.
+
+        Return "systemd" or "sysv" if the service manager appears to be one of
+        those. Raise an exception otherwise.
+        """
+        hostname = _get_hostname(server_config.base_url)
+        try:
+            return _SERVICE_MANAGERS[hostname]
+        except KeyError:
+            pass
+
+        client = Client(server_config, echo_handler)
+        managers_commands = {
+            'systemd': ('which', 'systemctl'),
+            'sysv': ('which', 'service'),
+        }
+        for service_manager, command in managers_commands.items():
+            if client.run(command).returncode == 0:
+                _SERVICE_MANAGERS[hostname] = service_manager
+                return service_manager
+        raise NoKnownServiceManagerError(
+            'Unable to determine the service manager used by {}. It does not '
+            'appear to be any of {}.'
+            .format(hostname, managers_commands.values())
+        )
+
+    def start(self):
+        """Start this service.
+
+        :rtype: pulp_smash.cli.CompletedProcess
+        """
+        return self._client.run(self._command_builder('start'))
+
+    def stop(self):
+        """Stop this service.
+
+        :rtype: pulp_smash.cli.CompletedProcess
+        """
+        return self._client.run(self._command_builder('stop'))

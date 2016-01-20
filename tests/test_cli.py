@@ -131,3 +131,38 @@ class ClientTestCase(unittest2.TestCase):
         cfg = config.ServerConfig(utils.uuid4(), cli_transport='local')
         handler = mock.Mock()
         self.assertIs(cli.Client(cfg, handler).response_handler, handler)
+
+
+class ServiceTestCase(unittest2.TestCase):
+    """Tests for :class:`pulp_smash.cli.Service`."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Instantiate and save :class:`pulp_smash.cli.Service` objects.
+
+        Give each object a different service manager (systemd, sysv, etc).
+        """
+        cls.services = []
+        with mock.patch.object(cli.Service, '_get_prefix', return_value=()):
+            with mock.patch.object(cli, 'Client'):
+                for service_manager in ('systemd', 'sysv'):
+                    with mock.patch.object(
+                        cli.Service,
+                        '_get_service_manager',
+                        return_value=service_manager,
+                    ):
+                        service = cli.Service(mock.Mock(), mock.Mock())
+                        cls.services.append(service)
+
+    def test_command_builder(self):
+        """Assert the ``_command_builder`` attribute is not ``None``.
+
+        Tests of this sort aren't usually valuable. But in this case, it's
+        fairly easy for a developer to simply make a mistake when editing the
+        tightly related logic in ``__init__`` and ``_get_service_manager``.
+        This may be a sign of bad design.
+        """
+        for i, service in enumerate(self.services):
+            with self.subTest(i=i):
+                # pylint:disable=protected-access
+                self.assertIsNotNone(service._command_builder)

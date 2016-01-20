@@ -11,12 +11,18 @@ except ImportError:
 
 import requests
 
+from pulp_smash import cli
+
 
 _TASK_END_STATES = ('canceled', 'error', 'finished', 'skipped', 'timed out')
 
 
 class TaskTimedOutException(Exception):
     """Indicates that polling a task timed out."""
+
+
+class NoKnownBrokerError(Exception):
+    """Indicates we cannot determine the AMQP broker used by a system."""
 
 
 def uuid4():
@@ -80,3 +86,35 @@ def poll_task(server_config, href):
         # This approach is dumb, in that we don't account for time spent
         # waiting for the Pulp server to respond to us.
         sleep(5)
+
+
+# See design discussion at: https://github.com/PulpQE/pulp-smash/issues/31
+def get_broker(server_config):
+    """Build an object for managing the target system's AMQP broker.
+
+    Talk to the host named by ``server_config`` and use simple heuristics to
+    determine which AMQP broker is installed. If Qpid or RabbitMQ appear to be
+    installed, return a :class:`pulp_smash.cli.Service` object for managing
+    those services respectively. Otherwise, raise an exception.
+
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        system on which an AMQP broker exists.
+    :rtype: pulp_smash.cli.Service
+    :raises pulp_smash.utils.NoKnownBrokerError: If unable to find any AMQP
+        brokers on the target system.
+    """
+    # On Fedora 23, /usr/sbin and /usr/local/sbin are only added to the $PATH
+    # for login shells. (See pathmunge() in /etc/profile.) As a result, logging
+    # into a system and executing `which qpidd` and remotely executing `ssh
+    # pulp.example.com which qpidd` may return different results.
+    client = cli.Client(server_config, cli.echo_handler)
+    executables = ('qpidd', 'rabbitmq')  # ordering indicates preference
+    for executable in executables:
+        command = ('test', '-e', '/usr/sbin/' + executable)
+        if client.run(command).returncode == 0:
+            return cli.Service(server_config, executable)
+    raise NoKnownBrokerError(
+        'Unable to determine the AMQP broker used by {}. It does not appear '
+        'to be any of {}.'
+        .format(server_config.base_url, executables)
+    )
