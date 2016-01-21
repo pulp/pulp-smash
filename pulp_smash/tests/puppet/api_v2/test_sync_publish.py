@@ -43,7 +43,7 @@ except ImportError:
 import unittest2
 from packaging.version import Version
 
-from pulp_smash import api, config, utils
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,
@@ -327,6 +327,9 @@ class PublishTestCase(_BaseTestCase):
         cls.responses['puppet releases'] = []
         author_name = _PUPPET_MODULE['author'] + '/' + _PUPPET_MODULE['name']
         for repo in repos:
+            if (cls.cfg.version >= Version('2.8') and
+                    selectors.bug_is_untestable(1440)):
+                continue
             cls.responses['puppet releases'].append(client.get(
                 '/api/v1/releases.json',
                 params={'module': author_name},
