@@ -205,6 +205,9 @@ class SyncValidFeedTestCase(_BaseTestCase):
                 'package_group': 2,
                 'package_category': 1,
         }.items():
+            if (unit_type == 'rpm' and self.cfg.version >= Version('2.8') and
+                    selectors.bug_is_untestable(1570)):
+                continue
             with self.subTest(unit_type=unit_type):
                 self.assertEqual(counts.get(unit_type), count)
 
