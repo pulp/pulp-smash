@@ -199,10 +199,14 @@ class SyncValidFeedTestCase(_BaseTestCase):
                 selectors.bug_is_untestable(1455)):
             self.skipTest('https://pulp.plan.io/issues/1455')
         counts = self.repo.get('content_unit_counts', {})
-        self.assertEqual(counts.get('rpm'), 32)
-        self.assertEqual(counts.get('erratum'), 4)
-        self.assertEqual(counts.get('package_group'), 2)
-        self.assertEqual(counts.get('package_category'), 1)
+        for unit_type, count in {
+                'rpm': 32,
+                'erratum': 4,
+                'package_group': 2,
+                'package_category': 1,
+        }.items():
+            with self.subTest(unit_type=unit_type):
+                self.assertEqual(counts.get(unit_type), count)
 
 
 class SyncInvalidFeedTestCase(_BaseTestCase):
