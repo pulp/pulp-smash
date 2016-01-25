@@ -33,7 +33,7 @@ class NoKnownServiceManagerError(Exception):
     """
 
 
-class TaskTimedOutException(Exception):
+class TaskTimedOutError(Exception):
     """We timed out while polling a task and waiting for it to complete.
 
     See :func:`pulp_smash.utils.poll_spawned_tasks` and

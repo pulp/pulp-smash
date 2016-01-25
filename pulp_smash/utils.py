@@ -53,7 +53,7 @@ def poll_task(server_config, href):
     :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
     :param href: The path to a task you'd like to monitor recursively.
     :returns: An generator yielding response bodies.
-    :raises pulp_smash.exceptions.TaskTimedOutException: If a task takes too
+    :raises pulp_smash.exceptions.TaskTimedOutError: If a task takes too
         long to complete.
     """
     poll_limit = 24  # 24 * 5s == 120s
@@ -72,7 +72,7 @@ def poll_task(server_config, href):
             break
         poll_counter += 1
         if poll_counter > poll_limit:
-            raise exceptions.TaskTimedOutException(
+            raise exceptions.TaskTimedOutError(
                 'Task {} is ongoing after {} polls.'.format(href, poll_limit)
             )
         # This approach is dumb, in that we don't account for time spent
