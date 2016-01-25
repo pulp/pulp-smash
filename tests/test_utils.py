@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import mock
 import unittest2
 
-from pulp_smash import cli, utils
+from pulp_smash import cli, exceptions, utils
 
 
 class UUID4TestCase(unittest2.TestCase):
@@ -39,10 +39,10 @@ class GetBrokerTestCase(unittest2.TestCase):
     def test_failure(self):
         """Fail to generate a broker service management object.
 
-        Assert that :class:`pulp_smash.utils.NoKnownBrokerError` is raised if
-        the function cannot find a broker.
+        Assert that :class:`pulp_smash.exceptions.NoKnownBrokerError` is raised
+        if the function cannot find a broker.
         """
         with mock.patch.object(cli, 'Client') as client:
             client.return_value.run.return_value.returncode = 1
-            with self.assertRaises(utils.NoKnownBrokerError):
+            with self.assertRaises(exceptions.NoKnownBrokerError):
                 utils.get_broker(mock.Mock())

@@ -11,18 +11,10 @@ except ImportError:
 
 import requests
 
-from pulp_smash import cli
+from pulp_smash import cli, exceptions
 
 
 _TASK_END_STATES = ('canceled', 'error', 'finished', 'skipped', 'timed out')
-
-
-class TaskTimedOutException(Exception):
-    """Indicates that polling a task timed out."""
-
-
-class NoKnownBrokerError(Exception):
-    """Indicates we cannot determine the AMQP broker used by a system."""
 
 
 def uuid4():
@@ -61,8 +53,8 @@ def poll_task(server_config, href):
     :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
     :param href: The path to a task you'd like to monitor recursively.
     :returns: An generator yielding response bodies.
-    :raises pulp_smash.utils.TaskTimedOutException: If a task takes too long to
-        complete.
+    :raises pulp_smash.exceptions.TaskTimedOutException: If a task takes too
+        long to complete.
     """
     poll_limit = 24  # 24 * 5s == 120s
     poll_counter = 0
@@ -80,7 +72,7 @@ def poll_task(server_config, href):
             break
         poll_counter += 1
         if poll_counter > poll_limit:
-            raise TaskTimedOutException(
+            raise exceptions.TaskTimedOutException(
                 'Task {} is ongoing after {} polls.'.format(href, poll_limit)
             )
         # This approach is dumb, in that we don't account for time spent
@@ -100,8 +92,8 @@ def get_broker(server_config):
     :param pulp_smash.config.ServerConfig server_config: Information about the
         system on which an AMQP broker exists.
     :rtype: pulp_smash.cli.Service
-    :raises pulp_smash.utils.NoKnownBrokerError: If unable to find any AMQP
-        brokers on the target system.
+    :raises pulp_smash.exceptions.NoKnownBrokerError: If unable to find any
+        AMQP brokers on the target system.
     """
     # On Fedora 23, /usr/sbin and /usr/local/sbin are only added to the $PATH
     # for login shells. (See pathmunge() in /etc/profile.) As a result, logging
@@ -113,7 +105,7 @@ def get_broker(server_config):
         command = ('test', '-e', '/usr/sbin/' + executable)
         if client.run(command).returncode == 0:
             return cli.Service(server_config, executable)
-    raise NoKnownBrokerError(
+    raise exceptions.NoKnownBrokerError(
         'Unable to determine the AMQP broker used by {}. It does not appear '
         'to be any of {}.'
         .format(server_config.base_url, executables)

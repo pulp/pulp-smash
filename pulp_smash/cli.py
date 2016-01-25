@@ -12,6 +12,8 @@ except ImportError:
 
 import plumbum
 
+from pulp_smash import exceptions
+
 
 # A dict mapping hostnames to *nix service managers.
 #
@@ -50,10 +52,6 @@ def _get_hostname(urlstring):
         return _get_hostname('//' + parts.path)
     else:
         return parts.hostname
-
-
-class NoKnownServiceManagerError(Exception):
-    """Indicates we cannot determine the service manager used by a system."""
 
 
 def echo_handler(completed_proc):
@@ -239,8 +237,8 @@ class Service(object):
     :param pulp_smash.config.ServerConfig server_config: Information about the
         target system.
     :param service: A string identifying the service. For example: ``'httpd'``.
-    :raises pulp_smash.cli.NoKnownServiceManagerError: If unable to find any
-        service manager on the target system.
+    :raises pulp_smash.exceptions.NoKnownServiceManagerError: If unable to find
+        any service manager on the target system.
     """
 
     def __init__(self, server_config, service):
@@ -291,7 +289,7 @@ class Service(object):
             if client.run(command).returncode == 0:
                 _SERVICE_MANAGERS[hostname] = service_manager
                 return service_manager
-        raise NoKnownServiceManagerError(
+        raise exceptions.NoKnownServiceManagerError(
             'Unable to determine the service manager used by {}. It does not '
             'appear to be any of {}.'
             .format(hostname, managers_commands.values())

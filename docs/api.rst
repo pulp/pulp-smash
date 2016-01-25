@@ -15,6 +15,7 @@ developers, not a gospel.
     api/pulp_smash.cli
     api/pulp_smash.config
     api/pulp_smash.constants
+    api/pulp_smash.exceptions
     api/pulp_smash.selectors
     api/pulp_smash.tests
     api/pulp_smash.tests.docker

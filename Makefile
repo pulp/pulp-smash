@@ -33,6 +33,7 @@ lint-pylint:
 		pulp_smash/cli.py \
 		pulp_smash/config.py \
 		pulp_smash/constants.py \
+		pulp_smash/exceptions.py \
 		pulp_smash/selectors.py \
 		pulp_smash/utils.py
 	pylint --reports=n --disable=I,duplicate-code pulp_smash/tests/
@@ -43,7 +44,7 @@ test:
 	python $(TEST_OPTIONS)
 
 test-coverage:
-	coverage run --source pulp_smash.api,pulp_smash.cli,pulp_smash.config,pulp_smash.selectors,pulp_smash.utils \
+	coverage run --source pulp_smash.api,pulp_smash.cli,pulp_smash.config,pulp_smash.exceptions,pulp_smash.selectors,pulp_smash.utils \
 	$(TEST_OPTIONS)
 
 package:

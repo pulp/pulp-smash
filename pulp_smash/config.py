@@ -17,6 +17,8 @@ from threading import Lock
 from packaging.version import Version
 from xdg import BaseDirectory
 
+from pulp_smash import exceptions
+
 
 # `get_config` uses this as a cache. It is intentionally a global. This design
 # lets us do interesting things like flush the cache at run time or completely
@@ -46,10 +48,6 @@ def get_config():
     if _CONFIG is None:
         _CONFIG = ServerConfig().read()
     return deepcopy(_CONFIG)
-
-
-class ConfigFileNotFoundError(Exception):
-    """Indicates that the requested XDG configuration file cannot be found."""
 
 
 class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
@@ -337,14 +335,14 @@ def _get_config_file_path(xdg_config_dir, xdg_config_file):
     :param xdg_config_file: A string. The name of the configuration file that
         is being searched for.
     :returns: A string. A path to a configuration file.
-    :raises pulp_smash.config.ConfigFileNotFoundError: If the requested
+    :raises pulp_smash.exceptions.ConfigFileNotFoundError: If the requested
         configuration file cannot be found.
     """
     for config_dir in BaseDirectory.load_config_paths(xdg_config_dir):
         path = os.path.join(config_dir, xdg_config_file)
         if os.path.isfile(path):
             return path
-    raise ConfigFileNotFoundError(
+    raise exceptions.ConfigFileNotFoundError(
         'No configuration files could be located after searching for a file '
         'named "{0}" in the standard XDG configuration paths, such as '
         '"~/.config/{1}/".'.format(xdg_config_file, xdg_config_dir)

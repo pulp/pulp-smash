@@ -8,6 +8,8 @@ from functools import wraps
 import requests
 from packaging.version import Version
 
+from pulp_smash import exceptions
+
 # These are all possible values for a bug's "status" field.
 #
 # These statuses apply to bugs filed at https://pulp.plan.io. They are ordered
@@ -73,18 +75,14 @@ def _get_bug_status(bug_id):
     return _BUG_STATUS_CACHE[bug_id]
 
 
-class BugStatusUnknownError(Exception):
-    """Indicates a bug has a status that Pulp Smash doesn't know about."""
-
-
 def bug_is_testable(bug_id):
     """Tell the caller whether bug ``bug_id`` should be tested.
 
     :param bug_id: An integer bug ID, taken from https://pulp.plan.io.
     :returns: ``True`` if the bug is testable, or ``False`` otherwise.
     :raises: ``TypeError`` if ``bug_id`` is not an integer.
-    :raises pulp_smash.selectors.BugStatusUnknownError: If the bug has a status
-        Pulp Smash does not recognize.
+    :raises pulp_smash.exceptions.BugStatusUnknownError: If the bug has a
+        status Pulp Smash does not recognize.
     :raises: BugTrackerUnavailableWarning: If the bug tracker cannot be
         contacted.
     """
@@ -104,7 +102,7 @@ def bug_is_testable(bug_id):
         return False
     else:
         # Alternately, we could raise a warning and `return True`.
-        raise BugStatusUnknownError(
+        raise exceptions.BugStatusUnknownError(
             'Bug {} has a status of {}. Pulp Smash only knows how to handle '
             'the following statuses: {}'
             .format(bug_id, status, _TESTABLE_BUGS | _UNTESTABLE_BUGS)

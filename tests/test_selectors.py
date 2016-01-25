@@ -8,7 +8,7 @@ import mock
 import requests
 import unittest2
 
-from pulp_smash import selectors
+from pulp_smash import exceptions, selectors
 
 
 class BugIsTestableTestCase(unittest2.TestCase):
@@ -47,7 +47,7 @@ class BugIsTestableTestCase(unittest2.TestCase):
             '_get_bug_status',
             return_value=None,
         ):
-            with self.assertRaises(selectors.BugStatusUnknownError):
+            with self.assertRaises(exceptions.BugStatusUnknownError):
                 selectors.bug_is_testable(None)
 
     def test_connection_error(self):
