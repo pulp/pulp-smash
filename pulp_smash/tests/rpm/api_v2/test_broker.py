@@ -32,8 +32,9 @@ except ImportError:
     from urlparse import urljoin  # pylint:disable=C0411,E0401
 
 import unittest2
+from packaging.version import Version
 
-from pulp_smash import api, cli, config, utils
+from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import REPOSITORY_PATH
 
 
@@ -77,6 +78,10 @@ class BrokerTestCase(unittest2.TestCase):
     def setUp(self):
         """Provide a server config and Pulp services to stop and start."""
         self.cfg = config.get_config()
+        if (self.cfg.version >= Version('2.8') and
+                selectors.bug_is_untestable(1580)):
+            raise self.skipTest('https://pulp.plan.io/issues/1580')
+
         self.broker = utils.get_broker(self.cfg)
         self.services = tuple((
             cli.Service(self.cfg, service) for service in _SERVICES

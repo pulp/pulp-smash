@@ -329,6 +329,9 @@ class PublishTestCase(_BaseTestCase):
 
         # Download the RPM from both repositories.
         for response in cls.responses['distribute']:
+            if (cls.cfg.version >= Version('2.8') and
+                    selectors.bug_is_untestable(1580)):
+                continue
             url = urljoin(
                 '/pulp/repos/',
                 response.json()['config']['relative_url']
