@@ -22,6 +22,7 @@ except ImportError:
     from urlparse import urljoin  # pylint:disable=C0411,E0401
 
 import unittest2
+from packaging.version import Version
 
 from pulp_smash import api, config, utils
 from pulp_smash.constants import REPOSITORY_PATH, ERROR_KEYS
@@ -124,20 +125,20 @@ class CreateFailureTestCase(_BaseTestCase):
 
     def test_status_code(self):
         """Assert that each response has the expected HTTP status code."""
+        if self.cfg.version < Version('2.8'):
+            self.skipTest('https://pulp.plan.io/issues/1356')
         for body, response, status_code in zip(
                 self.bodies, self.responses, self.status_codes):
             with self.subTest(body=body):
-                if body == ['Incorrect data type'] and bug_is_untestable(1356):
-                    self.skipTest('https://pulp.plan.io/issues/1356')
                 self.assertEqual(response.status_code, status_code)
 
     def test_body_status_code(self):
         """Assert that each response body has the expected HTTP status code."""
+        if self.cfg.version < Version('2.8'):
+            self.skipTest('https://pulp.plan.io/issues/1356')
         for body, response, status_code in zip(
                 self.bodies, self.responses, self.status_codes):
             with self.subTest(body=body):
-                if body == ['Incorrect data type'] and bug_is_untestable(1356):
-                    self.skipTest('https://pulp.plan.io/issues/1356')
                 self.assertEqual(response.json()['http_status'], status_code)
 
     def test_location_header(self):
