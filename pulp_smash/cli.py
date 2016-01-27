@@ -161,7 +161,7 @@ class Client(object):  # pylint:disable=too-few-public-methods
         # How do we make requests?
         hostname = _get_hostname(server_config.base_url)
         if server_config.cli_transport is None:
-            transport = 'local' if hostname == socket.gethostname() else 'ssh'
+            transport = 'local' if hostname == socket.getfqdn() else 'ssh'
         else:
             transport = server_config.cli_transport
         if transport == 'local':

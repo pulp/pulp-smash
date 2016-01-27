@@ -118,7 +118,7 @@ class ClientTestCase(unittest2.TestCase):
 
     def test_implicit_local_transport(self):
         """Assert it is possible to implicitly ask for a "local" transport."""
-        cfg = config.ServerConfig(socket.gethostname())
+        cfg = config.ServerConfig(socket.getfqdn())
         self.assertIsInstance(cli.Client(cfg).machine, LocalMachine)
 
     def test_default_response_handler(self):
