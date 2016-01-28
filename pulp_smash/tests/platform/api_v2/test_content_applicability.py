@@ -1,6 +1,15 @@
 # coding=utf-8
 """Test the API's `content applicability` functionality.
 
+When a user asks Pulp to regenerate content applicability, Pulp responds with a
+call report and starts executing tasks in series. Starting with Pulp 2.8, it is
+possible for a user to explicitly request that Pulp execute tasks in parallel
+instead. This functionality is only available for certain API calls, and when
+this is done, Pulp returns a group call report instead of a regular call
+report.  (See :data:`pulp_smash.constants.CALL_REPORT_KEYS` and
+:data:`pulp_smash.constants.GROUP_CALL_REPORT_KEYS`.) :class:`SeriesTestCase`
+and :class:`ParallelTestCase` test these two use cases, respectively.
+
 .. _content applicability:
     https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/consumer/applicability.html
 """
@@ -18,18 +27,13 @@ _PATHS = {
 }
 
 
-class SuccessTestCase(TestCase):
-    """Ask Pulp to regenerate content applicability for consumers and repos."""
+class _SuccessTestCase(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Make calls to the server and save the responses."""
+        """Provide a server config and an empty set of responses."""
         cls.cfg = config.get_config()
-        client = api.Client(cls.cfg, api.echo_handler)
-        cls.responses = {
-            key: client.post(path, {key + '_criteria': {}})
-            for key, path in _PATHS.items()
-        }
+        cls.responses = {}
 
     def test_status_code(self):
         """Assert each response has an HTTP 202 status code."""
@@ -37,21 +41,62 @@ class SuccessTestCase(TestCase):
             with self.subTest(key=key):
                 self.assertEqual(response.status_code, 202)
 
-    def test_body(self):
-        """Assert each response is JSON and has a correct structure.
 
-        Regenerating content applicability returns a call report in most cases.
-        For Pulp 2.8 and beyond, regenerating repository content applicability
-        returns a group call report. See `issue #1448
-        <https://pulp.plan.io/issues/1448>`_.
-        """
+class SeriesTestCase(_SuccessTestCase):
+    """Ask Pulp to regenerate content applicability for consumers and repos.
+
+    Do so in series. See
+    :mod:`pulp_smash.tests.platform.api_v2.test_content_applicability`.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Make calls to the server and save the responses."""
+        super(SeriesTestCase, cls).setUpClass()
+        client = api.Client(cls.cfg, api.echo_handler)
+        for key, path in _PATHS.items():
+            cls.responses[key] = client.post(path, {key + '_criteria': {}})
+
+    def test_body(self):
+        """Assert each response is JSON and has a correct structure."""
         for key, response in self.responses.items():
             with self.subTest(key=key):
                 response_keys = frozenset(response.json().keys())
-                if key == 'repo' and self.cfg.version >= Version('2.8'):
-                    self.assertEqual(response_keys, GROUP_CALL_REPORT_KEYS)
-                else:
-                    self.assertEqual(response_keys, CALL_REPORT_KEYS)
+                self.assertEqual(response_keys, CALL_REPORT_KEYS)
+
+
+class ParallelTestCase(_SuccessTestCase):
+    """Ask Pulp to regenerate content applicability for consumers and repos.
+
+    Do so in parallel. See
+    :mod:`pulp_smash.tests.platform.api_v2.test_content_applicability`.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Make calls to the server and save the responses."""
+        super(ParallelTestCase, cls).setUpClass()
+        client = api.Client(cls.cfg, api.echo_handler)
+        for key in {'repo'}:
+            json = {key + '_criteria': {}, 'parallel': True}
+            cls.responses[key] = client.post(_PATHS[key], json)
+
+    def setUp(self):
+        """Ensure this test only runs on Pulp 2.8 and later."""
+        min_ver = '2.8'
+        ver = self.cfg.version
+        if ver < Version(min_ver):
+            self.skipTest(
+                'This test requires Pulp {} or later, but Pulp {} is being '
+                'tested.'.format(min_ver, ver)
+            )
+
+    def test_body(self):
+        """Assert each response is JSON and has a correct structure."""
+        for key, response in self.responses.items():
+            with self.subTest(key=key):
+                response_keys = frozenset(response.json().keys())
+                self.assertEqual(response_keys, GROUP_CALL_REPORT_KEYS)
 
 
 class FailureTestCase(TestCase):
