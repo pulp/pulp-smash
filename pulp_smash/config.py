@@ -344,6 +344,12 @@ def _get_config_file_path(xdg_config_dir, xdg_config_file):
             return path
     raise exceptions.ConfigFileNotFoundError(
         'No configuration files could be located after searching for a file '
-        'named "{0}" in the standard XDG configuration paths, such as '
-        '"~/.config/{1}/".'.format(xdg_config_file, xdg_config_dir)
+        'named "{0}" in the standard XDG configuration paths, the following '
+        'paths were searched: {1}.'.format(
+            xdg_config_file,
+            ', '.join([
+                os.path.join(config_dir, xdg_config_dir, xdg_config_file)
+                for config_dir in BaseDirectory.xdg_config_dirs
+            ])
+        )
     )
