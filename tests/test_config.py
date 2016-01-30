@@ -13,8 +13,9 @@ except ImportError:
 
 import mock
 import unittest2
+import xdg
 
-from pulp_smash import config, utils
+from pulp_smash import config, exceptions, utils
 
 
 def _gen_attrs():
@@ -250,6 +251,31 @@ class SaveTestCase(unittest2.TestCase):
                 config.ServerConfig(**attrs).save(section)
         cfg[section] = attrs
         self.assertEqual(_get_written_json(open_), cfg)
+
+
+class GetConfigFilePathTestCase(unittest2.TestCase):
+    """Test ``pulp_smash.config._get_config_file_path``."""
+
+    def test_success(self):
+        """Assert the method returns a path when a config file is found."""
+        with mock.patch.object(xdg.BaseDirectory, 'load_config_paths') as lcp:
+            lcp.return_value = ('an_iterable', 'of_xdg', 'config_paths')
+            with mock.patch.object(os.path, 'isfile') as isfile:
+                isfile.return_value = True
+                # pylint:disable=protected-access
+                config._get_config_file_path(utils.uuid4(), utils.uuid4())
+        self.assertGreater(isfile.call_count, 0)
+
+    def test_failures(self):
+        """Assert the  method raises an exception when no config is found."""
+        with mock.patch.object(xdg.BaseDirectory, 'load_config_paths') as lcp:
+            lcp.return_value = ('an_iterable', 'of_xdg', 'config_paths')
+            with mock.patch.object(os.path, 'isfile') as isfile:
+                isfile.return_value = False
+                with self.assertRaises(exceptions.ConfigFileNotFoundError):
+                    # pylint:disable=protected-access
+                    config._get_config_file_path(utils.uuid4(), utils.uuid4())
+        self.assertGreater(isfile.call_count, 0)
 
 
 def _get_written_json(mock_obj):
