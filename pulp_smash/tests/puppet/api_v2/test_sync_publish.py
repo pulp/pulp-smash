@@ -43,7 +43,7 @@ except ImportError:
 import unittest2
 from packaging.version import Version
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,
@@ -66,6 +66,12 @@ _PUPPET_MODULE_URL = (
 )
 _PUPPET_QUERY = _PUPPET_MODULE['author'] + '-' + _PUPPET_MODULE['name']
 
+_SERVICES = {
+    'httpd',
+    'pulp_celerybeat',
+    'pulp_resource_manager',
+    'pulp_workers',
+}
 
 def _gen_repo():
     """Return a semi-random dict that used for creating a puppet repo."""
@@ -75,6 +81,40 @@ def _gen_repo():
         'importer_type_id': 'puppet_importer',
         'notes': {'_repo-type': 'puppet-repo'},
     }
+
+class _CleanUpTestCaseMixin(object):
+    """Provide functions to clean up database and filesystem of Pulp"""
+
+    @classmethod
+    def reset_database(cls, server_config):
+        """Drop database and re-run migrations."""
+        cls.services = tuple((
+            cli.Service(cls.cfg, service) for service in _SERVICES
+        ))
+
+        # Stop all Pulp services
+        for service in cls.services:
+            service.stop()
+
+        # Drop database and re-run migrations
+        client = cli.Client(server_config, cli.echo_handler)
+        drop_db_command = ('mongo', 'pulp_database', '--eval', 'db.dropDatabase()')
+        client.run(drop_db_command)
+        migrations_command = ('sudo', '-u', 'apache', 'pulp-manage-db')
+        client.run(migrations_command)
+
+        # Restart all Pulp services
+        for service in cls.services:
+            service.start()
+
+    @classmethod
+    def clean_filesystem(cls, server_config):
+        """Remove all content from /var/lib/pulp/[content, published]"""
+        client = cli.Client(server_config, cli.echo_handler)
+        content_command = ('rm', '-rf', '/var/lib/pulp/content/*')
+        published_command = ('rm', '-rf', '/var/lib/pulp/published/*')
+        client.run(content_command)
+        client.run(published_command)
 
 
 class _BaseTestCase(unittest2.TestCase):
@@ -147,7 +187,7 @@ class CreateTestCase(_BaseTestCase):
                 self.assertEqual(body['importer_' + key], importers[0][key])
 
 
-class SyncValidFeedTestCase(_BaseTestCase):
+class SyncValidFeedTestCase(_BaseTestCase, _CleanUpTestCaseMixin):
     """Create puppet repositories with valid feeds.
 
     Create two repositories with valid feeds. Sync both, using an invalid query
@@ -158,6 +198,8 @@ class SyncValidFeedTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create and sync two puppet repositories."""
         super(SyncValidFeedTestCase, cls).setUpClass()
+        cls.reset_database(cls.cfg)
+        cls.clean_filesystem(cls.cfg)
         bodies = tuple((_gen_repo() for _ in range(2)))
         for i, query in enumerate((
                 _PUPPET_QUERY, _PUPPET_QUERY.replace('-', '_'))):
@@ -242,7 +284,7 @@ class SyncInvalidFeedTestCase(_BaseTestCase):
         )
 
 
-class PublishTestCase(_BaseTestCase):
+class PublishTestCase(_BaseTestCase, _CleanUpTestCaseMixin):
     """Test repository syncing, publishing and data integrity.
 
     Test uploading custom puppet module to repository, copying content between
@@ -265,6 +307,8 @@ class PublishTestCase(_BaseTestCase):
         modules back from them.
         """
         super(PublishTestCase, cls).setUpClass()
+        cls.reset_database(cls.cfg)
+        cls.clean_filesystem(cls.cfg)
         cls.responses = {}
         cls.modules = []  # Raw puppet modules.
 
