@@ -12,6 +12,7 @@ except ImportError:  # pragma: no cover
 import requests
 
 from pulp_smash import cli, exceptions
+from pulp_smash.constants import PULP_SERVICES
 
 
 _TASK_END_STATES = ('canceled', 'error', 'finished', 'skipped', 'timed out')
@@ -110,3 +111,28 @@ def get_broker(server_config):
         'to be any of {}.'
         .format(server_config.base_url, executables)
     )
+
+
+def reset_pulp(server_config):
+    """Stop Pulp, reset its database, remove certain files, and start it.
+
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        Pulp server being targeted.
+    :returns: Nothing.
+    """
+    services = tuple((
+        cli.Service(server_config, service) for service in PULP_SERVICES
+    ))
+    for service in services:
+        service.stop()
+
+    # Reset the database and nuke accumulated files.
+    client = cli.Client(server_config)
+    prefix = '' if client.run(('id', '-u')).stdout.strip() == '0' else 'sudo '
+    client.run('mongo pulp_database --eval db.dropDatabase()'.split())
+    client.run('sudo -u apache pulp-manage-db'.split())
+    client.run((prefix + 'rm -rf /var/lib/pulp/content/*').split())
+    client.run((prefix + 'rm -rf /var/lib/pulp/published/*').split())
+
+    for service in services:
+        service.start()

@@ -57,6 +57,21 @@ LOGIN_PATH = '/pulp/api/v2/actions/login/'
     https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/authentication.html
 """
 
+PULP_SERVICES = {
+    'httpd',
+    'pulp_celerybeat',
+    'pulp_resource_manager',
+    'pulp_workers',
+}
+"""Core Pulp services.
+
+There are services beyond just these that Pulp depends on in order to function
+correctly. For example, an AMQP broker such as RabbitMQ or Qpid is integral to
+Pulp's functioning. However, if resetting Pulp (such as in
+:func:`pulp_smash.utils.reset_pulp`), this is the set of services that should
+be restarted.
+"""
+
 REPOSITORY_PATH = '/pulp/api/v2/repositories/'
 """See: `Repository APIs`_.
 
