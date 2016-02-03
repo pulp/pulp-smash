@@ -34,17 +34,11 @@ except ImportError:
 import unittest2
 
 from pulp_smash import api, cli, config, utils
-from pulp_smash.constants import REPOSITORY_PATH
+from pulp_smash.constants import PULP_SERVICES, REPOSITORY_PATH
 
 
 _FEED_URL = 'https://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/zoo/'
 _RPM = 'bear-4.1-1.noarch.rpm'
-_SERVICES = {
-    'httpd',
-    'pulp_celerybeat',
-    'pulp_resource_manager',
-    'pulp_workers',
-}
 
 
 def _gen_repo():
@@ -79,7 +73,7 @@ class BrokerTestCase(unittest2.TestCase):
         self.cfg = config.get_config()
         self.broker = utils.get_broker(self.cfg)
         self.services = tuple((
-            cli.Service(self.cfg, service) for service in _SERVICES
+            cli.Service(self.cfg, service) for service in PULP_SERVICES
         ))
 
     def tearDown(self):

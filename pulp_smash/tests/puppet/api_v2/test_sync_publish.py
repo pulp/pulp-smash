@@ -158,6 +158,7 @@ class SyncValidFeedTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create and sync two puppet repositories."""
         super(SyncValidFeedTestCase, cls).setUpClass()
+        utils.reset_pulp(cls.cfg)  # See: https://pulp.plan.io/issues/1406
         bodies = tuple((_gen_repo() for _ in range(2)))
         for i, query in enumerate((
                 _PUPPET_QUERY, _PUPPET_QUERY.replace('-', '_'))):
@@ -265,6 +266,7 @@ class PublishTestCase(_BaseTestCase):
         modules back from them.
         """
         super(PublishTestCase, cls).setUpClass()
+        utils.reset_pulp(cls.cfg)  # See: https://pulp.plan.io/issues/1406
         cls.responses = {}
         cls.modules = []  # Raw puppet modules.
 
