@@ -7,7 +7,7 @@ import subprocess
 from sys import version_info
 try:  # try Python 3 import first
     from urllib.parse import urlparse
-except ImportError:
+except ImportError:  # pragma: no cover
     from urlparse import urlparse  # pylint:disable=C0411,E0401
 
 import plumbum
