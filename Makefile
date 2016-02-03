@@ -1,4 +1,5 @@
 TEST_OPTIONS=-m unittest discover --start-directory tests --top-level-directory .
+CPU_COUNT=$(shell python -c "from multiprocessing import cpu_count; print(cpu_count())")
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of:"
@@ -23,7 +24,7 @@ lint-flake8:
 	flake8 . --ignore D203
 
 lint-pylint:
-	pylint --reports=n --ignore-imports=y --disable=I \
+	pylint -j $(CPU_COUNT) --reports=n --ignore-imports=y --disable=I \
 		docs/conf.py \
 		setup.py \
 		tests \
@@ -36,7 +37,7 @@ lint-pylint:
 		pulp_smash/exceptions.py \
 		pulp_smash/selectors.py \
 		pulp_smash/utils.py
-	pylint --reports=n --disable=I,duplicate-code pulp_smash/tests/
+	pylint -j $(CPU_COUNT) --reports=n --disable=I,duplicate-code pulp_smash/tests/
 
 lint: lint-flake8 lint-pylint
 
