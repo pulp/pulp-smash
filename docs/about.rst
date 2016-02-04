@@ -38,10 +38,15 @@ own systems.
 Destructiveness
 ~~~~~~~~~~~~~~~
 
-Should Pulp Smash record all changes it makes to a remote system and revert them
-when testing is complete, or should systems be treated as throw-away? In other
-words, should the systems under test be treated like pets or cattle? [4]_ This
-has yet to be decided.
+*Pulp Smash is highly destructive!* You should not use Pulp Smash for testing if
+you care about the state of the target system. Pulp Smash will do the following
+to a system under test, and possibly more:
+
+* It will drop databases.
+* It will forcefully delete files from the filesystem.
+* It will stop and start system services.
+
+Pulp Smash treats the system(s) under test as cattle, not pets. [4]_
 
 Contributing
 ------------
