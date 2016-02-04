@@ -281,18 +281,19 @@ class Service(object):
             pass
 
         client = Client(server_config, echo_handler)
-        managers_commands = {
-            'systemd': ('which', 'systemctl'),
-            'sysv': ('which', 'service'),
-        }
-        for service_manager, command in managers_commands.items():
-            if client.run(command).returncode == 0:
+        commands_managers = (
+            ('which systemctl', 'systemd'),
+            ('which service', 'sysv'),
+            ('test -x /sbin/service', 'sysv'),
+        )
+        for command, service_manager in commands_managers:
+            if client.run(command.split()).returncode == 0:
                 _SERVICE_MANAGERS[hostname] = service_manager
                 return service_manager
         raise exceptions.NoKnownServiceManagerError(
             'Unable to determine the service manager used by {}. It does not '
             'appear to be any of {}.'
-            .format(hostname, managers_commands.values())
+            .format(hostname, {manager for _, manager in commands_managers})
         )
 
     def start(self):
