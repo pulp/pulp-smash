@@ -77,8 +77,16 @@ class BrokerTestCase(unittest2.TestCase):
         ))
 
     def tearDown(self):
-        """Ensure Pulp services are running."""
-        for service in self.services + (self.broker,):
+        """Ensure Pulp services and AMQP broker are running.
+
+        Stop all relevant services, then start them again. This approach is
+        slow, but see `when broker reconnect test fails, all following tests
+        fail <https://github.com/PulpQE/pulp-smash/issues/91>`_.
+        """
+        services = self.services + (self.broker,)
+        for service in services:
+            service.stop()
+        for service in services:
             service.start()
 
     def test_broker_connect(self):
