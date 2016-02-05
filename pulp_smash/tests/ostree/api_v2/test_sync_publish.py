@@ -39,15 +39,6 @@ _BRANCHES = (
 )
 
 
-def setUpModule():  # pylint:disable=invalid-name
-    """Temporarily skip OSTree tests due to partial availability of the plugin.
-
-    The OSTree plugin is only available on certain supported distributions. For
-    example, it is available on Fedora 23, but not Fedora 22.
-    """
-    raise unittest2.SkipTest('https://github.com/PulpQE/pulp-smash/issues/84')
-
-
 def _gen_repo():
     """Return OSTree repo body."""
     return {

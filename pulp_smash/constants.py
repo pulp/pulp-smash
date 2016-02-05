@@ -57,6 +57,13 @@ LOGIN_PATH = '/pulp/api/v2/actions/login/'
     https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/authentication.html
 """
 
+PLUGIN_TYPES_PATH = '/pulp/api/v2/plugins/types/'
+"""See: `Retrieve All Content Unit Types`_.
+
+.. _Retrieve All Content Unit Types:
+   http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/server_plugins.html#retrieve-all-content-unit-types
+"""
+
 PULP_SERVICES = {
     'httpd',
     'pulp_celerybeat',
