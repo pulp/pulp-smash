@@ -280,6 +280,7 @@ class PublishTestCase(_BaseTestCase):
            RPMs from both repositories.
         """
         super(PublishTestCase, cls).setUpClass()
+        utils.reset_pulp(cls.cfg)  # See: https://pulp.plan.io/issues/1406
         cls.responses = {}
         cls.rpms = []  # Raw RPMs
 
