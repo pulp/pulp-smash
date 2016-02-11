@@ -45,11 +45,11 @@ from pulp_smash.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,
     REPOSITORY_PATH,
+    RPM,
+    RPM_FEED_URL,
 )
 
 
-_FEED_URL = 'https://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/zoo/'
-_RPM = 'bear-4.1-1.noarch.rpm'
 _REPO_PUBLISH_PATH = '/pulp/repos/'  # + relative_url + unit_name.rpm.arch
 
 
@@ -155,7 +155,7 @@ class SyncValidFeedTestCase(_BaseTestCase):
         super(SyncValidFeedTestCase, cls).setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
         body = _gen_repo()
-        body['importer_config']['feed'] = _FEED_URL
+        body['importer_config']['feed'] = RPM_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         client.response_handler = api.echo_handler
         path = urljoin(repo['_href'], 'actions/sync/')
@@ -290,7 +290,7 @@ class PublishTestCase(_BaseTestCase):
         for repo in repos:
             cls.resources.add(repo['_href'])
         client.response_handler = api.safe_handler
-        cls.rpms.append(client.get(urljoin(_FEED_URL, _RPM)).content)
+        cls.rpms.append(client.get(urljoin(RPM_FEED_URL, RPM)).content)
 
         # Begin an upload request, upload an RPM, move the RPM into a
         # repository, and end the upload request.
@@ -336,7 +336,7 @@ class PublishTestCase(_BaseTestCase):
                 '/pulp/repos/',
                 response.json()['config']['relative_url']
             )
-            url = urljoin(url, _RPM)
+            url = urljoin(url, RPM)
             cls.rpms.append(client.get(url).content)
 
         # Search for all units in each of the two repositories.

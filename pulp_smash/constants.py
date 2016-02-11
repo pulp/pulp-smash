@@ -86,6 +86,16 @@ REPOSITORY_PATH = '/pulp/api/v2/repositories/'
     https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/index.html
 """
 
+RPM = 'bear-4.1-1.noarch.rpm'
+"""The name of an RPM file. See :data:`pulp_smash.constants.RPM_FEED_URL`."""
+
+RPM_FEED_URL = 'https://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/zoo/'
+"""The URL to an RPM feed.
+
+This URL, plus :data:`pulp_smash.constants.RPM`, is a URL to an RPM file. (Use
+``urllib.parse.urlparse``.)
+"""
+
 USER_PATH = '/pulp/api/v2/users/'
 """See: `User APIs`_.
 

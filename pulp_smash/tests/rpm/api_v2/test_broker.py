@@ -34,18 +34,19 @@ except ImportError:
 import unittest2
 
 from pulp_smash import api, cli, config, selectors, utils
-from pulp_smash.constants import PULP_SERVICES, REPOSITORY_PATH
-
-
-_FEED_URL = 'https://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/zoo/'
-_RPM = 'bear-4.1-1.noarch.rpm'
+from pulp_smash.constants import (
+    PULP_SERVICES,
+    REPOSITORY_PATH,
+    RPM,
+    RPM_FEED_URL,
+)
 
 
 def _gen_repo():
     """Return a semi-random dict for use in creating an RPM repostirory."""
     return {
         'id': utils.uuid4(),
-        'importer_config': {'feed': _FEED_URL},
+        'importer_config': {'feed': RPM_FEED_URL},
         'importer_type_id': 'yum_importer',
         'notes': {'_repo-type': 'rpm-repo'},
     }
@@ -146,9 +147,9 @@ class BrokerTestCase(unittest2.TestCase):
         )
         client.response_handler = api.safe_handler
         url = urljoin('/pulp/repos/', distributor['config']['relative_url'])
-        url = urljoin(url, _RPM)
+        url = urljoin(url, RPM)
         pulp_rpm = client.get(url).content
 
         # Does this RPM match the original RPM?
-        rpm = client.get(urljoin(_FEED_URL, _RPM)).content
+        rpm = client.get(urljoin(RPM_FEED_URL, RPM)).content
         self.assertEqual(rpm, pulp_rpm)
