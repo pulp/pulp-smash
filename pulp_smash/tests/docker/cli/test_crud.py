@@ -21,6 +21,10 @@ class CreateTestCase(unittest2.TestCase):
         """Provide a server config and a repository ID."""
         self.cfg = config.get_config()
         self.repo_id = utils.uuid4()
+        cli.Client(self.cfg).run(
+            'pulp-admin login -u {} -p {}'
+            .format(self.cfg.auth[0], self.cfg.auth[1]).split()
+        )
 
     def tearDown(self):
         """Delete created resources."""
