@@ -29,6 +29,10 @@ class _BaseTestCase(unittest2.TestCase):
         """Provide a server config and a repository ID."""
         cls.cfg = config.get_config()
         cls.repo_id = utils.uuid4()
+        cli.Client(cls.cfg).run(
+            'pulp-admin login -u {} -p {}'
+            .format(cls.cfg.auth[0], cls.cfg.auth[1]).split()
+        )
 
     @classmethod
     def tearDownClass(cls):
