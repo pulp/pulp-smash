@@ -30,13 +30,37 @@ except ImportError:
 import unittest2
 
 from pulp_smash import api, config, utils
-from pulp_smash.constants import REPOSITORY_PATH
+from pulp_smash.constants import PLUGIN_TYPES_PATH, REPOSITORY_PATH
 
 _FEED = 'http://dl.fedoraproject.org/pub/fedora/linux/atomic/21/'
 _BRANCHES = (
     'fedora-atomic/f21/x86_64/updates/docker-host',
     'fedora-atomic/f21/x86_64/updates-testing/docker-host',
 )
+
+
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the OSTree plugin is not installed."""
+    if 'ostree' not in _get_plugin_type_ids():
+        raise unittest2.SkipTest('These tests require the OSTree plugin.')
+
+
+def _get_plugin_type_ids():
+    """Get the ID of each of Pulp's plugins.
+
+    Each Pulp plugin adds one (or more?) content unit type to Pulp. Each of
+    these content unit types is identified by a certain unique identifier. For
+    example, the `Python type`_ has an ID of ``python_package``.
+
+    :returns: A set of plugin IDs. For example: ``{'ostree',
+        'python_package'}``.
+
+    .. _Python type:
+       http://pulp-python.readthedocs.org/en/latest/reference/python-type.html
+    """
+    client = api.Client(config.get_config(), api.json_handler)
+    plugin_types = client.get(PLUGIN_TYPES_PATH)
+    return {plugin_type['id'] for plugin_type in plugin_types}
 
 
 def _gen_repo():
