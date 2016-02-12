@@ -111,8 +111,8 @@ class InvalidFeedTestCase(_BaseTestCase):
 
     def test_return_code(self):
         """Assert the "sync" command has a non-zero return code."""
-        if selectors.bug_is_untestable(1637):
-            self.skipTest('https://pulp.plan.io/issues/1637')
+        if selectors.bug_is_untestable(427):
+            self.skipTest('https://pulp.plan.io/issues/427')
         self.assertNotEqual(self.completed_proc.returncode, 0)
 
     def test_task_succeeded(self):
