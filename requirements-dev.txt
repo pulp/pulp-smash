@@ -1,7 +1,7 @@
 # For `make lint`
 flake8
 flake8-docstrings
-flake8-quotes
+flake8-quotes<0.2.0
 pylint
 astroid
 
