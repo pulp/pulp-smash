@@ -94,6 +94,28 @@ class SyncV2TestCase(_SuccessMixin, _BaseTestCase):
         cls.completed_proc = _sync_repo(cls.cfg, cls.repo_id)
 
 
+class SyncUnnamespacedV2TestCase(_SuccessMixin, _BaseTestCase):
+    """Show it Pulp can sync an unnamespaced docker repo from a v2 registry."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Create a docker repository from an unnamespaced v2 registry.
+
+        This method requires Pulp 2.8 and above, and will raise a ``SkipTest``
+        exception if run against an earlier version of Pulp.
+        """
+        super(SyncUnnamespacedV2TestCase, cls).setUpClass()
+        if cls.cfg.version < Version('2.8'):
+            raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
+        kwargs = {
+            'feed': 'https://registry-1.docker.io',  # v2 feed
+            'repo_id': cls.repo_id,
+            'upstream_name': 'busybox',
+        }
+        cli.Client(cls.cfg).run(_CREATE_COMMAND.format(**kwargs).split())
+        cls.completed_proc = _sync_repo(cls.cfg, cls.repo_id)
+
+
 class InvalidFeedTestCase(_BaseTestCase):
     """Show Pulp behaves correctly when syncing a repo with an invalid feed."""
 
