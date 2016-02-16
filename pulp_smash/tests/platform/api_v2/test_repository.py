@@ -21,32 +21,14 @@ try:  # try Python 3 first
 except ImportError:
     from urlparse import urljoin  # pylint:disable=C0411,E0401
 
-import unittest2
 from packaging.version import Version
 
-from pulp_smash import api, config, utils
+from pulp_smash import api, utils
 from pulp_smash.constants import REPOSITORY_PATH, ERROR_KEYS
 from pulp_smash.selectors import bug_is_untestable, require
 
 
-class _BaseTestCase(unittest2.TestCase):
-    """Provide a server config to tests, and delete created resources."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Provide a server config and an empty set of resources to delete."""
-        cls.cfg = config.get_config()
-        cls.resources = set()  # a set of _href paths
-
-    @classmethod
-    def tearDownClass(cls):
-        """For each resource in ``cls.resources``, delete that resource."""
-        client = api.Client(cls.cfg)
-        for resource in cls.resources:
-            client.delete(resource)
-
-
-class CreateSuccessTestCase(_BaseTestCase):
+class CreateSuccessTestCase(utils.BaseAPITestCase):
     """Establish we can create repositories."""
 
     @classmethod
@@ -96,7 +78,7 @@ class CreateSuccessTestCase(_BaseTestCase):
                 self.assertEqual(body, attrs)
 
 
-class CreateFailureTestCase(_BaseTestCase):
+class CreateFailureTestCase(utils.BaseAPITestCase):
     """Establish that repositories are not created in documented scenarios."""
 
     @classmethod
@@ -157,7 +139,7 @@ class CreateFailureTestCase(_BaseTestCase):
                 self.assertEqual(response_keys, ERROR_KEYS)
 
 
-class ReadUpdateDeleteTestCase(_BaseTestCase):
+class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
     """Establish we can read, update and delete repositories.
 
     This test case assumes the assertions in :class:`CreateSuccessTestCase`

@@ -7,10 +7,9 @@ try:  # try Python 3 import first
 except ImportError:
     from urlparse import urljoin  # pylint:disable=C0411,E0401
 
-import unittest2
 from packaging.version import Version
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, selectors, utils
 from pulp_smash.constants import REPOSITORY_PATH
 
 
@@ -42,24 +41,7 @@ def _customize_template(template, repository_id):
     return template
 
 
-class _BaseTestCase(unittest2.TestCase):
-    """Provide a server config, and tear down created resources."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Provide a server config and an empty set of resources to delete."""
-        cls.cfg = config.get_config()
-        cls.resources = set()  # a set of _href paths
-
-    @classmethod
-    def tearDownClass(cls):
-        """For each resource in ``cls.resources``, delete that resource."""
-        client = api.Client(cls.cfg)
-        for resource in cls.resources:
-            client.delete(resource)
-
-
-class CreateTestCase(_BaseTestCase):
+class CreateTestCase(utils.BaseAPITestCase):
     """Create an ISO RPM repo with an importer and distributor."""
 
     @classmethod
@@ -103,7 +85,7 @@ class CreateTestCase(_BaseTestCase):
         self.assertEqual(body, attrs)
 
 
-class ReadUpdateDeleteTestCase(_BaseTestCase):
+class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
     """Establish that we can interact with typed repositories as expected."""
 
     @classmethod
@@ -216,7 +198,7 @@ class ReadUpdateDeleteTestCase(_BaseTestCase):
                 self.assertEqual(want, have)
 
 
-class AddImporterDistributorTestCase(_BaseTestCase):
+class AddImporterDistributorTestCase(utils.BaseAPITestCase):
     """Add an importer and a distributor to an existing untyped repository.
 
     See:

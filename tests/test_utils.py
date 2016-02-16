@@ -2,10 +2,12 @@
 """Unit tests for :mod:`pulp_smash.utils`."""
 from __future__ import unicode_literals
 
+import random
+
 import mock
 import unittest2
 
-from pulp_smash import cli, exceptions, utils
+from pulp_smash import api, cli, config, exceptions, utils
 
 
 class UUID4TestCase(unittest2.TestCase):
@@ -46,3 +48,51 @@ class GetBrokerTestCase(unittest2.TestCase):
             client.return_value.run.return_value.returncode = 1
             with self.assertRaises(exceptions.NoKnownBrokerError):
                 utils.get_broker(mock.Mock())
+
+
+class BaseAPITestCase(unittest2.TestCase):
+    """Test :class:`pulp_smash.utils.BaseAPITestCase`."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Define a child class. Call setup and teardown methods on it.
+
+        We define a child class in order to avoid altering
+        :class:`pulp_smash.utils.BaseAPITestCase`. Calling class methods on it
+        would do so.
+        """
+        class Child(utils.BaseAPITestCase):
+            """An empty child class."""
+
+            pass
+
+        with mock.patch.object(config, 'get_config'):
+            Child.setUpClass()
+        for i in range(random.randint(1, 100)):
+            Child.resources.add(i)
+
+        # Make class available to test methods
+        cls.child = Child
+
+    def test_set_up_class(self):
+        """Assert method ``setUpClass`` creates correct class attributes.
+
+        Verify that the method creates attributes named ``cfg`` and
+        ``resources``.
+        """
+        for attr in {'cfg', 'resources'}:
+            with self.subTest(attr=attr):
+                self.assertTrue(hasattr(self.child, attr))
+
+    def test_tear_down_class(self):
+        """Call method ``tearDownClass``, and assert it deletes each resource.
+
+        :meth:`pulp_smash.api.Client.delete` should be called once for each
+        resource listed in ``resources``.
+        """
+        with mock.patch.object(api, 'Client') as client:
+            self.child.tearDownClass()
+        self.assertEqual(
+            client.return_value.delete.call_count,
+            len(self.child.resources),
+        )

@@ -37,10 +37,9 @@ try:  # try Python 3 import first
 except ImportError:
     from urlparse import urljoin  # pylint:disable=C0411,E0401
 
-import unittest2
 from packaging.version import Version
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, selectors, utils
 from pulp_smash.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,
@@ -77,24 +76,7 @@ def _gen_distributor():
     }
 
 
-class _BaseTestCase(unittest2.TestCase):
-    """Provide a server config, and tear down created resources."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Provide a server config and an iterable of resources to delete."""
-        cls.cfg = config.get_config()
-        cls.resources = set()
-
-    @classmethod
-    def tearDownClass(cls):
-        """Delete created resources."""
-        client = api.Client(cls.cfg)
-        for resource in cls.resources:
-            client.delete(resource)
-
-
-class CreateTestCase(_BaseTestCase):
+class CreateTestCase(utils.BaseAPITestCase):
     """Create two RPM repositories, with and without feed URLs respectively."""
 
     @classmethod
@@ -143,7 +125,7 @@ class CreateTestCase(_BaseTestCase):
                 self.assertEqual(importers[0][key], body['importer_' + key])
 
 
-class SyncValidFeedTestCase(_BaseTestCase):
+class SyncValidFeedTestCase(utils.BaseAPITestCase):
     """Create an RPM repository with a valid feed and sync it.
 
     The sync should complete with no errors reported.
@@ -213,7 +195,7 @@ class SyncValidFeedTestCase(_BaseTestCase):
                 self.assertEqual(counts.get(unit_type), count)
 
 
-class SyncInvalidFeedTestCase(_BaseTestCase):
+class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
     """Create an RPM repository with an invalid feed and sync it.
 
     The sync should complete with errors reported.
@@ -263,7 +245,7 @@ class SyncInvalidFeedTestCase(_BaseTestCase):
         self.assertEqual(len(self.tasks), 1)
 
 
-class PublishTestCase(_BaseTestCase):
+class PublishTestCase(utils.BaseAPITestCase):
     """Upload an RPM to a repo, copy it to another, publish, and download."""
 
     @classmethod

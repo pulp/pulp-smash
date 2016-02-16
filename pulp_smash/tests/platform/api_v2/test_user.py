@@ -15,9 +15,7 @@ The assumptions explored in this module have the following dependencies::
 """
 from __future__ import unicode_literals
 
-from unittest2 import TestCase
-
-from pulp_smash import api, config, utils
+from pulp_smash import api, utils
 from pulp_smash.constants import LOGIN_PATH, USER_PATH
 
 
@@ -26,24 +24,7 @@ def _logins(search_response):
     return {resp['login'] for resp in search_response.json()}
 
 
-class _BaseTestCase(TestCase):
-    """Provide a server config to tests, and delete created resources."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Provide a server config and an empty set of resources to delete."""
-        cls.cfg = config.get_config()
-        cls.resources = set()  # a set of _href paths
-
-    @classmethod
-    def tearDownClass(cls):
-        """For each resource in ``cls.resources``, delete that resource."""
-        client = api.Client(cls.cfg)
-        for resource in cls.resources:
-            client.delete(resource)
-
-
-class CreateTestCase(_BaseTestCase):
+class CreateTestCase(utils.BaseAPITestCase):
     """Establish that we can create users. No prior assumptions are made."""
 
     @classmethod
@@ -63,7 +44,7 @@ class CreateTestCase(_BaseTestCase):
         for body in cls.bodies:
             response = client.post(USER_PATH, body)
             cls.responses.append(response)
-            cls.resources.add(response.json()['_href'])  # See _BaseTestCase
+            cls.resources.add(response.json()['_href'])  # See parent class
 
     def test_status_code(self):
         """Assert that each response has an HTTP 201 status code."""
@@ -92,7 +73,7 @@ class CreateTestCase(_BaseTestCase):
                 self.assertEqual(body, attrs)
 
 
-class ReadUpdateDeleteTestCase(_BaseTestCase):
+class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
     """Establish that we can read, update and delete users.
 
     This test case assumes that the assertions in :class:`CreateTestCase` are
@@ -177,7 +158,7 @@ class ReadUpdateDeleteTestCase(_BaseTestCase):
         self.assertEqual(response.status_code, 409)
 
 
-class SearchTestCase(_BaseTestCase):
+class SearchTestCase(utils.BaseAPITestCase):
     """Establish we can search for users.
 
     This test case assumes the assertions in :class:`ReadUpdateDeleteTestCase`

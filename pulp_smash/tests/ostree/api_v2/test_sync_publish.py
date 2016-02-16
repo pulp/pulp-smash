@@ -90,23 +90,6 @@ def _create_sync_repo(server_config, body):
     return repo['_href'], response, tasks
 
 
-class _BaseTestCase(unittest2.TestCase):
-    """Provide a server config, and tear down created resources."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Provide a server config and an iterable of resources to delete."""
-        cls.cfg = config.get_config()
-        cls.resources = set()
-
-    @classmethod
-    def tearDownClass(cls):
-        """Delete created resources."""
-        client = api.Client(cls.cfg)
-        for resource in cls.resources:
-            client.delete(resource)
-
-
 class _SyncFailedMixin(object):
     """Add test methods verifying Pulp's behaviour when a sync fails.
 
@@ -153,7 +136,7 @@ class _SyncImportFailedMixin(object):  # pylint:disable=too-few-public-methods
             self.assertGreater(num_error_details, 0)
 
 
-class CreateTestCase(_BaseTestCase):
+class CreateTestCase(utils.BaseAPITestCase):
     """Create two OSTree repositories, with and without a feed."""
 
     @classmethod
@@ -202,7 +185,7 @@ class CreateTestCase(_BaseTestCase):
                 self.assertEqual(importers[0][key], body['importer_' + key])
 
 
-class SyncTestCase(_BaseTestCase):
+class SyncTestCase(utils.BaseAPITestCase):
     """Create an OSTree repository with a valid feed and branch, and sync it.
 
     The sync should complete with no errors reported.
@@ -240,7 +223,7 @@ class SyncTestCase(_BaseTestCase):
 class SyncInvalidFeedTestCase(
         _SyncFailedMixin,
         _SyncImportFailedMixin,
-        _BaseTestCase):
+        utils.BaseAPITestCase):
     """Create an OSTree repository with an invalid feed and sync it."""
 
     @classmethod
@@ -257,7 +240,7 @@ class SyncInvalidFeedTestCase(
 class SyncInvalidBranchesTestCase(
         _SyncFailedMixin,
         _SyncImportFailedMixin,
-        _BaseTestCase):
+        utils.BaseAPITestCase):
     """Create an OSTree repository with invalid branches and sync it."""
 
     @classmethod
@@ -271,7 +254,7 @@ class SyncInvalidBranchesTestCase(
         cls.resources.add(repo_href)
 
 
-class SyncMissingAttrsTestCase(_SyncFailedMixin, _BaseTestCase):
+class SyncMissingAttrsTestCase(_SyncFailedMixin, utils.BaseAPITestCase):
     """Create an OSTree repository with no feed or branches and sync it."""
 
     @classmethod

@@ -32,7 +32,7 @@ import random
 
 import unittest2
 
-from pulp_smash import api, config
+from pulp_smash import api, utils
 from pulp_smash.constants import USER_PATH
 from pulp_smash.utils import uuid4
 
@@ -47,14 +47,13 @@ def _create_users(server_config, num):
     return tuple(users)
 
 
-class _BaseTestCase(unittest2.TestCase):
+class _BaseTestCase(utils.BaseAPITestCase):
     """Provide a server config to tests, and delete created resources."""
 
     @classmethod
     def setUpClass(cls):
-        """Provide a server config and an empty set of resources to delete."""
-        cls.cfg = config.get_config()
-        cls.resources = set()  # a set of _href paths
+        """Create an empty dict of searches performed."""
+        super(_BaseTestCase, cls).setUpClass()
         cls.searches = {}
 
     def test_status_code(self):
@@ -62,13 +61,6 @@ class _BaseTestCase(unittest2.TestCase):
         for key, response in self.searches.items():
             with self.subTest(key=key):
                 self.assertEqual(response.status_code, 200)
-
-    @classmethod
-    def tearDownClass(cls):
-        """For each resource in ``cls.resources``, delete that resource."""
-        client = api.Client(cls.cfg)
-        for resource in cls.resources:
-            client.delete(resource)
 
 
 class MinimalTestCase(_BaseTestCase):

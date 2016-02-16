@@ -40,10 +40,9 @@ try:  # try Python 3 first
 except ImportError:
     from urlparse import urljoin  # pylint:disable=C0411,E0401
 
-import unittest2
 from packaging.version import Version
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, selectors, utils
 from pulp_smash.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,
@@ -77,24 +76,7 @@ def _gen_repo():
     }
 
 
-class _BaseTestCase(unittest2.TestCase):
-    """Provide a server config, and tear down created resources."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Provide a server config and an iterable of resources to delete."""
-        cls.cfg = config.get_config()
-        cls.resources = set()
-
-    @classmethod
-    def tearDownClass(cls):
-        """Delete created resources."""
-        client = api.Client(cls.cfg)
-        for resource in cls.resources:
-            client.delete(resource)
-
-
-class CreateTestCase(_BaseTestCase):
+class CreateTestCase(utils.BaseAPITestCase):
     """Create two puppet repos, with and without feed URLs respectively."""
 
     @classmethod
@@ -147,7 +129,7 @@ class CreateTestCase(_BaseTestCase):
                 self.assertEqual(body['importer_' + key], importers[0][key])
 
 
-class SyncValidFeedTestCase(_BaseTestCase):
+class SyncValidFeedTestCase(utils.BaseAPITestCase):
     """Create puppet repositories with valid feeds.
 
     Create two repositories with valid feeds. Sync both, using an invalid query
@@ -203,7 +185,7 @@ class SyncValidFeedTestCase(_BaseTestCase):
                 )
 
 
-class SyncInvalidFeedTestCase(_BaseTestCase):
+class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
     """If an invalid feed is given a sync should complete with errors."""
 
     @classmethod
@@ -243,7 +225,7 @@ class SyncInvalidFeedTestCase(_BaseTestCase):
         )
 
 
-class PublishTestCase(_BaseTestCase):
+class PublishTestCase(utils.BaseAPITestCase):
     """Test repository syncing, publishing and data integrity.
 
     Test uploading custom puppet module to repository, copying content between

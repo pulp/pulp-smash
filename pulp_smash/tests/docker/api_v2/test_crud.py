@@ -9,7 +9,7 @@ from __future__ import unicode_literals
 import unittest2
 from packaging.version import Version
 
-from pulp_smash import api, config, utils
+from pulp_smash import api, utils
 from pulp_smash.constants import REPOSITORY_PATH
 
 
@@ -25,23 +25,15 @@ def _gen_docker_repo_body():
     }
 
 
-class _BaseTestCase(unittest2.TestCase):
-    """Provide a server config, and tear down created resources."""
+class _BaseTestCase(utils.BaseAPITestCase):
+    """Provide logic common to docker test cases."""
 
     @classmethod
     def setUpClass(cls):
-        """Provide a server config and an iterable of resources to delete."""
-        cls.cfg = config.get_config()
-        cls.resources = set()
+        """Skip tests if the targeted Pulp system is older than version 2.8."""
+        super(_BaseTestCase, cls).setUpClass()
         if cls.cfg.version < Version('2.8'):
             raise unittest2.SkipTest('These tests require at least Pulp 2.8.')
-
-    @classmethod
-    def tearDownClass(cls):
-        """Delete created resources."""
-        client = api.Client(cls.cfg)
-        for resource in cls.resources:
-            client.delete(resource)
 
 
 class CreateTestCase(_BaseTestCase):

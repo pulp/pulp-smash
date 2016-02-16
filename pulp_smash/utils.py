@@ -8,7 +8,9 @@ from __future__ import unicode_literals
 
 import uuid
 
-from pulp_smash import cli, exceptions
+import unittest2
+
+from pulp_smash import api, cli, config, exceptions
 from pulp_smash.constants import PULP_SERVICES
 
 
@@ -72,3 +74,35 @@ def reset_pulp(server_config):
 
     for service in services:
         service.start()
+
+
+class BaseAPITestCase(unittest2.TestCase):
+    """A class with behaviour that is of use in many API test cases.
+
+    This test case provides set-up and tear-down behaviour that is common to
+    many API test cases. It is not necessary to use this class as the parent of
+    all API test cases, but it serves well in many cases.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Provide a server config and an iterable of resources to delete.
+
+        The following class attributes are created this method:
+
+        ``cfg``
+            A :class:`pulp_smash.config.ServerConfig` object.
+        ``resources``
+            A set object. If a child class creates some resources that should
+            be deleted when the test is complete, the child class should add
+            that resource's href to this set.
+        """
+        cls.cfg = config.get_config()
+        cls.resources = set()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Delete all resources named by ``resources``."""
+        client = api.Client(cls.cfg)
+        for resource in cls.resources:
+            client.delete(resource)
