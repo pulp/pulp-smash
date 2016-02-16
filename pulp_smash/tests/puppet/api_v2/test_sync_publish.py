@@ -178,7 +178,7 @@ class SyncValidFeedTestCase(_BaseTestCase):
             report = client.post(urljoin(repo['_href'], 'actions/sync/'))
             report.raise_for_status()
             cls.reports.append(report)
-            for task in utils.poll_spawned_tasks(cls.cfg, report.json()):
+            for task in api.poll_spawned_tasks(cls.cfg, report.json()):
                 cls.tasks.append(task)
 
     def test_status_code(self):
@@ -220,7 +220,7 @@ class SyncInvalidFeedTestCase(_BaseTestCase):
         client.response_handler = api.echo_handler
         cls.report = client.post(urljoin(repo['_href'], 'actions/sync/'))
         cls.report.raise_for_status()
-        cls.tasks = list(utils.poll_spawned_tasks(cls.cfg, cls.report.json()))
+        cls.tasks = list(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
 
     def test_status_code(self):
         """Assert the call to sync a repository returns an HTTP 202."""

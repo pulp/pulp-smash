@@ -86,7 +86,7 @@ def _create_sync_repo(server_config, body):
         {'override_config': {}},
     )
     response.raise_for_status()
-    tasks = tuple(utils.poll_spawned_tasks(server_config, response.json()))
+    tasks = tuple(api.poll_spawned_tasks(server_config, response.json()))
     return repo['_href'], response, tasks
 
 

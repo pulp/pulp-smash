@@ -161,7 +161,7 @@ class SyncValidFeedTestCase(_BaseTestCase):
         path = urljoin(repo['_href'], 'actions/sync/')
         cls.report = client.post(path, {'override_config': {}})
         cls.report.raise_for_status()
-        cls.tasks = tuple(utils.poll_spawned_tasks(cls.cfg, cls.report.json()))
+        cls.tasks = tuple(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
         client.response_handler = api.json_handler
         cls.repo = client.get(repo['_href'])
         cls.resources.add(repo['_href'])
@@ -231,7 +231,7 @@ class SyncInvalidFeedTestCase(_BaseTestCase):
         path = urljoin(repo['_href'], 'actions/sync/')
         cls.report = client.post(path, {'override_config': {}})
         cls.report.raise_for_status()
-        cls.tasks = tuple(utils.poll_spawned_tasks(cls.cfg, cls.report.json()))
+        cls.tasks = tuple(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
         cls.resources.add(repo['_href'])
 
     def test_start_sync_code(self):
