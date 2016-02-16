@@ -1,5 +1,5 @@
 # coding=utf-8
-"""Unit tests for :mod:`pulp_smash.api`."""
+"""Unit tests for :mod:`pulp_smash.cli`."""
 from __future__ import unicode_literals
 
 import socket

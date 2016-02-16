@@ -1,5 +1,5 @@
 # coding=utf-8
-"""Tools for working with Pulp's CLI."""
+"""A client for working with Pulp systems via their CLI."""
 from __future__ import unicode_literals
 
 import socket
