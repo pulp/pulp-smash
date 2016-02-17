@@ -53,11 +53,40 @@ def _warn_http_202_content_type(response):
     warnings.warn(message, RuntimeWarning)
 
 
+def _check_call_report(call_report):
+    """Inspect the given call report's ``error`` field.
+
+    If the field is non-null, raise a ``CallReportError``.
+    """
+    if call_report['error'] is not None:
+        raise exceptions.CallReportError(
+            'A call report contains an error. Full call report: {}'
+            .format(call_report)
+        )
+
+
+def _check_tasks(tasks):
+    """Inspect each task's ``error``, ``exception`` and ``traceback`` fields.
+
+    If any of these fields is non-null for any tasks, raise a
+    ``TaskReportError``.
+    """
+    for task in tasks:
+        for field in ('error', 'exception', 'traceback'):
+            if task[field] is not None:
+                msg = 'Task report {} contains a {}: {}\nFull task report: {}'
+                msg = msg.format(task['_href'], field, task[field], task)
+                raise exceptions.TaskReportError(msg)
+
+
 def _handle_202(server_config, response):
     """Check for an HTTP 202 response and handle it appropriately."""
     if response.status_code == 202:  # "Accepted"
         _check_http_202_content_type(response)
-        tuple(poll_spawned_tasks(server_config, response.json()))
+        call_report = response.json()
+        tasks = tuple(poll_spawned_tasks(server_config, call_report))
+        _check_call_report(call_report)
+        _check_tasks(tasks)
 
 
 def echo_handler(server_config, response):  # pylint:disable=unused-argument
@@ -66,11 +95,18 @@ def echo_handler(server_config, response):  # pylint:disable=unused-argument
 
 
 def safe_handler(server_config, response):
-    """Check the response status code and wait for tasks to complete.
+    """Check status code, wait for tasks to complete, and check tasks.
 
-    Raise an exception if the response has an HTTP 4XX or 5XX status code. Wait
-    for tasks to complete if the response has an HTTP Accepted status code.
-    Return the response.
+    Inspect the response's HTTP status code. If the response has an HTTP
+    Accepted status code, inspect the returned call report, wait for each task
+    to complete, and inspect each completed task.
+
+    :raises: ``requests.exceptions.HTTPError`` if the response status code is
+        in the 4XX or 5XX range.
+    :raises pulp_smash.exceptions.CallReportError: If the call report contains
+        an error.
+    :raises pulp_smash.exceptions.TaskReportError: If the task report contains
+        an error.
     """
     response.raise_for_status()
     _handle_202(server_config, response)
@@ -78,11 +114,10 @@ def safe_handler(server_config, response):
 
 
 def json_handler(server_config, response):
-    """Check status code, wait for tasks to complete, and return decoded JSON.
+    """Like ``safe_handler``, but also return a JSON-decoded response body.
 
-    Raise an exception if the response has an HTTP 4XX or 5XX status code. Wait
-    for tasks to complete if the response has an HTTP Accepted status code.
-    Return the response's decoded JSON body.
+    Do what :func:`pulp_smash.api.safe_handler` does. In addition, decode the
+    response body as JSON and return the result.
     """
     response.raise_for_status()
     _handle_202(server_config, response)
