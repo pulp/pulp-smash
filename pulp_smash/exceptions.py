@@ -11,6 +11,19 @@ class BugStatusUnknownError(Exception):
     """
 
 
+class CallReportError(Exception):
+    """Returned Call report contains errors.
+
+    For more information about pulp's task handling see
+    `Synchronous and Asynchronous Calls`_ and `Task management`_.
+
+    .. _Synchronous and Asynchronous Calls:
+        http://pulp.readthedocs.org/en/latest/dev-guide/conventions/sync-v-async.html
+    .. _Task management:
+        http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/tasks.html
+    """
+
+
 class ConfigFileNotFoundError(Exception):
     """We cannot find the requested Pulp Smash configuration file.
 
@@ -30,6 +43,19 @@ class NoKnownServiceManagerError(Exception):
     """We cannot determine the service manager used by a system.
 
     A "service manager" is a tool such as ``systemctl`` or ``service``.
+    """
+
+
+class TaskReportError(Exception):
+    """Polled task is in error state.
+
+    For more information about pulp's task handling see
+    `Synchronous and Asynchronous Calls`_ and `Task management`_.
+
+    .. _Synchronous and Asynchronous Calls:
+        http://pulp.readthedocs.org/en/latest/dev-guide/conventions/sync-v-async.html
+    .. _Task management:
+        http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/tasks.html
     """
 
 
