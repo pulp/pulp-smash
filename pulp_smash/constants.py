@@ -17,6 +17,18 @@ CONTENT_UPLOAD_PATH = '/pulp/api/v2/content/uploads/'
    http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/content/upload.html#creating-an-upload-request
 """
 
+DOCKER_V1_FEED_URL = 'https://index.docker.io'
+"""The URL to a V1 Docker registry.
+
+This URL can be used as the "feed" property of a Pulp Docker registry.
+"""
+
+DOCKER_V2_FEED_URL = 'https://registry-1.docker.io'
+"""The URL to a V2 Docker registry.
+
+This URL can be used as the "feed" property of a Pulp Docker registry.
+"""
+
 ERROR_KEYS = frozenset((
     '_href',
     'error',

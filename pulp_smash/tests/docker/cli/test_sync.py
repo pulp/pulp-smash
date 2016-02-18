@@ -6,6 +6,7 @@ import unittest2
 from packaging.version import Version
 
 from pulp_smash import cli, config, selectors, utils
+from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
 
 _CREATE_COMMAND = (
     'pulp-admin docker repo create '
@@ -64,7 +65,7 @@ class SyncV1TestCase(_SuccessMixin, _BaseTestCase):
         """Create and sync a docker repository with a v1 registry."""
         super(SyncV1TestCase, cls).setUpClass()
         kwargs = {
-            'feed': 'https://index.docker.io',  # v1 feed
+            'feed': DOCKER_V1_FEED_URL,
             'repo_id': cls.repo_id,
             'upstream_name': _UPSTREAM_NAME,
         }
@@ -86,7 +87,7 @@ class SyncV2TestCase(_SuccessMixin, _BaseTestCase):
         if cls.cfg.version < Version('2.8'):
             raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
         kwargs = {
-            'feed': 'https://registry-1.docker.io',  # v2 feed
+            'feed': DOCKER_V2_FEED_URL,
             'repo_id': cls.repo_id,
             'upstream_name': _UPSTREAM_NAME,
         }
@@ -108,7 +109,7 @@ class SyncUnnamespacedV2TestCase(_SuccessMixin, _BaseTestCase):
         if cls.cfg.version < Version('2.8'):
             raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
         kwargs = {
-            'feed': 'https://registry-1.docker.io',  # v2 feed
+            'feed': DOCKER_V2_FEED_URL,
             'repo_id': cls.repo_id,
             'upstream_name': 'busybox',
         }
