@@ -7,8 +7,9 @@ http://sphinx-doc.org/config.html
 """
 from __future__ import unicode_literals
 
-import sys
 import os
+import re
+import sys
 from packaging.version import Version
 
 
@@ -20,11 +21,20 @@ ROOT_DIR = os.path.abspath(os.path.join(
 ))
 sys.path.insert(0, ROOT_DIR)
 
-# Parse the version according to PEP 440. An InvalidVersion exception is raised
-# if the version is non-conformant, so the act of generating documentation
-# serves as a unit test for the contents of the `VERSION` file.
+# We pass the raw version string to Version() to ensure it is compliant with
+# PEP 440. An InvalidVersion exception is raised if the version is
+# non-conformant, so the act of generating documentation serves as a unit test
+# for the contents of the `VERSION` file.
+#
+# We use the raw version string when generating documentation for the sake of
+# human friendliness: the meaning of '2016.02.18' is presumably more intuitive
+# than the meaning of '2016.2.18'. The regex enforcing this format allows
+# additional segments. This is done to allow multiple releases in a single day.
+# For example, 2016.02.18.3 is the fourth release in a given day.
 with open(os.path.join(ROOT_DIR, 'VERSION')) as handle:
-    VERSION = Version(handle.read().strip())
+    VERSION = handle.read().strip()
+    Version(VERSION)
+    assert re.match(r'\d{4,4}(\.\d\d){2,2}', VERSION) is not None
 
 
 # pylint:disable=invalid-name
@@ -32,8 +42,7 @@ with open(os.path.join(ROOT_DIR, 'VERSION')) as handle:
 
 project = 'Pulp Smash'
 copyright = '2015, Jeremy Audet'  # pylint:disable=redefined-builtin
-version = VERSION.base_version  # e.g. '1.2'
-release = type('')(VERSION)  # e.g. '1.2a3.dev4'
+version = release = VERSION
 
 
 # General Configuration -------------------------------------------------------
