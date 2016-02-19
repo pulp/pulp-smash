@@ -340,9 +340,12 @@ def poll_task(server_config, href):
         response.raise_for_status()
         attrs = response.json()
         if attrs['state'] in _TASK_END_STATES:
+            # This task has completed. Yield its final state, then iterate
+            # through each of its children and yield their final states.
             yield attrs
-            for spawned_task in attrs['spawned_tasks']:
-                yield poll_task(server_config, spawned_task['_href'])
+            for href in (task['_href'] for task in attrs['spawned_tasks']):
+                for final_task_state in poll_task(server_config, href):
+                    yield final_task_state
             break
         poll_counter += 1
         if poll_counter > poll_limit:
