@@ -31,6 +31,7 @@ Assertions not explored in this module include:
 """
 from __future__ import unicode_literals
 
+import hashlib
 from itertools import product
 try:  # try Python 3 import first
     from urllib.parse import urljoin
@@ -46,6 +47,7 @@ from pulp_smash.constants import (
     REPOSITORY_PATH,
     RPM,
     RPM_FEED_URL,
+    RPM_SHA256_CHECKSUM,
 )
 
 
@@ -420,3 +422,99 @@ class PublishTestCase(utils.BaseAPITestCase):
         for i, module in enumerate(self.rpms[1:]):
             with self.subTest(i=i):
                 self.assertEqual(self.rpms[0], module)
+
+
+class SyncOnDemandTestCase(utils.BaseAPITestCase):
+    """Assert Yum supports on-demand syncing."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Create an RPM repository with a valid feed and sync it.
+
+        Do the following:
+
+        0. Reset Pulp, including the Squid cache.
+        1. Sync/publish a repository using the 'on_demand' download policy.
+        2. Download an RPM from the published repository.
+        3. Download the same RPM to ensure it is served by the cache.
+        """
+        super(SyncOnDemandTestCase, cls).setUpClass()
+
+        # Required to ensure the `locally_stored_units` is 0 before we start.
+        utils.reset_squid(cls.cfg)
+        utils.reset_pulp(cls.cfg)
+
+        client = api.Client(cls.cfg, api.json_handler)
+
+        # Create the repository
+        body = _gen_repo()
+        body['importer_config'] = {
+            'feed': RPM_FEED_URL,
+            'download_policy': 'on_demand',
+        }
+        distributor = _gen_distributor()
+        distributor['auto_publish'] = True
+        distributor['distributor_config']['relative_url'] = body['id']
+        body['distributors'] = [distributor]
+
+        repo = client.post(REPOSITORY_PATH, body)
+
+        # Sync the repository
+        sync_path = urljoin(repo['_href'], 'actions/sync/')
+        client.post(sync_path, {'override_config': {}})
+
+        cls.repo = client.get(repo['_href'], params={'details': True})
+
+        client.response_handler = api.safe_handler
+        url = urljoin(
+            '/pulp/repos/',
+            repo['id'] + '/',
+        )
+        url = urljoin(url, RPM)
+        cls.rpm = client.get(url)
+        cls.same_rpm = client.get(url)
+
+    def test_local_units(self):
+        """Assert no content units were downloaded besides metadata."""
+        metadata_unit_count = sum([
+            count for name, count in self.repo['content_unit_counts'].items()
+            if name not in ('rpm', 'drpm', 'srpm')
+        ])
+        self.assertEqual(
+            self.repo['locally_stored_units'],
+            metadata_unit_count
+        )
+
+    def test_repository_units(self):
+        """Assert there is at least one content unit in the repository."""
+        total_units = sum(self.repo['content_unit_counts'].values())
+        self.assertEqual(self.repo['total_repository_units'], total_units)
+
+    def test_request_history(self):
+        """Assert that the initial request received a 302 Redirect."""
+        self.assertTrue(self.rpm.history[0].is_redirect)
+
+    def test_rpm_checksum(self):
+        """Assert the checksum of the downloaded RPM matches the metadata."""
+        checksum = hashlib.sha256(self.rpm.content).hexdigest()
+        self.assertEqual(RPM_SHA256_CHECKSUM, checksum)
+
+    def test_rpm_cache_lookup_header(self):
+        """Assert the first request resulted in a cache miss from Squid."""
+        self.assertIn('MISS', self.rpm.headers['X-Cache-Lookup'])
+
+    def test_rpm_cache_control_header(self):
+        """Assert that the request has the Cache-Control header set."""
+        self.assertEqual(
+            {'s-maxage=86400', 'public', 'max-age=86400'},
+            set(self.rpm.headers['Cache-Control'].split(', '))
+        )
+
+    def test_same_rpm_checksum(self):
+        """Assert the checksum of the second RPM matches the metadata."""
+        checksum = hashlib.sha256(self.same_rpm.content).hexdigest()
+        self.assertEqual(RPM_SHA256_CHECKSUM, checksum)
+
+    def test_same_rpm_cache_header(self):
+        """Assert the second request resulted in a cache hit from Squid."""
+        self.assertIn('HIT', self.same_rpm.headers['X-Cache-Lookup'])
