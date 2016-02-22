@@ -23,7 +23,7 @@ DOCKER_V1_FEED_URL = 'https://index.docker.io'
 This URL can be used as the "feed" property of a Pulp Docker registry.
 """
 
-DOCKER_V2_FEED_URL = 'https://registry-1.docker.io'
+DOCKER_V2_FEED_URL = DOCKER_V1_FEED_URL
 """The URL to a V2 Docker registry.
 
 This URL can be used as the "feed" property of a Pulp Docker registry.
