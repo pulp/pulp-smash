@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 import unittest2
 
 from pulp_smash import cli, config, utils
+from pulp_smash.tests.docker.cli import utils as docker_utils
 
 _FEED = 'https://example.com'
 _UPSTREAM_NAME = 'foo/bar'
@@ -21,26 +22,20 @@ class CreateTestCase(unittest2.TestCase):
         """Provide a server config and a repository ID."""
         self.cfg = config.get_config()
         self.repo_id = utils.uuid4()
-        cli.Client(self.cfg).run(
-            'pulp-admin login -u {} -p {}'
-            .format(self.cfg.auth[0], self.cfg.auth[1]).split()
-        )
+        docker_utils.login(self.cfg)
 
     def tearDown(self):
         """Delete created resources."""
-        cli.Client(self.cfg).run(
-            'pulp-admin docker repo delete --repo-id {}'
-            .format(self.repo_id).split()
-        )
+        docker_utils.repo_delete(self.cfg, self.repo_id)
 
     def test_basic(self):
         """Create a docker repository. Only provide a repository ID.
 
         Assert the return code is 0.
         """
-        completed_proc = cli.Client(self.cfg, cli.echo_handler).run(
-            'pulp-admin docker repo create --repo-id {}'
-            .format(self.repo_id).split()
+        completed_proc = docker_utils.repo_create(
+            self.cfg,
+            repo_id=self.repo_id
         )
         self.assertEqual(completed_proc.returncode, 0)
 
@@ -49,10 +44,11 @@ class CreateTestCase(unittest2.TestCase):
 
         Assert the return code is 0.
         """
-        completed_proc = cli.Client(self.cfg, cli.echo_handler).run(
-            'pulp-admin docker repo create '
-            '--repo-id {} --feed {} --upstream-name {}'
-            .format(self.repo_id, _FEED, _UPSTREAM_NAME).split()
+        completed_proc = docker_utils.repo_create(
+            self.cfg,
+            feed=_FEED,
+            repo_id=self.repo_id,
+            upstream_name=_UPSTREAM_NAME,
         )
         self.assertEqual(completed_proc.returncode, 0)
 

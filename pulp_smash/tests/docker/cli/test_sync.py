@@ -7,20 +7,9 @@ from packaging.version import Version
 
 from pulp_smash import cli, config, selectors, utils
 from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
+from pulp_smash.tests.docker.cli import utils as docker_utils
 
-_CREATE_COMMAND = (
-    'pulp-admin docker repo create '
-    '--feed {feed} '
-    '--repo-id {repo_id} '
-    '--upstream-name {upstream_name} '
-)
 _UPSTREAM_NAME = 'library/busybox'
-
-
-def _sync_repo(server_config, repo_id):
-    return cli.Client(server_config, cli.echo_handler).run(
-        'pulp-admin docker repo sync run --repo-id {}'.format(repo_id).split()
-    )
 
 
 class _BaseTestCase(unittest2.TestCase):
@@ -30,16 +19,12 @@ class _BaseTestCase(unittest2.TestCase):
         """Provide a server config and a repository ID."""
         cls.cfg = config.get_config()
         cls.repo_id = utils.uuid4()
-        cli.Client(cls.cfg).run(
-            'pulp-admin login -u {} -p {}'
-            .format(cls.cfg.auth[0], cls.cfg.auth[1]).split()
-        )
+        docker_utils.login(cls.cfg)
 
     @classmethod
     def tearDownClass(cls):
         """Delete the created repository."""
-        command = 'pulp-admin docker repo delete --repo-id {}'
-        cli.Client(cls.cfg).run(command.format(cls.repo_id).split())
+        docker_utils.repo_delete(cls.cfg, cls.repo_id)
 
 
 class _SuccessMixin(object):
@@ -64,13 +49,13 @@ class SyncV1TestCase(_SuccessMixin, _BaseTestCase):
     def setUpClass(cls):
         """Create and sync a docker repository with a v1 registry."""
         super(SyncV1TestCase, cls).setUpClass()
-        kwargs = {
-            'feed': DOCKER_V1_FEED_URL,
-            'repo_id': cls.repo_id,
-            'upstream_name': _UPSTREAM_NAME,
-        }
-        cli.Client(cls.cfg).run(_CREATE_COMMAND.format(**kwargs).split())
-        cls.completed_proc = _sync_repo(cls.cfg, cls.repo_id)
+        docker_utils.repo_create(
+            cls.cfg,
+            feed=DOCKER_V1_FEED_URL,
+            repo_id=cls.repo_id,
+            upstream_name=_UPSTREAM_NAME,
+        )
+        cls.completed_proc = docker_utils.repo_sync(cls.cfg, cls.repo_id)
 
 
 class SyncV2TestCase(_SuccessMixin, _BaseTestCase):
@@ -86,13 +71,13 @@ class SyncV2TestCase(_SuccessMixin, _BaseTestCase):
         super(SyncV2TestCase, cls).setUpClass()
         if cls.cfg.version < Version('2.8'):
             raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
-        kwargs = {
-            'feed': DOCKER_V2_FEED_URL,
-            'repo_id': cls.repo_id,
-            'upstream_name': _UPSTREAM_NAME,
-        }
-        cli.Client(cls.cfg).run(_CREATE_COMMAND.format(**kwargs).split())
-        cls.completed_proc = _sync_repo(cls.cfg, cls.repo_id)
+        docker_utils.repo_create(
+            cls.cfg,
+            feed=DOCKER_V2_FEED_URL,
+            repo_id=cls.repo_id,
+            upstream_name=_UPSTREAM_NAME,
+        )
+        cls.completed_proc = docker_utils.repo_sync(cls.cfg, cls.repo_id)
 
 
 class SyncUnnamespacedV2TestCase(_SuccessMixin, _BaseTestCase):
@@ -108,13 +93,13 @@ class SyncUnnamespacedV2TestCase(_SuccessMixin, _BaseTestCase):
         super(SyncUnnamespacedV2TestCase, cls).setUpClass()
         if cls.cfg.version < Version('2.8'):
             raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
-        kwargs = {
-            'feed': DOCKER_V2_FEED_URL,
-            'repo_id': cls.repo_id,
-            'upstream_name': 'busybox',
-        }
-        cli.Client(cls.cfg).run(_CREATE_COMMAND.format(**kwargs).split())
-        cls.completed_proc = _sync_repo(cls.cfg, cls.repo_id)
+        docker_utils.repo_create(
+            cls.cfg,
+            feed=DOCKER_V2_FEED_URL,
+            repo_id=cls.repo_id,
+            upstream_name=_UPSTREAM_NAME.split('/')[-1],  # drop 'library/'
+        )
+        cls.completed_proc = docker_utils.repo_sync(cls.cfg, cls.repo_id)
 
 
 class InvalidFeedTestCase(_BaseTestCase):
@@ -124,13 +109,16 @@ class InvalidFeedTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create a docker repo with an invalid feed and sync it."""
         super(InvalidFeedTestCase, cls).setUpClass()
-        kwargs = {
-            'feed': 'https://docker.example.com',
-            'repo_id': cls.repo_id,
-            'upstream_name': _UPSTREAM_NAME,
-        }
-        cli.Client(cls.cfg).run(_CREATE_COMMAND.format(**kwargs).split())
-        cls.completed_proc = _sync_repo(cls.cfg, cls.repo_id)
+        docker_utils.repo_create(
+            cls.cfg,
+            feed='https://docker.example.com',
+            repo_id=cls.repo_id,
+            upstream_name=_UPSTREAM_NAME,
+        )
+        cls.completed_proc = cli.Client(cls.cfg, cli.echo_handler).run(
+            'pulp-admin docker repo sync run --repo-id {}'
+            .format(cls.repo_id).split()
+        )
 
     def test_return_code(self):
         """Assert the "sync" command has a non-zero return code."""
