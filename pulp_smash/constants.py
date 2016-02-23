@@ -108,6 +108,11 @@ This URL, plus :data:`pulp_smash.constants.RPM`, is a URL to an RPM file. (Use
 ``urllib.parse.urlparse``.)
 """
 
+RPM_SHA256_CHECKSUM = (
+    '7a831f9f90bf4d21027572cb503d20b702de8e8785b02c0397445c2e481d81b3'
+)
+"""The sha256 checksum of :data:`pulp_smash.constants.RPM`."""
+
 USER_PATH = '/pulp/api/v2/users/'
 """See: `User APIs`_.
 
