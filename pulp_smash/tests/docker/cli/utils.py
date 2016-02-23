@@ -31,15 +31,16 @@ def repo_copy(server_config, unit_type, from_repo_id=None, to_repo_id=None):
 
 # Yes, this function has an annoying number of arguments. It may be better to
 # adopt some other solution such as providing a string for interpolation.
-def repo_create(  # pylint:disable=too-many-arguments
+def repo_create_update(  # pylint:disable=too-many-arguments
         server_config,
         enable_v1=None,
         enable_v2=None,
         feed=None,
         repo_id=None,
-        upstream_name=None):
-    """Execute ``pulp-admin docker repo create``."""
-    cmd = 'pulp-admin docker repo create'.split()
+        upstream_name=None,
+        action='create'):
+    """Execute ``pulp-admin docker repo create/update``."""
+    cmd = 'pulp-admin docker repo {}'.format(action).split()
     if enable_v1 is not None:
         cmd.extend(('--enable-v1', enable_v1))
     if enable_v2 is not None:
@@ -56,6 +57,16 @@ def repo_create(  # pylint:disable=too-many-arguments
 def repo_delete(server_config, repo_id):
     """Execute ``pulp-admin docker repo delete``."""
     cmd = 'pulp-admin docker repo delete --repo-id {}'.format(repo_id).split()
+    return cli.Client(server_config).run(cmd)
+
+
+def repo_list(server_config, repo_id=None, details=False):
+    """Execute ``pulp-admin docker repo list``."""
+    cmd = 'pulp-admin docker repo list'.split()
+    if repo_id is not None:
+        cmd.extend(('--repo-id', repo_id))
+    if details:
+        cmd.append('--details')
     return cli.Client(server_config).run(cmd)
 
 
