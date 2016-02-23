@@ -69,8 +69,8 @@ def reset_pulp(server_config):
     prefix = '' if client.run(('id', '-u')).stdout.strip() == '0' else 'sudo '
     client.run('mongo pulp_database --eval db.dropDatabase()'.split())
     client.run('sudo -u apache pulp-manage-db'.split())
-    client.run((prefix + 'rm -rf /var/lib/pulp/content/*').split())
-    client.run((prefix + 'rm -rf /var/lib/pulp/published/*').split())
+    client.run((prefix + 'rm -rf /var/lib/pulp/content').split())
+    client.run((prefix + 'rm -rf /var/lib/pulp/published').split())
 
     for service in services:
         service.start()
