@@ -49,7 +49,7 @@ class SyncV1TestCase(_SuccessMixin, _BaseTestCase):
     def setUpClass(cls):
         """Create and sync a docker repository with a v1 registry."""
         super(SyncV1TestCase, cls).setUpClass()
-        docker_utils.repo_create(
+        docker_utils.repo_create_update(
             cls.cfg,
             feed=DOCKER_V1_FEED_URL,
             repo_id=cls.repo_id,
@@ -71,7 +71,7 @@ class SyncV2TestCase(_SuccessMixin, _BaseTestCase):
         super(SyncV2TestCase, cls).setUpClass()
         if cls.cfg.version < Version('2.8'):
             raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
-        docker_utils.repo_create(
+        docker_utils.repo_create_update(
             cls.cfg,
             feed=DOCKER_V2_FEED_URL,
             repo_id=cls.repo_id,
@@ -93,7 +93,7 @@ class SyncUnnamespacedV2TestCase(_SuccessMixin, _BaseTestCase):
         super(SyncUnnamespacedV2TestCase, cls).setUpClass()
         if cls.cfg.version < Version('2.8'):
             raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
-        docker_utils.repo_create(
+        docker_utils.repo_create_update(
             cls.cfg,
             feed=DOCKER_V2_FEED_URL,
             repo_id=cls.repo_id,
@@ -109,7 +109,7 @@ class InvalidFeedTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create a docker repo with an invalid feed and sync it."""
         super(InvalidFeedTestCase, cls).setUpClass()
-        docker_utils.repo_create(
+        docker_utils.repo_create_update(
             cls.cfg,
             feed='https://docker.example.com',
             repo_id=cls.repo_id,
