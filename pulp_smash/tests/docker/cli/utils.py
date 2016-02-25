@@ -29,18 +29,15 @@ def repo_copy(server_config, unit_type, from_repo_id=None, to_repo_id=None):
     return cli.Client(server_config).run(cmd)
 
 
-# Yes, this function has an annoying number of arguments. It may be better to
-# adopt some other solution such as providing a string for interpolation.
-def repo_create_update(  # pylint:disable=too-many-arguments
+def repo_create(  # pylint:disable=too-many-arguments
         server_config,
         enable_v1=None,
         enable_v2=None,
         feed=None,
         repo_id=None,
-        upstream_name=None,
-        action='create'):
-    """Execute ``pulp-admin docker repo create/update``."""
-    cmd = 'pulp-admin docker repo {}'.format(action).split()
+        upstream_name=None):
+    """Execute ``pulp-admin docker repo create``."""
+    cmd = 'pulp-admin docker repo create'.split()
     if enable_v1 is not None:
         cmd.extend(('--enable-v1', enable_v1))
     if enable_v2 is not None:
@@ -84,4 +81,26 @@ def repo_sync(server_config, repo_id):
     """Execute ``pulp-admin docker repo sync run``."""
     cmd = 'pulp-admin docker repo sync run'.split()
     cmd.extend(('--repo-id', repo_id))
+    return cli.Client(server_config).run(cmd)
+
+
+def repo_update(  # pylint:disable=too-many-arguments
+        server_config,
+        enable_v1=None,
+        enable_v2=None,
+        feed=None,
+        repo_id=None,
+        upstream_name=None):
+    """Execute ``pulp-admin docker repo update``."""
+    cmd = 'pulp-admin docker repo update'.split()
+    if enable_v1 is not None:
+        cmd.extend(('--enable-v1', enable_v1))
+    if enable_v2 is not None:
+        cmd.extend(('--enable-v2', enable_v2))
+    if feed is not None:
+        cmd.extend(('--feed', feed))
+    if repo_id is not None:
+        cmd.extend(('--repo-id', repo_id))
+    if upstream_name is not None:
+        cmd.extend(('--upstream-name', upstream_name))
     return cli.Client(server_config).run(cmd)

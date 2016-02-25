@@ -103,7 +103,7 @@ class CopyAllImagesTestCase(_BaseTestCase, _CopyMixin):
         super(CopyAllImagesTestCase, cls).setUpClass()
 
         # Create a pair of repositories.
-        docker_utils.repo_create_update(
+        docker_utils.repo_create(
             cls.cfg,
             enable_v1='true',
             enable_v2='false',
@@ -111,7 +111,7 @@ class CopyAllImagesTestCase(_BaseTestCase, _CopyMixin):
             repo_id=cls.repo_ids[0],
             upstream_name=_UPSTREAM_NAME,
         )
-        docker_utils.repo_create_update(cls.cfg, repo_id=cls.repo_ids[1])
+        docker_utils.repo_create(cls.cfg, repo_id=cls.repo_ids[1])
 
         # Sync the first and copy some content units to the second.
         docker_utils.repo_sync(cls.cfg, cls.repo_ids[0])
@@ -154,7 +154,7 @@ class CopyAllManifestsTestCase(_BaseTestCase, _CopyMixin):
         super(CopyAllManifestsTestCase, cls).setUpClass()
 
         # Create a pair of repositories.
-        docker_utils.repo_create_update(
+        docker_utils.repo_create(
             cls.cfg,
             enable_v1='false',
             enable_v2='true',
@@ -162,7 +162,7 @@ class CopyAllManifestsTestCase(_BaseTestCase, _CopyMixin):
             repo_id=cls.repo_ids[0],
             upstream_name=_UPSTREAM_NAME,
         )
-        docker_utils.repo_create_update(cls.cfg, repo_id=cls.repo_ids[1])
+        docker_utils.repo_create(cls.cfg, repo_id=cls.repo_ids[1])
 
         # Sync the first and copy some content units to the second.
         docker_utils.repo_sync(cls.cfg, cls.repo_ids[0])
@@ -208,7 +208,7 @@ class CopyAllTagsTestCase(_BaseTestCase, _CopyMixin):
         super(CopyAllTagsTestCase, cls).setUpClass()
 
         # Create a pair of repositories.
-        docker_utils.repo_create_update(
+        docker_utils.repo_create(
             cls.cfg,
             enable_v1='false',
             enable_v2='true',
@@ -216,7 +216,7 @@ class CopyAllTagsTestCase(_BaseTestCase, _CopyMixin):
             repo_id=cls.repo_ids[0],
             upstream_name=_UPSTREAM_NAME,
         )
-        docker_utils.repo_create_update(cls.cfg, repo_id=cls.repo_ids[1])
+        docker_utils.repo_create(cls.cfg, repo_id=cls.repo_ids[1])
 
         # Sync the first and copy some content units to the second.
         docker_utils.repo_sync(cls.cfg, cls.repo_ids[0])

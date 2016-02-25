@@ -35,7 +35,7 @@ class CreateTestCase(unittest2.TestCase):
 
         Assert the return code is 0.
         """
-        completed_proc = docker_utils.repo_create_update(
+        completed_proc = docker_utils.repo_create(
             self.cfg,
             repo_id=self.repo_id
         )
@@ -46,7 +46,7 @@ class CreateTestCase(unittest2.TestCase):
 
         Assert the return code is 0.
         """
-        completed_proc = docker_utils.repo_create_update(
+        completed_proc = docker_utils.repo_create(
             self.cfg,
             feed=_FEED,
             repo_id=self.repo_id,
@@ -71,8 +71,8 @@ class UpdateEnableV1TestCase(unittest2.TestCase):
     """Update a docker repository's --enable-v1 flag.
 
     There was a bug in pulp-admin wherein the --enable-v1 flag could be set
-    during repository creation, but not while updating repositories. This
-    test ensures that behavior functions correctly.
+    during repository creation, but not while updating repositories. This test
+    ensures that behavior functions correctly.
     """
 
     @classmethod
@@ -88,10 +88,16 @@ class UpdateEnableV1TestCase(unittest2.TestCase):
         docker_utils.login(cls.cfg)
 
         cls.repo_id = utils.uuid4()
-        docker_utils.repo_create_update(cls.cfg, repo_id=cls.repo_id,
-                                        enable_v1='false')
-        cls.update_response = docker_utils.repo_create_update(
-            cls.cfg, repo_id=cls.repo_id, enable_v1='true', action='update')
+        docker_utils.repo_create(
+            cls.cfg,
+            repo_id=cls.repo_id,
+            enable_v1='false'
+        )
+        cls.update_response = docker_utils.repo_update(
+            cls.cfg,
+            repo_id=cls.repo_id,
+            enable_v1='true',
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -100,13 +106,14 @@ class UpdateEnableV1TestCase(unittest2.TestCase):
 
     def test_change_enable_v1_flag(self):
         """Test that the the --enable-v1 flag was successful."""
-        repo_details = docker_utils.repo_list(self.cfg, repo_id=self.repo_id,
-                                              details=True).stdout
+        repo_details = docker_utils.repo_list(
+            self.cfg,
+            repo_id=self.repo_id,
+            details=True,
+        ).stdout
 
         # Enable V1: True should appear in the output of the repo list
         match = re.search(r'(?:Enable V1:)\s*(.*)', repo_details)
-
-        # The match should have found a group with the word "True"
         self.assertEqual(match.group(1), 'True')
 
     def test_success(self):
@@ -118,8 +125,8 @@ class UpdateEnableV2TestCase(unittest2.TestCase):
     """Update a docker repository's --enable-v2 flag.
 
     There was a bug in pulp-admin wherein the --enable-v2 flag could be set
-    during repository creation, but not while updating repositories. This
-    test ensures that behavior functions correctly.
+    during repository creation, but not while updating repositories. This test
+    ensures that behavior functions correctly.
     """
 
     @classmethod
@@ -135,10 +142,16 @@ class UpdateEnableV2TestCase(unittest2.TestCase):
         docker_utils.login(cls.cfg)
 
         cls.repo_id = utils.uuid4()
-        docker_utils.repo_create_update(cls.cfg, repo_id=cls.repo_id,
-                                        enable_v2='false')
-        cls.update_response = docker_utils.repo_create_update(
-            cls.cfg, repo_id=cls.repo_id, enable_v2='true', action='update')
+        docker_utils.repo_create(
+            cls.cfg,
+            repo_id=cls.repo_id,
+            enable_v2='false',
+        )
+        cls.update_response = docker_utils.repo_update(
+            cls.cfg,
+            repo_id=cls.repo_id,
+            enable_v2='true',
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -147,13 +160,14 @@ class UpdateEnableV2TestCase(unittest2.TestCase):
 
     def test_change_enable_v2_flag(self):
         """Test that the the --enable-v2 flag was successful."""
-        repo_details = docker_utils.repo_list(self.cfg, repo_id=self.repo_id,
-                                              details=True).stdout
+        repo_details = docker_utils.repo_list(
+            self.cfg,
+            repo_id=self.repo_id,
+            details=True
+        ).stdout
 
         # Enable V2: True should appear in the output of the repo list
         match = re.search(r'(?:Enable V2:)\s*(.*)', repo_details)
-
-        # The match should have found a group with the word "True"
         self.assertEqual(match.group(1), 'True')
 
     def test_success(self):
