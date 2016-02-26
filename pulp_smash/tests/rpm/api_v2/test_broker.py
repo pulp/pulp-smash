@@ -40,30 +40,7 @@ from pulp_smash.constants import (
     RPM,
     RPM_FEED_URL,
 )
-
-
-def _gen_repo():
-    """Return a semi-random dict for use in creating an RPM repostirory."""
-    return {
-        'id': utils.uuid4(),
-        'importer_config': {'feed': RPM_FEED_URL},
-        'importer_type_id': 'yum_importer',
-        'notes': {'_repo-type': 'rpm-repo'},
-    }
-
-
-def _gen_distributor():
-    """Return a semi-random dict for use in creating a YUM distributor."""
-    return {
-        'auto_publish': False,
-        'distributor_id': utils.uuid4(),
-        'distributor_type_id': 'yum_distributor',
-        'distributor_config': {
-            'http': True,
-            'https': True,
-            'relative_url': utils.uuid4() + '/',
-        },
-    }
+from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 
 
 class BrokerTestCase(unittest2.TestCase):
@@ -131,7 +108,9 @@ class BrokerTestCase(unittest2.TestCase):
     def health_check(self):
         """Execute step three of the test plan."""
         client = api.Client(self.cfg, api.json_handler)
-        repo = client.post(REPOSITORY_PATH, _gen_repo())
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_FEED_URL
+        repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(api.Client(self.cfg).delete, repo['_href'])
         client.post(
             urljoin(repo['_href'], 'actions/sync/'),
@@ -139,7 +118,7 @@ class BrokerTestCase(unittest2.TestCase):
         )
         distributor = client.post(
             urljoin(repo['_href'], 'distributors/'),
-            _gen_distributor(),
+            gen_distributor(),
         )
         client.post(
             urljoin(repo['_href'], 'actions/publish/'),

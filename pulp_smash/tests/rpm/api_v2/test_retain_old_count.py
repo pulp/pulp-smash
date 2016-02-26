@@ -23,32 +23,9 @@ except ImportError:
 
 from pulp_smash import api, utils
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
+from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 
 _PUBLISH_DIR = 'pulp/repos/'
-
-
-def _gen_repo():
-    """Return a semi-random dict for use in creating an RPM repository."""
-    return {
-        'id': utils.uuid4(),
-        'importer_config': {},
-        'importer_type_id': 'yum_importer',
-        'notes': {'_repo-type': 'rpm-repo'},
-    }
-
-
-def _gen_distributor():
-    """Return a semi-random dict for use in creating a YUM distributor."""
-    return {
-        'auto_publish': False,
-        'distributor_id': utils.uuid4(),
-        'distributor_type_id': 'yum_distributor',
-        'distributor_config': {
-            'http': True,
-            'https': True,
-            'relative_url': utils.uuid4() + '/',
-        },
-    }
 
 
 class RetainOldCountTestCase(utils.BaseAPITestCase):
@@ -73,7 +50,7 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
         hrefs = []  # repository hrefs
 
         # Create and sync the first repository.
-        body = _gen_repo()
+        body = gen_repo()
         body['importer_config']['feed'] = RPM_FEED_URL
         hrefs.append(client.post(REPOSITORY_PATH, body).json()['_href'])
         cls.responses['first sync'] = client.post(
@@ -84,7 +61,7 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
         # Add distributor and publish
         cls.responses['distribute'] = client.post(
             urljoin(hrefs[0], 'distributors/'),
-            _gen_distributor(),
+            gen_distributor(),
         )
         cls.responses['publish'] = client.post(
             urljoin(hrefs[0], 'actions/publish/'),
@@ -95,7 +72,7 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
         # the first, and that the `retain_old_count` option is set correctly.
         # We disable SSL validation for a practical reason: each HTTPS feed
         # must have a certificate to work, which is burdensome to do here.
-        body = _gen_repo()
+        body = gen_repo()
         body['importer_config']['feed'] = urljoin(
             cls.cfg.base_url,
             _PUBLISH_DIR +

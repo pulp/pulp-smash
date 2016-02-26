@@ -50,33 +50,10 @@ from pulp_smash.constants import (
     RPM_FEED_URL,
     RPM_SHA256_CHECKSUM,
 )
+from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 
 
 _REPO_PUBLISH_PATH = '/pulp/repos/'  # + relative_url + unit_name.rpm.arch
-
-
-def _gen_repo():
-    """Return a semi-random dict for use in creating an RPM repostirory."""
-    return {
-        'id': utils.uuid4(),
-        'importer_config': {},
-        'importer_type_id': 'yum_importer',
-        'notes': {'_repo-type': 'rpm-repo'},
-    }
-
-
-def _gen_distributor():
-    """Return a semi-random dict for use in creating a YUM distributor."""
-    return {
-        'auto_publish': False,
-        'distributor_id': utils.uuid4(),
-        'distributor_type_id': 'yum_distributor',
-        'distributor_config': {
-            'http': True,
-            'https': True,
-            'relative_url': utils.uuid4() + '/',
-        },
-    }
 
 
 class CreateTestCase(utils.BaseAPITestCase):
@@ -87,7 +64,7 @@ class CreateTestCase(utils.BaseAPITestCase):
         """Create two RPM repositories, with and without feed URLs."""
         super(CreateTestCase, cls).setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
-        cls.bodies = tuple((_gen_repo() for _ in range(2)))
+        cls.bodies = tuple((gen_repo() for _ in range(2)))
         cls.bodies[1]['importer_config'] = {'feed': utils.uuid4()}
         cls.repos = [client.post(REPOSITORY_PATH, body) for body in cls.bodies]
         cls.importers_iter = [
@@ -139,7 +116,7 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
         """Create an RPM repo with a valid feed, sync it, and read the repo."""
         super(SyncValidFeedTestCase, cls).setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
-        body = _gen_repo()
+        body = gen_repo()
         body['importer_config']['feed'] = RPM_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         client.response_handler = api.echo_handler
@@ -209,7 +186,7 @@ class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
         """Create an RPM repository with an invalid feed and sync it."""
         super(SyncInvalidFeedTestCase, cls).setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
-        body = _gen_repo()
+        body = gen_repo()
         body['importer_config']['feed'] = utils.uuid4()
         repo = client.post(REPOSITORY_PATH, body)
         client.response_handler = api.echo_handler
@@ -271,7 +248,7 @@ class PublishTestCase(utils.BaseAPITestCase):
 
         # Download an RPM and create two repositories.
         client = api.Client(cls.cfg, api.json_handler)
-        repos = [client.post(REPOSITORY_PATH, _gen_repo()) for _ in range(2)]
+        repos = [client.post(REPOSITORY_PATH, gen_repo()) for _ in range(2)]
         for repo in repos:
             cls.resources.add(repo['_href'])
         client.response_handler = api.safe_handler
@@ -308,7 +285,7 @@ class PublishTestCase(utils.BaseAPITestCase):
         for repo in repos:
             cls.responses['distribute'].append(client.post(
                 urljoin(repo['_href'], 'distributors/'),
-                _gen_distributor(),
+                gen_distributor(),
             ))
             cls.responses['publish'].append(client.post(
                 urljoin(repo['_href'], 'actions/publish/'),
@@ -455,12 +432,12 @@ class SyncOnDemandTestCase(utils.BaseAPITestCase):
 
         # Create a repository
         client = api.Client(cls.cfg, api.json_handler)
-        body = _gen_repo()
+        body = gen_repo()
         body['importer_config'] = {
             'download_policy': 'on_demand',
             'feed': RPM_FEED_URL,
         }
-        distributor = _gen_distributor()
+        distributor = gen_distributor()
         distributor['auto_publish'] = True
         distributor['distributor_config']['relative_url'] = body['id']
         body['distributors'] = [distributor]
