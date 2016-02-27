@@ -25,7 +25,7 @@ setup(
     version=VERSION,
     description='A library for testing Pulp',
     long_description=LONG_DESCRIPTION,
-    url='http://www.ichimonji10.name',
+    url='https://github.com/PulpQE/pulp-smash',
     author='Jeremy Audet',
     author_email='ichimonji10@gmail.com',
     license='GPLv3',
