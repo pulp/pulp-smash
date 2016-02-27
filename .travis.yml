@@ -9,11 +9,6 @@ install:
     - ./setup.py test; git clean -dfx
     - pip install -r requirements.txt -r requirements-dev.txt
 script:
-    - make lint
-    - make test-coverage
-    - make docs-html
-    - make docs-clean
-    - make package
-    - make package-clean
+    - make all
 after_success:
     coveralls

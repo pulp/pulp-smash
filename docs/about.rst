@@ -56,20 +56,19 @@ request on GitHub, but patches are welcome no matter how they arrive.
 
 You can create a development environment and verify its sanity like so::
 
-    python -m virtualenv env  # Optional. Install separately on Python <= 3.2
+    virtualenv env  # or `python -m virtualenv env` is using Python >= 3.3
     source env/bin/activate
     git clone https://github.com/PulpQE/pulp-smash.git
     cd pulp-smash
     pip install -r requirements.txt -r requirements-dev.txt
-    make lint
-    make test
-    make docs-html
+    make all
 
 Please adhere to the following guidelines:
 
-* Pull requests should not fail the Travis build. You can verify your change by
-  executing the script steps listed in ``.travis.yml``. (``make lint``, ``make
-  test``, etc.)
+* Pull requests should pass continuous integration steps. You can verify your
+  change(s) locally by executing ``make all``.
+* If adding a new test for Pulp, please run the test and communicate the
+  results in the commit message or as a pull request comment.
 * Adhere to typical commit guidelines:
 
     * Commits should be small and coherent. One commit should address one issue.
@@ -78,8 +77,6 @@ Please adhere to the following guidelines:
     * `Rebasing`_ is encouraged. Rebasing produces a much nicer commit history
       than merging.
 
-* If adding a new test for Pulp, please run the test and include the test output
-  in the commit message.
 * When in doubt, ask on IRC. Join the #pulp channel on `freenode`_.
 
 .. [1] See: http://www.ichimonji10.name/blog/9/
