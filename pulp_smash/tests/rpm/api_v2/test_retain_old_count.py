@@ -104,10 +104,10 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
     def test_retain_old_count_works(self):
         """Test that ``content_units_counts`` in repositories differ.
 
-        Test that second repo has less rpm units than first repo due to the
-        ``retain_old_count`` option being set.
+        Most of the RPMs in the first repository are unique. However, there are
+        two different versions of the "walrus" RPM. When we copy its contents
+        to the second repository with ``retain_old_count=0``, zero old versions
+        of the "walrus" RPM will be copied.
         """
         counts = [repo.get('content_unit_counts', {}) for repo in self.repos]
-        self.assertNotEqual(counts[0], counts[1])
-        # remote source has 2 versions of walrus rpm
-        self.assertEqual(counts[1]['rpm'], 31)
+        self.assertEqual(counts[0]['rpm'] - 1, counts[1]['rpm'])
