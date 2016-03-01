@@ -32,7 +32,7 @@ import unittest2
 from pulp_smash import api, config, utils
 from pulp_smash.constants import PLUGIN_TYPES_PATH, REPOSITORY_PATH
 
-_FEED = 'http://dl.fedoraproject.org/pub/fedora/linux/atomic/21/'
+_FEED = 'https://repos.fedorapeople.org/pulp/pulp/demo_repos/test-ostree-small'
 _BRANCHES = (
     'fedora-atomic/f21/x86_64/updates/docker-host',
     'fedora-atomic/f21/x86_64/updates-testing/docker-host',
