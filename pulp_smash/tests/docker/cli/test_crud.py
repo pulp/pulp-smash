@@ -10,7 +10,7 @@ import re
 import unittest2
 from packaging import version
 
-from pulp_smash import cli, config, selectors, utils
+from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.tests.docker.cli import utils as docker_utils
 
 _FEED = 'https://example.com'
@@ -65,6 +65,57 @@ class CreateTestCase(unittest2.TestCase):
 
         client.response_handler = cli.echo_handler
         self.assertNotEqual(client.run(command.split()).returncode, 0)
+
+
+class DeleteV2TestCase(unittest2.TestCase):
+    """Delete a populated v2 repository.
+
+    There was a bug in the Docker server plugin that caused a traceback when
+    repos were deleted. This test ensures that that operation works correctly.
+
+    https://pulp.plan.io/issues/1296
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Provide a server config and a repository ID."""
+        cls.cfg = config.get_config()
+
+        if cls.cfg.version < version.Version('2.8'):
+            raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
+
+        docker_utils.login(cls.cfg)
+
+        cls.repo_id = utils.uuid4()
+        docker_utils.repo_create(
+            cls.cfg,
+            repo_id=cls.repo_id,
+            enable_v2='true',
+        )
+        docker_utils.repo_sync(cls.cfg, repo_id=cls.repo_id)
+        cls.delete_cmd = docker_utils.repo_delete(cls.cfg, cls.repo_id)
+
+    def test_data_gone(self):
+        """Assert that the published data was cleaned up."""
+        # This should 404
+        client = api.Client(self.cfg, response_handler=self._assert_404)
+        client.get('/pulp/docker/v2/{}/tags/list'.format(self.repo_id))
+
+    def test_repo_gone(self):
+        """Assert that the repo is not in the pulp-admin output anymore."""
+        repo_list = docker_utils.repo_list(self.cfg)
+        self.assertTrue(self.repo_id not in repo_list.stdout)
+
+    def test_success(self):
+        """Assert that the CLI reported success."""
+        self.assertTrue(
+            'Repository [{}] successfully deleted'.format(self.repo_id) in
+            self.delete_cmd.stdout)
+
+    def _assert_404(self, server_config,  # pylint:disable=unused-argument
+                    response):
+        """Assert that the response's status code is 404."""
+        self.assertEqual(response.status_code, 404)
 
 
 class UpdateEnableV1TestCase(unittest2.TestCase):
