@@ -89,33 +89,27 @@ class DeleteV2TestCase(unittest2.TestCase):
         cls.repo_id = utils.uuid4()
         docker_utils.repo_create(
             cls.cfg,
-            repo_id=cls.repo_id,
             enable_v2='true',
+            repo_id=cls.repo_id,
         )
         docker_utils.repo_sync(cls.cfg, repo_id=cls.repo_id)
         cls.delete_cmd = docker_utils.repo_delete(cls.cfg, cls.repo_id)
 
     def test_data_gone(self):
         """Assert that the published data was cleaned up."""
-        # This should 404
-        client = api.Client(self.cfg, response_handler=self._assert_404)
-        client.get('/pulp/docker/v2/{}/tags/list'.format(self.repo_id))
+        path = '/pulp/docker/v2/{}/tags/list'.format(self.repo_id)
+        response = api.Client(self.cfg, api.echo_handler).get(path)
+        self.assertEqual(response.status_code, 404)
 
     def test_repo_gone(self):
         """Assert that the repo is not in the pulp-admin output anymore."""
         repo_list = docker_utils.repo_list(self.cfg)
-        self.assertTrue(self.repo_id not in repo_list.stdout)
+        self.assertNotIn(self.repo_id, repo_list.stdout)
 
     def test_success(self):
         """Assert that the CLI reported success."""
-        self.assertTrue(
-            'Repository [{}] successfully deleted'.format(self.repo_id) in
-            self.delete_cmd.stdout)
-
-    def _assert_404(self, server_config,  # pylint:disable=unused-argument
-                    response):
-        """Assert that the response's status code is 404."""
-        self.assertEqual(response.status_code, 404)
+        phrase = 'Repository [{}] successfully deleted'.format(self.repo_id)
+        self.assertIn(phrase, self.delete_cmd.stdout)
 
 
 class UpdateEnableV1TestCase(unittest2.TestCase):
