@@ -3,17 +3,17 @@
 
 This module assumes that the tests in
 :mod:`pulp_smash.tests.platform.api_v2.test_repository` and
-+`pulp_smash.tests.platform.api_v2.test_sync_publish` hold true.
+:mod:`pulp_smash.tests.rpm.api_v2.test_sync_publish` hold true.
 """
-
 from __future__ import unicode_literals
+
 try:
     from urllib.parse import urljoin
 except ImportError:
     from urlparse import urljoin  # pylint:disable=C0411,E0401
 
 from pulp_smash import api, utils
-from pulp_smash.constants import (ORPHANS_PATH, REPOSITORY_PATH, RPM_FEED_URL)
+from pulp_smash.constants import ORPHANS_PATH, REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 
 
@@ -53,10 +53,11 @@ class OrphanRemoveAllTestCase(utils.BaseAPITestCase):
         in the db that have associated the units, thus not creating orphans
         as expected.
         """
-        self.assertTrue(
-            self.num_orphans_pre_repo_del <= self.num_orphans_post_repo_del
+        self.assertLessEqual(
+            self.num_orphans_pre_repo_del,
+            self.num_orphans_post_repo_del,
         )
-        self.assertTrue(self.num_orphans_post_repo_del >= 39)
+        self.assertGreaterEqual(self.num_orphans_post_repo_del, 39)
 
     def test_orphans_removed(self):
         """Ensure that all orphans were removed."""
