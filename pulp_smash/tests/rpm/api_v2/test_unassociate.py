@@ -1,13 +1,13 @@
 # coding=utf-8
-"""Test unassociation of RPM unit types.
+"""Test `Unassociating Content Units from a Repository`_ for RPM.
 
 This module assumes that the tests in
 :mod:`pulp_smash.tests.platform.api_v2.test_repository` and
-`pulp_smash.tests.platform.api_v2.test_sync_publish` hold true.
+:mod:`pulp_smash.tests.rpm.api_v2.test_sync_publish` hold true.
 
-http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/content/associate.html#unassociating-content-units-from-a-repository
+.. _Unassociating Content Units from a Repository:
+   http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/content/associate.html#unassociating-content-units-from-a-repository
 """
-
 from __future__ import unicode_literals
 
 try:  # try Python 3 import first
@@ -30,11 +30,7 @@ def _remove_unit(client, repo_href, type_id, unit_id):
     :return: response from server
     """
     rm_path = urljoin(repo_href, 'actions/unassociate/')
-    if type_id is 'rpm':
-        search_field = 'name'
-    else:
-        search_field = 'id'
-
+    search_field = 'name' if type_id == 'rpm' else 'id'
     rm_body = {
         'criteria': {
             'type_ids': [type_id], 'filters': {
@@ -53,40 +49,48 @@ def _list_repo_units_of_type(client, repo_href, type_id):
     :param type_id: type of unit that will be removed
     :return: list of unit identifiers
     """
-    search_path = urljoin(repo_href, 'search/units/')
-    search_body = {
-        'criteria': {'type_ids': [type_id], 'filters': {'unit': {}}}
-    }
-    response = client.post(search_path, search_body)
-    if type_id is 'rpm':
-        return [unit['metadata']['name'] for unit in response]
-    else:
-        return [unit['metadata']['id'] for unit in response]
+    response = client.post(
+        urljoin(repo_href, 'search/units/'),
+        {'criteria': {'type_ids': [type_id], 'filters': {'unit': {}}}},
+    )
+    key = 'name' if type_id == 'rpm' else 'id'
+    return [unit['metadata'][key] for unit in response]
 
 
 class RemoveAssociatedUnits(utils.BaseAPITestCase):
     """Remove units of various types from a synced RPM repository."""
 
+    TYPE_IDS = {
+        'erratum',
+        'package_category',
+        'package_group',
+        'rpm',
+    }
+    """IDs of unit types that can be removed from an RPM repository."""
+
     @classmethod
     def setUpClass(cls):
-        """Create an RPM, sync it, and remove some units."""
+        """Create an RPM repository, sync it, and remove some units from it.
+
+        After creating and syncing an RPM repository, we walk through the unit
+        type IDs listed in
+        :data:`pulp_smash.tests.rpm.api_v2.test_unassociate.RemoveAssociatedUnits.TYPE_IDS`
+        and remove on unit of each kind from the repository. We verify Pulp's
+        behaviour by recording repository contents pre and post removal.
+        """
         super(RemoveAssociatedUnits, cls).setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = RPM_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
+        cls.resources.add(repo['_href'])
         sync_path = urljoin(repo['_href'], 'actions/sync/')
         client.post(sync_path, {'override_config': {}})
-        cls.repo = client.get(repo['_href'])
-        cls.resources.add(repo['_href'])
-
-        cls.testable_types = ['package_category', 'erratum', 'package_group',
-                              'rpm']
 
         # List starting content
         cls.before_units = {
             type_id: _list_repo_units_of_type(client, repo['_href'], type_id)
-            for type_id in cls.testable_types
+            for type_id in cls.TYPE_IDS
         }
 
         # Remove one of each unit and store its id for later assertions
@@ -98,17 +102,32 @@ class RemoveAssociatedUnits(utils.BaseAPITestCase):
         # List final content
         cls.after_units = {
             type_id: _list_repo_units_of_type(client, repo['_href'], type_id)
-            for type_id in cls.testable_types
+            for type_id in cls.TYPE_IDS
         }
 
-    def test_units_removed(self):
-        """Ensure that the specified units have been removed."""
-        for type_id in self.testable_types:
-            self.assertTrue(
-                self.removed_units[type_id] in self.before_units[type_id]
-            )
-            self.assertFalse(
-                self.removed_units[type_id] in self.after_units[type_id]
-            )
-            self.assertEqual(len(self.before_units[type_id]) - 1,
-                             len(self.after_units[type_id]))
+    def test_units_before_removal(self):
+        """Assert the removed units are present before the removal."""
+        for type_id in self.TYPE_IDS:
+            with self.subTest(type_id=type_id):
+                self.assertIn(
+                    self.removed_units[type_id],
+                    self.before_units[type_id],
+                )
+
+    def test_units_after_removal(self):
+        """Assert the removed units are not present after the removal."""
+        for type_id in self.TYPE_IDS:
+            with self.subTest(type_id=type_id):
+                self.assertNotIn(
+                    self.removed_units[type_id],
+                    self.after_units[type_id],
+                )
+
+    def test_one_unit_removed(self):
+        """Assert, for each unit type, that one unit has been removed."""
+        for type_id in self.TYPE_IDS:
+            with self.subTest(type_id=type_id):
+                self.assertEqual(
+                    len(self.before_units[type_id]) - 1,
+                    len(self.after_units[type_id])
+                )
