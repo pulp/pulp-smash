@@ -69,6 +69,13 @@ LOGIN_PATH = '/pulp/api/v2/actions/login/'
     https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/authentication.html
 """
 
+ORPHANS_PATH = 'pulp/api/v2/content/orphans/'
+"""See: `Orphaned Content`_.
+
+.. _Orphaned Content:
+    http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/content/orphan.html
+"""
+
 PLUGIN_TYPES_PATH = '/pulp/api/v2/plugins/types/'
 """See: `Retrieve All Content Unit Types`_.
 
