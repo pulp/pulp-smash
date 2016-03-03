@@ -1,6 +1,7 @@
 # coding=utf-8
 """Tests for syncing and publishing docker repositories."""
 from __future__ import unicode_literals
+
 import hashlib
 import json
 
@@ -11,6 +12,7 @@ from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
 from pulp_smash.tests.docker.cli import utils as docker_utils
 
+_BYTE_UNICODE = (type(b''), type(u''))
 _UPSTREAM_NAME = 'library/busybox'
 
 
@@ -60,19 +62,40 @@ class SyncV1TestCase(_SuccessMixin, _BaseTestCase):
         cls.completed_proc = docker_utils.repo_sync(cls.cfg, cls.repo_id)
 
 
-class SyncPublishV2TestCase(_SuccessMixin, _BaseTestCase):
-    """Show it is possible to sync and publish a docker v2 repository."""
+def _get_app_file(cfg, repo_id):
+    """Return the text of the repo json app file."""
+    cmd = 'sudo cat /var/lib/pulp/published/docker/v2/app/{}.json'
+    cmd = cmd.format(repo_id).split()
+    return json.loads(cli.Client(cfg).run(cmd).stdout)
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the test class."""
-        super(SyncPublishV2TestCase, self).__init__(*args, **kwargs)
-        self._app_file = None
-        self._tags = None
-        self._manifest = None
+
+def _get_tags(cfg, repo_id):
+    """Return the tags for the repo."""
+    path = '/pulp/docker/v2/{}/tags/list'.format(repo_id)
+    return api.Client(cfg).get(path).json()
+
+
+def _get_manifest(cfg, repo_id, tag):
+    """Return the manifest of tag ``tag`` in repository ``repo_id``."""
+    path = '/pulp/docker/v2/{}/manifests/{}'.format(repo_id, tag)
+    return api.Client(cfg).get(path).json()
+
+
+class SyncPublishV2TestCase(_SuccessMixin, _BaseTestCase):
+    """Show it is possible to sync and publish a docker v2 repository.
+
+    This test case targets `Pulp #1051`_, "As a user, I can publish v2
+    repositories."
+
+    .. _Pulp #1051: https://pulp.plan.io/issues/1051
+    """
 
     @classmethod
     def setUpClass(cls):
         """Create and sync a docker repository with a v2 registry.
+
+        After doing the above, read the repository's JSON app file, tags, and
+        the manifest of the first tag.
 
         This method requires Pulp 2.8 and above, and will raise a ``SkipTest``
         exception if run against an earlier version of Pulp.
@@ -87,143 +110,108 @@ class SyncPublishV2TestCase(_SuccessMixin, _BaseTestCase):
             upstream_name=_UPSTREAM_NAME,
         )
         cls.completed_proc = docker_utils.repo_sync(cls.cfg, cls.repo_id)
-
-        cls.client = api.Client(cls.cfg)
+        cls.app_file = _get_app_file(cls.cfg, cls.repo_id)
+        cls.tags = _get_tags(cls.cfg, cls.repo_id)
+        cls.manifest = _get_manifest(cls.cfg, cls.repo_id, cls.tags['tags'][0])
 
     def test_app_file_registry_id(self):
-        """Assert that the v2 app file has the correct repo-registry-id."""
-        app_file = self._get_app_file()
-        self.assertEqual(app_file['repo-registry-id'], self.repo_id)
+        """Assert that the v2 app file has the correct ``repo-registry-id``."""
+        self.assertEqual(self.app_file['repo-registry-id'], self.repo_id)
 
     def test_app_file_repository(self):
         """Assert that the v2 app file has the correct repository."""
-        app_file = self._get_app_file()
-        self.assertEqual(app_file['repository'], self.repo_id)
+        self.assertEqual(self.app_file['repository'], self.repo_id)
 
     def test_app_file_url(self):
         """Assert that the v2 app file has the correct url."""
-        app_file = self._get_app_file()
         cmd = 'hostname --fqdn'
         fqdn = cli.Client(self.cfg).run(cmd.split()).stdout.strip()
-        self.assertEqual(app_file['url'],
-                         'https://{}/pulp/docker/v2/{}/'.format(
-                             fqdn, self.repo_id))
+        self.assertEqual(
+            self.app_file['url'],
+            'https://{}/pulp/docker/v2/{}/'.format(fqdn, self.repo_id)
+        )
 
     def test_app_file_version(self):
         """Assert that the v2 app file has the correct version."""
-        app_file = self._get_app_file()
-        self.assertEqual(app_file['version'], 2)
+        self.assertEqual(self.app_file['version'], 2)
 
     def test_app_file_protected(self):
-        """The repo should not be marked as protected."""
-        app_file = self._get_app_file()
-        self.assertEqual(app_file['protected'], False)
+        """Assert that the repository is not marked as protected."""
+        self.assertFalse(self.app_file['protected'])
 
     def test_app_file_type(self):
         """Assert that the v2 app file has the correct type."""
-        app_file = self._get_app_file()
-        self.assertEqual(app_file['type'], 'pulp-docker-redirect')
+        self.assertEqual(self.app_file['type'], 'pulp-docker-redirect')
 
     def test_blob_digests(self):
-        """Assert that we can retrieve all of the Blobs correctly."""
-        manifest = self._get_manifest()
-        # A list of 2-tuples of (expected_digest, actual_digest)
-        digests = []
+        """Assert that the checksum embedded in each blob's URL is correct.
 
-        for blob_sum in manifest['fsLayers']:
-            blob_sum = blob_sum['blobSum']
-            blob = self.client.get(
-                '/pulp/docker/v2/{}/blobs/{}'.format(
-                    self.repo_id, blob_sum)).content
-            algo, expected_digest = blob_sum.split(':')
-            hasher = getattr(hashlib, algo)()
-            hasher.update(blob)
-            digests.append((expected_digest, hasher.hexdigest()))
-
-        self.assertTrue(all([t[0] == t[1] for t in digests]))
+        For each of the "fsLayers" in the repository manifest, download and
+        checksum its blob, and compare this checksum to the one embedded in the
+        blob's URL.
+        """
+        for fs_layer in self.manifest['fsLayers']:
+            with self.subTest(fs_layer=fs_layer):
+                blob_sum = fs_layer['blobSum']
+                blob = api.Client(self.cfg).get(
+                    '/pulp/docker/v2/{}/blobs/{}'
+                    .format(self.repo_id, blob_sum)
+                ).content
+                algo, expected_digest = blob_sum.split(':')
+                hasher = getattr(hashlib, algo)()
+                hasher.update(blob)
+                self.assertEqual(expected_digest, hasher.hexdigest())
 
     def test_manifest_fslayers(self):
-        """
-        Assert that the manifest fsLayers is a list of dictionaries.
+        """Verify the structure of each of the "fsLayers" in the manifest.
 
-        Each dictionary should have one key (blobSum) which should index a
-        string.
+        Assert that "fsLayers" is a list of dicts, that each dict has a single
+        "blobSum" key, and that this key corresponds to a string.
         """
-        manifest = self._get_manifest()
-        self.assertTrue(isinstance(manifest['fsLayers'], list))
-        self.assertTrue(
-            all([isinstance(l, dict) for l in manifest['fsLayers']]))
-        self.assertTrue(
-            all([l.keys() == ['blobSum'] for l in manifest['fsLayers']]))
-        self.assertTrue(
-            all([isinstance(l['blobSum'], (type(''), type(u'')))
-                 for l in manifest['fsLayers']]))
+        self.assertIsInstance(self.manifest['fsLayers'], list)
+        for fs_layer in self.manifest['fsLayers']:
+            with self.subTest(fs_layer=fs_layer):
+                self.assertIsInstance(fs_layer, dict)
+                self.assertEqual(set(fs_layer.keys()), {'blobSum'})
+                self.assertIsInstance(fs_layer['blobSum'], _BYTE_UNICODE)
 
     def test_manifest_keys(self):
         """Assert that the manifest has the expected keys."""
-        manifest = self._get_manifest()
         self.assertEqual(
-            manifest.keys(),
-            [u'signatures', u'name', u'tag', u'architecture', u'fsLayers',
-             u'schemaVersion', u'history'])
+            set(self.manifest.keys()),
+            {
+                u'architecture',
+                u'fsLayers',
+                u'history',
+                u'name',
+                u'schemaVersion',
+                u'signatures',
+                u'tag',
+            }
+        )
 
     def test_manifest_name(self):
         """Assert that the manifest of the first tag has the correct name."""
-        manifest = self._get_manifest()
-        self.assertEqual(manifest['name'], 'library/busybox')
+        self.assertEqual(self.manifest['name'], 'library/busybox')
 
     def test_manifest_schema_version(self):
         """Assert that the manifest has the expected schema version."""
-        manifest = self._get_manifest()
-        self.assertEqual(manifest['schemaVersion'], 1)
+        self.assertEqual(self.manifest['schemaVersion'], 1)
 
     def test_manifest_tag(self):
         """Assert that the manifest of the first tag has the correct tag."""
-        manifest = self._get_manifest()
-        tags = self._get_tags()
-        self.assertEqual(manifest['tag'], tags['tags'][0])
+        self.assertEqual(self.manifest['tag'], self.tags['tags'][0])
 
     def test_tags_name(self):
         """Assert that the tags name is the repo_id."""
-        tags = self._get_tags()
-        self.assertEqual(tags['name'], self.repo_id)
+        self.assertEqual(self.tags['name'], self.repo_id)
 
     def test_tags_list(self):
-        """Assert that the list of tags is correct."""
-        tags = self._get_tags()
-        self.assertEqual(type(tags['tags']), list)
-        # There has to be at least one tag in the list, though we don't have
-        # any guarantees about what that tag should be.
-        self.assertTrue(len(tags['tags']) > 0)
-        # Every tag should be a string
-        self.assertTrue(
-            all([isinstance(t, (type(''), type(u''))) for t in tags['tags']]))
-
-    def _get_app_file(self):
-        """Return the text of the repo json app file."""
-        if not self._app_file:
-            cmd = 'sudo cat /var/lib/pulp/published/docker/v2/app/{}.json'
-            cmd = cmd.format(self.repo_id)
-            self._app_file = json.loads(
-                cli.Client(self.cfg).run(cmd.split()).stdout)
-        return self._app_file
-
-    def _get_tags(self):
-        """Return the tags for the repo."""
-        if not self._tags:
-            self._tags = self.client.get(
-                '/pulp/docker/v2/{}/tags/list'.format(self.repo_id)).json()
-        return self._tags
-
-    def _get_manifest(self):
-        """Return the manifest of the first tag."""
-        if not self._manifest:
-            first_tag = self._get_tags()['tags'][0]
-            self._manifest = self.client.get(
-                '/pulp/docker/v2/{}/manifests/{}'.format(
-                    self.repo_id, first_tag))
-            self._manifest = self._manifest.json()
-        return self._manifest
+        """Assert that the tags are a non-empty list of strings."""
+        self.assertIsInstance(self.tags['tags'], list)
+        self.assertGreater(len(self.tags['tags']), 0)
+        for tag in self.tags['tags']:
+            self.assertIsInstance(tag, _BYTE_UNICODE)
 
 
 class SyncUnnamespacedV2TestCase(_SuccessMixin, _BaseTestCase):

@@ -24,7 +24,7 @@ developers, not a gospel.
     api/pulp_smash.tests.docker.cli
     api/pulp_smash.tests.docker.cli.test_copy
     api/pulp_smash.tests.docker.cli.test_crud
-    api/pulp_smash.tests.docker.cli.test_sync
+    api/pulp_smash.tests.docker.cli.test_sync_publish
     api/pulp_smash.tests.docker.cli.utils
     api/pulp_smash.tests.ostree
     api/pulp_smash.tests.ostree.api_v2
