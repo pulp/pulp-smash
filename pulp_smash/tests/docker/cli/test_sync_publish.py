@@ -33,10 +33,6 @@ class _BaseTestCase(unittest2.TestCase):
 
 class _SuccessMixin(object):
 
-    def test_return_code(self):
-        """Assert the "sync" command has a return code of 0."""
-        self.assertEqual(self.completed_proc.returncode, 0)
-
     def test_task_succeeded(self):
         """Assert the phrase "Task Succeeded" is in stdout."""
         self.assertIn('Task Succeeded', self.completed_proc.stdout)
