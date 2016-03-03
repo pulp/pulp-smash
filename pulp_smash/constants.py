@@ -98,6 +98,13 @@ REPOSITORY_PATH = '/pulp/api/v2/repositories/'
     https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/index.html
 """
 
+CONSUMER_PATH = '/pulp/api/v2/consumers/'
+"""See: `Consumer APIs`_.
+
+.. _Consumer APIs:
+    https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/consumer/index.html
+"""
+
 RPM = 'bear-4.1-1.noarch.rpm'
 """The name of an RPM file. See :data:`pulp_smash.constants.RPM_FEED_URL`."""
 
