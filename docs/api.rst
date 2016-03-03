@@ -31,6 +31,7 @@ developers, not a gospel.
     api/pulp_smash.tests.ostree.api_v2.test_sync_publish
     api/pulp_smash.tests.platform
     api/pulp_smash.tests.platform.api_v2
+    api/pulp_smash.tests.platform.api_v2.test_consumer
     api/pulp_smash.tests.platform.api_v2.test_content_applicability
     api/pulp_smash.tests.platform.api_v2.test_login
     api/pulp_smash.tests.platform.api_v2.test_repository
