@@ -53,6 +53,7 @@ developers, not a gospel.
     api/pulp_smash.tests.rpm.api_v2.test_repomd
     api/pulp_smash.tests.rpm.api_v2.test_republish
     api/pulp_smash.tests.rpm.api_v2.test_retain_old_count
+    api/pulp_smash.tests.rpm.api_v2.test_schedule_publish
     api/pulp_smash.tests.rpm.api_v2.test_schedule_sync
     api/pulp_smash.tests.rpm.api_v2.test_sync_publish
     api/pulp_smash.tests.rpm.api_v2.test_unassociate
