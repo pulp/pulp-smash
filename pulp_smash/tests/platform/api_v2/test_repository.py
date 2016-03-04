@@ -107,19 +107,21 @@ class CreateFailureTestCase(utils.BaseAPITestCase):
 
     def test_status_code(self):
         """Assert that each response has the expected HTTP status code."""
-        if self.cfg.version < Version('2.8'):
-            self.skipTest('https://pulp.plan.io/issues/1356')
         for body, response, status_code in zip(
                 self.bodies, self.responses, self.status_codes):
+            if (body == ['Incorrect data type'] and
+                    self.cfg.version < Version('2.8')):
+                continue  # https://pulp.plan.io/issues/1356
             with self.subTest(body=body):
                 self.assertEqual(response.status_code, status_code)
 
     def test_body_status_code(self):
         """Assert that each response body has the expected HTTP status code."""
-        if self.cfg.version < Version('2.8'):
-            self.skipTest('https://pulp.plan.io/issues/1356')
         for body, response, status_code in zip(
                 self.bodies, self.responses, self.status_codes):
+            if (body == ['Incorrect data type'] and
+                    self.cfg.version < Version('2.8')):
+                continue  # https://pulp.plan.io/issues/1356
             with self.subTest(body=body):
                 self.assertEqual(response.json()['http_status'], status_code)
 
