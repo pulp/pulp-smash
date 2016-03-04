@@ -90,7 +90,8 @@ def repo_update(  # pylint:disable=too-many-arguments
         enable_v2=None,
         feed=None,
         repo_id=None,
-        upstream_name=None):
+        upstream_name=None,
+        repo_registry_id=None):
     """Execute ``pulp-admin docker repo update``."""
     cmd = 'pulp-admin docker repo update'.split()
     if enable_v1 is not None:
@@ -103,4 +104,6 @@ def repo_update(  # pylint:disable=too-many-arguments
         cmd.extend(('--repo-id', repo_id))
     if upstream_name is not None:
         cmd.extend(('--upstream-name', upstream_name))
+    if repo_registry_id is not None:
+        cmd.extend(('--repo-registry-id', repo_registry_id))
     return cli.Client(server_config).run(cmd)
