@@ -10,14 +10,11 @@ This module assumes that the tests in
 from __future__ import unicode_literals
 
 import time
-try:  # try Python 3 import first
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=C0411,E0401
 
 from packaging.version import Version
 
 from pulp_smash import api, selectors, utils
+from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 

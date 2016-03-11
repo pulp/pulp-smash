@@ -16,12 +16,8 @@ repository created with valid feed and `retain_old_count`_ option set.
 """
 from __future__ import unicode_literals
 
-try:  # try Python 3 import first
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=C0411,E0401
-
 from pulp_smash import api, utils
+from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 

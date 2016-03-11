@@ -35,14 +35,11 @@ Assertions not explored in this module include:
 from __future__ import unicode_literals
 
 from itertools import product
-try:  # try Python 3 first
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=C0411,E0401
 
 from packaging.version import Version
 
 from pulp_smash import api, selectors, utils
+from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,
