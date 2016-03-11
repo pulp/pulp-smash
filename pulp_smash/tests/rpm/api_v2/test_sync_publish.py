@@ -33,15 +33,12 @@ from __future__ import unicode_literals
 
 import hashlib
 from itertools import product
-try:  # try Python 3 import first
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=C0411,E0401
 
 import unittest2
 from packaging.version import Version
 
 from pulp_smash import api, selectors, utils
+from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,
