@@ -22,14 +22,10 @@ following trees of assumptions are explored in this module::
 """
 from __future__ import unicode_literals
 
-try:  # try Python 3 import first
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=C0411,E0401
-
 import unittest2
 
 from pulp_smash import api, config, utils
+from pulp_smash.compat import urljoin
 from pulp_smash.constants import PLUGIN_TYPES_PATH, REPOSITORY_PATH
 
 _FEED = 'https://repos.fedorapeople.org/pulp/pulp/demo_repos/test-ostree-small'
