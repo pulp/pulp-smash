@@ -11,14 +11,11 @@ from __future__ import unicode_literals
 
 import warnings
 from time import sleep
-try:  # try Python 3 import first
-    from urllib.parse import urljoin
-except ImportError:  # pragma: no cover
-    from urlparse import urljoin  # pylint:disable=C0411,E0401
 
 import requests
 
 from pulp_smash import exceptions
+from pulp_smash.compat import urljoin
 
 
 _SENTINEL = object()
