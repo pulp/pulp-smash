@@ -16,12 +16,8 @@ The second upload should silently fail for all Pulp releases in the 2.x series.
 """
 from __future__ import unicode_literals
 
-try:  # try Python 3 import first
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=C0411,E0401
-
 from pulp_smash import api, utils
+from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     CONTENT_UPLOAD_PATH,
     REPOSITORY_PATH,

@@ -6,12 +6,8 @@
 """
 from __future__ import unicode_literals
 
-try:  # try Python 3 first
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=C0411,E0401
-
 from pulp_smash import api, utils
+from pulp_smash.compat import urljoin
 from pulp_smash.constants import CONSUMER_PATH, REPOSITORY_PATH
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo, gen_distributor
 

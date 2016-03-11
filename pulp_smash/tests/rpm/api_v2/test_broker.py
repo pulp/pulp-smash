@@ -26,14 +26,11 @@ Both scenarios are executed by
 from __future__ import unicode_literals
 
 import time
-try:  # try Python 3 import first
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=C0411,E0401
 
 import unittest2
 
 from pulp_smash import api, cli, config, selectors, utils
+from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     PULP_SERVICES,
     REPOSITORY_PATH,

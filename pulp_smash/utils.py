@@ -11,7 +11,7 @@ import uuid
 import unittest2
 
 from pulp_smash import api, cli, config, exceptions
-from pulp_smash.constants import PULP_SERVICES
+from pulp_smash.constants import PLUGIN_TYPES_PATH, PULP_SERVICES
 
 
 def uuid4():
@@ -128,3 +128,21 @@ def reset_squid(server_config):
     client.run((prefix + 'squid -z').split())
 
     squid_service.start()
+
+
+def get_plugin_type_ids():
+    """Get the ID of each of Pulp's plugins.
+
+    Each Pulp plugin adds one (or more?) content unit type to Pulp. Each of
+    these content unit types is identified by a certain unique identifier. For
+    example, the `Python type`_ has an ID of ``python_package``.
+
+    :returns: A set of plugin IDs. For example: ``{'ostree',
+        'python_package'}``.
+
+    .. _Python type:
+       http://pulp-python.readthedocs.org/en/latest/reference/python-type.html
+    """
+    client = api.Client(config.get_config(), api.json_handler)
+    plugin_types = client.get(PLUGIN_TYPES_PATH)
+    return {plugin_type['id'] for plugin_type in plugin_types}

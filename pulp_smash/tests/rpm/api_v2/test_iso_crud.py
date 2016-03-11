@@ -2,14 +2,10 @@
 """Test CRUD for ISO RPM repositories."""
 from __future__ import unicode_literals
 
-try:  # try Python 3 import first
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=C0411,E0401
-
 from packaging.version import Version
 
 from pulp_smash import api, selectors, utils
+from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH
 
 
