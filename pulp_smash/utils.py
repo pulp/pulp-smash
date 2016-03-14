@@ -11,7 +11,7 @@ import uuid
 import unittest2
 
 from pulp_smash import api, cli, config, exceptions
-from pulp_smash.constants import PULP_SERVICES
+from pulp_smash.constants import ORPHANS_PATH, PULP_SERVICES
 
 
 def uuid4():
@@ -106,6 +106,7 @@ class BaseAPITestCase(unittest2.TestCase):
         client = api.Client(cls.cfg)
         for resource in cls.resources:
             client.delete(resource)
+        client.delete(ORPHANS_PATH)
 
 
 def reset_squid(server_config):

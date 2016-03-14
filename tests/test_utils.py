@@ -88,11 +88,12 @@ class BaseAPITestCase(unittest2.TestCase):
         """Call method ``tearDownClass``, and assert it deletes each resource.
 
         :meth:`pulp_smash.api.Client.delete` should be called once for each
-        resource listed in ``resources``.
+        resource listed in ``resources``, and once for
+        :data:`pulp_smash.constants.ORPHANS_PATH`.
         """
         with mock.patch.object(api, 'Client') as client:
             self.child.tearDownClass()
         self.assertEqual(
             client.return_value.delete.call_count,
-            len(self.child.resources),
+            len(self.child.resources) + 1,
         )
