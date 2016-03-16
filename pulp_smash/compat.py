@@ -7,6 +7,6 @@ different versions of Python.
 from __future__ import unicode_literals
 
 try:  # try Python 3 import first
-    from urllib.parse import urljoin
+    from urllib.parse import urljoin, urlparse
 except ImportError:
-    from urlparse import urljoin  # pylint:disable=C0411,E0401,F0401 # noqa
+    from urlparse import urljoin, urlparse  # noqa pylint:disable=C0411,E0401,F0401

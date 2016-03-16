@@ -5,14 +5,11 @@ from __future__ import unicode_literals
 import socket
 import subprocess
 from sys import version_info
-try:  # try Python 3 import first
-    from urllib.parse import urlparse
-except ImportError:  # pragma: no cover
-    from urlparse import urlparse  # pylint:disable=C0411,E0401
 
 import plumbum
 
 from pulp_smash import exceptions
+from pulp_smash.compat import urlparse
 
 
 # A dict mapping hostnames to *nix service managers.
