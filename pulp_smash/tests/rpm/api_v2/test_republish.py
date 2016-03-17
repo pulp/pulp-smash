@@ -1,26 +1,21 @@
 # coding=utf-8
 """Test re-publish repository after unassociating content.
 
-Following steps are executed in order to test correct functionality
-of repository created with valid feed.
+Following steps are executed in order to test correct functionality of
+repository created with valid feed.
 
 1. Create repository foo with valid feed, run sync, add distributor to it and
    publish over http and https.
 2. Pick a unit X and and assert it is accessible.
 3. Remove unit X from repository foo and re-publish.
-5. Assert unit X is not accessible.
-
+4. Assert unit X is not accessible.
 """
-
 from __future__ import unicode_literals
 
 import random
-try:  # try Python 3 import first
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=C0411,E0401
 
 from pulp_smash import api, utils
+from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 
@@ -45,9 +40,9 @@ class RepublishTestCase(utils.BaseAPITestCase):
         Following steps are executed:
 
         1. Create repository foo with feed, sync and publish it.
-        2. Get an unit X and assert it is accessible
+        2. Get an unit X and assert it is accessible.
         3. Remove unit X from repository foo and re-publish foo.
-        4. Get same unit X and assert it is not accessible
+        4. Get same unit X and assert it is not accessible.
         """
         super(RepublishTestCase, cls).setUpClass()
         cls.responses = {}
@@ -60,24 +55,24 @@ class RepublishTestCase(utils.BaseAPITestCase):
         cls.resources.add(repo_href)  # mark for deletion
         cls.responses['sync'] = _sync_repo(cls.cfg, repo_href)
 
-        # Add a distributor
+        # Add a distributor and publish it.
         cls.responses['distribute'] = client.post(
             urljoin(repo_href, 'distributors/'),
             gen_distributor(),
         )
-        # Publish repo
         cls.responses['first publish'] = client.post(
             urljoin(repo_href, 'actions/publish/'),
             {'id': cls.responses['distribute'].json()['id']},
         )
 
         # Get contents of repository
-        body = {'criteria': {}}
         cls.responses['repo units'] = client.post(
-            urljoin(repo_href, 'search/units/'), body)
+            urljoin(repo_href, 'search/units/'),
+            {'criteria': {}},
+        )
 
         # Get random unit from repository to remove
-        cls.removed_unit = random.choice([
+        removed_unit = random.choice([
             unit['metadata']['filename']
             for unit in cls.responses['repo units'].json()
             if unit['unit_type_id'] == 'rpm'
@@ -88,7 +83,7 @@ class RepublishTestCase(utils.BaseAPITestCase):
             '/pulp/repos/',
             cls.responses['distribute'].json()['config']['relative_url']
         )
-        url = urljoin(url, cls.removed_unit)
+        url = urljoin(url, removed_unit)
         cls.responses['first get'] = client.get(url)
 
         # Remove unit from the repo
@@ -109,7 +104,7 @@ class RepublishTestCase(utils.BaseAPITestCase):
                     },
                     'type_ids': ['rpm'],
                     'filters': {
-                        'unit': {'filename': cls.removed_unit}
+                        'unit': {'filename': removed_unit}
                     }
                 }
             },
@@ -126,7 +121,7 @@ class RepublishTestCase(utils.BaseAPITestCase):
             '/pulp/repos/',
             cls.responses['distribute'].json()['config']['relative_url']
         )
-        url = urljoin(url, cls.removed_unit)
+        url = urljoin(url, removed_unit)
         client.response_handler = api.echo_handler
         cls.responses['second get'] = client.get(url)
 
