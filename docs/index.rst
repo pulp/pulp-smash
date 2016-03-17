@@ -4,7 +4,7 @@ Pulp Smash
 Pulp Smash is a test suite for `Pulp`_. It lets you execute a workflow like
 this::
 
-    pip install pulp_smash
+    pip install pulp-smash
     python -m pulp_smash  # follow the instructions
 
 Pulp Smash is a GPL-licensed Python library, but no knowledge of Python is
