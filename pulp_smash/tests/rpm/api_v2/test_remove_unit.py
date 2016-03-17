@@ -24,18 +24,13 @@ import random
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
-from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
+from pulp_smash.tests.rpm.api_v2.utils import (
+    gen_distributor,
+    gen_repo,
+    sync_repo,
+)
 
 _PUBLISH_DIR = 'pulp/repos/'
-
-
-# This can be moved to `pulp_smash.tests.rpm.api_v2.utils` and re-used.
-def _sync_repo(server_config, repo_href):
-    """Sync the referenced repository. Return the raw server response."""
-    return api.Client(server_config).post(
-        urljoin(repo_href, 'actions/sync/'),
-        {'override_config': {}}
-    )
 
 
 def _get_rpm_ids(search_body):
@@ -73,7 +68,7 @@ class RemoveMissingTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_FEED_URL
         hrefs.append(client.post(REPOSITORY_PATH, body).json()['_href'])
         cls.resources.add(hrefs[0])  # mark for deletion
-        cls.responses['first sync'] = _sync_repo(cls.cfg, hrefs[0])
+        cls.responses['first sync'] = sync_repo(cls.cfg, hrefs[0])
 
         # Add a distributor and publish it.
         cls.responses['distribute'] = client.post(
@@ -98,7 +93,7 @@ class RemoveMissingTestCase(utils.BaseAPITestCase):
         body['importer_config']['ssl_validation'] = False
         hrefs.append(client.post(REPOSITORY_PATH, body).json()['_href'])
         cls.resources.add(hrefs[1])  # mark for deletion
-        cls.responses['second sync'] = _sync_repo(cls.cfg, hrefs[1])
+        cls.responses['second sync'] = sync_repo(cls.cfg, hrefs[1])
 
         # Get contents of both repositories
         for i, href in enumerate(hrefs):
@@ -143,7 +138,7 @@ class RemoveMissingTestCase(utils.BaseAPITestCase):
             urljoin(hrefs[0], 'actions/publish/'),
             {'id': cls.responses['distribute'].json()['id']},
         )
-        cls.responses['third sync'] = _sync_repo(cls.cfg, hrefs[1])
+        cls.responses['third sync'] = sync_repo(cls.cfg, hrefs[1])
 
         # Search for units in both repositories again
         for i, href in enumerate(hrefs):

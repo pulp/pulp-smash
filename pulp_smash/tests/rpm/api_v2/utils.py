@@ -2,7 +2,8 @@
 """Utility functions for RPM API tests."""
 from __future__ import unicode_literals
 
-from pulp_smash import utils
+from pulp_smash import api, utils
+from pulp_smash.compat import urljoin
 
 
 def gen_repo():
@@ -27,3 +28,17 @@ def gen_distributor():
             'relative_url': utils.uuid4() + '/',
         },
     }
+
+
+def sync_repo(server_config, href):
+    """Sync the referenced repository. Return the raw server response.
+
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        Pulp server being targeted.
+    :param href: The path to the repository to sync.
+    :returns: The server's response.
+    """
+    return api.Client(server_config).post(
+        urljoin(href, 'actions/sync/'),
+        {'override_config': {}}
+    )
