@@ -16,15 +16,17 @@ following trees of assumptions are explored in this module::
 .. _repositories:
    http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/cud.html
 """
+from __future__ import unicode_literals
+
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH
-from pulp_smash.tests.ostree import ostree_utils
+from pulp_smash.tests.ostree.utils import gen_repo, skip_if_no_plugin
 
 
 def setUpModule():  # pylint:disable=invalid-name
     """Skip tests if the OSTree plugin is not installed."""
-    ostree_utils.setUpModule()
+    skip_if_no_plugin()
 
 
 class CreateTestCase(utils.BaseAPITestCase):
@@ -35,7 +37,7 @@ class CreateTestCase(utils.BaseAPITestCase):
         """Create two repositories."""
         super(CreateTestCase, cls).setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
-        cls.bodies = tuple((ostree_utils.gen_repo() for _ in range(2)))
+        cls.bodies = tuple((gen_repo() for _ in range(2)))
         cls.bodies[1]['importer_config'] = {'feed': utils.uuid4()}
         cls.repos = [client.post(REPOSITORY_PATH, body) for body in cls.bodies]
         cls.importers_iter = [

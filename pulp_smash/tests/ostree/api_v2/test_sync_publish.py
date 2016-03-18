@@ -23,8 +23,14 @@ assumptions are explored in this module::
 """
 from __future__ import unicode_literals
 
-from pulp_smash import utils
-from pulp_smash.tests.ostree import ostree_utils
+from pulp_smash import api, utils
+from pulp_smash.compat import urljoin
+from pulp_smash.constants import REPOSITORY_PATH
+from pulp_smash.tests.ostree.utils import (
+    create_sync_repo,
+    gen_repo,
+    skip_if_no_plugin,
+)
 
 _FEED = 'https://repos.fedorapeople.org/pulp/pulp/demo_repos/test-ostree-small'
 _BRANCHES = (
@@ -35,7 +41,35 @@ _BRANCHES = (
 
 def setUpModule():  # pylint:disable=invalid-name
     """Skip tests if the OSTree plugin is not installed."""
-    ostree_utils.setUpModule()
+    skip_if_no_plugin()
+
+
+def _sync_repo(server_config, href):
+    """Sync a repository and wait for the sync to complete.
+
+    Verify only the call report's status code. Do not verify each individual
+    task, as the default response handler does. Return ``call_report, tasks``.
+    """
+    response = api.Client(server_config, api.echo_handler).post(
+        urljoin(href, 'actions/sync/'),
+        {'override_config': {}},
+    )
+    response.raise_for_status()
+    tasks = tuple(api.poll_spawned_tasks(server_config, response.json()))
+    return response, tasks
+
+
+# It's OK for a mixin to have just one method.
+class _SyncMixin(object):  # pylint:disable=too-few-public-methods
+    """Add test methods verifying Pulp's behaviour when a sync is started.
+
+    The ``report`` instance attribute should be available. This is the response
+    to a "sync repository" API call: a call report.
+    """
+
+    def test_start_sync_code(self):
+        """Assert the call to sync a repository returns an HTTP 202."""
+        self.assertEqual(self.report.status_code, 202)
 
 
 class _SyncFailedMixin(object):
@@ -49,10 +83,6 @@ class _SyncFailedMixin(object):
     * The child class making use of this mixin is a unittest-compatible test
       case.
     """
-
-    def test_start_sync_code(self):
-        """Assert the call to sync a repository returns an HTTP 202."""
-        self.assertEqual(self.report.status_code, 202)
 
     def test_number_tasks(self):
         """Assert that exactly one task was spawned."""
@@ -75,7 +105,7 @@ class _SyncImportFailedMixin(object):  # pylint:disable=too-few-public-methods
     """
 
     def test_error_details(self):
-        """Assert that some task's progress report contains error details."""
+        """Assert that each task's progress report contains error details."""
         for task in self.tasks:
             num_error_details = sum(
                 1 if action['error_details'] != [] else 0
@@ -84,7 +114,7 @@ class _SyncImportFailedMixin(object):  # pylint:disable=too-few-public-methods
             self.assertGreater(num_error_details, 0)
 
 
-class SyncTestCase(utils.BaseAPITestCase):
+class SyncTestCase(_SyncMixin, utils.BaseAPITestCase):
     """Create an OSTree repository with a valid feed and branch, and sync it.
 
     The sync should complete with no errors reported.
@@ -94,24 +124,12 @@ class SyncTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create an OSTree repository with a valid feed and branch."""
         super(SyncTestCase, cls).setUpClass()
-        body = ostree_utils.gen_repo()
+        body = gen_repo()
         body['importer_config']['feed'] = _FEED
         body['importer_config']['branches'] = [_BRANCHES[0]]
-        repo_href, cls.report, cls.tasks = ostree_utils.create_sync_repo(
-            cls.cfg, body
-        )
+        repo_href, cls.report = create_sync_repo(cls.cfg, body)
         cls.resources.add(repo_href)
-
-    def test_start_sync_code(self):
-        """Assert the call to sync a repository returns an HTTP 202."""
-        self.assertEqual(self.report.status_code, 202)
-
-    def test_task_error_traceback(self):
-        """Assert each task's "error" and "traceback" fields are null."""
-        for i, task in enumerate(self.tasks):
-            for key in {'error', 'traceback'}:
-                with self.subTest((i, key)):
-                    self.assertIsNone(task[key])
+        cls.tasks = tuple(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
 
     def test_task_progress_report(self):
         """Assert no task's progress report contains error details."""
@@ -122,6 +140,7 @@ class SyncTestCase(utils.BaseAPITestCase):
 
 
 class SyncInvalidFeedTestCase(
+        _SyncMixin,
         _SyncFailedMixin,
         _SyncImportFailedMixin,
         utils.BaseAPITestCase):
@@ -131,16 +150,17 @@ class SyncInvalidFeedTestCase(
     def setUpClass(cls):
         """Set ``cls.body``."""
         super(SyncInvalidFeedTestCase, cls).setUpClass()
-        body = ostree_utils.gen_repo()
+        client = api.Client(cls.cfg)
+        body = gen_repo()
         body['importer_config']['feed'] = utils.uuid4()
         body['importer_config']['branches'] = [_BRANCHES[0]]
-        repo_href, cls.report, cls.tasks = ostree_utils.create_sync_repo(
-            cls.cfg, body
-        )
+        repo_href = client.post(REPOSITORY_PATH, body).json()['_href']
         cls.resources.add(repo_href)
+        cls.report, cls.tasks = _sync_repo(cls.cfg, repo_href)
 
 
 class SyncInvalidBranchesTestCase(
+        _SyncMixin,
         _SyncFailedMixin,
         _SyncImportFailedMixin,
         utils.BaseAPITestCase):
@@ -148,26 +168,29 @@ class SyncInvalidBranchesTestCase(
 
     @classmethod
     def setUpClass(cls):
-        """Set ``cls.body``."""
+        """Create and sync an OSTree repository."""
         super(SyncInvalidBranchesTestCase, cls).setUpClass()
-        body = ostree_utils.gen_repo()
+        client = api.Client(cls.cfg)
+        body = gen_repo()
         body['importer_config']['feed'] = _FEED
         body['importer_config']['branches'] = [utils.uuid4()]
-        repo_href, cls.report, cls.tasks = ostree_utils.create_sync_repo(
-            cls.cfg, body
-        )
+        repo_href = client.post(REPOSITORY_PATH, body).json()['_href']
         cls.resources.add(repo_href)
+        cls.report, cls.tasks = _sync_repo(cls.cfg, repo_href)
 
 
-class SyncMissingAttrsTestCase(_SyncFailedMixin, utils.BaseAPITestCase):
+class SyncMissingAttrsTestCase(
+        _SyncMixin,
+        _SyncFailedMixin,
+        utils.BaseAPITestCase):
     """Create an OSTree repository with no feed or branches and sync it."""
 
     @classmethod
     def setUpClass(cls):
-        """Set ``cls.body``."""
+        """Create and sync an OSTree repository."""
         super(SyncMissingAttrsTestCase, cls).setUpClass()
-        body = ostree_utils.gen_repo()
-        repo_href, cls.report, cls.tasks = ostree_utils.create_sync_repo(
-            cls.cfg, body
-        )
+        client = api.Client(cls.cfg)
+        body = gen_repo()
+        repo_href = client.post(REPOSITORY_PATH, body).json()['_href']
         cls.resources.add(repo_href)
+        cls.report, cls.tasks = _sync_repo(cls.cfg, repo_href)
