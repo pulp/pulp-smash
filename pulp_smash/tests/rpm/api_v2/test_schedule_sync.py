@@ -259,12 +259,6 @@ class ScheduledSyncTestCase(CreateRepoMixin, utils.BaseAPITestCase):
         time.sleep(40)
         cls.response = client.get(schedule['_href'])
 
-    def test_total_run_count(self):
-        """Assert the sync ran twice in the past 40 seconds."""
-        if selectors.bug_is_untestable(1748):
-            self.skipTest('https://pulp.plan.io/issues/1748')
-        self.assertEqual(self.response['total_run_count'], 2)
-
     def test_consecutive_failures(self):
         """Assert the sync encountered no consecutive failures."""
         self.assertEqual(self.response['consecutive_failures'], 0)
