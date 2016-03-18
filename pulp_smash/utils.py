@@ -67,7 +67,8 @@ def reset_pulp(server_config):
     # Reset the database and nuke accumulated files.
     client = cli.Client(server_config)
     prefix = '' if client.run(('id', '-u')).stdout.strip() == '0' else 'sudo '
-    client.run('mongo pulp_database --eval db.dropDatabase()'.split())
+    mongo_drop_cmd = 'mongo {pulp_database} --eval db.dropDatabase()'
+    client.run((mongo_drop_cmd % server_config.pulp_database).split())
     client.run('sudo -u apache pulp-manage-db'.split())
     client.run((prefix + 'rm -rf /var/lib/pulp/content').split())
     client.run((prefix + 'rm -rf /var/lib/pulp/published').split())
