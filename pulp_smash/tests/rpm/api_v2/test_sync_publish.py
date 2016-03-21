@@ -525,12 +525,12 @@ class SyncBackgroundTestCase(utils.BaseAPITestCase):
         client = api.Client(cls.cfg, api.json_handler)
 
         # Create the repository
-        body = _gen_repo()
+        body = gen_repo()
         body['importer_config'] = {
             'feed': RPM_FEED_URL,
             'download_policy': 'background',
         }
-        distributor = _gen_distributor()
+        distributor = gen_distributor()
         distributor['auto_publish'] = True
         distributor['distributor_config']['relative_url'] = body['id']
         body['distributors'] = [distributor]
