@@ -50,11 +50,13 @@ developers, not a gospel.
     api/pulp_smash.tests.rpm.api_v2.test_iso_crud
     api/pulp_smash.tests.rpm.api_v2.test_orphan_remove
     api/pulp_smash.tests.rpm.api_v2.test_remove_unit
+    api/pulp_smash.tests.rpm.api_v2.test_repomd
     api/pulp_smash.tests.rpm.api_v2.test_republish
     api/pulp_smash.tests.rpm.api_v2.test_retain_old_count
     api/pulp_smash.tests.rpm.api_v2.test_schedule_sync
     api/pulp_smash.tests.rpm.api_v2.test_sync_publish
     api/pulp_smash.tests.rpm.api_v2.test_unassociate
+    api/pulp_smash.tests.rpm.api_v2.test_updateinfo
     api/pulp_smash.tests.rpm.api_v2.utils
     api/pulp_smash.utils
     api/tests
