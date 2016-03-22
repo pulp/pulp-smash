@@ -583,15 +583,8 @@ class SyncBackgroundTestCase(utils.BaseAPITestCase):
         self.assertEqual('finished', tasks[0]['state'])
 
 
-class RedundantPublishSameMetadata(utils.BaseAPITestCase):
+class RedundantPublishSameMetadataTestCase(utils.BaseAPITestCase):
     """Redundantly publish a repo without changes."""
-
-    @classmethod
-    def _download_repomd_xml(cls, url):
-        cls.client.response_handler = api.safe_handler
-        result = cls.client.get(url)
-        cls.client.response_handler = api.json_handler
-        return result
 
     @classmethod
     def setUpClass(cls):
@@ -603,77 +596,45 @@ class RedundantPublishSameMetadata(utils.BaseAPITestCase):
         2. Publish the repo a first time
         3. Publish the repo a second time, without any changes
         """
-        super(RedundantPublishSameMetadata, cls).setUpClass()
+        super(RedundantPublishSameMetadataTestCase, cls).setUpClass()
         if selectors.bug_is_untestable(1724):
             raise unittest2.SkipTest('https://pulp.plan.io/issues/1724')
 
-        cls.repo_id = utils.uuid4()
-        relative_url = urljoin('repos/', cls.repo_id)
-        feed = 'https://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/zoo/'
+        client = api.Client(cls.cfg, api.json_handler)
+        body = gen_repo()
+        body['description'] = 'TwoPublishes test repo - delete me'
+        body['display_name'] = 'TwoPublishes test repo'
+        body['importer_config']['feed'] = RPM_FEED_URL
+        distributor = gen_distributor()
+        distributor['distributor_config']['http'] = False
+        distributor['distributor_config']['relative_url'] = body['id']
 
-        repomd_xml = '/pulp/repos/{relative_url}/repodata/repomd.xml'\
-            .format(relative_url=relative_url)
+        repo = client.post(REPOSITORY_PATH, body)
+        cls.resources.add(repo['_href'])
+        sync_path = urljoin(repo['_href'], 'actions/sync/')
+        client.post(sync_path, {'override_config': {}})
 
-        sync_data = {'override_config': {}}
-
+        repomd_xml_path = (
+            '{repo_publish_path}{relative_url}/repodata/repomd.xml'
+            .format(
+                relative_url=body['id'],
+                repo_publish_path=_REPO_PUBLISH_PATH,
+            )
+        )
         publish_data = {'override_config': {}, 'id': 'yum_distributor'}
-
-        body = {
-            'display_name': 'TwoPublishes test repo',
-            'description': 'TwoPublishes test repo - delete me',
-            'distributors': [
-                {
-                    'distributor_id': 'yum_distributor',
-                    'auto_publish': False,
-                    'distributor_config': {
-                        'http': False,
-                        'relative_url': relative_url,
-                        'https': True
-                    },
-                    'distributor_type_id': 'yum_distributor'
-                }
-            ],
-            'notes': {'_repo-type': 'rpm-repo'},
-            'importer_type_id': 'yum_importer',
-            'importer_config': {
-                'feed': feed
-            },
-            'id': cls.repo_id
-        }
-
-        cls.client = api.Client(cls.cfg, api.json_handler)
-        try:
-            repo = cls.client.post(REPOSITORY_PATH, body)
-
-            sync_path = urljoin(repo['_href'], 'actions/sync/')
-            publish_path = urljoin(repo['_href'], 'actions/publish/')
-
-            cls.client.post(sync_path, sync_data)
-
-            cls.client.post(publish_path, publish_data)
-            cls.publish1_repomd = cls._download_repomd_xml(repomd_xml)
-
-            cls.client.post(publish_path, publish_data)
-            cls.publish2_repomd = cls._download_repomd_xml(repomd_xml)
-
-        except:
-            cls.tearDownClass()
-            raise
-
-    @classmethod
-    def tearDownClass(cls):
-        """Delete the repository we just created."""
-        if hasattr(cls, 'client'):
-            try:
-                cls.client.delete(urljoin(REPOSITORY_PATH, cls.repo_id))
-            except:  # pylint: disable=bare-except
-                pass
+        publish_path = urljoin(repo['_href'], 'actions/publish/')
+        cls.publish_repomd_data = []
+        for _ in range(2):
+            client.post(publish_path, publish_data)
+            cls.publish_repomd_data.append(
+                api.Client(cls.cfg).get(repomd_xml_path)
+            )
 
     def test_compare_repomd(self):
-        """Assert the repodata is the same."""
+        """Assert identical metadata on redundant publish."""
         if selectors.bug_is_untestable(1724):
             self.skipTest('https://pulp.plan.io/issues/1724')
-
-        self.assertEqual(self.publish1_repomd.content,
-                         self.publish2_repomd.content,
-                         'Expected identical metadata on redundant publish')
+        self.assertEqual(
+            self.publish_repomd_data[0].content,
+            self.publish_repomd_data[1].content
+        )
