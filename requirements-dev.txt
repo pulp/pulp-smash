@@ -16,3 +16,6 @@ wheel
 
 # For `make publish`
 twine
+
+# For datetime tests
+isodate
