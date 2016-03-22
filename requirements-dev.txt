@@ -13,3 +13,6 @@ sphinx
 
 # For `make package`
 wheel
+
+# For datetime tests
+isodate
