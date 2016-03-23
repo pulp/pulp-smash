@@ -344,8 +344,7 @@ class PublishTestCase(utils.BaseAPITestCase):
         cls.responses['puppet releases'] = []
         author_name = _PUPPET_MODULE['author'] + '/' + _PUPPET_MODULE['name']
         for repo in repos:
-            if (cls.cfg.version >= Version('2.8') and
-                    selectors.bug_is_untestable(1440)):
+            if selectors.bug_is_untestable(1440, cls.cfg.version):
                 continue
             cls.responses['puppet releases'].append(client.get(
                 '/api/v1/releases.json',

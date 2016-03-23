@@ -93,7 +93,7 @@ class BrokerTestCase(unittest2.TestCase):
         3. Test Pulp's health. Create an RPM repository, sync it, add a
            distributor, publish it, and download an RPM.
         """
-        if selectors.bug_is_untestable(1635):
+        if selectors.bug_is_untestable(1635, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1635')
         # We assume that the broker and other services are already running. As
         # a result, we skip step 1 and go straight to step 2.

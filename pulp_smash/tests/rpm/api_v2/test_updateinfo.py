@@ -240,7 +240,7 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
         This test may be skipped if `Pulp #1782
         <https://pulp.plan.io/issues/1782>`_ is open.
         """
-        if selectors.bug_is_untestable(1782):
+        if selectors.bug_is_untestable(1782, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1782')
         erratum_id = self.errata['import_typical']['id']
         update_element = _get_updates_by_id(self.root_element)[erratum_id]

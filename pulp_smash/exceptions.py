@@ -11,6 +11,13 @@ class BugStatusUnknownError(Exception):
     """
 
 
+class BugTPRMissingError(Exception):
+    """We have encountered a bug with no "Target Platform Release" field.
+
+    See :mod:`pulp_smash.selectors` for more information.
+    """
+
+
 class CallReportError(Exception):
     """A call report contains an error.
 

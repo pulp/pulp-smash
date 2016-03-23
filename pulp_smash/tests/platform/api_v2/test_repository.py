@@ -131,7 +131,7 @@ class CreateFailureTestCase(utils.BaseAPITestCase):
         """Assert the JSON body returned contains the correct keys."""
         for body, response in zip(self.bodies, self.responses):
             with self.subTest(body=body):
-                if bug_is_untestable(1413):  # fails for all bodies
+                if bug_is_untestable(1413, self.cfg.version):
                     self.skipTest('https://pulp.plan.io/issues/1413')
                 response_keys = frozenset(response.json().keys())
                 self.assertEqual(response_keys, ERROR_KEYS)

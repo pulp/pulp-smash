@@ -131,8 +131,7 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
 
     def test_task_error_traceback(self):
         """Assert each task's "error" and "traceback" fields are null."""
-        if (self.cfg.version >= Version('2.8') and
-                selectors.bug_is_untestable(1455)):
+        if selectors.bug_is_untestable(1455, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1455')
         for i, task in enumerate(self.tasks):
             for key in {'error', 'traceback'}:
@@ -155,8 +154,7 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
         Compare these attributes to metadata from the remote repository.
         Expected values are currently hard-coded into this test.
         """
-        if (self.cfg.version >= Version('2.8') and
-                selectors.bug_is_untestable(1455)):
+        if selectors.bug_is_untestable(1455, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1455')
         counts = self.repo.get('content_unit_counts', {})
         for unit_type, count in {
@@ -165,8 +163,8 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
                 'package_group': 2,
                 'package_category': 1,
         }.items():
-            if (unit_type == 'rpm' and self.cfg.version >= Version('2.8') and
-                    selectors.bug_is_untestable(1570)):
+            if (unit_type == 'rpm' and
+                    selectors.bug_is_untestable(1570, self.cfg.version)):
                 continue
             with self.subTest(unit_type=unit_type):
                 self.assertEqual(counts.get(unit_type), count)
@@ -199,8 +197,7 @@ class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
 
     def test_task_error_traceback(self):
         """Assert each task's "error" and "traceback" fields are non-null."""
-        if (self.cfg.version >= Version('2.8') and
-                selectors.bug_is_untestable(1455)):
+        if selectors.bug_is_untestable(1455, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1455')
         for i, task in enumerate(self.tasks):
             for key in {'error', 'traceback'}:
@@ -597,7 +594,7 @@ class RedundantPublishSameMetadataTestCase(utils.BaseAPITestCase):
         3. Publish the repo a second time, without any changes
         """
         super(RedundantPublishSameMetadataTestCase, cls).setUpClass()
-        if selectors.bug_is_untestable(1724):
+        if selectors.bug_is_untestable(1724, cls.cfg.version):
             raise unittest2.SkipTest('https://pulp.plan.io/issues/1724')
 
         client = api.Client(cls.cfg, api.json_handler)
@@ -632,7 +629,7 @@ class RedundantPublishSameMetadataTestCase(utils.BaseAPITestCase):
 
     def test_compare_repomd(self):
         """Assert identical metadata on redundant publish."""
-        if selectors.bug_is_untestable(1724):
+        if selectors.bug_is_untestable(1724, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1724')
         self.assertEqual(
             self.publish_repomd_data[0].content,

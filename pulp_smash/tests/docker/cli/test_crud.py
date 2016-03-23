@@ -127,7 +127,7 @@ class UpdateEnableV1TestCase(unittest2.TestCase):
 
         if cls.cfg.version < version.Version('2.8'):
             raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
-        if selectors.bug_is_untestable(1710):
+        if selectors.bug_is_untestable(1710, cls.cfg.version):
             raise unittest2.SkipTest('https://pulp.plan.io/issues/1710')
 
         docker_utils.login(cls.cfg)
@@ -181,7 +181,7 @@ class UpdateEnableV2TestCase(unittest2.TestCase):
 
         if cls.cfg.version < version.Version('2.8'):
             raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
-        if selectors.bug_is_untestable(1710):
+        if selectors.bug_is_untestable(1710, cls.cfg.version):
             raise unittest2.SkipTest('https://pulp.plan.io/issues/1710')
 
         docker_utils.login(cls.cfg)
@@ -235,7 +235,7 @@ class UpdateDistributorTestCase(unittest2.TestCase):
         cls.cfg = config.get_config()
         if cls.cfg.version < version.Version('2.8'):
             raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
-        if selectors.bug_is_untestable(1710):
+        if selectors.bug_is_untestable(1710, cls.cfg.version):
             raise unittest2.SkipTest('https://pulp.plan.io/issues/1710')
 
         docker_utils.login(cls.cfg)

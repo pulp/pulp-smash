@@ -179,7 +179,7 @@ class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
     def test_read_distributors(self):
         """Assert each read w/distributors contains info about distributors."""
         if (self.cfg.version < Version('2.8') and
-                selectors.bug_is_untestable(1452)):
+                selectors.bug_is_untestable(1452, self.cfg.version)):
             self.skipTest('https://pulp.plan.io/issues/1452')
         for key in {'read_distributors', 'read_details'}:
             with self.subTest(key=key):
