@@ -8,8 +8,7 @@ from pulp_smash.constants import CONTENT_UPLOAD_PATH, REPOSITORY_PATH
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
-    get_repomd_xml_href,
-    xml_handler,
+    get_repomd_xml
 )
 
 
@@ -115,8 +114,8 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
         2. Add a YUM distributor.
         3. Generate a pair of errata. Upload them to Pulp and import them into
            the repository.
-        4. Publish the repository. Fetch the ``repomd.xml`` file from the
-           distributor, and parse it.
+        4. Publish the repository. Fetch the ``updateinfo.xml`` file from the
+           distributor (via ``repomd.xml``), and parse it.
         """
         super(UpdateInfoTestCase, cls).setUpClass()
         cls.errata = {
@@ -143,17 +142,12 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
             {'id': distributor['id']},
         )
 
-        # Fetch and parse repomd.xml
-        client.response_handler = api.safe_handler
-        path = urljoin('/pulp/repos/', distributor['config']['relative_url'])
-        path = urljoin(path, 'repodata/repomd.xml')
-        repomd_xml = client.get(path).text
-
-        # Fetch and parse updateinfo.xml (or updateinfo.xml.gz)
-        client.response_handler = xml_handler
-        path = urljoin('/pulp/repos/', distributor['config']['relative_url'])
-        path = urljoin(path, get_repomd_xml_href(repomd_xml, 'updateinfo'))
-        cls.root_element = client.get(path)
+        # Fetch and parse updateinfo.xml (or updateinfo.xml.gz), via repomd.xml
+        cls.root_element = get_repomd_xml(
+            client,
+            urljoin('/pulp/repos/', distributor['config']['relative_url']),
+            'updateinfo'
+        )
 
     def test_root(self):
         """Assert the root element of the tree has a tag of "updates"."""
