@@ -6,7 +6,13 @@ also contain read, update, and delete tests.
 """
 from __future__ import unicode_literals
 
+try:  # try Python 3 import first
+    from urllib.parse import urljoin
+except ImportError:
+    from urlparse import urljoin  # pylint:disable=C0411,E0401
+
 import unittest2
+
 from packaging.version import Version
 
 from pulp_smash import api, utils
@@ -22,6 +28,19 @@ def _gen_docker_repo_body():
         'id': utils.uuid4(), 'importer_config': {},
         'importer_type_id': 'docker_importer',
         'notes': {'_repo-type': 'docker-repo'},
+    }
+
+
+def _gen_distributor():
+    """Return a semi-random dict for use in creating a docker distributor."""
+    return {
+        'auto_publish': False,
+        'distributor_id': utils.uuid4(),
+        'distributor_type_id': 'docker_distributor_web',
+        'distributor_config': {
+            'http': True,
+            'https': True,
+        },
     }
 
 
@@ -84,3 +103,45 @@ class CreateTestCase(_BaseTestCase):
             with self.subTest(body=body):
                 self.assertIn(key, importers[0])
                 self.assertEqual(body['importer_' + key], importers[0][key])
+
+
+class UpdateTestCase(_BaseTestCase):
+    """Create Docker repo, add and update distributor."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Create Docker repository, add and update distributor."""
+        super(UpdateTestCase, cls).setUpClass()
+        cls.responses = {}
+        cls.body = _gen_docker_repo_body()
+        client = api.Client(cls.cfg, api.json_handler)
+        cls.repo = client.post(REPOSITORY_PATH, cls.body)
+        cls.resources.add(cls.repo['_href'])
+        client.response_handler = api.safe_handler
+
+        # Add distributor
+        cls.responses['distribute'] = client.post(
+            urljoin(cls.repo['_href'], 'distributors/'),
+            _gen_distributor(),
+        )
+        # Get distributor
+        cls.dist = client.get(cls.repo['_href'] + 'distributors/').json()
+
+        # Update distributor
+        cls.responses['update_distrib'] = client.put(
+            cls.dist[0]['_href'],
+            {'distributor_config': {'repo_registry_id': 'test/vtest'}}
+        )
+
+        # Update distributor from repo
+        body = {'distributor_configs': {
+            cls.dist[0]['id']: {'repo_registry_id': 'test/vtest'}}}
+        cls.responses['update_distrib_2'] = client.put(
+            cls.repo['_href'], body
+        )
+
+    def test_update_distributor(self):
+        """Verify that creation and update of distirbutor works as expected."""
+        self.assertEqual(self.responses['distribute'].status_code, 201)
+        self.assertEqual(self.responses['update_distrib'].status_code, 202)
+        self.assertEqual(self.responses['update_distrib_2'].status_code, 202)

@@ -218,3 +218,57 @@ class UpdateEnableV2TestCase(unittest2.TestCase):
     def test_success(self):
         """Assert that the CLI reported success."""
         self.assertTrue('Task Succeeded' in self.update_response.stdout)
+
+
+class UpdateDistributorTestCase(unittest2.TestCase):
+    """Update a docker repository's --repo-registry-id flag.
+
+    There was a bug where if updating repo-registry-id flag, traceback was
+    raised. This test ensures that behavior functions correctly.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Provide a server config and a repository ID."""
+        cls.cfg = config.get_config()
+
+        if cls.cfg.version < version.Version('2.8'):
+            raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
+        if selectors.bug_is_untestable(1710):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1710')
+
+        docker_utils.login(cls.cfg)
+
+        cls.repo_id = utils.uuid4()
+        docker_utils.repo_create(
+            cls.cfg,
+            repo_id=cls.repo_id
+        )
+        cls.update_response = docker_utils.repo_update(
+            cls.cfg,
+            repo_id=cls.repo_id,
+            repo_registry_id='testing/v2test',
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        """Delete created resources."""
+        docker_utils.repo_delete(cls.cfg, cls.repo_id)
+
+    def test_repo_registry_id_flag(self):
+        """Test that the --repo-registry-id flag was successful."""
+        repo_details = docker_utils.repo_list(
+            self.cfg,
+            repo_id=self.repo_id,
+            details=True,
+        ).stdout
+
+        # Repo-registry-id: True should appear in the output of the repo list
+        match = re.search(r'(?:Repo-registry-id:)\s*(.*)', repo_details)
+        self.assertEqual(match.group(1), 'testing/v2test')
+
+    def test_success(self):
+        """Assert that the CLI reported success."""
+        self.assertTrue('Updating distributor' in self.update_response.stdout)
+        self.assertTrue('Task Succeeded' in self.update_response.stdout)
+        self.assertEqual(self.update_response.returncode, 0)
