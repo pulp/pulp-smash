@@ -221,17 +221,18 @@ class UpdateEnableV2TestCase(unittest2.TestCase):
 
 
 class UpdateDistributorTestCase(unittest2.TestCase):
-    """Update a docker repository's --repo-registry-id flag.
+    """Update a docker repository and use the ``--repo-registry-id`` flag.
 
-    There was a bug where if updating repo-registry-id flag, traceback was
-    raised. This test ensures that behavior functions correctly.
+    This test case targets `Pulp issue 1710`_. According to this bug, updating
+    and using the ``--repo-registry-id`` flag would trigger a traceback.
+
+    .. _Pulp issue 1710: https://pulp.plan.io/issues/1710
     """
 
     @classmethod
     def setUpClass(cls):
         """Provide a server config and a repository ID."""
         cls.cfg = config.get_config()
-
         if cls.cfg.version < version.Version('2.8'):
             raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
         if selectors.bug_is_untestable(1710):
@@ -239,15 +240,14 @@ class UpdateDistributorTestCase(unittest2.TestCase):
 
         docker_utils.login(cls.cfg)
 
+        # Create a repository and update its distributor.
         cls.repo_id = utils.uuid4()
-        docker_utils.repo_create(
-            cls.cfg,
-            repo_id=cls.repo_id
-        )
+        cls.repo_registry_id = 'test/' + utils.uuid4()
+        docker_utils.repo_create(cls.cfg, repo_id=cls.repo_id)
         cls.update_response = docker_utils.repo_update(
             cls.cfg,
             repo_id=cls.repo_id,
-            repo_registry_id='testing/v2test',
+            repo_registry_id=cls.repo_registry_id,
         )
 
     @classmethod
@@ -256,7 +256,7 @@ class UpdateDistributorTestCase(unittest2.TestCase):
         docker_utils.repo_delete(cls.cfg, cls.repo_id)
 
     def test_repo_registry_id_flag(self):
-        """Test that the --repo-registry-id flag was successful."""
+        """Verify the information sent to the server can be read back."""
         repo_details = docker_utils.repo_list(
             self.cfg,
             repo_id=self.repo_id,
@@ -265,10 +265,10 @@ class UpdateDistributorTestCase(unittest2.TestCase):
 
         # Repo-registry-id: True should appear in the output of the repo list
         match = re.search(r'(?:Repo-registry-id:)\s*(.*)', repo_details)
-        self.assertEqual(match.group(1), 'testing/v2test')
+        self.assertEqual(match.group(1), self.repo_registry_id)
 
-    def test_success(self):
-        """Assert that the CLI reported success."""
-        self.assertTrue('Updating distributor' in self.update_response.stdout)
-        self.assertTrue('Task Succeeded' in self.update_response.stdout)
-        self.assertEqual(self.update_response.returncode, 0)
+    def test_stdout(self):
+        """Inspect the stdout emitted by ``pulp-admin`` when updating."""
+        for phrase in ('Updating distributor', 'Task Succeeded'):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, self.update_response.stdout)

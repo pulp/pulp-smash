@@ -6,16 +6,12 @@ also contain read, update, and delete tests.
 """
 from __future__ import unicode_literals
 
-try:  # try Python 3 import first
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=C0411,E0401
-
 import unittest2
 
 from packaging.version import Version
 
 from pulp_smash import api, utils
+from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH
 
 
@@ -106,42 +102,68 @@ class CreateTestCase(_BaseTestCase):
 
 
 class UpdateTestCase(_BaseTestCase):
-    """Create Docker repo, add and update distributor."""
+    """Show it is possible to update a distributor for a docker repository."""
 
     @classmethod
     def setUpClass(cls):
-        """Create Docker repository, add and update distributor."""
-        super(UpdateTestCase, cls).setUpClass()
-        cls.responses = {}
-        cls.body = _gen_docker_repo_body()
-        client = api.Client(cls.cfg, api.json_handler)
-        cls.repo = client.post(REPOSITORY_PATH, cls.body)
-        cls.resources.add(cls.repo['_href'])
-        client.response_handler = api.safe_handler
+        """Create a docker repo with a distributor, and update the distributor.
 
-        # Add distributor
-        cls.responses['distribute'] = client.post(
-            urljoin(cls.repo['_href'], 'distributors/'),
+        Do the following:
+
+        1. Create a docker repository and add a distributor.
+        2. Update the distributor. Use the distributor's href in the request.
+        3. Update the distributor. Use the repository's href in the request,
+           and ensure the distributor is updated by packing certain data in the
+           request body.
+        """
+        super(UpdateTestCase, cls).setUpClass()
+        cls.sent_ids = tuple(('test/' + utils.uuid4() for _ in range(2)))
+        cls.responses = {}
+
+        # Create a repository and a distributor
+        client = api.Client(cls.cfg)
+        repo = client.post(REPOSITORY_PATH, _gen_docker_repo_body()).json()
+        cls.resources.add(repo['_href'])
+        cls.responses['add distributor'] = client.post(
+            urljoin(repo['_href'], 'distributors/'),
             _gen_distributor(),
         )
-        # Get distributor
-        cls.dist = client.get(cls.repo['_href'] + 'distributors/').json()
+        distributor = cls.responses['add distributor'].json()
 
-        # Update distributor
-        cls.responses['update_distrib'] = client.put(
-            cls.dist[0]['_href'],
-            {'distributor_config': {'repo_registry_id': 'test/vtest'}}
+        # Update the distributor
+        cls.responses['first update'] = client.put(
+            distributor['_href'],
+            {'distributor_config': {'repo_registry_id': cls.sent_ids[0]}},
         )
+        cls.responses['first read'] = client.get(distributor['_href'])
 
-        # Update distributor from repo
-        body = {'distributor_configs': {
-            cls.dist[0]['id']: {'repo_registry_id': 'test/vtest'}}}
-        cls.responses['update_distrib_2'] = client.put(
-            cls.repo['_href'], body
+        # Update the distributor again, from repo this time
+        cls.responses['second update'] = client.put(
+            repo['_href'],
+            {'distributor_configs': {distributor['id']: {
+                'repo_registry_id': cls.sent_ids[1],
+            }}},
         )
+        cls.responses['second read'] = client.get(distributor['_href'])
 
-    def test_update_distributor(self):
-        """Verify that creation and update of distirbutor works as expected."""
-        self.assertEqual(self.responses['distribute'].status_code, 201)
-        self.assertEqual(self.responses['update_distrib'].status_code, 202)
-        self.assertEqual(self.responses['update_distrib_2'].status_code, 202)
+    def test_status_codes(self):
+        """Verify each of the server's responses has a correct status code."""
+        for step, code in (
+                ('add distributor', 201),
+                ('first update', 202),
+                ('first read', 200),
+                ('second update', 202),
+                ('second read', 200),
+        ):
+            with self.subTest(step=step):
+                self.assertEqual(self.responses[step].status_code, code)
+
+    def test_update_accepted(self):
+        """Verify the information sent to the server can be read back."""
+        read_ids = [
+            self.responses[response].json()['config']['repo_registry_id']
+            for response in ('first read', 'second read')
+        ]
+        for i, (sent_id, read_id) in enumerate(zip(self.sent_ids, read_ids)):
+            with self.subTest(i=i):
+                self.assertEqual(sent_id, read_id)
