@@ -14,6 +14,7 @@ help:
 	@echo "  test-coverage  to run unit tests and measure test coverage"
 	@echo "  package        to generate installable Python packages"
 	@echo "  package-clean  to remove generated Python packages"
+	@echo "  publish        to upload dist/* to PyPi"
 
 # Edit with caution! Travis CI uses this target. ¶ We run docs-clean before
 # docs-html to ensure a complete build. (Warnings are emitted only when a file
@@ -62,5 +63,8 @@ package:
 package-clean:
 	rm -rf build dist pulp_smash.egg-info
 
+publish: package
+	twine upload dist/*
+
 .PHONY: help all docs-html docs-clean lint-flake8 lint-pylint lint test \
-    test-coverage package package-clean
+    test-coverage package package-clean publish
