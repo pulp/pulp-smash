@@ -44,7 +44,7 @@ def get_repomd_xml_href(repomd_xml, repomd_type):
     namespace :data:`pulp_smash.tests.rpm.api_v2.utils.NAMESPACE`) to find a
     path. The XML should have this general form::
 
-        <data type="…"><location href="…" /></data> with
+        <data type="…"><location href="…" /></data>
 
     Return the "href" attribute.
 
