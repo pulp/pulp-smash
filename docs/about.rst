@@ -54,14 +54,9 @@ Contributing
 Contributions are encouraged. The easiest way to contribute is to submit a pull
 request on GitHub, but patches are welcome no matter how they arrive.
 
-You can create a development environment and verify its sanity like so::
-
-    virtualenv env  # or `python -m virtualenv env` is using Python >= 3.3
-    source env/bin/activate
-    git clone https://github.com/PulpQE/pulp-smash.git
-    cd pulp-smash
-    pip install -r requirements.txt -r requirements-dev.txt
-    make all
+A strategy for creating a development environment is listed in
+:doc:`/installation`. To verify the sanity of your development environment,
+``cd`` into the Pulp Smash source code directory and execute ``make all``.
 
 Please adhere to the following guidelines:
 
