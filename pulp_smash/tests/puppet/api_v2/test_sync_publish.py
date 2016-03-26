@@ -222,6 +222,49 @@ class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
         )
 
 
+class SyncValidManifestFeedTestCase(utils.BaseAPITestCase):
+    """A valid Puppet manifest should sync correctly."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Create repository with the feed pointing to a valid manifest."""
+        super(SyncValidManifestFeedTestCase, cls).setUpClass()
+        client = api.Client(cls.cfg, api.json_handler)
+        body = _gen_repo()
+        body['importer_config'] = {'feed': 'http://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/puppet_manifest/modules/'}  # noqa pylint:disable=line-too-long
+        repo = client.post(REPOSITORY_PATH, body)
+        cls.resources.add(repo['_href'])
+
+        # Trigger a repository sync and collect completed tasks.
+        client.response_handler = api.echo_handler
+        cls.report = client.post(urljoin(repo['_href'], 'actions/sync/'))
+        cls.report.raise_for_status()
+        cls.tasks = list(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
+
+    def test_status_code(self):
+        """Assert the call to sync a repository returns an HTTP 202."""
+        self.assertEqual(self.report.status_code, 202)
+
+    def test_number_tasks(self):
+        """Assert only one task was spawned."""
+        self.assertEqual(len(self.tasks), 1)
+
+    def test_task_error_traceback(self):
+        """Assert each task's "error" and "traceback" fields are null."""
+        for i, task in enumerate(self.tasks):
+            for key in {'error', 'traceback'}:
+                with self.subTest((i, key)):
+                    self.assertIsNone(task[key])
+
+    def test_task_progress_report(self):
+        """Assert each task's progress shows no errors."""
+        for i, task in enumerate(self.tasks):
+            with self.subTest(i=i):
+                self.assertIsNone(
+                    task['progress_report']['puppet_importer']['metadata']['error_message']  # noqa pylint:disable=line-too-long
+                )
+
+
 class PublishTestCase(utils.BaseAPITestCase):
     """Test repository syncing, publishing and data integrity.
 
