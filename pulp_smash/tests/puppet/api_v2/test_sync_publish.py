@@ -229,16 +229,16 @@ class SyncValidManifestFeedTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create repository with the feed pointing to a valid manifest."""
         super(SyncValidManifestFeedTestCase, cls).setUpClass()
-        client = api.Client(cls.cfg, api.json_handler)
+        client = api.Client(cls.cfg)
         body = _gen_repo()
-        body['importer_config'] = {'feed': 'http://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/puppet_manifest/modules/'}  # noqa pylint:disable=line-too-long
-        repo = client.post(REPOSITORY_PATH, body)
+        body['importer_config'] = {
+            'feed': 'http://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/puppet_manifest/modules/'  # noqa pylint:disable=line-too-long
+        }
+        repo = client.post(REPOSITORY_PATH, body).json()
         cls.resources.add(repo['_href'])
 
         # Trigger a repository sync and collect completed tasks.
-        client.response_handler = api.echo_handler
         cls.report = client.post(urljoin(repo['_href'], 'actions/sync/'))
-        cls.report.raise_for_status()
         cls.tasks = list(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
 
     def test_status_code(self):
@@ -249,15 +249,8 @@ class SyncValidManifestFeedTestCase(utils.BaseAPITestCase):
         """Assert only one task was spawned."""
         self.assertEqual(len(self.tasks), 1)
 
-    def test_task_error_traceback(self):
-        """Assert each task's "error" and "traceback" fields are null."""
-        for i, task in enumerate(self.tasks):
-            for key in {'error', 'traceback'}:
-                with self.subTest((i, key)):
-                    self.assertIsNone(task[key])
-
     def test_task_progress_report(self):
-        """Assert each task's progress shows no errors."""
+        """Assert each task's progress report shows no errors."""
         for i, task in enumerate(self.tasks):
             with self.subTest(i=i):
                 self.assertIsNone(
