@@ -12,12 +12,9 @@ This module assumes that the tests in
 from __future__ import unicode_literals
 
 import time
-try:  # try Python 3 import first
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=C0411,E0401
 
 from pulp_smash import api, utils
+from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo, gen_distributor
 
@@ -27,9 +24,10 @@ class CreateSuccessTestCase(utils.BaseAPITestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Create a schedule to publish thre repository.
+        """Create a schedule to publish the repository.
 
         Do the following:
+
         1. Create a repository with a valid feed
         2. Sync it
         3. Schedule publish to run every 30 seconds
@@ -49,27 +47,32 @@ class CreateSuccessTestCase(utils.BaseAPITestCase):
 
         # Schedule a publish to run every 30 seconds
         distributor = gen_distributor()
+        distributor_url = urljoin(repo['_href'], 'distributors/')
         client.post(
-            urljoin(repo['_href'], 'distributors/'),
+            distributor_url,
             distributor
         )
-        scheduling_url = '/'.join([
-            'distributors', distributor['distributor_id'], 'schedules/publish/'
-        ])
+        scheduling_url = urljoin(
+            distributor_url,
+            '{}/schedules/publish/'.format(distributor['distributor_id']),
+        )
         cls.response = client.post(
-            urljoin(repo['_href'], scheduling_url),
+            scheduling_url,
             {'schedule': 'PT30S'}
         )
+        cls.attrs = cls.response.json()
 
     def test_status_code(self):
         """Assert the response has an HTTP 201 status code."""
         self.assertEqual(self.response.status_code, 201)
 
-    def test_count_enabled(self):
-        """Validate the ``total_run_count`` and ``enabled`` attributes."""
-        attrs = self.response.json()
-        self.assertEqual(attrs.get('total_run_count'), 0)
-        self.assertTrue(attrs.get('enabled'))
+    def test_is_enabled(self):
+        """Check if sync is enabled."""
+        self.assertTrue(self.attrs.get('enabled', False))
+
+    def test_total_run_count(self):
+        """Check that ``total_run_count`` is sane."""
+        self.assertEqual(self.attrs.get('total_run_count'), 0)
 
 
 class CreateFailureTestCase(utils.BaseAPITestCase):
@@ -229,7 +232,7 @@ class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
     def test_read_many(self):
         """Assert the "read_many" response body contains all schedules."""
         attrs = self.responses['read_many'].json()
-        self.assertEqual(len(attrs), 3)
+        self.assertEqual(len(attrs), len(self.schedules))
         expected_hrefs = {schedule['_href'] for schedule in self.schedules}
         read_hrefs = {schedule['_href'] for schedule in attrs}
         self.assertEqual(expected_hrefs, read_hrefs)
@@ -241,8 +244,11 @@ class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
         for key in self.update_body:
             with self.subTest(key=key):
                 self.assertEqual(self.update_body[key], attrs[key])
-        attrs = {key: attrs[key] for key in attrs
-                 if key not in self.mutable_attrs + self.update_body.keys()}
+        attrs = {
+            key: attrs[key]
+            for key in attrs
+            if key not in self.mutable_attrs + list(self.update_body.keys())
+        }
         for key in attrs:
             with self.subTest(key=key):
                 self.assertEqual(self.schedules[1][key], attrs[key])
@@ -260,11 +266,12 @@ class ScheduledPublishTestCase(utils.BaseAPITestCase):
         """Create a schedule to publish a repo, verify the ``total_run_count``.
 
         Do the following:
+
         1. Create a repository with a valid feed
         2. Sync it
         3. Schedule publish to run every 2 minutes
         4. Wait for 130 seconds and read the schedule to get the number of
-        "publish" runs
+           "publish" runs
         """
         super(ScheduledPublishTestCase, cls).setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
@@ -297,7 +304,10 @@ class ScheduledPublishTestCase(utils.BaseAPITestCase):
         # Read the schedule
         cls.response = client.get(schedule['_href'])
 
-    def test_scheduled_publish(self):
-        """Assert a publish ran successfully twice in the past 130 seconds."""
+    def test_total_run_count(self):
+        """Check for the expected total run count."""
         self.assertEqual(self.response['total_run_count'], 2)
+
+    def test_no_failure(self):
+        """Make sure any failure ever happened."""
         self.assertEqual(self.response['consecutive_failures'], 0)
