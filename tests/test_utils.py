@@ -97,3 +97,19 @@ class BaseAPITestCase(unittest2.TestCase):
             client.return_value.delete.call_count,
             len(self.child.resources) + 1,
         )
+
+
+class IsRootTestCase(unittest2.TestCase):
+    """Test :func:`pulp_smash.utils.is_root`."""
+
+    def test_true(self):
+        """Assert the method returns ``True`` when root."""
+        with mock.patch.object(cli, 'Client') as clien:
+            clien.return_value.run.return_value.stdout.strip.return_value = '0'
+            self.assertTrue(utils.is_root(None))
+
+    def test_false(self):
+        """Assert the method returns ``False`` when non-root."""
+        with mock.patch.object(cli, 'Client') as clien:
+            clien.return_value.run.return_value.stdout.strip.return_value = '1'
+            self.assertFalse(utils.is_root(None))

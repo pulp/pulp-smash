@@ -20,13 +20,6 @@ from pulp_smash.constants import REPOSITORY_PATH, RPM_ABS_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 
 
-def _is_root(server_config):
-    """Tell if we are root on the target Pulp system."""
-    if cli.Client(server_config).run(('id', '-u')).stdout.strip() == '0':
-        return True
-    return False
-
-
 class SyncDownloadTestCase(utils.BaseAPITestCase):
     """Assert the RPM plugin supports on-demand syncing of yum repositories.
 
@@ -84,7 +77,7 @@ class SyncDownloadTestCase(utils.BaseAPITestCase):
 
         # Corrupt an RPM. The file is there, but the checksum isn't right.
         cli_client = cli.Client(cls.cfg)
-        sudo = '' if _is_root(cls.cfg) else 'sudo '
+        sudo = '' if utils.is_root(cls.cfg) else 'sudo '
         checksum_cmd = (sudo + 'sha256sum ' + RPM_ABS_PATH).split()
         cls.pre_corruption_sha = cli_client.run(checksum_cmd).stdout.strip()
         cli_client.run((sudo + 'rm ' + RPM_ABS_PATH).split())

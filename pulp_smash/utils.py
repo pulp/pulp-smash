@@ -66,7 +66,7 @@ def reset_pulp(server_config):
 
     # Reset the database and nuke accumulated files.
     client = cli.Client(server_config)
-    prefix = '' if client.run(('id', '-u')).stdout.strip() == '0' else 'sudo '
+    prefix = '' if is_root(server_config) else 'sudo '
     client.run('mongo pulp_database --eval db.dropDatabase()'.split())
     client.run('sudo -u apache pulp-manage-db'.split())
     client.run((prefix + 'rm -rf /var/lib/pulp/content').split())
@@ -121,7 +121,7 @@ def reset_squid(server_config):
 
     # Clean out the cache directory and reinitialize it.
     client = cli.Client(server_config)
-    prefix = '' if client.run(('id', '-u')).stdout.strip() == '0' else 'sudo '
+    prefix = '' if is_root(server_config) else 'sudo '
     client.run((prefix + 'rm -rf /var/spool/squid').split())
     client.run((prefix + 'mkdir --context=system_u:object_r:squid_cache_t:s0' +
                 ' --mode=750 /var/spool/squid').split())
@@ -147,3 +147,15 @@ def get_plugin_type_ids():
     client = api.Client(config.get_config(), api.json_handler)
     plugin_types = client.get(PLUGIN_TYPES_PATH)
     return {plugin_type['id'] for plugin_type in plugin_types}
+
+
+def is_root(server_config):
+    """Tell if we are root on the target system.
+
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        Pulp server being targeted.
+    :returns: Either ``True`` or ``False``.
+    """
+    if cli.Client(server_config).run(('id', '-u')).stdout.strip() == '0':
+        return True
+    return False
