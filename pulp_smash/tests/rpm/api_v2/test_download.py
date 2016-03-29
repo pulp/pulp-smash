@@ -1,26 +1,30 @@
 # coding=utf-8
-"""Tests for the `download_repo`_ task.
+"""Tests that `download a repository`_.
 
-This task is designed to download files for content units that have been
+This module has tests that download files for content units that have been
 added to Pulp by an importer using a deferred download policy. Tests in this
-module include ensuring the task downloads units and that its various options
-behave as advertised.
+module include ensuring the downloads complete and that download options behave
+as advertised.
 
-.. _download_repo: https://notalinkyetsadly.com/
+.. _download a repository:
+    http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/sync.html#download-a-repository
 """
 from __future__ import unicode_literals
-
-try:  # try Python 3 import first
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin  # pylint:disable=C0411,E0401
 
 import unittest2
 from packaging.version import Version
 
 from pulp_smash import api, utils, cli
-from pulp_smash import constants
+from pulp_smash.compat import urljoin
+from pulp_smash.constants import REPOSITORY_PATH, RPM_ABS_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
+
+
+def _is_root(server_config):
+    """Tell if we are root on the target Pulp system."""
+    if cli.Client(server_config).run(('id', '-u')).stdout.strip() == '0':
+        return True
+    return False
 
 
 class SyncDownloadTestCase(utils.BaseAPITestCase):
@@ -40,7 +44,10 @@ class SyncDownloadTestCase(utils.BaseAPITestCase):
         1. Reset Pulp.
         2. Create a repository. Sync and publish it using the 'on_demand'
            download policy.
-        3. Download the repository
+        3. Download the repository.
+        4. Corrupt a file in the repository.
+        5. Download the repository, without unit verification.
+        6. Download the repository, with unit verification.
         """
         super(SyncDownloadTestCase, cls).setUpClass()
         if cls.cfg.version < Version('2.8'):
@@ -51,72 +58,57 @@ class SyncDownloadTestCase(utils.BaseAPITestCase):
         utils.reset_pulp(cls.cfg)
 
         # Make a repo with a feed
-        client = api.Client(cls.cfg, api.json_handler)
+        api_client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config'] = {
             'download_policy': 'on_demand',
-            'feed': constants.RPM_FEED_URL,
+            'feed': RPM_FEED_URL,
         }
         distributor = gen_distributor()
         distributor['auto_publish'] = True
         distributor['distributor_config']['relative_url'] = body['id']
         body['distributors'] = [distributor]
-        repo = client.post(constants.REPOSITORY_PATH, body)
+        repo = api_client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
 
-        # Sync the repo
-        sync_path = urljoin(repo['_href'], 'actions/sync/')
-        client.post(sync_path, {'override_config': {}})
-        cls.pre_download_repo = client.get(
-            repo['_href'], params={'details': True})
-
-        # Download the files for a repo
+        # Sync the repo and download it. Read the repo after both actions.
+        params = {'details': True}
         download_path = urljoin(repo['_href'], 'actions/download/')
-        cls.download_task = client.post(
-            download_path, json={'verify_all_units': False})
-        cls.post_download_repo = client.get(
-            repo['_href'], params={'details': True})
+        api_client.post(
+            urljoin(repo['_href'], 'actions/sync/'),
+            {'override_config': {}},
+        )
+        cls.pre_download_repo = api_client.get(repo['_href'], params=params)
+        api_client.post(download_path, {'verify_all_units': False})
+        cls.post_download_repo = api_client.get(repo['_href'], params=params)
 
         # Corrupt an RPM. The file is there, but the checksum isn't right.
         cli_client = cli.Client(cls.cfg)
-        running_as_root = cli_client.run(('id', '-u')).stdout.strip() == '0'
-        prefix = '' if running_as_root else 'sudo '
-        checksum = cli_client.run(
-            (prefix + 'sha256sum ' + constants.RPM_PATH).split())
-        cls.pre_corruption_sha = checksum.stdout.strip()
-        cli_client.run((prefix + 'rm ' + constants.RPM_PATH).split())
-        cli_client.run((prefix + 'touch ' + constants.RPM_PATH).split())
-        cli_client.run((prefix + 'chown apache:apache ' +
-                        constants.RPM_PATH).split())
-        checksum = cli_client.run(
-            (prefix + 'sha256sum ' + constants.RPM_PATH).split())
-        cls.post_corruption_sha = checksum.stdout.strip()
+        sudo = '' if _is_root(cls.cfg) else 'sudo '
+        checksum_cmd = (sudo + 'sha256sum ' + RPM_ABS_PATH).split()
+        cls.pre_corruption_sha = cli_client.run(checksum_cmd).stdout.strip()
+        cli_client.run((sudo + 'rm ' + RPM_ABS_PATH).split())
+        cli_client.run((sudo + 'touch ' + RPM_ABS_PATH).split())
+        cli_client.run((sudo + 'chown apache:apache ' + RPM_ABS_PATH).split())
+        cls.post_corruption_sha = cli_client.run(checksum_cmd).stdout.strip()
 
         # Issue a download task that doesn't checksum all files
-        cls.download_task = client.post(
-            download_path, json={'verify_all_units': False})
-        checksum = cli_client.run(
-            (prefix + 'sha256sum ' + constants.RPM_PATH).split())
-        cls.unverified_file_sha = checksum.stdout.strip()
+        api_client.post(download_path, {'verify_all_units': False})
+        cls.unverified_file_sha = cli_client.run(checksum_cmd).stdout.strip()
 
         # Issue a download task that does checksum all files
-        cls.download_task = client.post(
-            download_path, json={'verify_all_units': True})
-        checksum = cli_client.run(
-            (prefix + 'sha256sum ' + constants.RPM_PATH).split())
-        cls.verified_file_sha = checksum.stdout.strip()
+        api_client.post(download_path, {'verify_all_units': True})
+        cls.verified_file_sha = cli_client.run(checksum_cmd).stdout.strip()
 
     def test_units_before_download(self):
         """Assert no content units were downloaded besides metadata units."""
-        pre_download_units = self.pre_download_repo['content_unit_counts']
+        locally_stored_units = self.pre_download_repo['locally_stored_units']
+        content_unit_counts = self.pre_download_repo['content_unit_counts']
         metadata_unit_count = sum([
-            count for name, count in pre_download_units.items()
+            count for name, count in content_unit_counts.items()
             if name not in ('rpm', 'drpm', 'srpm')
         ])
-        self.assertEqual(
-            self.pre_download_repo['locally_stored_units'],
-            metadata_unit_count
-        )
+        self.assertEqual(locally_stored_units, metadata_unit_count)
 
     def test_units_after_download(self):
         """Assert all units are downloaded after download_repo finishes."""

@@ -115,6 +115,12 @@ CONSUMER_PATH = '/pulp/api/v2/consumers/'
 RPM = 'bear-4.1-1.noarch.rpm'
 """The name of an RPM file. See :data:`pulp_smash.constants.RPM_FEED_URL`."""
 
+RPM_ABS_PATH = (
+    '/var/lib/pulp/content/units/rpm/76/78177c241777af22235092f21c3932d'
+    'd4f0664e1624e5a2c77a201ec70f930/' + RPM
+)
+"""The absolute path to :data:`pulp_smash.constants.RPM` in the filesystem."""
+
 RPM_FEED_URL = 'https://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/zoo/'
 """The URL to an RPM feed.
 
@@ -126,12 +132,6 @@ RPM_SHA256_CHECKSUM = (
     '7a831f9f90bf4d21027572cb503d20b702de8e8785b02c0397445c2e481d81b3'
 )
 """The sha256 checksum of :data:`pulp_smash.constants.RPM`."""
-
-RPM_PATH = (
-    '/var/lib/pulp/content/units/rpm/76/78177c241777af22235092f21c3932d'
-    'd4f0664e1624e5a2c77a201ec70f930/bear-4.1-1.noarch.rpm'
-)
-"""The filesystem path of :data:`pulp_smash.constants.RPM`."""
 
 USER_PATH = '/pulp/api/v2/users/'
 """See: `User APIs`_.
