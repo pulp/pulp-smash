@@ -63,6 +63,7 @@ class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
     ...     auth=('username', 'password'),
     ...     verify=False,  # Disable SSL verification
     ...     version='2.7.5',
+    ...     pulp_database='pulp_database'
     ... )
     >>> response = requests.post(
     ...     cfg.base_url + '/pulp/api/v2/actions/login/',
@@ -135,11 +136,13 @@ class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
             auth=None,
             verify=None,
             version=None,
+            pulp_database=None,
             cli_transport=None):
         """Initialize this object with needed instance attributes."""
         self.base_url = base_url
         self.auth = auth
         self.verify = verify
+        self.pulp_database = pulp_database
         if version is None:
             self.version = Version('1!0')
         else:
@@ -315,7 +318,7 @@ class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
         gains or loses attributes.
         """
         attrs = _public_attrs(self)
-        for key in ('base_url', 'cli_transport', 'version'):
+        for key in ('base_url', 'cli_transport', 'version', 'pulp_database'):
             del attrs[key]
         if attrs['auth'] is not None:
             attrs['auth'] = tuple(attrs['auth'])
