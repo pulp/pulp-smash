@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from packaging.version import Version
 
 from pulp_smash import api, selectors, utils
-from pulp_smash.compat import urljoin
+from pulp_smash.compat import urljoin, urlparse
 from pulp_smash.constants import REPOSITORY_PATH
 
 
@@ -60,12 +60,15 @@ class CreateTestCase(utils.BaseAPITestCase):
         self.assertEqual(self.response.status_code, 201)
 
     def test_headers_location(self):
-        """Assert the response's Location header is correct."""
-        path = REPOSITORY_PATH + self.body['id'] + '/'
-        self.assertEqual(
-            self.response.headers['Location'],
-            urljoin(self.cfg.base_url, path)
-        )
+        # pylint:disable=line-too-long
+        """Assert the response's ``Location`` header is correct.
+
+        The ``Location`` may be either an absolute or relative URL. See
+        :meth:`pulp_smash.tests.platform.api_v2.test_repository.CreateSuccessTestCase.test_location_header`.
+        """
+        actual_path = urlparse(self.response.headers['Location']).path
+        expect_path = urljoin(REPOSITORY_PATH, self.body['id'] + '/')
+        self.assertEqual(actual_path, expect_path)
 
     def test_attributes(self):
         """Assert the created repository has the requested attributes."""

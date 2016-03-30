@@ -19,7 +19,7 @@ from __future__ import unicode_literals
 from packaging.version import Version
 
 from pulp_smash import api, utils
-from pulp_smash.compat import urljoin
+from pulp_smash.compat import urljoin, urlparse
 from pulp_smash.constants import REPOSITORY_PATH, ERROR_KEYS
 from pulp_smash.selectors import bug_is_untestable, require
 
@@ -57,12 +57,41 @@ class CreateSuccessTestCase(utils.BaseAPITestCase):
 
     @require('2.7')  # https://pulp.plan.io/issues/695
     def test_location_header(self):
-        """Assert the Location header is correctly set in each response."""
+        """Assert the Location header is correctly set in each response.
+
+        According to RFC 7231, the `HTTP Location`_ header may be either an
+        absolute or relative URL. Thus, given this request:
+
+        .. code-block:: http
+
+            GET /index.html HTTP/1.1
+            Host: www.example.com
+
+        These two responses are equivalent:
+
+        .. code-block:: http
+
+            HTTP/1.1 302 FOUND
+            Location: http://www.example.com/index.php
+
+        .. code-block:: http
+
+            HTTP/1.1 302 FOUND
+            Location: /index.php
+
+        This test abides by the RFC and allows Pulp to return either absolute
+        or relative URLs.
+
+        .. _HTTP Location: https://en.wikipedia.org/wiki/HTTP_location
+        """
         for body, response in zip(self.bodies, self.responses):
             with self.subTest(body=body):
-                url = urljoin(self.cfg.base_url, REPOSITORY_PATH)
-                url = urljoin(url, body['id']) + '/'
-                self.assertEqual(response.headers['Location'], url)
+                # >>> urlparse('http://example.com/index.php').path == \
+                # ... urlparse('/index.php').path
+                # True
+                actual_path = urlparse(response.headers['Location']).path
+                expect_path = urljoin(REPOSITORY_PATH, body['id'] + '/')
+                self.assertEqual(actual_path, expect_path)
 
     def test_attributes(self):
         """Assert that each repository has the requested attributes."""
