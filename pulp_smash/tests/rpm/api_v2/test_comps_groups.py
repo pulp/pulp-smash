@@ -285,7 +285,7 @@ class CompsGroupsTestCase(utils.BaseAPITestCase):
         empty_group_element = _get_groups_by_id(self.root_element)['empty']
         display_order_elements = empty_group_element.findall('display_order')
 
-        if selectors.bug_is_untestable(1787):
+        if selectors.bug_is_untestable(1787, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1787')
 
         self.assertEqual(0, len(display_order_elements))

@@ -81,7 +81,7 @@ def get_repomd_xml(client, repo_url, repomd_type):
     :param repomd_type: a type of repomd data, as found in the top-level
            ``repomd.xml`` file of a repository.  For example, "updateinfo",
            "group".
-    :returns: An :class:`xml.etree.ElementTree.Element` containing the parsed
+    :returns: An ``xml.etree.ElementTree.Element`` containing the parsed
               repository metadata of the requested type.
     """
     original_handler = client.response_handler
