@@ -8,7 +8,7 @@ from pulp_smash.constants import CONTENT_UPLOAD_PATH, REPOSITORY_PATH
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
-    get_repomd_xml
+    get_repomd_xml,
 )
 
 
@@ -144,7 +144,7 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
 
         # Fetch and parse updateinfo.xml (or updateinfo.xml.gz), via repomd.xml
         cls.root_element = get_repomd_xml(
-            client,
+            cls.cfg,
             urljoin('/pulp/repos/', distributor['config']['relative_url']),
             'updateinfo'
         )

@@ -68,35 +68,31 @@ def get_repomd_xml_href(repomd_xml, repomd_type):
     return location_elements[0].get('href')
 
 
-def get_repomd_xml(client, repo_url, repomd_type):
+def get_repomd_xml(server_config, repo_path, repomd_type):
     """Retrieve XML of a particular type from a repo.
 
-    Given the URL of a repository, fetches, parses and returns the repository
-    XML of the type given by ``repomd_type``.
+    Given a URL, fetch, parse and return the repository XML of type
+    ``repomd_type``.
 
-    :param client: A :class:`pulp_smash.api.Client` used for downloading
-           content from the repository.
-    :param repomd_url: Top-level URL of a repomd repository. This should not
-           include the path to the ``repodata`` directory.
-    :param repomd_type: a type of repomd data, as found in the top-level
-           ``repomd.xml`` file of a repository.  For example, "updateinfo",
-           "group".
-    :returns: An ``xml.etree.ElementTree.Element`` containing the parsed
-              repository metadata of the requested type.
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        Pulp server being targeted.
+    :param repo_path: The path to (or URL of) a repomd repository. This path
+        should not include any segments past the repository itself, such as a
+        path to a particular ``repodata`` directory.
+    :param repomd_type: The name of a type of repomd data, as found in the
+        top-level ``repomd.xml`` file of a repository. Valid values might be
+        "updateinfo" or "group".
+    :returns: An ``xml.etree.ElementTree.Element`` instance containing the
+        parsed repository metadata of the requested type.
     """
-    original_handler = client.response_handler
-    try:
-        # Fetch and parse repomd.xml
-        client.response_handler = api.safe_handler
-        path = urljoin(repo_url, 'repodata/repomd.xml')
-        repomd_xml = client.get(path).text
+    # Fetch and parse repomd.xml
+    client = api.Client(server_config)
+    repomd_xml = client.get(urljoin(repo_path, 'repodata/repomd.xml')).text
+    repomd_xml_href = get_repomd_xml_href(repomd_xml, repomd_type)
 
-        # Fetch and parse updateinfo.xml (or updateinfo.xml.gz)
-        client.response_handler = xml_handler
-        path = urljoin(repo_url, get_repomd_xml_href(repomd_xml, repomd_type))
-        return client.get(path)
-    finally:
-        client.response_handler = original_handler
+    # Fetch, parse and return updateinfo.xml or updateinfo.xml.gz
+    client.response_handler = xml_handler
+    return client.get(urljoin(repo_path, repomd_xml_href))
 
 
 def sync_repo(server_config, href):

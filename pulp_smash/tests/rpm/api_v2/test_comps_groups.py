@@ -163,7 +163,7 @@ class CompsGroupsTestCase(utils.BaseAPITestCase):
             '/pulp/repos/',
             distribute['config']['relative_url']
         )
-        cls.root_element = get_repomd_xml(client, repo_url, 'group')
+        cls.root_element = get_repomd_xml(cls.cfg, repo_url, 'group')
 
     def test_root(self):
         """Assert the root element of the tree has a tag of "comps"."""
