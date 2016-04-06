@@ -10,10 +10,19 @@ This module assumes that the tests in
 """
 from __future__ import unicode_literals
 
+import random
+import time
+
+from dateutil.parser import parse
+
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
-from pulp_smash.tests.rpm.api_v2.utils import gen_repo
+from pulp_smash.tests.rpm.api_v2.utils import (
+    gen_distributor,
+    gen_repo,
+    sync_repo,
+)
 
 
 def _remove_unit(client, repo_href, type_id, unit_id):
@@ -127,3 +136,84 @@ class RemoveAssociatedUnits(utils.BaseAPITestCase):
                     len(self.before_units[type_id]) - 1,
                     len(self.after_units[type_id])
                 )
+
+
+class RemoveAndRepublishTestCase(utils.BaseAPITestCase):
+    """Publish a repository, remove a unit, and publish it again.
+
+    The removed unit should be inaccessible after the repository is published a
+    second time. In addition, repository and distributor timestamps should be
+    updated accordingly.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Publish a repository, remove a unit, and publish it again.
+
+        Specifically, do the following:
+
+        1. Create a repository with a feed and sync it.
+        2. Add a distributor to the repository and publish the repository.
+        3. Select a content unit at random. Remove it from the repository, and
+           re-publish the repository.
+        """
+        super(RemoveAndRepublishTestCase, cls).setUpClass()
+
+        # Create and sync a repository.
+        client = api.Client(cls.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_FEED_URL
+        repo = client.post(REPOSITORY_PATH, body)
+        cls.resources.add(repo['_href'])  # mark for deletion
+        sync_repo(cls.cfg, repo['_href'])
+
+        # Add a distributor and publish the repository to it.
+        path = urljoin(repo['_href'], 'distributors/')
+        distributor = client.post(path, gen_distributor())
+        path = urljoin(repo['_href'], 'actions/publish/')
+        client.post(path, {'id': distributor['id']})
+
+        # List RPM content units in the repository. Pick one and remove it.
+        # NOTE: There are two versions of the "walrus" RPM, and this works even
+        # when that name is picked.
+        path = urljoin(repo['_href'], 'search/units/')
+        units = client.post(path, {'criteria': {'type_ids': ['rpm']}})
+        cls.unit_name = random.choice([
+            unit['metadata']['name'] for unit in units
+        ])
+        body = {'criteria': {
+            'filters': {'unit': {'name': cls.unit_name}},
+            'type_ids': ['rpm'],
+        }}
+        client.post(urljoin(repo['_href'], 'actions/unassociate/'), body)
+
+        # Re-publish the repository. sleep() for test_compare_timestamps.
+        # Re-read the repository so the test methods have fresh data.
+        time.sleep(2)
+        path = urljoin(repo['_href'], 'actions/publish/')
+        client.post(path, {'id': distributor['id']})
+        cls.repo = client.get(repo['_href'], params={'details': True})
+
+    def test_get_removed_unit(self):
+        """Verify the removed unit cannot be fetched."""
+        units = api.Client(self.cfg).post(
+            urljoin(self.repo['_href'], 'search/units/'),
+            {'criteria': {'type_ids': ['rpm']}},
+        ).json()
+        unit_names = {unit['metadata']['name'] for unit in units}
+        self.assertNotIn(self.unit_name, unit_names)
+
+    def test_compare_timestamps(self):
+        """Verify the repository and distributor timestamps are corrects.
+
+        Specifically, the repository's ``last_unit_removed`` time should be
+        before the distributor's ``last_publish`` time. Times returned by Pulp
+        are accurate to the nearest second, and it is possible that the process
+        of publishing a repository could take less than one second. To ensure
+        the times differ, :meth:`setUpClass` waits one second between the
+        removal and second publication.
+        """
+        last_unit_removed = parse(self.repo['last_unit_removed'])
+        self.assertEqual(len(self.repo['distributors']), 1)
+        last_publish = parse(self.repo['distributors'][0]['last_publish'])
+        self.assertLess(last_unit_removed, last_publish)
