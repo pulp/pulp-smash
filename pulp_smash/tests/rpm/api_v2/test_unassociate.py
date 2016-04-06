@@ -24,53 +24,61 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     sync_repo,
 )
 
+_RPM_ID_FIELD = 'checksum'
+# RPM units do not have an ``id`` metadata field. This is problematic when
+# trying to select a specific RPM content unit, as the remaining metadata
+# fields may be non-unique. For example, two different RPM content units may
+# both have a name of "walrus" — they just provide different versions. This
+# constant attempts to name a substitute for an ID.
 
-def _remove_unit(client, repo_href, type_id, unit_id):
-    """Remove a unit from a repository.
 
-    :param pulp_smash.api.Client client: object to make calls to API
-    :param repo_href: url of the repo the unit is associated to
-    :param type_id: type of unit that will be removed
-    :param unit_id: id of the unit to be removed
-    :return: response from server
+def _get_unit_id(unit):
+    """Return the unit's _RPM_ID_FIELD if an RPM. Otherwise, return ID."""
+    if unit['unit_type_id'] == 'rpm':
+        return unit['metadata'][_RPM_ID_FIELD]
+    return unit['metadata']['id']
+
+
+def _get_units_by_type(units, type_id):
+    """Return a list of units having the given unit type ID."""
+    return [unit for unit in units if unit['unit_type_id'] == type_id]
+
+
+def _remove_unit(server_config, repo_href, unit):
+    """Remove unit ``unit`` from the repository at ``repo_href``.
+
+    Return the JSON-decoded response body.
     """
-    rm_path = urljoin(repo_href, 'actions/unassociate/')
-    search_field = 'name' if type_id == 'rpm' else 'id'
-    rm_body = {
-        'criteria': {
-            'type_ids': [type_id], 'filters': {
-                'unit': {search_field: {'$in': [unit_id]}}
-            }
-        }
-    }
-    return client.post(rm_path, rm_body)
+    path = urljoin(repo_href, 'actions/unassociate/')
+    type_id = unit['unit_type_id']  # e.g. 'rpm'
+    key = _RPM_ID_FIELD if type_id == 'rpm' else 'id'
+    body = {'criteria': {
+        'filters': {'unit': {key: unit['metadata'][key]}},
+        'type_ids': [type_id],
+    }}
+    return api.Client(server_config).post(path, body).json()
 
 
-def _list_repo_units_of_type(client, repo_href, type_id):
-    """List units of the specified type in the repository at the href.
+def _search_units(server_config, repo_href, type_ids):
+    """Find units of types ``type_ids`` in the repository at ``repo_href``.
 
-    :param pulp_smash.api.Client client: object to make calls to API
-    :param repo_href: url of the repo the unit is associated to
-    :param type_id: type of unit that will be removed
-    :return: list of unit identifiers
+    Return the JSON-decoded response body.
     """
-    response = client.post(
+    return api.Client(server_config).post(
         urljoin(repo_href, 'search/units/'),
-        {'criteria': {'type_ids': [type_id], 'filters': {'unit': {}}}},
-    )
-    key = 'name' if type_id == 'rpm' else 'id'
-    return [unit['metadata'][key] for unit in response]
+        {'criteria': {'type_ids': type_ids}},
+    ).json()
 
 
-class RemoveAssociatedUnits(utils.BaseAPITestCase):
+class RemoveUnitsTestCase(utils.BaseAPITestCase):
     """Remove units of various types from a synced RPM repository."""
 
-    TYPE_IDS = {
+    TYPE_IDS = [
         'erratum',
         'package_category',
         'package_group',
         'rpm',
-    }
+    ]
     """IDs of unit types that can be removed from an RPM repository."""
 
     @classmethod
@@ -79,11 +87,11 @@ class RemoveAssociatedUnits(utils.BaseAPITestCase):
 
         After creating and syncing an RPM repository, we walk through the unit
         type IDs listed in
-        :data:`pulp_smash.tests.rpm.api_v2.test_unassociate.RemoveAssociatedUnits.TYPE_IDS`
+        :data:`pulp_smash.tests.rpm.api_v2.test_unassociate.RemoveUnitsTestCase.TYPE_IDS`
         and remove on unit of each kind from the repository. We verify Pulp's
         behaviour by recording repository contents pre and post removal.
         """
-        super(RemoveAssociatedUnits, cls).setUpClass()
+        super(RemoveUnitsTestCase, cls).setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = RPM_FEED_URL
@@ -92,50 +100,28 @@ class RemoveAssociatedUnits(utils.BaseAPITestCase):
         sync_path = urljoin(repo['_href'], 'actions/sync/')
         client.post(sync_path, {'override_config': {}})
 
-        # List starting content
-        cls.before_units = {
-            type_id: _list_repo_units_of_type(client, repo['_href'], type_id)
-            for type_id in cls.TYPE_IDS
-        }
+        # Remove one unit of each type.
+        cls.units_before = _search_units(cls.cfg, repo['_href'], cls.TYPE_IDS)
+        cls.units_removed = []
+        for type_id in cls.TYPE_IDS:
+            unit = random.choice(_get_units_by_type(cls.units_before, type_id))
+            cls.units_removed.append(unit)
+            _remove_unit(cls.cfg, repo['_href'], unit)
+        cls.units_after = _search_units(cls.cfg, repo['_href'], cls.TYPE_IDS)
 
-        # Remove one of each unit and store its id for later assertions
-        cls.removed_units = {}
-        for type_id, units_list in cls.before_units.items():
-            cls.removed_units[type_id] = units_list[0]
-            _remove_unit(client, repo['_href'], type_id, units_list[0])
+    def test_units_not_in_search(self):
+        """Assert the removed units do not appear in search results."""
+        ids_removed = {_get_unit_id(unit) for unit in self.units_removed}
+        ids_after = {_get_unit_id(unit) for unit in self.units_after}
+        self.assertEqual(ids_removed & ids_after, set())  # s1.isdisjoint(s2)
 
-        # List final content
-        cls.after_units = {
-            type_id: _list_repo_units_of_type(client, repo['_href'], type_id)
-            for type_id in cls.TYPE_IDS
-        }
-
-    def test_units_before_removal(self):
-        """Assert the removed units are present before the removal."""
-        for type_id in self.TYPE_IDS:
-            with self.subTest(type_id=type_id):
-                self.assertIn(
-                    self.removed_units[type_id],
-                    self.before_units[type_id],
-                )
-
-    def test_units_after_removal(self):
-        """Assert the removed units are not present after the removal."""
-        for type_id in self.TYPE_IDS:
-            with self.subTest(type_id=type_id):
-                self.assertNotIn(
-                    self.removed_units[type_id],
-                    self.after_units[type_id],
-                )
-
-    def test_one_unit_removed(self):
+    def test_one_removal_per_unit_type(self):
         """Assert, for each unit type, that one unit has been removed."""
         for type_id in self.TYPE_IDS:
             with self.subTest(type_id=type_id):
-                self.assertEqual(
-                    len(self.before_units[type_id]) - 1,
-                    len(self.after_units[type_id])
-                )
+                before = _get_units_by_type(self.units_before, type_id)
+                after = _get_units_by_type(self.units_after, type_id)
+                self.assertEqual(len(before) - 1, len(after))
 
 
 class RemoveAndRepublishTestCase(utils.BaseAPITestCase):
@@ -176,16 +162,9 @@ class RemoveAndRepublishTestCase(utils.BaseAPITestCase):
         # List RPM content units in the repository. Pick one and remove it.
         # NOTE: There are two versions of the "walrus" RPM, and this works even
         # when that name is picked.
-        path = urljoin(repo['_href'], 'search/units/')
-        units = client.post(path, {'criteria': {'type_ids': ['rpm']}})
-        cls.unit_name = random.choice([
-            unit['metadata']['name'] for unit in units
-        ])
-        body = {'criteria': {
-            'filters': {'unit': {'name': cls.unit_name}},
-            'type_ids': ['rpm'],
-        }}
-        client.post(urljoin(repo['_href'], 'actions/unassociate/'), body)
+        unit = random.choice(_search_units(cls.cfg, repo['_href'], ('rpm',)))
+        cls.unit_id = _get_unit_id(unit)
+        _remove_unit(cls.cfg, repo['_href'], unit)
 
         # Re-publish the repository. sleep() for test_compare_timestamps.
         # Re-read the repository so the test methods have fresh data.
@@ -196,12 +175,9 @@ class RemoveAndRepublishTestCase(utils.BaseAPITestCase):
 
     def test_get_removed_unit(self):
         """Verify the removed unit cannot be fetched."""
-        units = api.Client(self.cfg).post(
-            urljoin(self.repo['_href'], 'search/units/'),
-            {'criteria': {'type_ids': ['rpm']}},
-        ).json()
-        unit_names = {unit['metadata']['name'] for unit in units}
-        self.assertNotIn(self.unit_name, unit_names)
+        units = _search_units(self.cfg, self.repo['_href'], ('rpm',))
+        unit_ids = {_get_unit_id(unit) for unit in units}
+        self.assertNotIn(self.unit_id, unit_ids)
 
     def test_compare_timestamps(self):
         """Verify the repository and distributor timestamps are corrects.
