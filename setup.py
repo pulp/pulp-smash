@@ -45,6 +45,7 @@ setup(
         'mock',
         'packaging',
         'plumbum',
+        'python-dateutil',
         'pyxdg',
         'requests',
         'unittest2',

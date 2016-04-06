@@ -10,8 +10,9 @@ This module assumes that the tests in
 """
 from __future__ import unicode_literals
 
-import datetime
 import os
+
+from dateutil.parser import parse
 
 from pulp_smash import api, cli, selectors, utils
 from pulp_smash.compat import urljoin, urlparse, urlunparse
@@ -88,9 +89,8 @@ class ExportDistributorTestCase(utils.BaseAPITestCase):
 
         # Build the path to the ISO file. By default, the file is named like
         # so: {repo_id}-{iso_creation_time}-{iso_number}.iso
-        iso_creation_time = datetime.datetime.strptime(
-            distributor['last_publish'],
-            '%Y-%m-%dT%H:%M:%SZ',
+        iso_creation_time = parse(
+            distributor['last_publish']
         ).strftime('%Y-%m-%dT%H.%M')
         iso_name = '{}-{}-01.iso'.format(self.repo['id'], iso_creation_time)
         path = '/pulp/exports/repos/'
