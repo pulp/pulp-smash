@@ -29,21 +29,30 @@ from pulp_smash.tests.rpm.api_v2.utils import (
 )
 
 
-def _has_selinux(server_config):
-    """Tell whether SELinux appears to be installed on the target system.
-
-    We use a fairly dumb heuristic to determine whether SELinux is installed:
-    we look for the ``getenforce`` CLI utility.
-    """
+def _has_getenforce(server_config):
+    """Tell whether the ``getenforce`` executable is on the target system."""
+    # When executing commands over SSH, in a non-login shell, and as a non-root
+    # user, the PATH environment variable is quite short. For example:
+    #
+    #     /usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin
+    #
+    # We cannot execute `PATH=${PATH}:/usr/sbin which getenforce` because
+    # Plumbum does a good job of preventing shell expansions. See:
+    # https://github.com/PulpQE/pulp-smash/issues/89
     client = cli.Client(server_config, cli.echo_handler)
-    if client.run('which getenforce'.split()).returncode == 0:
+    if client.run('test -e /usr/sbin/getenforce'.split()).returncode == 0:
         return True
     return False
 
 
 def _run_getenforce(server_config):
     """Run ``getenforce`` on the target system. Return ``stdout.strip()``."""
-    return cli.Client(server_config).run(('getenforce',)).stdout.strip()
+    # Hard-coding a path to an executable is a Bad Idea™. We're doing this
+    # it's simple (see _has_getenforce()), because Pulp is available on a
+    # limited number of platforms, and because we may move to an SSH client
+    # that allows for shell expansion.
+    client = cli.Client(server_config)
+    return client.run(('/usr/sbin/getenforce',)).stdout.strip()
 
 
 class ExportDistributorTestCase(utils.BaseAPITestCase):
@@ -114,7 +123,7 @@ class ExportDistributorTestCase(utils.BaseAPITestCase):
         This test is skipped if selinux is installed and enabled on the target
         system an `Pulp issue 616 <https://pulp.plan.io/issues/616>`_ is open.
         """
-        if (_has_selinux(self.cfg) and
+        if (_has_getenforce(self.cfg) and
                 _run_getenforce(self.cfg).lower() == 'enforcing' and
                 selectors.bug_is_untestable(616, self.cfg.version)):
             self.skipTest('https://pulp.plan.io/issues/616')
