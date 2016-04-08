@@ -327,7 +327,7 @@ def poll_task(server_config, href):
     :raises pulp_smash.exceptions.TaskTimedOutError: If a task takes too
         long to complete.
     """
-    poll_limit = 24  # 24 * 5s == 120s
+    poll_limit = 36  # 36 * 5s == 180s
     poll_counter = 0
     while True:
         response = requests.get(
