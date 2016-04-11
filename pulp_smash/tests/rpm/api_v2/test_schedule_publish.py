@@ -19,6 +19,11 @@ from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo, gen_distributor
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the RPM plugin is not installed."""
+    utils.skip_if_type_is_unsupported('rpm')
+
+
 class CreateSuccessTestCase(utils.BaseAPITestCase):
     """Establish that we can create a schedule to publish the repository."""
 

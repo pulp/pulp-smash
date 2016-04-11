@@ -36,6 +36,11 @@ _SCHEDULE_PATH = 'importers/{}/schedules/sync/'
 # Usage: urljoin(repo['_href'], _SCHEDULE_PATH.format(importer_type_id))
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the RPM plugin is not installed."""
+    utils.skip_if_type_is_unsupported('rpm')
+
+
 # It's OK that this class has one method. It's an intentionally small class.
 class CreateRepoMixin(object):  # pylint:disable=too-few-public-methods
     """Provide a method for creating a repository."""

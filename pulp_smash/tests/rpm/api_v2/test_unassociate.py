@@ -32,6 +32,11 @@ _RPM_ID_FIELD = 'checksum'
 # constant attempts to name a substitute for an ID.
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the RPM plugin is not installed."""
+    utils.skip_if_type_is_unsupported('rpm')
+
+
 def _get_unit_id(unit):
     """Return the unit's _RPM_ID_FIELD if an RPM. Otherwise, return ID."""
     if unit['unit_type_id'] == 'rpm':

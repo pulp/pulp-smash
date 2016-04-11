@@ -13,6 +13,11 @@ from pulp_smash.constants import ORPHANS_PATH, REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the RPM plugin is not installed."""
+    utils.skip_if_type_is_unsupported('rpm')
+
+
 def _count_orphans(client):
     """Count the number of orphans."""
     orphan_dict = client.get(ORPHANS_PATH)

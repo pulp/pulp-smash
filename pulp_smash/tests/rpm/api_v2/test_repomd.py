@@ -16,6 +16,11 @@ from pulp_smash.tests.rpm.api_v2.utils import (
 )
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the RPM plugin is not installed."""
+    utils.skip_if_type_is_unsupported('rpm')
+
+
 class RepoMDTestCase(utils.BaseAPITestCase):
     """Tests to ensure ``repomd.xml`` can be created and is valid."""
 

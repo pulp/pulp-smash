@@ -18,6 +18,11 @@ _UNIT_ID_RE = r'(?:Unit Id:)\s*(.*)'
 _UPSTREAM_NAME = 'library/busybox'
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the Docker plugin is not installed."""
+    utils.skip_if_type_is_unsupported('docker_image')
+
+
 def _get_unit_ids(server_config, repo_id, unit_type, regex):
     """Search for content units in a docker repository and return their IDs.
 

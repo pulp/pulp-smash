@@ -30,6 +30,11 @@ _ISO_DISTRIBUTOR = {
 }
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the RPM plugin is not installed."""
+    utils.skip_if_type_is_unsupported('rpm')
+
+
 def _customize_template(template, repository_id):
     """Copy ``template`` and interpolate a repository ID into its ``_href``."""
     template = template.copy()

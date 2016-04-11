@@ -16,6 +16,11 @@ _BYTE_UNICODE = (type(b''), type(u''))
 _UPSTREAM_NAME = 'library/busybox'
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the Docker plugin is not installed."""
+    utils.skip_if_type_is_unsupported('docker_image')
+
+
 class _BaseTestCase(unittest2.TestCase):
 
     @classmethod

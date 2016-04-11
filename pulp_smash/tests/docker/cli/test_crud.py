@@ -17,6 +17,11 @@ _FEED = 'https://example.com'
 _UPSTREAM_NAME = 'foo/bar'
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the Docker plugin is not installed."""
+    utils.skip_if_type_is_unsupported('docker_image')
+
+
 class CreateTestCase(unittest2.TestCase):
     """Create docker repositories, both successfully and unsuccessfully."""
 

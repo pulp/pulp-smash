@@ -20,6 +20,11 @@ from pulp_smash.constants import REPOSITORY_PATH, RPM_ABS_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the RPM plugin is not installed."""
+    utils.skip_if_type_is_unsupported('rpm')
+
+
 class SyncDownloadTestCase(utils.BaseAPITestCase):
     """Assert the RPM plugin supports on-demand syncing of yum repositories.
 

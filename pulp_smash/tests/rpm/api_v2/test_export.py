@@ -29,6 +29,11 @@ from pulp_smash.tests.rpm.api_v2.utils import (
 )
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the RPM plugin is not installed."""
+    utils.skip_if_type_is_unsupported('rpm')
+
+
 def _has_getenforce(server_config):
     """Tell whether the ``getenforce`` executable is on the target system."""
     # When executing commands over SSH, in a non-login shell, and as a non-root

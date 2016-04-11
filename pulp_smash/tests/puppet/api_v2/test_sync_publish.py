@@ -63,6 +63,11 @@ _PUPPET_MODULE_URL = (
 _PUPPET_QUERY = _PUPPET_MODULE['author'] + '-' + _PUPPET_MODULE['name']
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the Puppet plugin is not installed."""
+    utils.skip_if_type_is_unsupported('puppet_module')
+
+
 def _gen_repo():
     """Return a semi-random dict that used for creating a puppet repo."""
     return {

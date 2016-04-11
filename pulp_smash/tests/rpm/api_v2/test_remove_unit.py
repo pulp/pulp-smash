@@ -33,6 +33,11 @@ from pulp_smash.tests.rpm.api_v2.utils import (
 _PUBLISH_DIR = 'pulp/repos/'
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the RPM plugin is not installed."""
+    utils.skip_if_type_is_unsupported('rpm')
+
+
 def _get_rpm_ids(search_body):
     """Get RPM unit IDs from search results. Return a set."""
     return {

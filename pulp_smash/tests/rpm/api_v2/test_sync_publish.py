@@ -53,6 +53,11 @@ from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 _REPO_PUBLISH_PATH = '/pulp/repos/'  # + relative_url + unit_name.rpm.arch
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the RPM plugin is not installed."""
+    utils.skip_if_type_is_unsupported('rpm')
+
+
 class CreateTestCase(utils.BaseAPITestCase):
     """Create two RPM repositories, with and without feed URLs respectively."""
 

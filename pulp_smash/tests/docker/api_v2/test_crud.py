@@ -15,6 +15,11 @@ from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH
 
 
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the Docker plugin is not installed."""
+    utils.skip_if_type_is_unsupported('docker_image')
+
+
 def _gen_docker_repo_body():
     """Generate a Docker repo create body.
 
