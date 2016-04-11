@@ -33,7 +33,7 @@ lint-flake8:
 	flake8 . --ignore D203
 
 lint-pylint:
-	pylint -j $(CPU_COUNT) --reports=n --ignore-imports=y --disable=I \
+	pylint -j $(CPU_COUNT) --reports=n --disable=I \
 		docs/conf.py \
 		setup.py \
 		tests \
