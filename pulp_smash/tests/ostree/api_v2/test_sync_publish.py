@@ -26,11 +26,7 @@ from __future__ import unicode_literals
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH
-from pulp_smash.tests.ostree.utils import (
-    create_sync_repo,
-    gen_repo,
-    skip_if_no_plugin,
-)
+from pulp_smash.tests.ostree.utils import create_sync_repo, gen_repo
 
 _FEED = 'https://repos.fedorapeople.org/pulp/pulp/demo_repos/test-ostree-small'
 _BRANCHES = (
@@ -41,7 +37,7 @@ _BRANCHES = (
 
 def setUpModule():  # pylint:disable=invalid-name
     """Skip tests if the OSTree plugin is not installed."""
-    skip_if_no_plugin()
+    utils.skip_if_type_is_unsupported('ostree')
 
 
 def _sync_repo(server_config, href):

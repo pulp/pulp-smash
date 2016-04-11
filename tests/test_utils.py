@@ -113,3 +113,56 @@ class IsRootTestCase(unittest2.TestCase):
         with mock.patch.object(cli, 'Client') as clien:
             clien.return_value.run.return_value.stdout.strip.return_value = '1'
             self.assertFalse(utils.is_root(None))
+
+
+class SkipIfTypeIsUnsupportedTestCase(unittest2.TestCase):
+    """Test :func:`pulp_smash.utils.skip_if_type_is_unsupported`."""
+
+    def setUp(self):
+        """Generate a random unit type ID."""
+        self.unit_type_id = utils.uuid4()
+
+    def test_type_is_supported(self):
+        """Assert nothing happens if the given unit type is supported.
+
+        Also assert :func:`pulp_smash.config.get_config` is not called, as we
+        provide a :class:`pulp_smash.config.ServerConfig` argument.
+        """
+        with mock.patch.object(config, 'get_config') as get_config:
+            with mock.patch.object(utils, 'get_unit_type_ids') as get_u_t_ids:
+                get_u_t_ids.return_value = {self.unit_type_id}
+                self.assertIsNone(utils.skip_if_type_is_unsupported(
+                    self.unit_type_id,
+                    mock.Mock(),  # a ServerConfig object
+                ))
+        self.assertEqual(get_config.call_count, 0)
+
+    def test_type_is_unsupported(self):
+        """Assert ``SkipTest`` is raised if the given unit type is unsupported.
+
+        Also assert :func:`pulp_smash.config.get_config` is called, as we do
+        not provide a :class:`pulp_smash.config.ServerConfig` argument.
+        """
+        with mock.patch.object(config, 'get_config') as get_config:
+            with mock.patch.object(utils, 'get_unit_type_ids') as get_u_t_ids:
+                get_u_t_ids.return_value = set()
+                with self.assertRaises(unittest2.SkipTest):
+                    utils.skip_if_type_is_unsupported(self.unit_type_id)
+        self.assertEqual(get_config.call_count, 1)
+
+
+class GetUnitTypeIdsTestCase(unittest2.TestCase):
+    """Test :func:`pulp_smash.utils.skip_if_type_is_unsupported`."""
+
+    def test_ids_are_returned(self):
+        """Assert each unit type ID in the server response is returned."""
+        unit_type_ids = {random.randrange(999) for _ in range(10)}
+        # The server hands back a list of dicts, where each dict contains
+        # information about a single unit type.
+        unit_types = [{'id': unit_type_id} for unit_type_id in unit_type_ids]
+        with mock.patch.object(api, 'Client') as client:
+            client.return_value.get.return_value.json.return_value = unit_types
+            self.assertEqual(
+                utils.get_unit_type_ids(mock.Mock()),
+                unit_type_ids,
+            )

@@ -131,22 +131,45 @@ def reset_squid(server_config):
     squid_service.start()
 
 
-def get_plugin_type_ids():
-    """Get the ID of each of Pulp's plugins.
+def skip_if_type_is_unsupported(unit_type_id, server_config=None):
+    """Raise ``SkipTest`` if support for the named type is not availalble.
 
-    Each Pulp plugin adds one (or more?) content unit type to Pulp. Each of
-    these content unit types is identified by a certain unique identifier. For
-    example, the `Python type`_ has an ID of ``python_package``.
+    :param unit_type_id: A content unit type ID, such as "ostree".
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        Pulp server being targeted. If none is provided, the config returned by
+        :func:`pulp_smash.config.get_config` is used.
+    :raises: ``unittest2.SkipTest`` if support is unavailable.
+    :returns: Nothing.
+    """
+    if server_config is None:
+        server_config = config.get_config()
+    if unit_type_id not in get_unit_type_ids(server_config):
+        raise unittest2.SkipTest(
+            'These tests require support for the "{}" content unit type.'
+            .format(unit_type_id)
+        )
 
-    :returns: A set of plugin IDs. For example: ``{'ostree',
+
+def get_unit_type_ids(server_config):
+    """Tell which content unit types are supported by the target Pulp server.
+
+    Each Pulp plugin adds one (or more?) content unit types to Pulp, and each
+    content unit type has a unique identifier. For example, the Python plugin
+    [1]_ adds the Python content unit type [2]_, and Python content units have
+    an ID of ``python_package``. This function queries the server and returns
+    those unit type IDs.
+
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        Pulp server being targeted.
+    :returns: A set of content unit type IDs. For example: ``{'ostree',
         'python_package'}``.
 
-    .. _Python type:
-       http://pulp-python.readthedocs.org/en/latest/reference/python-type.html
+    .. [1] http://pulp-python.readthedocs.org/en/latest/
+    .. [2]
+        http://pulp-python.readthedocs.org/en/latest/reference/python-type.html
     """
-    client = api.Client(config.get_config(), api.json_handler)
-    plugin_types = client.get(PLUGIN_TYPES_PATH)
-    return {plugin_type['id'] for plugin_type in plugin_types}
+    unit_types = api.Client(server_config).get(PLUGIN_TYPES_PATH).json()
+    return {unit_type['id'] for unit_type in unit_types}
 
 
 def is_root(server_config):

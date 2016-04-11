@@ -2,22 +2,9 @@
 """Utilities for interacting with OS tree."""
 from __future__ import unicode_literals
 
-import unittest2
-
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH
-
-
-def skip_if_no_plugin():
-    """Skip tests if the OSTree plugin is not installed.
-
-    :raises: ``unittest2.SkipTest`` if the OSTree plugin is not installed on
-        the default Pulp server.
-    :returns: Nothing.
-    """
-    if 'ostree' not in utils.get_plugin_type_ids():
-        raise unittest2.SkipTest('These tests require the OSTree plugin.')
 
 
 def gen_repo():
