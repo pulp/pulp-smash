@@ -24,11 +24,7 @@ from pulp_smash.constants import (
     RPM,
     RPM_FEED_URL,
 )
-
-
-def setUpModule():  # pylint:disable=invalid-name
-    """Skip tests if the RPM plugin is not installed."""
-    utils.skip_if_type_is_unsupported('rpm')
+from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
 def _upload_import_rpm(server_config, rpm, repo_href):

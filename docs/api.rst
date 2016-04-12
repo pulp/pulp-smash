@@ -27,6 +27,7 @@ developers, not a gospel.
     api/pulp_smash.tests.docker.cli.test_crud
     api/pulp_smash.tests.docker.cli.test_sync_publish
     api/pulp_smash.tests.docker.cli.utils
+    api/pulp_smash.tests.docker.utils
     api/pulp_smash.tests.ostree
     api/pulp_smash.tests.ostree.api_v2
     api/pulp_smash.tests.ostree.api_v2.test_crud
@@ -43,6 +44,7 @@ developers, not a gospel.
     api/pulp_smash.tests.puppet
     api/pulp_smash.tests.puppet.api_v2
     api/pulp_smash.tests.puppet.api_v2.test_sync_publish
+    api/pulp_smash.tests.puppet.utils
     api/pulp_smash.tests.rpm
     api/pulp_smash.tests.rpm.api_v2
     api/pulp_smash.tests.rpm.api_v2.test_broker
@@ -62,6 +64,7 @@ developers, not a gospel.
     api/pulp_smash.tests.rpm.api_v2.test_unassociate
     api/pulp_smash.tests.rpm.api_v2.test_updateinfo
     api/pulp_smash.tests.rpm.api_v2.utils
+    api/pulp_smash.tests.rpm.utils
     api/pulp_smash.utils
     api/tests
     api/tests.test_api

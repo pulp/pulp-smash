@@ -17,6 +17,7 @@ from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
+from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _MUTABLE_ATTRS = {
     'consecutive_failures',
@@ -34,11 +35,6 @@ _SCHEDULE = {'schedule': 'PT30S'}
 
 _SCHEDULE_PATH = 'importers/{}/schedules/sync/'
 # Usage: urljoin(repo['_href'], _SCHEDULE_PATH.format(importer_type_id))
-
-
-def setUpModule():  # pylint:disable=invalid-name
-    """Skip tests if the RPM plugin is not installed."""
-    utils.skip_if_type_is_unsupported('rpm')
 
 
 # It's OK that this class has one method. It's an intentionally small class.

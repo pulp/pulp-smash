@@ -22,11 +22,7 @@ from pulp_smash import api, selectors, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH
 from pulp_smash.tests.ostree.utils import gen_repo
-
-
-def setUpModule():  # pylint:disable=invalid-name
-    """Skip tests if the OSTree plugin is not installed."""
-    utils.skip_if_type_is_unsupported('ostree')
+from pulp_smash.tests.ostree.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
 def _gen_distributor(relative_path):

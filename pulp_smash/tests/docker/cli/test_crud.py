@@ -12,14 +12,10 @@ from packaging import version
 
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.tests.docker.cli import utils as docker_utils
+from pulp_smash.tests.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _FEED = 'https://example.com'
 _UPSTREAM_NAME = 'foo/bar'
-
-
-def setUpModule():  # pylint:disable=invalid-name
-    """Skip tests if the Docker plugin is not installed."""
-    utils.skip_if_type_is_unsupported('docker_image')
 
 
 class CreateTestCase(unittest2.TestCase):

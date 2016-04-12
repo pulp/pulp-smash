@@ -27,17 +27,13 @@ from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH
 from pulp_smash.tests.ostree.utils import create_sync_repo, gen_repo
+from pulp_smash.tests.ostree.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _FEED = 'https://repos.fedorapeople.org/pulp/pulp/demo_repos/test-ostree-small'
 _BRANCHES = (
     'fedora-atomic/f21/x86_64/updates/docker-host',
     'fedora-atomic/f21/x86_64/updates-testing/docker-host',
 )
-
-
-def setUpModule():  # pylint:disable=invalid-name
-    """Skip tests if the OSTree plugin is not installed."""
-    utils.skip_if_type_is_unsupported('ostree')
 
 
 def _sync_repo(server_config, href):

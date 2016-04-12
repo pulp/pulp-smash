@@ -13,11 +13,7 @@ from packaging.version import Version
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH
-
-
-def setUpModule():  # pylint:disable=invalid-name
-    """Skip tests if the Docker plugin is not installed."""
-    utils.skip_if_type_is_unsupported('docker_image')
+from pulp_smash.tests.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
 def _gen_docker_repo_body():

@@ -7,6 +7,7 @@ from packaging.version import Version
 from pulp_smash import api, selectors, utils
 from pulp_smash.compat import urljoin, urlparse
 from pulp_smash.constants import REPOSITORY_PATH
+from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
 _DISTRIBUTOR = {
@@ -28,11 +29,6 @@ _ISO_DISTRIBUTOR = {
     'id': 'iso_distributor',
     'last_publish': None,
 }
-
-
-def setUpModule():  # pylint:disable=invalid-name
-    """Skip tests if the RPM plugin is not installed."""
-    utils.skip_if_type_is_unsupported('rpm')
 
 
 def _customize_template(template, repository_id):

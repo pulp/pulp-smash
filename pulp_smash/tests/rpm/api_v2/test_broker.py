@@ -38,11 +38,7 @@ from pulp_smash.constants import (
     RPM_FEED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
-
-
-def setUpModule():  # pylint:disable=invalid-name
-    """Skip tests if the RPM plugin is not installed."""
-    utils.skip_if_type_is_unsupported('rpm')
+from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
 class BrokerTestCase(unittest2.TestCase):

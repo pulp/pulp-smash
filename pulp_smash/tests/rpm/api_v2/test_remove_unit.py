@@ -29,13 +29,9 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     gen_repo,
     sync_repo,
 )
+from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _PUBLISH_DIR = 'pulp/repos/'
-
-
-def setUpModule():  # pylint:disable=invalid-name
-    """Skip tests if the RPM plugin is not installed."""
-    utils.skip_if_type_is_unsupported('rpm')
 
 
 def _get_rpm_ids(search_body):

@@ -23,6 +23,7 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     gen_repo,
     sync_repo,
 )
+from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _RPM_ID_FIELD = 'checksum'
 # RPM units do not have an ``id`` metadata field. This is problematic when
@@ -30,11 +31,6 @@ _RPM_ID_FIELD = 'checksum'
 # fields may be non-unique. For example, two different RPM content units may
 # both have a name of "walrus" — they just provide different versions. This
 # constant attempts to name a substitute for an ID.
-
-
-def setUpModule():  # pylint:disable=invalid-name
-    """Skip tests if the RPM plugin is not installed."""
-    utils.skip_if_type_is_unsupported('rpm')
 
 
 def _get_unit_id(unit):

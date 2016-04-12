@@ -45,6 +45,7 @@ from pulp_smash.constants import (
     CONTENT_UPLOAD_PATH,
     REPOSITORY_PATH,
 )
+from pulp_smash.tests.puppet.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _PUPPET_FEED = 'http://forge.puppetlabs.com'
 _PUPPET_MODULE = {
@@ -61,11 +62,6 @@ _PUPPET_MODULE_URL = (
     )
 )
 _PUPPET_QUERY = _PUPPET_MODULE['author'] + '-' + _PUPPET_MODULE['name']
-
-
-def setUpModule():  # pylint:disable=invalid-name
-    """Skip tests if the Puppet plugin is not installed."""
-    utils.skip_if_type_is_unsupported('puppet_module')
 
 
 def _gen_repo():

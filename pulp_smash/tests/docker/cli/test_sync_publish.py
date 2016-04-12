@@ -11,14 +11,10 @@ from packaging.version import Version
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
 from pulp_smash.tests.docker.cli import utils as docker_utils
+from pulp_smash.tests.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _BYTE_UNICODE = (type(b''), type(u''))
 _UPSTREAM_NAME = 'library/busybox'
-
-
-def setUpModule():  # pylint:disable=invalid-name
-    """Skip tests if the Docker plugin is not installed."""
-    utils.skip_if_type_is_unsupported('docker_image')
 
 
 class _BaseTestCase(unittest2.TestCase):
