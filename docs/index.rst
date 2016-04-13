@@ -2,7 +2,9 @@ Pulp Smash
 ==========
 
 Pulp Smash is a test suite for `Pulp`_. It lets you execute a workflow like
-this::
+this:
+
+.. code-block:: sh
 
     pip install pulp-smash
     python -m pulp_smash  # follow the instructions

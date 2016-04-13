@@ -5,7 +5,9 @@ Pulp Smash
     :target: https://coveralls.io/github/PulpQE/pulp-smash?branch=master
 
 Pulp Smash is a test suite for `Pulp`_. It lets you execute a workflow like
-this::
+this:
+
+.. code-block:: sh
 
     pip install pulp-smash
     python -m pulp_smash  # follow the instructions
@@ -16,11 +18,12 @@ the prompts.
 
 .. _Pulp: http://www.pulpproject.org/
 
-.. Everything above this comment should also be in docs/index.rst, word for
-   word.
+.. All text above this comment should also be in docs/index.rst, word for word.
 
 The `full documentation <http://pulp-smash.readthedocs.org/en/latest/>`_ is
-available on ReadTheDocs. It can also be generated locally::
+available on ReadTheDocs. It can also be generated locally:
+
+.. code-block:: sh
 
     virtualenv env && source env/bin/activate
     git clone https://github.com/PulpQE/pulp-smash.git

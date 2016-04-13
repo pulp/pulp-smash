@@ -3,7 +3,9 @@ Usage
 
 Location: :doc:`/index` → :doc:`/usage`
 
-After installing Pulp Smash, open a terminal and execute the following::
+After installing Pulp Smash, open a terminal and execute the following:
+
+.. code-block:: sh
 
     python -m pulp_smash
 
