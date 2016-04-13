@@ -11,6 +11,7 @@ developers, not a gospel.
 .. toctree::
 
     api/pulp_smash
+    api/pulp_smash.__main__
     api/pulp_smash.api
     api/pulp_smash.cli
     api/pulp_smash.compat

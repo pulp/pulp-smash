@@ -4,6 +4,7 @@ __pycache__/
 
 # Generated documentation
 /docs/_build/
+/docs/api/*.rst
 
 # Created by `make package`. `pulp_smash.egg_info` is also used when another
 # package does a `pip install -e …/pulp_smash`.
