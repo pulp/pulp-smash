@@ -1,7 +1,7 @@
 Pulp Smash
 ==========
 
-.. image:: https://coveralls.io/repos/PulpQE/pulp-smash/badge.svg?branch=master&service=github
+.. image:: https://coveralls.io/repos/github/PulpQE/pulp-smash/badge.svg?branch=master
     :target: https://coveralls.io/github/PulpQE/pulp-smash?branch=master
 
 Pulp Smash is a test suite for `Pulp`_. It lets you execute a workflow like
