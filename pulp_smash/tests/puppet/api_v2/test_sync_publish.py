@@ -48,19 +48,10 @@ from pulp_smash.constants import (
     PUPPET_MODULE_URL,
     REPOSITORY_PATH,
 )
+from pulp_smash.tests.puppet.api_v2.utils import gen_repo
 from pulp_smash.tests.puppet.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _PUPPET_QUERY = PUPPET_MODULE['author'] + '-' + PUPPET_MODULE['name']
-
-
-def _gen_repo():
-    """Return a semi-random dict that used for creating a puppet repo."""
-    return {
-        'id': utils.uuid4(),
-        'importer_config': {},
-        'importer_type_id': 'puppet_importer',
-        'notes': {'_repo-type': 'puppet-repo'},
-    }
 
 
 class CreateTestCase(utils.BaseAPITestCase):
@@ -70,7 +61,7 @@ class CreateTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create two puppet repositories, with and without feed URLs."""
         super(CreateTestCase, cls).setUpClass()
-        cls.bodies = tuple((_gen_repo() for _ in range(2)))
+        cls.bodies = tuple((gen_repo() for _ in range(2)))
         cls.bodies[1]['importer_config'] = {
             'feed': 'http://' + utils.uuid4(),  # Pulp checks for a URI scheme
             'queries': [_PUPPET_QUERY],
@@ -128,7 +119,7 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
         """Create and sync two puppet repositories."""
         super(SyncValidFeedTestCase, cls).setUpClass()
         utils.reset_pulp(cls.cfg)  # See: https://pulp.plan.io/issues/1406
-        bodies = tuple((_gen_repo() for _ in range(2)))
+        bodies = tuple((gen_repo() for _ in range(2)))
         for i, query in enumerate((
                 _PUPPET_QUERY, _PUPPET_QUERY.replace('-', '_'))):
             bodies[i]['importer_config'] = {
@@ -180,7 +171,7 @@ class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
         """Create a puppet repository with an invalid feed and sync it."""
         super(SyncInvalidFeedTestCase, cls).setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
-        body = _gen_repo()
+        body = gen_repo()
         body['importer_config'] = {'feed': 'http://' + utils.uuid4()}
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
@@ -220,7 +211,7 @@ class SyncValidManifestFeedTestCase(utils.BaseAPITestCase):
         """Create repository with the feed pointing to a valid manifest."""
         super(SyncValidManifestFeedTestCase, cls).setUpClass()
         client = api.Client(cls.cfg)
-        body = _gen_repo()
+        body = gen_repo()
         body['importer_config'] = {
             'feed': 'http://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/puppet_manifest/modules/'  # noqa pylint:disable=line-too-long
         }
@@ -277,7 +268,7 @@ class PublishTestCase(utils.BaseAPITestCase):
 
         # Download a puppet module and create two repositories.
         client = api.Client(cls.cfg, api.json_handler)
-        repos = [client.post(REPOSITORY_PATH, _gen_repo()) for _ in range(2)]
+        repos = [client.post(REPOSITORY_PATH, gen_repo()) for _ in range(2)]
         for repo in repos:
             cls.resources.add(repo['_href'])
         client.response_handler = api.safe_handler
