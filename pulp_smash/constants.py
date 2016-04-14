@@ -96,6 +96,20 @@ Pulp's functioning. However, if resetting Pulp (such as in
 be restarted.
 """
 
+PUPPET_FEED = 'http://forge.puppetlabs.com'
+"""The URL to a repository of Puppet modules."""
+
+PUPPET_MODULE = {'author': 'pulp', 'name': 'pulp', 'version': '1.0.0'}
+"""Information about a Puppet module available at :data:`PUPPET_FEED`."""
+
+PUPPET_MODULE_URL = ('{}/v3/files/{}-{}-{}.tar.gz'.format(
+    PUPPET_FEED,
+    PUPPET_MODULE['author'],
+    PUPPET_MODULE['name'],
+    PUPPET_MODULE['version'],
+))
+"""The URL to a Puppet module available at :data:`PUPPET_FEED`."""
+
 REPOSITORY_PATH = '/pulp/api/v2/repositories/'
 """See: `Repository APIs`_.
 

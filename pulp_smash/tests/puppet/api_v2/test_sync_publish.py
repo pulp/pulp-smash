@@ -43,25 +43,14 @@ from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,
+    PUPPET_FEED,
+    PUPPET_MODULE,
+    PUPPET_MODULE_URL,
     REPOSITORY_PATH,
 )
 from pulp_smash.tests.puppet.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
-_PUPPET_FEED = 'http://forge.puppetlabs.com'
-_PUPPET_MODULE = {
-    'author': 'pulp',
-    'name': 'pulp',
-    'version': '1.0.0',
-}
-_PUPPET_MODULE_URL = (
-    '{}/v3/files/{}-{}-{}.tar.gz'.format(
-        _PUPPET_FEED,
-        _PUPPET_MODULE['author'],
-        _PUPPET_MODULE['name'],
-        _PUPPET_MODULE['version'],
-    )
-)
-_PUPPET_QUERY = _PUPPET_MODULE['author'] + '-' + _PUPPET_MODULE['name']
+_PUPPET_QUERY = PUPPET_MODULE['author'] + '-' + PUPPET_MODULE['name']
 
 
 def _gen_repo():
@@ -143,7 +132,7 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
         for i, query in enumerate((
                 _PUPPET_QUERY, _PUPPET_QUERY.replace('-', '_'))):
             bodies[i]['importer_config'] = {
-                'feed': _PUPPET_FEED,
+                'feed': PUPPET_FEED,
                 'queries': [query],
             }
         client = api.Client(cls.cfg, api.json_handler)
@@ -292,7 +281,7 @@ class PublishTestCase(utils.BaseAPITestCase):
         for repo in repos:
             cls.resources.add(repo['_href'])
         client.response_handler = api.safe_handler
-        cls.modules.append(client.get(_PUPPET_MODULE_URL).content)
+        cls.modules.append(client.get(PUPPET_MODULE_URL).content)
 
         # Begin an upload request, upload a puppet module, move the puppet
         # module into a repository, and end the upload request.
@@ -343,7 +332,7 @@ class PublishTestCase(utils.BaseAPITestCase):
 
         # Query both distributors using all three query forms.
         cls.responses['puppet releases'] = []
-        author_name = _PUPPET_MODULE['author'] + '/' + _PUPPET_MODULE['name']
+        author_name = PUPPET_MODULE['author'] + '/' + PUPPET_MODULE['name']
         for repo in repos:
             if selectors.bug_is_untestable(1440, cls.cfg.version):
                 continue
