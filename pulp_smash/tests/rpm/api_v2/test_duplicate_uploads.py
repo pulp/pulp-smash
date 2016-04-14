@@ -24,6 +24,7 @@ from pulp_smash.constants import (
     RPM,
     RPM_FEED_URL,
 )
+from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -61,12 +62,7 @@ class DuplicateUploadsTestCase(utils.BaseAPITestCase):
 
         # Create a feed-less repository.
         client = api.Client(cls.cfg, api.json_handler)
-        repo = client.post(REPOSITORY_PATH, {
-            'id': utils.uuid4(),
-            'importer_config': {},
-            'importer_type_id': 'yum_importer',
-            'notes': {'_repo-type': 'rpm-repo'},
-        })
+        repo = client.post(REPOSITORY_PATH, gen_repo())
         cls.resources.add(repo['_href'])
 
         # Upload content and import it into the repository. Do it twice!
