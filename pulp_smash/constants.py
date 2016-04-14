@@ -47,12 +47,10 @@ No ``href`` field should be present. See `Issue #1310`_.
 """
 
 GROUP_CALL_REPORT_KEYS = frozenset(('_href', 'group_id'))
-"""As of this writing, group call reports are not yet documented.
+"""See: `Group Call Report`_.
 
-When Pulp 2.8 is released, group call reports will be documented on the
-`Synchronous and Asynchronous Calls
-<http://pulp.readthedocs.org/en/latest/dev-guide/conventions/sync-v-async.html>`_
-page. In the meantime, see `issue #1448 <https://pulp.plan.io/issues/1448>`_.
+.. _Group Call Report:
+    http://pulp.readthedocs.org/en/latest/dev-guide/conventions/sync-v-async.html#group-call-report
 """
 
 LOGIN_KEYS = frozenset(('certificate', 'key'))
