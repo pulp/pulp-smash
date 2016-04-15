@@ -25,15 +25,9 @@ from __future__ import unicode_literals
 
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
-from pulp_smash.constants import REPOSITORY_PATH
+from pulp_smash.constants import OSTREE_FEED, OSTREE_BRANCH, REPOSITORY_PATH
 from pulp_smash.tests.ostree.utils import create_sync_repo, gen_repo
 from pulp_smash.tests.ostree.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
-
-_FEED = 'https://repos.fedorapeople.org/pulp/pulp/demo_repos/test-ostree-small'
-_BRANCHES = (
-    'fedora-atomic/f21/x86_64/updates/docker-host',
-    'fedora-atomic/f21/x86_64/updates-testing/docker-host',
-)
 
 
 def _sync_repo(server_config, href):
@@ -117,8 +111,8 @@ class SyncTestCase(_SyncMixin, utils.BaseAPITestCase):
         """Create an OSTree repository with a valid feed and branch."""
         super(SyncTestCase, cls).setUpClass()
         body = gen_repo()
-        body['importer_config']['feed'] = _FEED
-        body['importer_config']['branches'] = [_BRANCHES[0]]
+        body['importer_config']['feed'] = OSTREE_FEED
+        body['importer_config']['branches'] = [OSTREE_BRANCH]
         repo_href, cls.report = create_sync_repo(cls.cfg, body)
         cls.resources.add(repo_href)
         cls.tasks = tuple(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
@@ -145,7 +139,7 @@ class SyncInvalidFeedTestCase(
         client = api.Client(cls.cfg)
         body = gen_repo()
         body['importer_config']['feed'] = utils.uuid4()
-        body['importer_config']['branches'] = [_BRANCHES[0]]
+        body['importer_config']['branches'] = [OSTREE_BRANCH]
         repo_href = client.post(REPOSITORY_PATH, body).json()['_href']
         cls.resources.add(repo_href)
         cls.report, cls.tasks = _sync_repo(cls.cfg, repo_href)
@@ -164,7 +158,7 @@ class SyncInvalidBranchesTestCase(
         super(SyncInvalidBranchesTestCase, cls).setUpClass()
         client = api.Client(cls.cfg)
         body = gen_repo()
-        body['importer_config']['feed'] = _FEED
+        body['importer_config']['feed'] = OSTREE_FEED
         body['importer_config']['branches'] = [utils.uuid4()]
         repo_href = client.post(REPOSITORY_PATH, body).json()['_href']
         cls.resources.add(repo_href)

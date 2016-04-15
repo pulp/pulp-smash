@@ -74,6 +74,22 @@ ORPHANS_PATH = 'pulp/api/v2/content/orphans/'
     http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/content/orphan.html
 """
 
+OSTREE_FEED = (
+    'https://repos.fedorapeople.org/pulp/pulp/demo_repos/test-ostree-small'
+)
+"""The URL to a URL of OSTree branches. See OSTree `Importer Configuration`_.
+
+.. _Importer Configuration:
+    http://pulp-ostree.readthedocs.org/en/latest/tech-reference/importer.html
+"""
+
+OSTREE_BRANCH = 'fedora-atomic/f21/x86_64/updates/docker-host'
+"""A branch in :data:`OSTREE_FEED`. See OSTree `Importer Configuration`_.
+
+.. _Importer Configuration:
+    http://pulp-ostree.readthedocs.org/en/latest/tech-reference/importer.html
+"""
+
 PLUGIN_TYPES_PATH = '/pulp/api/v2/plugins/types/'
 """See: `Retrieve All Content Unit Types`_.
 
