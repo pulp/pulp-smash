@@ -24,7 +24,6 @@ help:
 all: test-coverage lint docs-clean docs-html package-clean package
 
 docs-html:
-	./gen_api_docs.sh
 	@cd docs; $(MAKE) html
 
 docs-clean:
