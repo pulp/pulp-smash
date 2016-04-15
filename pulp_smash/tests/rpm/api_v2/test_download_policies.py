@@ -21,11 +21,7 @@ from pulp_smash.constants import (
     RPM_FEED_URL,
     RPM_SHA256_CHECKSUM,
 )
-from pulp_smash.tests.rpm.api_v2.utils import (
-    gen_distributor,
-    gen_repo,
-    sync_repo,
-)
+from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module
 
 
@@ -75,7 +71,7 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         # Create, sync and publish a repository.
         repo = _create_repo(cls.cfg, 'background')
         cls.resources.add(repo['_href'])
-        report = sync_repo(cls.cfg, repo['_href']).json()
+        report = utils.sync_repo(cls.cfg, repo['_href']).json()
 
         # Record the tasks spawned when syncing the repository, and the state
         # of the repository itself after the sync.
@@ -145,7 +141,7 @@ class OnDemandTestCase(utils.BaseAPITestCase):
         # Create, sync and publish a repository.
         repo = _create_repo(cls.cfg, 'on_demand')
         cls.resources.add(repo['_href'])
-        sync_repo(cls.cfg, repo['_href'])
+        utils.sync_repo(cls.cfg, repo['_href'])
 
         # Read the repository.
         client = api.Client(cls.cfg)
@@ -229,7 +225,7 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
         # Create, sync and publish a repository.
         repo = _create_repo(cls.cfg, 'on_demand')
         cls.resources.add(repo['_href'])
-        sync_repo(cls.cfg, repo['_href'])
+        utils.sync_repo(cls.cfg, repo['_href'])
 
         # Trigger a repository download. Read the repo before and after.
         api_client = api.Client(cls.cfg, api.json_handler)

@@ -50,10 +50,7 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
         body = gen_repo()
         body['importer_config']['feed'] = RPM_FEED_URL
         hrefs.append(client.post(REPOSITORY_PATH, body).json()['_href'])
-        cls.responses['first sync'] = client.post(
-            urljoin(hrefs[0], 'actions/sync/'),
-            {'override_config': {}}
-        )
+        cls.responses['first sync'] = utils.sync_repo(cls.cfg, hrefs[0])
 
         # Add distributor and publish
         cls.responses['distribute'] = client.post(
@@ -78,10 +75,7 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
         body['importer_config']['retain_old_count'] = 0  # see docstring
         body['importer_config']['ssl_validation'] = False
         hrefs.append(client.post(REPOSITORY_PATH, body).json()['_href'])
-        cls.responses['second sync'] = client.post(
-            urljoin(hrefs[1], 'actions/sync/'),
-            {'override_config': {}}
-        )
+        cls.responses['second sync'] = utils.sync_repo(cls.cfg, hrefs[1])
 
         # Read the repositories and mark them for deletion.
         cls.repos = [client.get(href).json() for href in hrefs]

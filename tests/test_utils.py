@@ -166,3 +166,13 @@ class GetUnitTypeIdsTestCase(unittest2.TestCase):
                 utils.get_unit_type_ids(mock.Mock()),
                 unit_type_ids,
             )
+
+
+class SyncRepoTestCase(unittest2.TestCase):
+    """Test :func:`pulp_smash.utils.sync_repo`."""
+
+    def test_post(self):
+        """Assert the function makes an HTTP POST request."""
+        with mock.patch.object(api, 'Client') as client:
+            response = utils.sync_repo(mock.Mock(), 'http://example.com')
+        self.assertIs(response, client.return_value.post.return_value)

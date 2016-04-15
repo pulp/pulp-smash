@@ -8,7 +8,6 @@ This module assumes that the tests in
 from __future__ import unicode_literals
 
 from pulp_smash import api, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import ORPHANS_PATH, REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -34,8 +33,7 @@ class OrphanRemoveAllTestCase(utils.BaseAPITestCase):
         body = gen_repo()
         body['importer_config']['feed'] = RPM_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
-        sync_path = urljoin(repo['_href'], 'actions/sync/')
-        client.post(sync_path, {'override_config': {}})
+        utils.sync_repo(cls.cfg, repo['_href'])
 
         cls.num_orphans_pre_repo_del = _count_orphans(client)
         client.delete(repo['_href'])

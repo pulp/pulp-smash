@@ -11,6 +11,7 @@ import uuid
 import unittest2
 
 from pulp_smash import api, cli, config, exceptions
+from pulp_smash.compat import urljoin
 from pulp_smash.constants import ORPHANS_PATH, PLUGIN_TYPES_PATH, PULP_SERVICES
 
 
@@ -182,3 +183,17 @@ def is_root(server_config):
     if cli.Client(server_config).run(('id', '-u')).stdout.strip() == '0':
         return True
     return False
+
+
+def sync_repo(server_config, href):
+    """Sync the referenced repository via the API. Return the server response.
+
+    Checks are run against the server's response. If the sync appears to have
+    failed, an exception is raised.
+
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        Pulp server being targeted.
+    :param href: The API v2 path to the repository to sync.
+    :returns: The server's response.
+    """
+    return api.Client(server_config).post(urljoin(href, 'actions/sync/'))

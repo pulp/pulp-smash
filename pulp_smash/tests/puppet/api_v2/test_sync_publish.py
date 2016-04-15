@@ -133,10 +133,8 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
         # Trigger repository sync and collect completed tasks.
         cls.reports = []  # raw responses to "start syncing" commands
         cls.tasks = []  # completed tasks
-        client.response_handler = api.echo_handler
         for repo in repos:
-            report = client.post(urljoin(repo['_href'], 'actions/sync/'))
-            report.raise_for_status()
+            report = utils.sync_repo(cls.cfg, repo['_href'])
             cls.reports.append(report)
             for task in api.poll_spawned_tasks(cls.cfg, report.json()):
                 cls.tasks.append(task)
@@ -219,7 +217,7 @@ class SyncValidManifestFeedTestCase(utils.BaseAPITestCase):
         cls.resources.add(repo['_href'])
 
         # Trigger a repository sync and collect completed tasks.
-        cls.report = client.post(urljoin(repo['_href'], 'actions/sync/'))
+        cls.report = utils.sync_repo(cls.cfg, repo['_href'])
         cls.tasks = list(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
 
     def test_status_code(self):

@@ -115,9 +115,7 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         client.response_handler = api.echo_handler
-        path = urljoin(repo['_href'], 'actions/sync/')
-        cls.report = client.post(path, {'override_config': {}})
-        cls.report.raise_for_status()
+        cls.report = utils.sync_repo(cls.cfg, repo['_href'])
         cls.tasks = tuple(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
         client.response_handler = api.json_handler
         cls.repo = client.get(repo['_href'])
@@ -183,9 +181,7 @@ class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = utils.uuid4()
         repo = client.post(REPOSITORY_PATH, body)
         client.response_handler = api.echo_handler
-        path = urljoin(repo['_href'], 'actions/sync/')
-        cls.report = client.post(path, {'override_config': {}})
-        cls.report.raise_for_status()
+        cls.report = client.post(urljoin(repo['_href'], 'actions/sync/'))
         cls.tasks = tuple(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
         cls.resources.add(repo['_href'])
 
@@ -422,8 +418,7 @@ class RedundantPublishSameMetadataTestCase(utils.BaseAPITestCase):
 
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
-        sync_path = urljoin(repo['_href'], 'actions/sync/')
-        client.post(sync_path, {'override_config': {}})
+        utils.sync_repo(cls.cfg, repo['_href'])
 
         repomd_xml_path = (
             '{repo_publish_path}{relative_url}/repodata/repomd.xml'

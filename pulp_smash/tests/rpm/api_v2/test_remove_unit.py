@@ -24,11 +24,7 @@ import random
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
-from pulp_smash.tests.rpm.api_v2.utils import (
-    gen_distributor,
-    gen_repo,
-    sync_repo,
-)
+from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _PUBLISH_DIR = 'pulp/repos/'
@@ -69,7 +65,7 @@ class RemoveMissingTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_FEED_URL
         hrefs.append(client.post(REPOSITORY_PATH, body).json()['_href'])
         cls.resources.add(hrefs[0])  # mark for deletion
-        cls.responses['first sync'] = sync_repo(cls.cfg, hrefs[0])
+        cls.responses['first sync'] = utils.sync_repo(cls.cfg, hrefs[0])
 
         # Add a distributor and publish it.
         cls.responses['distribute'] = client.post(
@@ -94,7 +90,7 @@ class RemoveMissingTestCase(utils.BaseAPITestCase):
         body['importer_config']['ssl_validation'] = False
         hrefs.append(client.post(REPOSITORY_PATH, body).json()['_href'])
         cls.resources.add(hrefs[1])  # mark for deletion
-        cls.responses['second sync'] = sync_repo(cls.cfg, hrefs[1])
+        cls.responses['second sync'] = utils.sync_repo(cls.cfg, hrefs[1])
 
         # Get contents of both repositories
         for i, href in enumerate(hrefs):
@@ -139,7 +135,7 @@ class RemoveMissingTestCase(utils.BaseAPITestCase):
             urljoin(hrefs[0], 'actions/publish/'),
             {'id': cls.responses['distribute'].json()['id']},
         )
-        cls.responses['third sync'] = sync_repo(cls.cfg, hrefs[1])
+        cls.responses['third sync'] = utils.sync_repo(cls.cfg, hrefs[1])
 
         # Search for units in both repositories again
         for i, href in enumerate(hrefs):

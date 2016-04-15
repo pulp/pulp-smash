@@ -110,10 +110,7 @@ class BrokerTestCase(unittest2.TestCase):
         body['importer_config']['feed'] = RPM_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(api.Client(self.cfg).delete, repo['_href'])
-        client.post(
-            urljoin(repo['_href'], 'actions/sync/'),
-            {'override_config': {}},
-        )
+        utils.sync_repo(self.cfg, repo['_href'])
         distributor = client.post(
             urljoin(repo['_href'], 'distributors/'),
             gen_distributor(),

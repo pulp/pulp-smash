@@ -18,11 +18,7 @@ from dateutil.parser import parse
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
-from pulp_smash.tests.rpm.api_v2.utils import (
-    gen_distributor,
-    gen_repo,
-    sync_repo,
-)
+from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _RPM_ID_FIELD = 'checksum'
@@ -98,8 +94,7 @@ class RemoveUnitsTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
-        sync_path = urljoin(repo['_href'], 'actions/sync/')
-        client.post(sync_path, {'override_config': {}})
+        utils.sync_repo(cls.cfg, repo['_href'])
 
         # Remove one unit of each type.
         cls.units_before = _search_units(cls.cfg, repo['_href'], cls.TYPE_IDS)
@@ -152,7 +147,7 @@ class RemoveAndRepublishTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])  # mark for deletion
-        sync_repo(cls.cfg, repo['_href'])
+        utils.sync_repo(cls.cfg, repo['_href'])
 
         # Add a distributor and publish the repository to it.
         path = urljoin(repo['_href'], 'distributors/')

@@ -26,7 +26,7 @@ from __future__ import unicode_literals
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import OSTREE_FEED, OSTREE_BRANCH, REPOSITORY_PATH
-from pulp_smash.tests.ostree.utils import create_sync_repo, gen_repo
+from pulp_smash.tests.ostree.utils import gen_repo
 from pulp_smash.tests.ostree.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -113,8 +113,9 @@ class SyncTestCase(_SyncMixin, utils.BaseAPITestCase):
         body = gen_repo()
         body['importer_config']['feed'] = OSTREE_FEED
         body['importer_config']['branches'] = [OSTREE_BRANCH]
-        repo_href, cls.report = create_sync_repo(cls.cfg, body)
-        cls.resources.add(repo_href)
+        repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
+        cls.resources.add(repo['_href'])
+        cls.report = utils.sync_repo(cls.cfg, repo['_href'])
         cls.tasks = tuple(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
 
     def test_task_progress_report(self):

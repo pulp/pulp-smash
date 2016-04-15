@@ -17,11 +17,7 @@ import random
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
-from pulp_smash.tests.rpm.api_v2.utils import (
-    gen_distributor,
-    gen_repo,
-    sync_repo,
-)
+from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _PUBLISH_DIR = 'pulp/repos/'
@@ -50,7 +46,7 @@ class RepublishTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_FEED_URL
         repo_href = client.post(REPOSITORY_PATH, body).json()['_href']
         cls.resources.add(repo_href)  # mark for deletion
-        cls.responses['sync'] = sync_repo(cls.cfg, repo_href)
+        cls.responses['sync'] = utils.sync_repo(cls.cfg, repo_href)
 
         # Add a distributor and publish it.
         cls.responses['distribute'] = client.post(

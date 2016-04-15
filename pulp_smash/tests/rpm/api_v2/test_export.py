@@ -22,11 +22,7 @@ from pulp_smash.constants import (
     RPM_FEED_URL,
     RPM_SHA256_CHECKSUM,
 )
-from pulp_smash.tests.rpm.api_v2.utils import (
-    gen_distributor,
-    gen_repo,
-    sync_repo,
-)
+from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -77,7 +73,7 @@ class ExportDistributorTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_FEED_URL
         cls.repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(cls.repo['_href'])
-        sync_repo(cls.cfg, cls.repo['_href'])
+        utils.sync_repo(cls.cfg, cls.repo['_href'])
 
         # Add an "export" distributor to the repository.
         path = urljoin(cls.repo['_href'], 'distributors/')
