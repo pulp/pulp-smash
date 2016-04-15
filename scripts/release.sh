@@ -1,4 +1,11 @@
 #!/bin/bash
+#
+# Test Pulp Smash for sanity. If all is well, generate a new commit, tag it,
+# and print instructions for further steps to take.
+#
+# NOTE: This script should be run from the repository root directory. That is,
+# this script should be run from this script's parent directory.
+#
 set -euo pipefail
 
 # Make sure local fork is updated

@@ -3,6 +3,9 @@
 # For each file found by `find`, generate a reStructuredText document in
 # `docs/api/`.
 #
+# NOTE: This script should be run from the repository root directory. That is,
+# this script should be run from this script's parent directory.
+#
 set -euo pipefail
 
 find pulp_smash/ tests/ -type f -name '*.py' | while read file_name; do

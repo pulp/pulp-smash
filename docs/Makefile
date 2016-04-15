@@ -53,7 +53,7 @@ clean:
 	rm -rf $(BUILDDIR)/* api/*
 
 gen-api-docs:
-	cd ..; ./gen_api_docs.sh
+	cd ..; ./scripts/gen_api_docs.sh
 
 html: gen-api-docs
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
