@@ -126,6 +126,18 @@ PUPPET_MODULE_URL = ('{}/v3/files/{}-{}-{}.tar.gz'.format(
 ))
 """The URL to a Puppet module available at :data:`PUPPET_FEED`."""
 
+PYTHON_EGG_URL = (
+    'https://pypi.python.org/packages/source/p/pulp-smash/'
+    'pulp-smash-2016.4.14.tar.gz'
+)
+"""The URL to a Python egg."""
+
+PYTHON_WHEEL_URL = (
+    'https://pypi.python.org/packages/py2.py3/p/pulp-smash/'
+    'pulp_smash-2016.4.14-py2.py3-none-any.whl'
+)
+"""The URL to a Python wheel."""
+
 REPOSITORY_PATH = '/pulp/api/v2/repositories/'
 """See: `Repository APIs`_.
 
