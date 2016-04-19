@@ -52,7 +52,7 @@ help:
 clean:
 	rm -rf $(BUILDDIR)/* api/*
 
-gen-api-docs:
+gen-api-docs: clean
 	cd ..; ./scripts/gen_api_docs.sh
 
 html: gen-api-docs
