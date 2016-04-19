@@ -54,7 +54,7 @@ class DuplicateUploadsTestCase(utils.BaseAPITestCase):
 
         # Download content.
         client = api.Client(cls.cfg)
-        puppet_module = client.get(PUPPET_MODULE_URL).content
+        puppet_module = utils.http_get(PUPPET_MODULE_URL)
 
         # Create a feed-less repository.
         client.response_handler = api.json_handler

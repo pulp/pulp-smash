@@ -58,7 +58,7 @@ class DuplicateUploadsTestCase(utils.BaseAPITestCase):
 
         # Download content.
         client = api.Client(cls.cfg)
-        cls.rpm = client.get(urljoin(RPM_FEED_URL, RPM)).content
+        cls.rpm = utils.http_get(urljoin(RPM_FEED_URL, RPM))
 
         # Create a feed-less repository.
         client = api.Client(cls.cfg, api.json_handler)

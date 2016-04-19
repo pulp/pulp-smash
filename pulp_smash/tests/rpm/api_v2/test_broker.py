@@ -125,5 +125,5 @@ class BrokerTestCase(unittest2.TestCase):
         pulp_rpm = client.get(url).content
 
         # Does this RPM match the original RPM?
-        rpm = client.get(urljoin(RPM_FEED_URL, RPM)).content
+        rpm = utils.http_get(urljoin(RPM_FEED_URL, RPM))
         self.assertEqual(rpm, pulp_rpm)

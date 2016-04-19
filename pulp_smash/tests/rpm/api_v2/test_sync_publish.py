@@ -240,7 +240,7 @@ class PublishTestCase(utils.BaseAPITestCase):
         for repo in repos:
             cls.resources.add(repo['_href'])
         client.response_handler = api.safe_handler
-        cls.rpms.append(client.get(urljoin(RPM_FEED_URL, RPM)).content)
+        cls.rpms.append(utils.http_get(urljoin(RPM_FEED_URL, RPM)))
 
         # Begin an upload request, upload an RPM, move the RPM into a
         # repository, and end the upload request.

@@ -270,7 +270,7 @@ class PublishTestCase(utils.BaseAPITestCase):
         for repo in repos:
             cls.resources.add(repo['_href'])
         client.response_handler = api.safe_handler
-        cls.modules.append(client.get(PUPPET_MODULE_URL).content)
+        cls.modules.append(utils.http_get(PUPPET_MODULE_URL))
 
         # Begin an upload request, upload a puppet module, move the puppet
         # module into a repository, and end the upload request.

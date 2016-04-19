@@ -8,6 +8,7 @@ from __future__ import unicode_literals
 
 import uuid
 
+import requests
 import unittest2
 
 from pulp_smash import api, cli, config, exceptions
@@ -50,6 +51,20 @@ def get_broker(server_config):
         'to be any of {}.'
         .format(server_config.base_url, executables)
     )
+
+
+def http_get(url, **kwargs):
+    """Issue a HTTP request to the ``url`` and return the response content.
+
+    This is useful for downloading file contents over HTTP[S].
+
+    :param url: the URL where the content should be get.
+    :param kwargs: additional kwargs to be passed to ``requests.get``.
+    :returns: the response content of a GET request to ``url``.
+    """
+    response = requests.get(url, **kwargs)
+    response.raise_for_status()
+    return response.content
 
 
 def reset_pulp(server_config):

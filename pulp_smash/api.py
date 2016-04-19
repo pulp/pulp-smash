@@ -15,7 +15,7 @@ from time import sleep
 import requests
 
 from pulp_smash import exceptions
-from pulp_smash.compat import urljoin
+from pulp_smash.compat import urljoin, urlparse
 
 
 _SENTINEL = object()
@@ -287,6 +287,18 @@ class Client(object):
         request_kwargs = self.request_kwargs.copy()
         request_kwargs['url'] = urljoin(request_kwargs['url'], url)
         request_kwargs.update(kwargs)
+        config_host = urlparse(self._cfg.base_url).netloc
+        request_host = urlparse(request_kwargs['url']).netloc
+        if request_host != config_host:
+            warnings.warn(
+                'This client is configured to make HTTP requests to {0}, but '
+                'a request is being made to {1}. The request will be made, '
+                'but some options may be incorrect. For example, an incorrect '
+                'SSL certificate may be specified with the `verify` option. '
+                'Request options: {2}'
+                .format(config_host, request_host, request_kwargs),
+                RuntimeWarning
+            )
         return self.response_handler(
             self._cfg,
             requests.request(method, **request_kwargs),

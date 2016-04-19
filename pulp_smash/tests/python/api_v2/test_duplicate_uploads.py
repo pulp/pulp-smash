@@ -54,7 +54,7 @@ class DuplicateUploadsTestCase(utils.BaseAPITestCase):
 
         # Download content.
         client = api.Client(cls.cfg)
-        python_package = client.get(PYTHON_EGG_URL).content
+        python_package = utils.http_get(PYTHON_EGG_URL)
 
         # Create a feed-less repository.
         client.response_handler = api.json_handler
