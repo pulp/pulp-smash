@@ -48,54 +48,29 @@ def _gen_distributor():
     }
 
 
-class CreateTestCase(utils.BaseAPITestCase):
-    """Create two Docker repos, with and without feed URLs respectively."""
+class CrudTestCase(utils.BaseAPICrudTestCase):
+    """CRUD a minimal Docker repository."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Create two Docker repositories, with and without feeds."""
-        super(CreateTestCase, cls).setUpClass()
-        cls.bodies = tuple((_gen_docker_repo_body() for _ in range(2)))
-        cls.bodies[1]['importer_config'] = {'feed': 'http://' + utils.uuid4()}
+    @staticmethod
+    def create_body():
+        """Return a dict for creating a repository."""
+        return _gen_docker_repo_body()
 
-        client = api.Client(cls.cfg, api.json_handler)
-        cls.repos = []
-        cls.importers_iter = []
-        for body in cls.bodies:
-            repo = client.post(REPOSITORY_PATH, body)
-            cls.repos.append(repo)
-            cls.resources.add(repo['_href'])
-            cls.importers_iter.append(client.get(repo['_href'] + 'importers/'))
+    @staticmethod
+    def update_body():
+        """Return a dict for creating a repository."""
+        return {'delta': {'display_name': utils.uuid4()}}
 
-    def test_id_notes(self):
-        """Validate the ``id`` and ``notes`` attributes for each repo."""
-        for body, repo in zip(self.bodies, self.repos):  # for input, output:
-            for key in {'id', 'notes'}:
-                with self.subTest(body=body):
-                    self.assertIn(key, repo)
-                    self.assertEqual(body[key], repo[key])
 
-    def test_number_importers(self):
-        """Each repository should have only one importer."""
-        for i, importers in enumerate(self.importers_iter):
-            with self.subTest(i=i):
-                self.assertEqual(len(importers), 1, importers)
+class CrudWithFeedTestCase(CrudTestCase):
+    """CRUD a Docker repository with a feed."""
 
-    def test_importer_type_id(self):
-        """Validate the ``importer_type_id`` attribute of each importer."""
-        key = 'importer_type_id'
-        for body, importers in zip(self.bodies, self.importers_iter):
-            with self.subTest(body=body):
-                self.assertIn(key, importers[0])
-                self.assertEqual(body[key], importers[0][key])
-
-    def test_importer_config(self):
-        """Validate the ``config`` attribute of each importer."""
-        key = 'config'
-        for body, importers in zip(self.bodies, self.importers_iter):
-            with self.subTest(body=body):
-                self.assertIn(key, importers[0])
-                self.assertEqual(body['importer_' + key], importers[0][key])
+    @staticmethod
+    def create_body():
+        """Return a dict, with a feed, for creating a repository."""
+        body = CrudTestCase.create_body()
+        body['importer_config'] = {'feed': 'http://' + utils.uuid4()}
+        return body
 
 
 class UpdateTestCase(utils.BaseAPITestCase):

@@ -13,7 +13,12 @@ import unittest2
 
 from pulp_smash import api, cli, config, exceptions
 from pulp_smash.compat import urljoin
-from pulp_smash.constants import ORPHANS_PATH, PLUGIN_TYPES_PATH, PULP_SERVICES
+from pulp_smash.constants import (
+    ORPHANS_PATH,
+    PLUGIN_TYPES_PATH,
+    PULP_SERVICES,
+    REPOSITORY_PATH,
+)
 
 
 def uuid4():
@@ -123,6 +128,117 @@ class BaseAPITestCase(unittest2.TestCase):
         for resource in cls.resources:
             client.delete(resource)
         client.delete(ORPHANS_PATH)
+
+
+class BaseAPICrudTestCase(unittest2.TestCase):
+    """A parent class for API CRUD test cases.
+
+    :meth:`create_body` and :meth:`update_body` should be overridden by
+    concrete child classes. The bodies of these two methods are encoded to JSON
+    and used as the bodies of HTTP requests for creating and updating a
+    repository, respectively. Be careful to return appropriate data when
+    overriding these methods: the various ``test*`` methods assume the
+    repository is fairly simple.
+
+    Relevant Pulp documentation:
+
+    Create
+        http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/cud.html#create-a-repository
+    Read
+        http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/retrieval.html#retrieve-a-single-repository
+    Update
+        http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/cud.html#update-a-repository
+    Delete
+        http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/cud.html#delete-a-repository
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create, update, read and delete a repository."""
+        client = api.Client(config.get_config())
+        cls.bodies = {'create': cls.create_body(), 'update': cls.update_body()}
+        cls.responses = {}
+        cls.responses['create'] = client.post(
+            REPOSITORY_PATH,
+            cls.bodies['create'],
+        )
+        repo_href = cls.responses['create'].json()['_href']
+        cls.responses['update'] = client.put(repo_href, cls.bodies['update'])
+        cls.responses['read'] = client.get(repo_href, params={'details': True})
+        cls.responses['delete'] = client.delete(repo_href)
+
+    @staticmethod
+    def create_body():
+        """Return a dict for creating a repository. Should be overridden.
+
+        :raises: ``NotImplementedError`` if not implemented by a child class.
+        """
+        raise NotImplementedError()
+
+    @staticmethod
+    def update_body():
+        """Return a dict for updating a repository. Should be overridden.
+
+        :raises: ``NotImplementedError`` if not implemented by a child class.
+        """
+        raise NotImplementedError()
+
+    def test_status_codes(self):
+        """Assert each response has a correct status code."""
+        for response, code in (
+                ('create', 201),
+                ('update', 200),
+                ('read', 200),
+                ('delete', 202)):
+            with self.subTest((response, code)):
+                self.assertEqual(self.responses[response].status_code, code)
+
+    def test_create(self):
+        """Assert the created repository has all requested attributes.
+
+        Walk through each of the attributes returned by :meth:`create_body` and
+        verify the attribute is present in the repository.
+
+        NOTE: Any attribute whose name starts with ``importer`` or
+        ``distributor`` is not verified.
+        """
+        received = self.responses['create'].json()
+        for key, value in self.bodies['create'].items():
+            if key.startswith('importer') or key.startswith('distributor'):
+                continue
+            with self.subTest(key=key, value=value):
+                self.assertEqual(received[key], value)
+
+    def test_update(self):
+        """Assert the repo update response has the requested changes."""
+        received = self.responses['update'].json()['result']
+        for key, value in self.bodies['update']['delta'].items():
+            with self.subTest(key=key, value=value):
+                self.assertEqual(received[key], value)
+
+    def test_read(self):
+        """Assert the repo update response has the requested changes."""
+        received = self.responses['read'].json()
+        for key, value in self.bodies['update']['delta'].items():
+            with self.subTest(key=key, value=value):
+                self.assertEqual(received[key], value)
+
+    def test_number_importers(self):
+        """Assert the repository has one importer."""
+        self.assertEqual(len(self.responses['read'].json()['importers']), 1)
+
+    def test_importer_type_id(self):
+        """Validate the repo importer's ``importer_type_id`` attribute."""
+        key = 'importer_type_id'
+        type_sent = self.bodies['create'][key]
+        type_received = self.responses['read'].json()['importers'][0][key]
+        self.assertEqual(type_sent, type_received)
+
+    def test_importer_config(self):
+        """Validate the ``config`` attribute of each importer."""
+        cfg_sent = self.bodies['create']['importer_config']
+        cfg_received = self.responses['read'].json()['importers'][0]['config']
+        self.assertEqual(cfg_sent, cfg_received)
 
 
 def reset_squid(server_config):

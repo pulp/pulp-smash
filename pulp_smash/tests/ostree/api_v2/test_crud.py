@@ -39,53 +39,29 @@ def _gen_rel_path(segments=2):
     return '/'.join((utils.uuid4() for _ in range(segments)))
 
 
-class CreateTestCase(utils.BaseAPITestCase):
-    """Create two OSTree repositories, with and without a feed."""
+class CrudTestCase(utils.BaseAPICrudTestCase):
+    """CRUD a minimal OSTree repository."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Create two repositories."""
-        super(CreateTestCase, cls).setUpClass()
-        client = api.Client(cls.cfg, api.json_handler)
-        cls.bodies = tuple((gen_repo() for _ in range(2)))
-        cls.bodies[1]['importer_config'] = {'feed': utils.uuid4()}
-        cls.repos = [client.post(REPOSITORY_PATH, body) for body in cls.bodies]
-        cls.importers_iter = [
-            client.get(urljoin(repo['_href'], 'importers/'))
-            for repo in cls.repos
-        ]
-        for repo in cls.repos:
-            cls.resources.add(repo['_href'])  # mark for deletion
+    @staticmethod
+    def create_body():
+        """Return a dict for creating a repository."""
+        return gen_repo()
 
-    def test_id_notes(self):
-        """Validate the ``id`` and ``notes`` attributes for each repository."""
-        for body, repo in zip(self.bodies, self.repos):  # for input, output:
-            for key in {'id', 'notes'}:
-                with self.subTest(body=body):
-                    self.assertIn(key, repo)
-                    self.assertEqual(repo[key], body[key])
+    @staticmethod
+    def update_body():
+        """Return a dict for creating a repository."""
+        return {'delta': {'display_name': utils.uuid4()}}
 
-    def test_number_importers(self):
-        """Assert each repository has one importer."""
-        for body, importers in zip(self.bodies, self.importers_iter):
-            with self.subTest(body=body):
-                self.assertEqual(len(importers), 1, importers)
 
-    def test_importer_type_id(self):
-        """Validate the ``importer_type_id`` attribute of each importer."""
-        key = 'importer_type_id'
-        for body, importers in zip(self.bodies, self.importers_iter):
-            with self.subTest(body=body):
-                self.assertIn(key, importers[0])
-                self.assertEqual(importers[0][key], body[key])
+class CrudWithFeedTestCase(CrudTestCase):
+    """CRUD an OSTree repository with a feed."""
 
-    def test_importer_config(self):
-        """Validate the ``config`` attribute of each importer."""
-        key = 'config'
-        for body, importers in zip(self.bodies, self.importers_iter):
-            with self.subTest(body=body):
-                self.assertIn(key, importers[0])
-                self.assertEqual(importers[0][key], body['importer_' + key])
+    @staticmethod
+    def create_body():
+        """Return a dict, with a feed, for creating a repository."""
+        body = CrudTestCase.create_body()
+        body['importer_config'] = {'feed': utils.uuid4()}
+        return body
 
 
 class CreateDistributorsTestCase(utils.BaseAPITestCase):
