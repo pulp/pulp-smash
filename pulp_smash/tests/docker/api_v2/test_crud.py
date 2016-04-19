@@ -10,10 +10,17 @@ import unittest2
 
 from packaging.version import Version
 
-from pulp_smash import api, utils
+from pulp_smash import api, config, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH
-from pulp_smash.tests.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.docker.utils import set_up_module
+
+
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests on Pulp versions lower than 2.8."""
+    set_up_module()
+    if config.get_config().version < Version('2.8'):
+        raise unittest2.SkipTest('These tests require at least Pulp 2.8.')
 
 
 def _gen_docker_repo_body():
@@ -41,18 +48,7 @@ def _gen_distributor():
     }
 
 
-class _BaseTestCase(utils.BaseAPITestCase):
-    """Provide logic common to docker test cases."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Skip tests if the targeted Pulp system is older than version 2.8."""
-        super(_BaseTestCase, cls).setUpClass()
-        if cls.cfg.version < Version('2.8'):
-            raise unittest2.SkipTest('These tests require at least Pulp 2.8.')
-
-
-class CreateTestCase(_BaseTestCase):
+class CreateTestCase(utils.BaseAPITestCase):
     """Create two Docker repos, with and without feed URLs respectively."""
 
     @classmethod
@@ -102,7 +98,7 @@ class CreateTestCase(_BaseTestCase):
                 self.assertEqual(body['importer_' + key], importers[0][key])
 
 
-class UpdateTestCase(_BaseTestCase):
+class UpdateTestCase(utils.BaseAPITestCase):
     """Show it is possible to update a distributor for a docker repository."""
 
     @classmethod
