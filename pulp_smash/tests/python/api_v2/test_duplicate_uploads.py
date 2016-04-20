@@ -21,40 +21,21 @@ from pulp_smash.constants import PYTHON_EGG_URL, REPOSITORY_PATH
 from pulp_smash.tests.python.api_v2.utils import gen_repo
 
 
-class DuplicateUploadsTestCase(utils.BaseAPITestCase):
-    """Test how well Pulp can deal with duplicate uploads."""
+class DuplicateUploadsTestCase(
+        utils.BaseAPITestCase,
+        utils.DuplicateUploadsMixin):
+    """Test how well Pulp can deal with duplicate content unit uploads."""
 
     @classmethod
     def setUpClass(cls):
         """Create a Python repo. Upload a Python package into it twice."""
         super(DuplicateUploadsTestCase, cls).setUpClass()
-
-        # Download content.
-        client = api.Client(cls.cfg)
-        python_package = utils.http_get(PYTHON_EGG_URL)
-
-        # Create a feed-less repository.
-        client.response_handler = api.json_handler
-        repo = client.post(REPOSITORY_PATH, gen_repo())
-        cls.resources.add(repo['_href'])
-
-        # Upload and import the python package into the repository, twice.
+        unit = utils.http_get(PYTHON_EGG_URL)
+        unit_type_id = 'python_package'
+        client = api.Client(cls.cfg, api.json_handler)
+        repo_href = client.post(REPOSITORY_PATH, gen_repo())['_href']
+        cls.resources.add(repo_href)
         cls.call_reports = tuple((
-            utils.upload_import_unit(
-                cls.cfg,
-                python_package,
-                'python_package',
-                repo['_href'],
-            )
+            utils.upload_import_unit(cls.cfg, unit, unit_type_id, repo_href)
             for _ in range(2)
         ))
-
-    def test_call_report_result(self):
-        """Assert each call report's "result" field is null.
-
-        Other checks are done automatically by
-        :func:`pulp_smash.api.json_handler`. See it for details.
-        """
-        for i, call_report in enumerate(self.call_reports):
-            with self.subTest(i=i):
-                self.assertIsNone(call_report['result'])

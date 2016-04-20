@@ -272,6 +272,38 @@ class BaseAPICrudTestCase(unittest2.TestCase):
         self.assertEqual(cfg_sent, cfg_received)
 
 
+# It's OK for this method to have just one method. It's a mixin.
+class DuplicateUploadsMixin(object):  # pylint:disable=too-few-public-methods
+    """A mixin that adds tests for the "duplicate upload" test cases.
+
+    Consider the following procedure:
+
+    1. Create a new feed-less repository of any content unit type.
+    2. Upload a content unit into the repository.
+    3. Upload the same content unit into the same repository.
+
+    The second upload should silently fail for all Pulp releases in the 2.x
+    series. See:
+
+    * https://pulp.plan.io/issues/1406
+    * https://github.com/PulpQE/pulp-smash/issues/81
+
+    This mixin adds tests for this case. This mixin requires an attribute named
+    ``call_reports`` be present, where this attribute is an iterable of the
+    call reports produced by steps 2 and 3, above.
+    """
+
+    def test_call_report_result(self):
+        """Assert each call report's "result" field is null.
+
+        Other checks are done automatically by
+        :func:`pulp_smash.api.json_handler`. See it for details.
+        """
+        for i, call_report in enumerate(self.call_reports):
+            with self.subTest(i=i):
+                self.assertIsNone(call_report['result'])
+
+
 def reset_squid(server_config):
     """Stop Squid, reset its cache directory, and restart it.
 

@@ -22,36 +22,22 @@ from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
-class DuplicateUploadsTestCase(utils.BaseAPITestCase):
-    """Tests for how well Pulp can deal with duplicate uploads."""
+class DuplicateUploadsTestCase(
+        utils.BaseAPITestCase,
+        utils.DuplicateUploadsMixin):
+    """Test how well Pulp can deal with duplicate unit uploads."""
 
     @classmethod
     def setUpClass(cls):
-        """Create an RPM repository. Upload the same content into it twice."""
+        """Create an RPM repository. Upload an RPM into it twice."""
         super(DuplicateUploadsTestCase, cls).setUpClass()
         utils.reset_pulp(cls.cfg)
-
-        # Download content.
-        client = api.Client(cls.cfg)
-        cls.rpm = utils.http_get(RPM_URL)
-
-        # Create a feed-less repository.
+        unit = utils.http_get(RPM_URL)
+        unit_type_id = 'rpm'
         client = api.Client(cls.cfg, api.json_handler)
-        repo = client.post(REPOSITORY_PATH, gen_repo())
-        cls.resources.add(repo['_href'])
-
-        # Upload content and import it into the repository. Do it twice!
+        repo_href = client.post(REPOSITORY_PATH, gen_repo())['_href']
+        cls.resources.add(repo_href)
         cls.call_reports = tuple((
-            utils.upload_import_unit(cls.cfg, cls.rpm, 'rpm', repo['_href'])
+            utils.upload_import_unit(cls.cfg, unit, unit_type_id, repo_href)
             for _ in range(2)
         ))
-
-    def test_call_report_result(self):
-        """Assert each call report's "result" field is null.
-
-        Other checks are done automatically by
-        :func:`pulp_smash.api.json_handler`. See it for details.
-        """
-        for i, call_report in enumerate(self.call_reports):
-            with self.subTest(i=i):
-                self.assertIsNone(call_report['result'])
