@@ -241,3 +241,4 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
         update_element = _get_updates_by_id(self.root_element)[erratum_id]
         reboot_elements = update_element.findall('reboot_suggested')
         self.assertEqual(len(reboot_elements), 1, reboot_elements)
+        self.assertEqual(reboot_elements[0].text, 'False')
