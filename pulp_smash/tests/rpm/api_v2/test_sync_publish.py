@@ -43,6 +43,7 @@ from pulp_smash.constants import (
     REPOSITORY_PATH,
     RPM,
     RPM_FEED_URL,
+    RPM_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -240,7 +241,7 @@ class PublishTestCase(utils.BaseAPITestCase):
         for repo in repos:
             cls.resources.add(repo['_href'])
         client.response_handler = api.safe_handler
-        cls.rpms.append(utils.http_get(urljoin(RPM_FEED_URL, RPM)))
+        cls.rpms.append(utils.http_get(RPM_URL))
 
         # Begin an upload request, upload an RPM, move the RPM into a
         # repository, and end the upload request.

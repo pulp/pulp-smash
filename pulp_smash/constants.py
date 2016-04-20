@@ -2,6 +2,8 @@
 """Values usable by multiple test modules."""
 from __future__ import unicode_literals
 
+from pulp_smash.compat import urljoin
+
 
 CALL_REPORT_KEYS = frozenset(('error', 'result', 'spawned_tasks'))
 """See: `Call Report`_.
@@ -153,7 +155,7 @@ CONSUMER_PATH = '/pulp/api/v2/consumers/'
 """
 
 RPM = 'bear-4.1-1.noarch.rpm'
-"""The name of an RPM file. See :data:`pulp_smash.constants.RPM_FEED_URL`."""
+"""The name of an RPM file. See :data:`pulp_smash.constants.RPM_URL`."""
 
 RPM_ABS_PATH = (
     '/var/lib/pulp/content/units/rpm/76/78177c241777af22235092f21c3932d'
@@ -162,16 +164,15 @@ RPM_ABS_PATH = (
 """The absolute path to :data:`pulp_smash.constants.RPM` in the filesystem."""
 
 RPM_FEED_URL = 'https://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/zoo/'
-"""The URL to an RPM feed.
-
-This URL, plus :data:`pulp_smash.constants.RPM`, is a URL to an RPM file. (Use
-``urllib.parse.urlparse``.)
-"""
+"""The URL to an RPM feed. See :data:`RPM_URL`."""
 
 RPM_SHA256_CHECKSUM = (
     '7a831f9f90bf4d21027572cb503d20b702de8e8785b02c0397445c2e481d81b3'
 )
 """The sha256 checksum of :data:`pulp_smash.constants.RPM`."""
+
+RPM_URL = urljoin(RPM_FEED_URL, RPM)
+"""The URL to an RPM file. Built from :data:`RPM_FEED_URL` and :data:`RPM`."""
 
 USER_PATH = '/pulp/api/v2/users/'
 """See: `User APIs`_.

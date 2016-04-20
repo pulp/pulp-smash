@@ -36,6 +36,7 @@ from pulp_smash.constants import (
     REPOSITORY_PATH,
     RPM,
     RPM_FEED_URL,
+    RPM_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -125,5 +126,5 @@ class BrokerTestCase(unittest2.TestCase):
         pulp_rpm = client.get(url).content
 
         # Does this RPM match the original RPM?
-        rpm = utils.http_get(urljoin(RPM_FEED_URL, RPM))
+        rpm = utils.http_get(RPM_URL)
         self.assertEqual(rpm, pulp_rpm)

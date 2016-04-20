@@ -17,12 +17,7 @@ The second upload should silently fail for all Pulp releases in the 2.x series.
 from __future__ import unicode_literals
 
 from pulp_smash import api, utils
-from pulp_smash.compat import urljoin
-from pulp_smash.constants import (
-    REPOSITORY_PATH,
-    RPM,
-    RPM_FEED_URL,
-)
+from pulp_smash.constants import REPOSITORY_PATH, RPM_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
@@ -38,7 +33,7 @@ class DuplicateUploadsTestCase(utils.BaseAPITestCase):
 
         # Download content.
         client = api.Client(cls.cfg)
-        cls.rpm = utils.http_get(urljoin(RPM_FEED_URL, RPM))
+        cls.rpm = utils.http_get(RPM_URL)
 
         # Create a feed-less repository.
         client = api.Client(cls.cfg, api.json_handler)
