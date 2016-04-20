@@ -14,6 +14,7 @@ import unittest2
 from pulp_smash import api, cli, config, exceptions
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
+    CONTENT_UPLOAD_PATH,
     ORPHANS_PATH,
     PLUGIN_TYPES_PATH,
     PULP_SERVICES,
@@ -95,6 +96,36 @@ def reset_pulp(server_config):
 
     for service in services:
         service.start()
+
+
+def upload_import_unit(server_config, unit, unit_type_id, repo_href):
+    """Upload a content unit to a Pulp server and import it into a repository.
+
+    This procedure works for *some* unit types, such as ``rpm`` or
+    ``puppet_package``. Others, like ``package_group``, require an alternate
+    procedure.
+
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        Pulp server being targeted.
+    :param unit: A binary blob that can be uploaded to a Pulp server and
+        imported into a repository as a content unit. For example, an RPM file
+        or Python package.
+    :param content_type_id: The type ID of the content unit. For example,
+        ``rpm`` or ``python_package``.
+    :param repo_href: The path to the repository into which ``unit`` will be
+        imported.
+    :returns: The call report returned when importing the unit.
+    """
+    client = api.Client(server_config, api.json_handler)
+    malloc = client.post(CONTENT_UPLOAD_PATH)
+    client.put(urljoin(malloc['_href'], '0/'), data=unit)
+    call_report = client.post(urljoin(repo_href, 'actions/import_upload/'), {
+        'unit_key': {},
+        'unit_type_id': unit_type_id,
+        'upload_id': malloc['upload_id'],
+    })
+    client.delete(malloc['_href'])
+    return call_report
 
 
 class BaseAPITestCase(unittest2.TestCase):

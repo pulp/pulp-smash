@@ -17,31 +17,8 @@ The second upload should silently fail for all Pulp releases in the 2.x series.
 from __future__ import unicode_literals
 
 from pulp_smash import api, utils
-from pulp_smash.compat import urljoin
-from pulp_smash.constants import (
-    CONTENT_UPLOAD_PATH,
-    PUPPET_MODULE_URL,
-    REPOSITORY_PATH,
-)
+from pulp_smash.constants import PUPPET_MODULE_URL, REPOSITORY_PATH
 from pulp_smash.tests.puppet.api_v2.utils import gen_repo
-
-
-def _upload_import_puppet_module(server_config, puppet_module, repo_href):
-    """Upload a puppet module and import it into a repository.
-
-    Return the JSON-decoded body of the call report received when importing the
-    Puppet module.
-    """
-    client = api.Client(server_config, api.json_handler)
-    malloc = client.post(CONTENT_UPLOAD_PATH)
-    client.put(urljoin(malloc['_href'], '0/'), data=puppet_module)
-    call_report = client.post(urljoin(repo_href, 'actions/import_upload/'), {
-        'unit_key': {},
-        'unit_type_id': 'puppet_module',
-        'upload_id': malloc['upload_id'],
-    })
-    client.delete(malloc['_href'])
-    return call_report
 
 
 class DuplicateUploadsTestCase(utils.BaseAPITestCase):
@@ -63,7 +40,12 @@ class DuplicateUploadsTestCase(utils.BaseAPITestCase):
 
         # Upload and import the puppet module into the repository, twice.
         cls.call_reports = tuple((
-            _upload_import_puppet_module(cls.cfg, puppet_module, repo['_href'])
+            utils.upload_import_unit(
+                cls.cfg,
+                puppet_module,
+                'puppet_module',
+                repo['_href'],
+            )
             for _ in range(2)
         ))
 

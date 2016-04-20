@@ -19,32 +19,12 @@ from __future__ import unicode_literals
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
-    CONTENT_UPLOAD_PATH,
     REPOSITORY_PATH,
     RPM,
     RPM_FEED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
-
-
-def _upload_import_rpm(server_config, rpm, repo_href):
-    """Upload an RPM to a Pulp server and import it into a repository.
-
-    Create an upload request, upload ``rpm``, import it into the repository at
-    ``repo_href``, and close the upload request. Return the call report
-    returned when importing the RPM.
-    """
-    client = api.Client(server_config, api.json_handler)
-    malloc = client.post(CONTENT_UPLOAD_PATH)
-    client.put(urljoin(malloc['_href'], '0/'), data=rpm)
-    call_report = client.post(urljoin(repo_href, 'actions/import_upload/'), {
-        'unit_key': {},
-        'unit_type_id': 'rpm',
-        'upload_id': malloc['upload_id'],
-    })
-    client.delete(malloc['_href'])
-    return call_report
 
 
 class DuplicateUploadsTestCase(utils.BaseAPITestCase):
@@ -67,7 +47,7 @@ class DuplicateUploadsTestCase(utils.BaseAPITestCase):
 
         # Upload content and import it into the repository. Do it twice!
         cls.call_reports = tuple((
-            _upload_import_rpm(cls.cfg, cls.rpm, repo['_href'])
+            utils.upload_import_unit(cls.cfg, cls.rpm, 'rpm', repo['_href'])
             for _ in range(2)
         ))
 

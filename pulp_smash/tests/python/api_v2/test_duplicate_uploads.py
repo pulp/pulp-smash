@@ -17,31 +17,8 @@ The second upload should silently fail for all Pulp releases in the 2.x series.
 from __future__ import unicode_literals
 
 from pulp_smash import api, utils
-from pulp_smash.compat import urljoin
-from pulp_smash.constants import (
-    CONTENT_UPLOAD_PATH,
-    PYTHON_EGG_URL,
-    REPOSITORY_PATH,
-)
+from pulp_smash.constants import PYTHON_EGG_URL, REPOSITORY_PATH
 from pulp_smash.tests.python.api_v2.utils import gen_repo
-
-
-def _upload_import_python_package(server_config, python_package, repo_href):
-    """Upload a Python package and import it into a repository.
-
-    Return the JSON-decoded body of the call report received when importing the
-    Python package.
-    """
-    client = api.Client(server_config, api.json_handler)
-    malloc = client.post(CONTENT_UPLOAD_PATH)
-    client.put(urljoin(malloc['_href'], '0/'), data=python_package)
-    call_report = client.post(urljoin(repo_href, 'actions/import_upload/'), {
-        'unit_key': {},
-        'unit_type_id': 'python_package',
-        'upload_id': malloc['upload_id'],
-    })
-    client.delete(malloc['_href'])
-    return call_report
 
 
 class DuplicateUploadsTestCase(utils.BaseAPITestCase):
@@ -63,9 +40,10 @@ class DuplicateUploadsTestCase(utils.BaseAPITestCase):
 
         # Upload and import the python package into the repository, twice.
         cls.call_reports = tuple((
-            _upload_import_python_package(
+            utils.upload_import_unit(
                 cls.cfg,
                 python_package,
+                'python_package',
                 repo['_href'],
             )
             for _ in range(2)
