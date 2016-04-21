@@ -2,7 +2,7 @@
 """Values usable by multiple test modules."""
 from __future__ import unicode_literals
 
-from pulp_smash.compat import urljoin
+from pulp_smash.compat import quote_plus, urljoin
 
 
 CALL_REPORT_KEYS = frozenset(('error', 'result', 'spawned_tasks'))
@@ -127,6 +127,33 @@ PUPPET_MODULE_URL = ('{}/v3/files/{}-{}-{}.tar.gz'.format(
     PUPPET_MODULE['version'],
 ))
 """The URL to a Puppet module available at :data:`PUPPET_FEED`."""
+
+PUPPET_QUERY = quote_plus('-'.join(
+    PUPPET_MODULE[key] for key in ('author', 'name', 'version')
+))
+"""A query that can be used to search for Puppet modules.
+
+Built from :data:`PUPPET_MODULE`.
+
+Though the `Puppet Forge API`_ supports a variety of search types, Pulp
+only supports the ability to search for modules. As a result, it is
+impossible to create a Puppet repository and sync only an exact module or
+set of modules. This query intentionally returns a small number of Puppet
+modules. A query which selected a large number of modules would produce
+tests that took a long time and abused the free Puppet Forge service.
+
+Beware that the Pulp API takes given Puppet queries and uses them to construct
+URL queries verbatim. Thus, if the user gives a query of "foo bar", the
+following URL is constructed:
+
+    https://forge.puppet.com/modules.json/q=foo bar
+
+In an attempt to avoid this error, this query is encoded before being submitted
+to Pulp.
+
+.. _Puppet Forge API:
+    http://projects.puppetlabs.com/projects/module-site/wiki/Server-api
+"""
 
 PYTHON_EGG_URL = (
     'https://pypi.python.org/packages/source/p/pulp-smash/'

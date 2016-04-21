@@ -46,12 +46,11 @@ from pulp_smash.constants import (
     PUPPET_FEED,
     PUPPET_MODULE,
     PUPPET_MODULE_URL,
+    PUPPET_QUERY,
     REPOSITORY_PATH,
 )
 from pulp_smash.tests.puppet.api_v2.utils import gen_repo
 from pulp_smash.tests.puppet.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
-
-_PUPPET_QUERY = PUPPET_MODULE['author'] + '-' + PUPPET_MODULE['name']
 
 
 class CreateTestCase(utils.BaseAPITestCase):
@@ -64,7 +63,7 @@ class CreateTestCase(utils.BaseAPITestCase):
         cls.bodies = tuple((gen_repo() for _ in range(2)))
         cls.bodies[1]['importer_config'] = {
             'feed': 'http://' + utils.uuid4(),  # Pulp checks for a URI scheme
-            'queries': [_PUPPET_QUERY],
+            'queries': [PUPPET_QUERY],
         }
 
         client = api.Client(cls.cfg, api.json_handler)
@@ -121,7 +120,7 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
         utils.reset_pulp(cls.cfg)  # See: https://pulp.plan.io/issues/1406
         bodies = tuple((gen_repo() for _ in range(2)))
         for i, query in enumerate((
-                _PUPPET_QUERY, _PUPPET_QUERY.replace('-', '_'))):
+                PUPPET_QUERY, PUPPET_QUERY.replace('-', '_'))):
             bodies[i]['importer_config'] = {
                 'feed': PUPPET_FEED,
                 'queries': [query],
