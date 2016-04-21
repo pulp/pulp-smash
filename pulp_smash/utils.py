@@ -73,6 +73,18 @@ def http_get(url, **kwargs):
     return response.content
 
 
+def pulp_admin_login(server_config):
+    """Execute ``pulp-admin login``.
+
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        Pulp server being targeted.
+    :return: The completed process.
+    :rtype: pulp_smash.cli.CompletedProcess
+    """
+    cmd = 'pulp-admin login -u {} -p {}'.format(*server_config.auth).split()
+    return cli.Client(server_config).run(cmd)
+
+
 def reset_pulp(server_config):
     """Stop Pulp, reset its database, remove certain files, and start it.
 

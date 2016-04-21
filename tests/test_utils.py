@@ -199,3 +199,14 @@ class UploadImportUnitTestCase(unittest2.TestCase):
                 'http://example.com',  # repo_href
             )
         self.assertIs(response, client.return_value.post.return_value)
+
+
+class PulpAdminLoginTestCase(unittest2.TestCase):
+    """Test :func:`pulp_smash.utils.pulp_admin_login`."""
+
+    def test_run(self):
+        """Assert the function executes ``cli.Client.run``."""
+        with mock.patch.object(cli, 'Client') as client:
+            cfg = config.ServerConfig('http://example.com', auth=['u', 'p'])
+            response = utils.pulp_admin_login(cfg)
+            self.assertIs(response, client.return_value.run.return_value)

@@ -70,7 +70,7 @@ class _BaseTestCase(unittest2.TestCase):
         cls.cfg = config.get_config()
         if cls.cfg.version < Version('2.8'):
             raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
-        docker_utils.login(cls.cfg)
+        utils.pulp_admin_login(cls.cfg)
         cls.repo_ids = tuple((utils.uuid4() for _ in range(2)))
 
     @classmethod

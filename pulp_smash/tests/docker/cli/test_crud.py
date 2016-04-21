@@ -25,7 +25,7 @@ class CreateTestCase(unittest2.TestCase):
         """Provide a server config and a repository ID."""
         self.cfg = config.get_config()
         self.repo_id = utils.uuid4()
-        docker_utils.login(self.cfg)
+        utils.pulp_admin_login(self.cfg)
 
     def tearDown(self):
         """Delete created resources."""
@@ -85,7 +85,7 @@ class DeleteV2TestCase(unittest2.TestCase):
         if cls.cfg.version < version.Version('2.8'):
             raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
 
-        docker_utils.login(cls.cfg)
+        utils.pulp_admin_login(cls.cfg)
 
         cls.repo_id = utils.uuid4()
         docker_utils.repo_create(
@@ -131,7 +131,7 @@ class UpdateEnableV1TestCase(unittest2.TestCase):
         if selectors.bug_is_untestable(1710, cls.cfg.version):
             raise unittest2.SkipTest('https://pulp.plan.io/issues/1710')
 
-        docker_utils.login(cls.cfg)
+        utils.pulp_admin_login(cls.cfg)
 
         cls.repo_id = utils.uuid4()
         docker_utils.repo_create(
@@ -185,7 +185,7 @@ class UpdateEnableV2TestCase(unittest2.TestCase):
         if selectors.bug_is_untestable(1710, cls.cfg.version):
             raise unittest2.SkipTest('https://pulp.plan.io/issues/1710')
 
-        docker_utils.login(cls.cfg)
+        utils.pulp_admin_login(cls.cfg)
 
         cls.repo_id = utils.uuid4()
         docker_utils.repo_create(
@@ -239,7 +239,7 @@ class UpdateDistributorTestCase(unittest2.TestCase):
         if selectors.bug_is_untestable(1710, cls.cfg.version):
             raise unittest2.SkipTest('https://pulp.plan.io/issues/1710')
 
-        docker_utils.login(cls.cfg)
+        utils.pulp_admin_login(cls.cfg)
 
         # Create a repository and update its distributor.
         cls.repo_id = utils.uuid4()

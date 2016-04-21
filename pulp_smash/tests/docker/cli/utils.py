@@ -13,12 +13,6 @@ from __future__ import unicode_literals
 from pulp_smash import cli
 
 
-def login(server_config):
-    """Execute ``pulp-admin login``."""
-    cmd = 'pulp-admin login -u {} -p {}'.format(*server_config.auth).split()
-    return cli.Client(server_config).run(cmd)
-
-
 def repo_copy(server_config, unit_type, from_repo_id=None, to_repo_id=None):
     """Execute ``pulp-admin docker repo copy {unit_type}``."""
     cmd = 'pulp-admin docker repo copy {}'.format(unit_type).split()

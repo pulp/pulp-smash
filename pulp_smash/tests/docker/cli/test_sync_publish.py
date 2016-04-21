@@ -24,7 +24,7 @@ class _BaseTestCase(unittest2.TestCase):
         """Provide a server config and a repository ID."""
         cls.cfg = config.get_config()
         cls.repo_id = utils.uuid4()
-        docker_utils.login(cls.cfg)
+        utils.pulp_admin_login(cls.cfg)
 
     @classmethod
     def tearDownClass(cls):
