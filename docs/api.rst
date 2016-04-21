@@ -48,6 +48,8 @@ developers, not a gospel.
     api/pulp_smash.tests.puppet.api_v2.test_duplicate_uploads
     api/pulp_smash.tests.puppet.api_v2.test_sync_publish
     api/pulp_smash.tests.puppet.api_v2.utils
+    api/pulp_smash.tests.puppet.cli
+    api/pulp_smash.tests.puppet.cli.test_sync_from_puppet_forge
     api/pulp_smash.tests.puppet.utils
     api/pulp_smash.tests.python
     api/pulp_smash.tests.python.api_v2
