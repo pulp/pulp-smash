@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 from pulp_smash import api, utils
 from pulp_smash.constants import PYTHON_EGG_URL, REPOSITORY_PATH
 from pulp_smash.tests.python.api_v2.utils import gen_repo
+from pulp_smash.tests.python.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
 class DuplicateUploadsTestCase(
