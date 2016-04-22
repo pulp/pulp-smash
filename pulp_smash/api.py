@@ -127,72 +127,87 @@ class Client(object):
     This class is a wrapper around the ``requests.api`` module provided by
     `Requests`_. Each of the functions from that module are exposed as methods
     here, and each of the arguments accepted by Requests' functions are also
-    accepted by these methods.
+    accepted by these methods. The difference between this class and the
+    `Requests`_ functions lies in its configurable request and response
+    handling mechanisms.
 
-    The difference between this class and the `Requests`_ functions lies in its
-    configurable request and response handling mechanisms. This class is
-    flexible enough that it should be usable with any API, but certain defaults
-    have been set to work well with `Pulp`_.
+    This class is flexible enough that it should be usable with any API, but
+    certain defaults have been set to work well with `Pulp`_.
 
-    As an example, let's say that you'd like to create a user, then read that
-    user's information back from the server. This is one way to do it:
+    As an example of basic usage, let's say that you'd like to create a user,
+    then read that user's information back from the server. This is one way to
+    do it:
 
     >>> from pulp_smash.api import Client
     >>> from pulp_smash.config import get_config
     >>> client = Client(get_config())
     >>> response = client.post('/pulp/api/v2/users/', {'login': 'Alice'})
-    >>> client.get(response.json()['_href'])
+    >>> response = client.get(response.json()['_href'])
+    >>> print(response.json())
 
-    This works, but handling raw responses can be kludgy. It is possible to set
-    a custom callback function that handles responses differently. For example,
-    the :func:`pulp_smash.api.json_handler` is much like the default
-    :func:`pulp_smash.api.safe_handler`, except that it expects response bodies
-    to be JSON and returns the decoded body:
+    Notice how we never call ``response.raise_for_status()``? We don't need to
+    because, by default, ``Client`` instances do this. Handy!
 
-    >>> from pulp_smash.api import Client, json_handler
+    How does this work? Each ``Client`` object has a callback function,
+    ``response_handler``, that is given a chance to munge each server response.
+    How else might this callback be useful? Well, notice how we call ``json()``
+    on each server response? That's kludgy. Let's write our own callback that
+    takes care of this for us:
+
+    >>> from pulp_smash.api import Client
     >>> from pulp_smash.config import get_config
-    >>> client = Client(get_config(), json_handler)
-    >>> attrs = client.post('/pulp/api/v2/users/', {'login': 'Alice'})
-    >>> client.get(attrs['_href'])
+    >>> def response_handler(server_config, response):
+    ...     response.raise_for_status()
+    ...     return response.json()
+    >>> client = Client(get_config(), response_handler=response_handler)
+    >>> response = client.post('/pulp/api/v2/users/', {'login': 'Alice'})
+    >>> response = client.get(response['_href'])
+    >>> print(response)
 
-    It is also possible to set request parameters, both on a per-client and
-    per-request basis. Here is an example:
+    Pulp Smash ships with several response handlers. See:
+
+    * :func:`pulp_smash.api.echo_handler`
+    * :func:`pulp_smash.api.safe_handler`
+    * :func:`pulp_smash.api.json_handler`
+
+    As mentioned, this class has configurable request and response handling
+    mechanisms. We've covered response handling mechanisms — let's move on to
+    request handling mechanisms.
+
+    When a client is instantiated, a :class:`pulp_smash.config.ServerConfig`
+    must be passed to the constructor, and configuration options are copied
+    from the ``ServerConfig`` to the client. These options can be overridden on
+    a per-object or per-request basis. Here's an example:
 
     >>> from pulp_smash.api import Client
     >>> from pulp_smash.config import ServerConfig
-    >>> cfg = ServerConfig('http://example.com')
-    >>> client = Client(cfg)
-    >>> client.request_kwargs['url']  # copied from `cfg`
-    'http://example.com'
-    >>> client.request_kwargs['url'] = 'http://sub.example.com'
-    >>> client.get('http://sub2.example.com')  # overrides `request_kwargs`
-    >>> client.request_kwargs['url']  # but only for that one call
-    'http://sub.example.com'
+    >>> cfg = ServerConfig('http://example.com', verify='~/Documents/my.crt')
+    >>> client = api.Client(cfg)
+    >>> client.request_kwargs['url'] == 'http://example.com'
+    True
+    >>> client.request_kwargs['verify'] == '~/Documents/my.crt'
+    True
+    >>> response = client.get('/index.html')  # Use my.crt for SSL verification
+    >>> response = client.get('/index.html', verify=False)  # Disable SSL
+    >>> response = client.get('/index.html')  # Use my.crt for SSL verification
+    >>> client.request_kwargs['verify'] = None
+    >>> response = client.get('/index.html')  # Do default SSL verification
 
-    As shown above, each client copies options from the
-    :class:`pulp_smash.config.ServerConfig` given to it. New default arguments
-    can then be set via the ``request_kwargs`` dict, and per-request arguments
-    can also be set. What can be placed in ``request_kwargs``? Anything that
-    the `Requests`_ functions accept. You can set ``verify``, ``auth`` and
-    more.
+    Anything accepted by the `Requests`_ functions may be placed in
+    ``request_kwargs`` or passed in to a specific call. You can set ``verify``,
+    ``auth`` and more.
 
     The ``url`` argument is slightly special. When making a call, it is
-    possible to pass in a relative URL:
+    possible to pass in a relative URL, as shown in the examples above. (e.g.
+    ``/index.html``.) The default URL and passed-in URL are joined like so:
 
-    >>> from pulp_smash.api import Client
-    >>> from pulp_smash.config import get_config
-    >>> client = Client(get_config())
-    >>> response = client.get('/pulp/api/v2/')  # i.e. url='/pulp/api/v2/'
+    >>> urljoin(request_kwargs['url'], passed_in_url)
 
-    What happens here? When a request is made, ``client.request_kwargs['url']``
-    is joined to ``'/pulp/api/v2/'`` using ``urljoin`` (from the standard
-    library). This allows one to easily use the hrefs returned by Pulp in
-    constructing new requests. Refer back to the "users" example in this
-    docstring as an example.
+    This allows one to easily use the hrefs returned by Pulp in constructing
+    new requests.
 
-    The remainder of this docstring contains design notes. They should not be
-    necessary for an end user, but may be useful to developers interested in
-    hacking at this class.
+    The remainder of this docstring contains design notes. They are useful to
+    advanced users and developers.
 
     Requests' ``requests.api.post`` method has the following signature::
 
