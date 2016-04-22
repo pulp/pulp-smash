@@ -31,6 +31,11 @@ DOCKER_V2_FEED_URL = 'https://registry-1.docker.io'
 This URL can be used as the "feed" property of a Pulp Docker registry.
 """
 
+DRPM_FEED_URL = (
+    'https://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/test_drpm_repo/'
+)
+"""The URL to an DRPM repository."""
+
 ERROR_KEYS = frozenset((
     '_href',
     'error',
@@ -191,7 +196,7 @@ RPM_ABS_PATH = (
 """The absolute path to :data:`pulp_smash.constants.RPM` in the filesystem."""
 
 RPM_FEED_URL = 'https://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/zoo/'
-"""The URL to an RPM feed. See :data:`RPM_URL`."""
+"""The URL to an RPM repository. See :data:`RPM_URL`."""
 
 RPM_SHA256_CHECKSUM = (
     '7a831f9f90bf4d21027572cb503d20b702de8e8785b02c0397445c2e481d81b3'
@@ -200,6 +205,11 @@ RPM_SHA256_CHECKSUM = (
 
 RPM_URL = urljoin(RPM_FEED_URL, RPM)
 """The URL to an RPM file. Built from :data:`RPM_FEED_URL` and :data:`RPM`."""
+
+SRPM_FEED_URL = (
+    'https://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/test_srpm_repo/'
+)
+"""The URL to an SRPM repository."""
 
 USER_PATH = '/pulp/api/v2/users/'
 """See: `User APIs`_.
