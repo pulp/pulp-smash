@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<updates>
+<update from="errata@redhat.com" status="stable" type="security" version="1">
+  <id>RHEA-2012:0055</id>
+  <title>Sea_Erratum</title>
+  <release>1</release>
+  <issued date="2012-01-27 16:08:06"/>
+  <description>Sea_Erratum</description>
+  <pkglist>
+    <collection short="">
+      <name>1</name>
+      <package arch="noarch" name="walrus" release="1" src="http://www.fedoraproject.org" version="5.21">
+        <filename>walrus-5.21-1.noarch.rpm</filename>
+      </package>
+      <package arch="noarch" name="penguin" release="1" src="http://www.fedoraproject.org" version="0.9.1">
+        <filename>penguin-0.9.1-1.noarch.rpm</filename>
+      </package>
+      <package arch="noarch" name="shark" release="1" src="http://www.fedoraproject.org" version="0.1">
+        <filename>shark-0.1-1.noarch.rpm</filename>
+      </package>
+    </collection>
+  </pkglist>
+</update>
+
+<update from="errata@redhat.com" status="stable" type="security" version="1">
+  <id>RHEA-2012:0056</id>
+  <title>Bird_Erratum</title>
+  <release>1</release>
+  <issued date="2013-01-27 16:08:08"/>
+  <description>ParthaBird_Erratum</description>
+  <pkglist>
+    <collection short="">
+      <name>1</name>
+      <package arch="noarch" name="crow" release="1" src="http://www.fedoraproject.org" version="0.8">
+        <filename>crow-0.8-1.noarch.rpm</filename>
+      </package>
+      <package arch="noarch" name="stork" release="2" src="http://www.fedoraproject.org" version="0.12">
+        <filename>stork-0.12-2.noarch.rpm</filename>
+      </package>
+      <package arch="noarch" name="duck" release="1" src="http://www.fedoraproject.org" version="0.6">
+        <filename>duck-0.6-1.noarch.rpm</filename>
+      </package>
+    </collection>
+  </pkglist>
+</update>
+
+<update from="errata@redhat.com" status="stable" type="security" version="1">
+  <id>RHEA-2012:0057</id>
+  <title>Bear_ErratumPARTHA</title>
+  <release>1</release>
+  <issued date="2013-01-27 16:08:05"/>
+  <description>Bear_Erratum</description>
+  <pkglist>
+    <collection short="">
+      <name>1</name>
+      <package arch="noarch" name="bear" release="1" src="http://www.fedoraproject.org" version="4.1">
+        <filename>bear-4.1-1.noarch.rpm</filename>
+      </package>
+    </collection>
+  </pkglist>
+</update>
+
+<update from="errata@redhat.com" status="stable" type="enhancement" version="1">
+  <id>RHEA-2012:0058</id>
+  <title>Gorilla_Erratum</title>
+  <release>1</release>
+  <issued date="2013-01-27 16:08:09"/>
+  <description>Gorilla_Erratum</description>
+  <pkglist>
+    <collection short="">
+      <name>1</name>
+      <package arch="noarch" name="gorilla" release="1" src="http://www.fedoraproject.org" version="0.62">
+        <filename>gorilla-0.62-1.noarch.rpm</filename>
+      </package>
+    </collection>
+  </pkglist>
+</update>
+</updates>

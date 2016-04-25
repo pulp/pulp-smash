@@ -11,6 +11,10 @@ __pycache__/
 /dist/
 /pulp_smash.egg-info/
 
+# Created by the gen_test_repos.sh script.
+/test_repos/
+
+
 # Coverage information
 /.coverage
 /htmlcov/
