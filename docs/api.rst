@@ -23,6 +23,7 @@ developers, not a gospel.
     api/pulp_smash.tests.docker
     api/pulp_smash.tests.docker.api_v2
     api/pulp_smash.tests.docker.api_v2.test_crud
+    api/pulp_smash.tests.docker.api_v2.utils
     api/pulp_smash.tests.docker.cli
     api/pulp_smash.tests.docker.cli.test_copy
     api/pulp_smash.tests.docker.cli.test_crud

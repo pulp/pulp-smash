@@ -13,6 +13,7 @@ from packaging.version import Version
 from pulp_smash import api, config, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH
+from pulp_smash.tests.docker.api_v2.utils import gen_repo
 from pulp_smash.tests.docker.utils import set_up_module
 
 
@@ -21,18 +22,6 @@ def setUpModule():  # pylint:disable=invalid-name
     set_up_module()
     if config.get_config().version < Version('2.8'):
         raise unittest2.SkipTest('These tests require at least Pulp 2.8.')
-
-
-def _gen_docker_repo_body():
-    """Generate a Docker repo create body.
-
-    Return a semi-random dict that can be used to create a Docker repository.
-    """
-    return {
-        'id': utils.uuid4(), 'importer_config': {},
-        'importer_type_id': 'docker_importer',
-        'notes': {'_repo-type': 'docker-repo'},
-    }
 
 
 def _gen_distributor():
@@ -54,7 +43,7 @@ class CrudTestCase(utils.BaseAPICrudTestCase):
     @staticmethod
     def create_body():
         """Return a dict for creating a repository."""
-        return _gen_docker_repo_body()
+        return gen_repo()
 
     @staticmethod
     def update_body():
@@ -94,7 +83,7 @@ class UpdateTestCase(utils.BaseAPITestCase):
 
         # Create a repository and a distributor
         client = api.Client(cls.cfg)
-        repo = client.post(REPOSITORY_PATH, _gen_docker_repo_body()).json()
+        repo = client.post(REPOSITORY_PATH, gen_repo()).json()
         cls.resources.add(repo['_href'])
         cls.responses['add distributor'] = client.post(
             urljoin(repo['_href'], 'distributors/'),
