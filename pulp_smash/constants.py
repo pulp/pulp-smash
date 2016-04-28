@@ -19,6 +19,12 @@ CONTENT_UPLOAD_PATH = '/pulp/api/v2/content/uploads/'
    http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/content/upload.html#creating-an-upload-request
 """
 
+DOCKER_IMAGE_URL = (
+    'https://repos.fedorapeople.org/repos/pulp/pulp/fixtures/docker/'
+    'busybox:latest.tar'
+)
+"""The URL to a Docker image as created by ``docker save``."""
+
 DOCKER_V1_FEED_URL = 'https://index.docker.io'
 """The URL to a V1 Docker registry.
 
