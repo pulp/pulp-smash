@@ -194,7 +194,7 @@ class UploadImportUnitTestCase(unittest2.TestCase):
             }
             response = utils.upload_import_unit(
                 mock.Mock(),  # server_config
-                'my unit',
+                b'my unit',
                 'my unit type id',
                 'http://example.com',  # repo_href
             )

@@ -6,6 +6,7 @@ but the reverse should not be done.
 """
 from __future__ import unicode_literals
 
+import io
 import uuid
 
 import requests
@@ -130,7 +131,19 @@ def upload_import_unit(server_config, unit, unit_type_id, repo_href):
     """
     client = api.Client(server_config, api.json_handler)
     malloc = client.post(CONTENT_UPLOAD_PATH)
-    client.put(urljoin(malloc['_href'], '0/'), data=unit)
+
+    # 200,000 bytes ~= 200 kB
+    chunk_size = 200000
+    offset = 0
+    with io.BytesIO(unit) as handle:
+        while True:
+            chunk = handle.read(chunk_size)
+            if not chunk:  # if chunk == b'':
+                break  # we've reached EOF
+            path = urljoin(malloc['_href'], '{}/'.format(offset))
+            client.put(path, data=chunk)
+            offset += chunk_size
+
     call_report = client.post(urljoin(repo_href, 'actions/import_upload/'), {
         'unit_key': {},
         'unit_type_id': unit_type_id,
