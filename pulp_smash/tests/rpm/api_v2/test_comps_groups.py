@@ -251,7 +251,7 @@ class CompsGroupsTestCase(utils.BaseAPITestCase):
             self.skipTest('https://pulp.plan.io/issues/1787')
         input_id = self.package_groups[0]['id']  # minimal package group
         output = _get_groups_by_id(self.root_element)[input_id]
-        self.assertEqual(len(output.findall('display_order')), 1)
+        self.assertEqual(len(output.findall('display_order')), 0)
 
     def test_single_elements(self):
         """Assert that certain tags appear under groups exactly once."""
