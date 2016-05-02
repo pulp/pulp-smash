@@ -147,15 +147,15 @@ class SyncPublishV2TestCase(_SuccessMixin, _BaseTestCase):
         checksum its blob, and compare this checksum to the one embedded in the
         blob's URL.
         """
-        # Issue 1868 only affects RHEL 6.
-        if (selectors.bug_is_untestable(1868, self.cfg.version) and
+        # Issue 1781 only affects RHEL 6.
+        if (selectors.bug_is_untestable(1781, self.cfg.version) and
                 cli.Client(self.cfg, cli.echo_handler).run((
                     'grep',
                     '-i',
                     'red hat enterprise linux server release 6',
                     '/etc/redhat-release',
                 )).returncode == 0):
-            self.skipTest('https://pulp.plan.io/issues/1868')
+            self.skipTest('https://pulp.plan.io/issues/1781')
 
         for fs_layer in self.manifest['fsLayers']:
             with self.subTest(fs_layer=fs_layer):
