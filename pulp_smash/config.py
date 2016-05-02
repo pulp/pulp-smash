@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 
 import json
 import os
+import warnings
 from copy import deepcopy
 from threading import Lock
 
@@ -74,22 +75,22 @@ class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
     contents exists on the filesystem::
 
         {
-          "default": {"base_url": "example.com", "auth": ["alice", "hackme"]},
-          "alternate": {"base_url": "example.org", "auth": ["bob", "hackme"]},
+          "pulp": {"base_url": "example.com", "auth": ["alice", "hackme"]},
+          "pulp agent": {"base_url": "example.org", "auth": ["bob", "hackme"]},
         }
 
     The two top-level sections can be read like so:
 
     >>> from pulp_smash.config import ServerConfig
-    >>> 'example.com' == ServerConfig().read('default').base_url
-    >>> 'example.org' == ServerConfig().read('alternate').base_url
+    >>> 'example.com' == ServerConfig().read('pulp').base_url
+    >>> 'example.org' == ServerConfig().read('pulp agent').base_url
 
-    By default, :meth:`read` reads the "default" section. As a result, this
+    By default, :meth:`read` reads the "pulp" section. As a result, this
     holds true:
 
     >>> from pulp_smash.config import ServerConfig
-    >>> ServerConfig().read() == ServerConfig().read('default')
-    >>> ServerConfig().read() != ServerConfig().read('alternate')
+    >>> ServerConfig().read() == ServerConfig().read('pulp')
+    >>> ServerConfig().read() != ServerConfig().read('pulp agent')
 
     All methods dealing with files obey the `XDG Base Directory Specification
     <http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_.
@@ -146,7 +147,7 @@ class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
             self.version = Version(version)
         self.cli_transport = cli_transport
 
-        self._section = 'default'
+        self._section = 'pulp'
         self._xdg_config_file = os.environ.get(
             'PULP_SMASH_CONFIG_FILE',
             'settings.json'
@@ -267,23 +268,50 @@ class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
         :returns: A new :class:`pulp_smash.config.ServerConfig` object. The
             current object is not modified by this method.
         :rtype: ServerConfig
+        :raises: ``warnings.DecprecationWarning`` if the user does not specify
+            which section should be read and the configuration file contains a
+            single section named ``default``. (The section should be renamed
+            from ``default`` to ``pulp``.)
         """
-        # What section is being read?
-        if section is None:
-            section = self._section
-
-        # What file is being manipulated?
+        # Read the configuration file.
         if xdg_config_file is None:
             xdg_config_file = self._xdg_config_file
         if xdg_config_dir is None:
             xdg_config_dir = self._xdg_config_dir
         path = _get_config_file_path(xdg_config_dir, xdg_config_file)
+        with open(path) as handle:
+            config_file = json.load(handle)
+
+        # Decide which section to read from the config file, then do so.
+        if section is None and list(config_file.keys()) == ['default']:
+            section = 'default'
+            # We could use textwrap.wrap() on the message, but that makes log
+            # files harder to grep.
+            warnings.warn(
+                (
+                    'By default, Pulp Smash reads a section named "{0}" from '
+                    'its configuration file. Formerly, Pulp Smash defaulted '
+                    'to reading a section named "{1}". The configuration file '
+                    'at "{2}" appears to be following the old standard; '
+                    'consider renaming section "{1}" to "{0}".'
+                    .format(self._section, 'default', path)
+                ),
+                DeprecationWarning
+            )
+        elif section is None:
+            section = self._section
+        try:
+            config_section = config_file[section]
+        except KeyError:
+            raise exceptions.ConfigFileSectionNotFoundError(
+                'The Pulp Smash configuration file at {} has no section '
+                'entitled {}.'.format(path, section)
+            )
 
         # Instantiate a config and populate it with values from the settings
         # file. We tell the config object which file it has been populated from
         # so calls to its `save` method and other methods hit the same file.
-        with open(path) as config_file:
-            cfg = type(self)(**json.load(config_file)[section])
+        cfg = type(self)(**config_section)
         # pylint:disable=protected-access
         cfg._section = section
         cfg._xdg_config_file = xdg_config_file

@@ -99,26 +99,45 @@ class PulpSmashConfigFileTestCase(unittest2.TestCase):
 class ReadTestCase(unittest2.TestCase):
     """Test :meth:`pulp_smash.config.ServerConfig.read`."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Read a mock configuration file section. Save relevant objects."""
-        cls.attrs = _gen_attrs()  # config section values
-        cls.open_ = mock.mock_open(
-            read_data=json.dumps({'default': cls.attrs})
-        )
-        with mock.patch.object(builtins, 'open', cls.open_):
+    def setUp(self):
+        """Generate contents for a configuration file."""
+        self.config_file = {'pulp': _gen_attrs()}
+
+    def test_read_section(self):
+        """Read a section from the configuration file.
+
+        Assert that values from the configuration file are present on the
+        resultant :class:`pulp_smash.config.ServerConfig` object.
+        """
+        open_ = mock.mock_open(read_data=json.dumps(self.config_file))
+        with mock.patch.object(builtins, 'open', open_):
             with mock.patch.object(config, '_get_config_file_path'):
-                cls.cfg = config.ServerConfig().read()
+                cfg = config.ServerConfig().read()
+        self.assertEqual(self.config_file['pulp']['base_url'], cfg.base_url)
 
-    def test_attrs(self):
-        """Assert that config file values are assigned to a config obj."""
-        attrs = config._public_attrs(self.cfg)  # pylint:disable=W0212
-        attrs['version'] = type('')(attrs['version'])
-        self.assertEqual(self.attrs, attrs)
+    def test_read_nonexistent_section(self):
+        """Read a non-existent section from the configuration file.
 
-    def test_open(self):
-        """Assert that ``open`` was called once."""
-        self.assertEqual(self.open_.call_count, 1)
+        Assert a :class:`pulp_smash.exceptions.ConfigFileSectionNotFoundError:
+        is raised.
+        """
+        open_ = mock.mock_open(read_data=json.dumps(self.config_file))
+        with mock.patch.object(builtins, 'open', open_):
+            with mock.patch.object(config, '_get_config_file_path'):
+                with self.assertRaises(
+                    exceptions.ConfigFileSectionNotFoundError
+                ):
+                    config.ServerConfig().read('foo')
+
+    def test_read_default_section(self):
+        """Read from a configuration file with a section named 'default'."""
+        self.config_file['default'] = self.config_file.pop('pulp')
+        open_ = mock.mock_open(read_data=json.dumps(self.config_file))
+        with mock.patch.object(builtins, 'open', open_):
+            with mock.patch.object(config, '_get_config_file_path'):
+                with self.assertWarns(DeprecationWarning):
+                    cfg = config.ServerConfig().read()
+        self.assertEqual(self.config_file['default']['base_url'], cfg.base_url)
 
 
 class SectionsTestCase(unittest2.TestCase):
@@ -208,7 +227,7 @@ class DeleteTestCase(unittest2.TestCase):
 
     def test_delete_default(self):
         """Assert that the method can delete the default section."""
-        open_ = mock.mock_open(read_data=json.dumps({'default': {}}))
+        open_ = mock.mock_open(read_data=json.dumps({'pulp': {}}))
         with mock.patch.object(builtins, 'open', open_):
             with mock.patch.object(config, '_get_config_file_path'):
                 config.ServerConfig().delete()
@@ -236,7 +255,7 @@ class SaveTestCase(unittest2.TestCase):
         with mock.patch.object(builtins, 'open', open_):
             with mock.patch.object(config, '_get_config_file_path'):
                 config.ServerConfig(**attrs).save()
-        self.assertEqual(_get_written_json(open_), {'default': attrs})
+        self.assertEqual(_get_written_json(open_), {'pulp': attrs})
 
     def test_save_section(self):
         """Assert that the method can save a specified section."""

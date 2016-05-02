@@ -39,6 +39,14 @@ class ConfigFileNotFoundError(Exception):
     """
 
 
+class ConfigFileSectionNotFoundError(Exception):
+    """We cannot read the requested Pulp Smash configuration file section.
+
+    See :mod:`pulp_smash.config` for more information on how configuration
+    files are handled.
+    """
+
+
 class NoKnownBrokerError(Exception):
     """We cannot determine the AMQP broker used by a system.
 

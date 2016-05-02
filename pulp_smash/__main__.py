@@ -11,18 +11,30 @@ from pulp_smash.config import ServerConfig
 
 MESSAGE = tuple((
     '''\
-    Pulp Smash's command line interface has not yet been fleshed out. Please
-    create a configuration file at {} and call `python -m unittest2 discover
-    pulp_smash.tests`. The configuration file should have this structure:
+    Please create a configuration file at {} and call `python -m unittest2
+    discover pulp_smash.tests`. The configuration file should have this
+    structure:
     ''',
     '''\
-    {"default": {
-        "base_url": "https://pulp.example.com",
-        "auth": ["username", "password"],
-        "verify": true,
-        "version": "2.7.5",
-        "cli_transport": "local"
-    }}''',
+    {
+        "pulp": {
+            "base_url": "https://pulp.example.com",
+            "auth": ["username", "password"],
+            "verify": true,
+            "version": "2.7.5",
+            "cli_transport": "local"
+        },
+        "pulp agent": {
+            "base_url": "https://pulp-agent.example.com"
+        }
+    }''',
+    '''\
+    Each section provides information about a single Pulp-related service and
+    the host on which that service is installed. The "pulp" and "pulp agent"
+    sections tell about the Pulp and Pulp Agent services, respectively. The
+    former is required. The latter is optional, and if omitted, relevant tests
+    are skipped.
+    ''',
     '''\
     The `verify`, `version` and `cli_transport` keys are optional. The `verify`
     option can be used to explicitly enable or disable SSL verification. The
@@ -72,14 +84,15 @@ def main():
     message += '\n\n' + MESSAGE[1]
     message += '\n\n' + wrapper.fill(textwrap.dedent(MESSAGE[2]))
     message += '\n\n' + wrapper.fill(textwrap.dedent(MESSAGE[3]))
+    message += '\n\n' + wrapper.fill(textwrap.dedent(MESSAGE[4]))
     wrapper.initial_indent = '* '
     wrapper.subsequent_indent = '  '
-    message += '\n\n' + wrapper.fill(textwrap.dedent(MESSAGE[4]))
+    message += '\n\n' + wrapper.fill(textwrap.dedent(MESSAGE[5]))
     message += '\n\n' + wrapper.fill(
         # pylint:disable=protected-access
-        textwrap.dedent(MESSAGE[5].format(cfg._xdg_config_file))
+        textwrap.dedent(MESSAGE[6].format(cfg._xdg_config_file))
     )
-    message += '\n\n' + wrapper.fill(textwrap.dedent(MESSAGE[6]))
+    message += '\n\n' + wrapper.fill(textwrap.dedent(MESSAGE[7]))
     print(message)
 
 
