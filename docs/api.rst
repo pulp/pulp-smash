@@ -78,6 +78,8 @@ developers, not a gospel.
     api/pulp_smash.tests.rpm.api_v2.test_unassociate
     api/pulp_smash.tests.rpm.api_v2.test_updateinfo
     api/pulp_smash.tests.rpm.api_v2.utils
+    api/pulp_smash.tests.rpm.cli
+    api/pulp_smash.tests.rpm.cli.test_copy_units
     api/pulp_smash.tests.rpm.utils
     api/pulp_smash.utils
     api/tests
