@@ -195,7 +195,7 @@ RPM_ABS_PATH = (
 )
 """The absolute path to :data:`pulp_smash.constants.RPM` in the filesystem."""
 
-RPM_FEED_URL = 'https://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/zoo/'
+RPM_FEED_URL = 'https://repos.fedorapeople.org/repos/pulp/pulp/fixtures/rpm/'
 """The URL to an RPM repository. See :data:`RPM_URL`."""
 
 RPM_SHA256_CHECKSUM = (
