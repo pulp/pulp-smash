@@ -31,6 +31,7 @@ Assertions not explored in this module include:
 """
 from __future__ import unicode_literals
 
+import inspect
 from itertools import product
 
 import unittest2
@@ -104,7 +105,6 @@ class CreateTestCase(utils.BaseAPITestCase):
 
 
 # This class is left public for documentation purposes.
-@unittest2.skip('Base test case.')
 class SyncRepoBaseTestCase(utils.BaseAPITestCase):
     """A parent class for repository syncronization test cases.
 
@@ -115,6 +115,8 @@ class SyncRepoBaseTestCase(utils.BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create an RPM repository with a valid feed and sync it."""
+        if inspect.getmro(cls)[0] == SyncRepoBaseTestCase:
+            raise unittest2.SkipTest('Abstract base class.')
         super(SyncRepoBaseTestCase, cls).setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
