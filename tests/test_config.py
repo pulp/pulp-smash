@@ -118,7 +118,7 @@ class ReadTestCase(unittest2.TestCase):
     def test_read_nonexistent_section(self):
         """Read a non-existent section from the configuration file.
 
-        Assert a :class:`pulp_smash.exceptions.ConfigFileSectionNotFoundError:
+        Assert a :class:`pulp_smash.exceptions.ConfigFileSectionNotFoundError`
         is raised.
         """
         open_ = mock.mock_open(read_data=json.dumps(self.config_file))
