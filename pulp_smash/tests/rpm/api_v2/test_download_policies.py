@@ -89,6 +89,7 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         self.assertEqual(
             self.repo['locally_stored_units'],
             sum(self.repo['content_unit_counts'].values()),
+            self.repo['content_unit_counts'],
         )
 
     def test_request_history(self):
@@ -98,7 +99,7 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         the client to the streamer and the rpm request would contain a history
         entry for that redirect.
         """
-        self.assertEqual(0, len(self.rpm.history))
+        self.assertEqual(0, len(self.rpm.history), self.rpm.history)
 
     def test_rpm_checksum(self):
         """Assert the checksum of the downloaded RPM matches the metadata."""
