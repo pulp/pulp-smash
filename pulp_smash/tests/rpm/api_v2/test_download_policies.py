@@ -99,7 +99,9 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         the client to the streamer and the rpm request would contain a history
         entry for that redirect.
         """
-        self.assertEqual(0, len(self.rpm.history), self.rpm.history)
+        # HTTP 302 responses should have a "Location" header.
+        history_headers = [response.headers for response in self.rpm.history]
+        self.assertEqual(0, len(self.rpm.history), history_headers)
 
     def test_rpm_checksum(self):
         """Assert the checksum of the downloaded RPM matches the metadata."""
