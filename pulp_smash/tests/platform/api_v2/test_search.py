@@ -22,9 +22,9 @@ The assumptions explored in this module have the following dependencies::
             └── It is possible to limit how many search results are returned.
 
 .. _Searching:
-    https://pulp.readthedocs.org/en/latest/dev-guide/conventions/criteria.html
+    https://pulp.readthedocs.io/en/latest/dev-guide/conventions/criteria.html
 .. _User APIs:
-    https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/user/index.html
+    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/user/index.html
 """
 from __future__ import unicode_literals
 

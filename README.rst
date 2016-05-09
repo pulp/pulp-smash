@@ -20,7 +20,7 @@ the prompts.
 
 .. All text above this comment should also be in docs/index.rst, word for word.
 
-The `full documentation <http://pulp-smash.readthedocs.org/en/latest/>`_ is
+The `full documentation <http://pulp-smash.readthedocs.io/en/latest/>`_ is
 available on ReadTheDocs. It can also be generated locally:
 
 .. code-block:: sh

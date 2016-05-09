@@ -12,9 +12,9 @@ following trees of assumptions are explored in this module::
         It is not possible to update distrubutors to have conflicting paths
 
 .. _OSTree:
-    http://pulp-ostree.readthedocs.org/en/latest/
+    http://pulp-ostree.readthedocs.io/en/latest/
 .. _repositories:
-   http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/cud.html
+   http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/cud.html
 """
 from __future__ import unicode_literals
 

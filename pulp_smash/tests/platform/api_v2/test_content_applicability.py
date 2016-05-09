@@ -11,7 +11,7 @@ report.  (See :data:`pulp_smash.constants.CALL_REPORT_KEYS` and
 and :class:`ParallelTestCase` test these two use cases, respectively.
 
 .. _content applicability:
-    https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/consumer/applicability.html
+    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/consumer/applicability.html
 """
 from __future__ import unicode_literals
 

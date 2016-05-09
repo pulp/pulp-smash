@@ -333,7 +333,7 @@ def poll_spawned_tasks(server_config, call_report):
     :raises: Same as :meth:`poll_task`.
 
     .. _call report:
-        http://pulp.readthedocs.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
+        http://pulp.readthedocs.io/en/latest/dev-guide/conventions/sync-v-async.html#call-report
     """
     hrefs = (task['_href'] for task in call_report['spawned_tasks'])
     for href in hrefs:

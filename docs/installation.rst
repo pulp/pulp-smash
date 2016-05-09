@@ -46,4 +46,4 @@ For an explanation of key concepts and more installation strategies, see
 .. _Installing Python Modules: https://docs.python.org/3/installing/
 .. _PyPi: https://pypi.python.org/pypi/pulp-smash
 .. _Virtual Environments and Packages: https://docs.python.org/3/tutorial/venv.html
-.. _Virtualenv: http://virtualenv.readthedocs.org/en/latest/
+.. _Virtualenv: http://virtualenv.readthedocs.io/en/latest/

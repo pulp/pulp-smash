@@ -5,7 +5,7 @@ This module assumes that the tests in
 :mod:`pulp_smash.tests.platform.api_v2.test_repository` hold true.
 
 .. _syncronization:
-    https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/sync.html#scheduling-a-sync
+    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/sync.html#scheduling-a-sync
 """
 from __future__ import unicode_literals
 
@@ -93,7 +93,7 @@ class CreateFailureTestCase(CreateRepoMixin, utils.BaseAPITestCase):
     """Establish that schedules are not created in `documented scenarios`_.
 
     .. _documented scenarios:
-        https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/sync.html#scheduling-a-sync
+        https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/sync.html#scheduling-a-sync
     """
 
     @classmethod
@@ -154,11 +154,11 @@ class ReadUpdateDeleteTestCase(CreateRepoMixin, utils.BaseAPITestCase):
     hold true.
 
     .. _read:
-        https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/sync.html#listing-a-single-scheduled-sync
+        https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/sync.html#listing-a-single-scheduled-sync
     .. _update:
-        https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/sync.html#updating-a-scheduled-sync
+        https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/sync.html#updating-a-scheduled-sync
     .. _delete:
-        https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/sync.html#deleting-a-scheduled-sync
+        https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/sync.html#deleting-a-scheduled-sync
     """
 
     @classmethod

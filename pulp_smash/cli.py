@@ -150,7 +150,7 @@ class Client(object):  # pylint:disable=too-few-public-methods
     :param response_handler: A callback function. Defaults to
         :func:`pulp_smash.cli.code_handler`.
 
-    .. _Plumbum: http://plumbum.readthedocs.org/en/latest/index.html
+    .. _Plumbum: http://plumbum.readthedocs.io/en/latest/index.html
     """
 
     def __init__(self, server_config, response_handler=None):
@@ -185,12 +185,12 @@ class Client(object):  # pylint:disable=too-few-public-methods
         instructions. See :class:`pulp_smash.cli.Client` for a usage example.
 
         .. _BaseCommand.run:
-           http://plumbum.readthedocs.org/en/latest/api/commands.html#plumbum.commands.base.BaseCommand.run
+           http://plumbum.readthedocs.io/en/latest/api/commands.html#plumbum.commands.base.BaseCommand.run
         .. _subprocess.Popen:
            https://docs.python.org/3/library/subprocess.html#subprocess.Popen
         """
         # Let self.response_handler check return codes. See:
-        # https://plumbum.readthedocs.org/en/latest/api/commands.html#plumbum.commands.base.BaseCommand.run
+        # https://plumbum.readthedocs.io/en/latest/api/commands.html#plumbum.commands.base.BaseCommand.run
         kwargs.setdefault('retcode')
 
         code, stdout, stderr = self.machine[args[0]].run(args[1:], **kwargs)

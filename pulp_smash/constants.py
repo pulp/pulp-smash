@@ -9,14 +9,14 @@ CALL_REPORT_KEYS = frozenset(('error', 'result', 'spawned_tasks'))
 """See: `Call Report`_.
 
 .. _Call Report:
-    http://pulp.readthedocs.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
+    http://pulp.readthedocs.io/en/latest/dev-guide/conventions/sync-v-async.html#call-report
 """
 
 CONTENT_UPLOAD_PATH = '/pulp/api/v2/content/uploads/'
 """See: `Creating an Upload Request`_.
 
 .. _Creating an Upload Request:
-   http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/content/upload.html#creating-an-upload-request
+   http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/content/upload.html#creating-an-upload-request
 """
 
 DOCKER_IMAGE_URL = (
@@ -55,7 +55,7 @@ ERROR_KEYS = frozenset((
 No ``href`` field should be present. See `Issue #1310`_.
 
 .. _Exception Handling:
-    https://pulp.readthedocs.org/en/latest/dev-guide/conventions/exceptions.html
+    https://pulp.readthedocs.io/en/latest/dev-guide/conventions/exceptions.html
 .. _Issue #1310: https://pulp.plan.io/issues/1310
 """
 
@@ -63,28 +63,28 @@ GROUP_CALL_REPORT_KEYS = frozenset(('_href', 'group_id'))
 """See: `Group Call Report`_.
 
 .. _Group Call Report:
-    http://pulp.readthedocs.org/en/latest/dev-guide/conventions/sync-v-async.html#group-call-report
+    http://pulp.readthedocs.io/en/latest/dev-guide/conventions/sync-v-async.html#group-call-report
 """
 
 LOGIN_KEYS = frozenset(('certificate', 'key'))
 """See: `User Certificates`_.
 
 .. _User Certificates:
-    http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/authentication.html#user-certificates
+    http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/authentication.html#user-certificates
 """
 
 LOGIN_PATH = '/pulp/api/v2/actions/login/'
 """See: `Authentication`_.
 
 .. _Authentication:
-    https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/authentication.html
+    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/authentication.html
 """
 
 ORPHANS_PATH = 'pulp/api/v2/content/orphans/'
 """See: `Orphaned Content`_.
 
 .. _Orphaned Content:
-    http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/content/orphan.html
+    http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/content/orphan.html
 """
 
 OSTREE_FEED = (
@@ -93,21 +93,21 @@ OSTREE_FEED = (
 """The URL to a URL of OSTree branches. See OSTree `Importer Configuration`_.
 
 .. _Importer Configuration:
-    http://pulp-ostree.readthedocs.org/en/latest/tech-reference/importer.html
+    http://pulp-ostree.readthedocs.io/en/latest/tech-reference/importer.html
 """
 
 OSTREE_BRANCH = 'fedora-atomic/f21/x86_64/updates/docker-host'
 """A branch in :data:`OSTREE_FEED`. See OSTree `Importer Configuration`_.
 
 .. _Importer Configuration:
-    http://pulp-ostree.readthedocs.org/en/latest/tech-reference/importer.html
+    http://pulp-ostree.readthedocs.io/en/latest/tech-reference/importer.html
 """
 
 PLUGIN_TYPES_PATH = '/pulp/api/v2/plugins/types/'
 """See: `Retrieve All Content Unit Types`_.
 
 .. _Retrieve All Content Unit Types:
-   http://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/server_plugins.html#retrieve-all-content-unit-types
+   http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/server_plugins.html#retrieve-all-content-unit-types
 """
 
 PULP_SERVICES = {
@@ -182,14 +182,14 @@ REPOSITORY_PATH = '/pulp/api/v2/repositories/'
 """See: `Repository APIs`_.
 
 .. _Repository APIs:
-    https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/repo/index.html
+    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/index.html
 """
 
 CONSUMER_PATH = '/pulp/api/v2/consumers/'
 """See: `Consumer APIs`_.
 
 .. _Consumer APIs:
-    https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/consumer/index.html
+    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/consumer/index.html
 """
 
 RPM = 'bear-4.1-1.noarch.rpm'
@@ -221,5 +221,5 @@ USER_PATH = '/pulp/api/v2/users/'
 """See: `User APIs`_.
 
 .. _User APIs:
-    https://pulp.readthedocs.org/en/latest/dev-guide/integration/rest-api/user/index.html
+    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/user/index.html
 """

@@ -6,7 +6,7 @@ This module assumes that the tests in
 :mod:`pulp_smash.tests.rpm.api_v2.test_sync_publish` hold true.
 
 .. _Export Distributors:
-    http://pulp-rpm.readthedocs.org/en/latest/tech-reference/export-distributor.html
+    http://pulp-rpm.readthedocs.io/en/latest/tech-reference/export-distributor.html
 """
 from __future__ import unicode_literals
 
