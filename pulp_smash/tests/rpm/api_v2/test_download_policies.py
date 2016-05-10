@@ -12,7 +12,7 @@ import hashlib
 import unittest2
 from packaging.version import Version
 
-from pulp_smash import api, cli, config, utils
+from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     REPOSITORY_PATH,
@@ -23,6 +23,17 @@ from pulp_smash.constants import (
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module
+
+
+def _os_is_rhel6(server_config):
+    """Return ``True`` if the server runs RHEL 6, or ``False`` otherwise."""
+    response = cli.Client(server_config, cli.echo_handler).run((
+        'grep',
+        '-i',
+        'red hat enterprise linux server release 6',
+        '/etc/redhat-release',
+    ))
+    return response.returncode == 0
 
 
 def setUpModule():  # pylint:disable=invalid-name
@@ -63,6 +74,9 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         4. Download an RPM from the repository.
         """
         super(BackgroundTestCase, cls).setUpClass()
+        if (selectors.bug_is_untestable(1905, cls.cfg.version) and
+                _os_is_rhel6(cls.cfg)):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1905')
 
         # Required to ensure content is actually downloaded.
         utils.reset_squid(cls.cfg)
