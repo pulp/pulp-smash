@@ -32,23 +32,36 @@ import random
 
 import unittest2
 
-from pulp_smash import api, utils
+from pulp_smash import api, config, utils
 from pulp_smash.constants import USER_PATH
 from pulp_smash.utils import uuid4
 
 
 _SEARCH_PATH = USER_PATH + 'search/'
+_USERS = []  # A list of dicts, each describing a user. See setUpModule.
 
 
-def _create_users(server_config, num):
-    """Create ``num`` users with random logins. Return tuple of attributes."""
-    client = api.Client(server_config, api.json_handler)
-    users = (client.post(USER_PATH, {'login': uuid4()}) for _ in range(num))
-    return tuple(users)
+def setUpModule():  # pylint:disable=invalid-name
+    """Create several users, each with a randomized login name.
+
+    Test cases may search for these users or otherwise perform non-destructive
+    actions on them. Test cases should **not** change these users.
+    """
+    client = api.Client(config.get_config(), api.json_handler)
+    del _USERS[:]  # Ensure idempotence
+    for _ in range(3):
+        _USERS.append(client.post(USER_PATH, {'login': uuid4()}))
+
+
+def tearDownModule():  # pylint:disable=invalid-name
+    """Delete the users created by :func:`setUpModule`."""
+    client = api.Client(config.get_config())
+    while _USERS:
+        client.delete(_USERS.pop()['_href'])
 
 
 class _BaseTestCase(utils.BaseAPITestCase):
-    """Provide a server config to tests, and delete created resources."""
+    """Create an empty dict of searches, and add a common test method."""
 
     @classmethod
     def setUpClass(cls):
@@ -77,19 +90,17 @@ class MinimalTestCase(_BaseTestCase):
         """Create one user. Execute searches."""
         super(MinimalTestCase, cls).setUpClass()
         client = api.Client(cls.cfg)
-        cls.user = _create_users(cls.cfg, 1)[0]
         cls.searches = {
             'get': client.get(_SEARCH_PATH),
             'post': client.post(_SEARCH_PATH, {'criteria': {}}),
         }
-        cls.resources.add(cls.user['_href'])  # mark for deletion
 
     def test_user_found(self):
-        """Assert each search should include the user we created."""
+        """Assert each search result should include a user we created."""
         for key, response in self.searches.items():
             with self.subTest(key=key):
                 logins = {user['login'] for user in response.json()}
-                self.assertIn(self.user['login'], logins)
+                self.assertIn(_USERS[0]['login'], logins)
 
 
 class SortTestCase(_BaseTestCase):
@@ -107,7 +118,6 @@ class SortTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create two users. Execute searches."""
         super(SortTestCase, cls).setUpClass()
-        cls.resources = {user['_href'] for user in _create_users(cls.cfg, 2)}
         client = api.Client(cls.cfg)
         for order in {'ascending', 'descending'}:
             json = {'criteria': {'sort': [['id', order]]}}
@@ -140,7 +150,6 @@ class FieldTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create one user. Execute searches."""
         super(FieldTestCase, cls).setUpClass()
-        cls.resources = {_create_users(cls.cfg, 1)[0]['_href']}
         client = api.Client(cls.cfg)
         cls.searches = {
             'get': client.get(_SEARCH_PATH, params={'field': 'name'}),
@@ -172,7 +181,6 @@ class FieldsTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create one user. Execute searches."""
         super(FieldsTestCase, cls).setUpClass()
-        cls.resources = {_create_users(cls.cfg, 1)[0]['_href']}
         client = api.Client(cls.cfg)
         cls.searches = {
             'get': client.get(_SEARCH_PATH, params='?field=login&field=roles'),
@@ -203,11 +211,9 @@ class FiltersIdTestCase(_BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Create two users. Search for one user."""
+        """Search for exactly one user."""
         super(FiltersIdTestCase, cls).setUpClass()
-        users = _create_users(cls.cfg, 2)
-        cls.resources = {user['_href'] for user in users}
-        cls.user = random.choice(users)  # search for this user
+        cls.user = random.choice(_USERS)
         json = {'criteria': {'filters': {'id': cls.user['id']}}}
         cls.searches['post'] = api.Client(cls.cfg).post(_SEARCH_PATH, json)
 
@@ -232,11 +238,9 @@ class FiltersIdsTestCase(_BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Create three users. Search for two users."""
+        """Search for exactly two users."""
         super(FiltersIdsTestCase, cls).setUpClass()
-        users = _create_users(cls.cfg, 3)
-        cls.resources = {user['_href'] for user in users}
-        cls.user_ids = [user['id'] for user in random.sample(users, 2)]  # noqa pylint:disable=unsubscriptable-object
+        cls.user_ids = [user['id'] for user in random.sample(_USERS, 2)]  # noqa pylint:disable=unsubscriptable-object
         cls.searches['post'] = api.Client(cls.cfg).post(
             _SEARCH_PATH,
             {'criteria': {'filters': {'id': {'$in': cls.user_ids}}}},
@@ -267,9 +271,7 @@ class LimitSkipTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create two users. Execute searches."""
         super(LimitSkipTestCase, cls).setUpClass()
-        users = _create_users(cls.cfg, 2)
-        cls.resources = {user['_href'] for user in users}
-        cls.user_ids = [user['id'] for user in users]
+        cls.user_ids = [user['id'] for user in random.sample(_USERS, 2)]  # noqa pylint:disable=unsubscriptable-object
         client = api.Client(cls.cfg)
         for criterion in {'limit', 'skip'}:
             key = 'post_' + criterion
