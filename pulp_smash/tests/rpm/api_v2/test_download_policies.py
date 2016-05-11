@@ -234,6 +234,9 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
         7. Trigger a repository download, with unit verification.
         """
         super(FixFileCorruptionTestCase, cls).setUpClass()
+        if (selectors.bug_is_untestable(1905, cls.cfg.version) and
+                _os_is_rhel6(cls.cfg)):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1905')
 
         # Ensure Pulp is empty of units otherwise we might just associate pre-
         # existing units.
