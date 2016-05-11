@@ -50,6 +50,9 @@ class SyncV1TestCase(_SuccessMixin, _BaseTestCase):
     def setUpClass(cls):
         """Create and sync a docker repository with a v1 registry."""
         super(SyncV1TestCase, cls).setUpClass()
+        if (cls.cfg.version >= Version('2.9') and
+                selectors.bug_is_untestable(1909, cls.cfg.version)):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1909')
         docker_utils.repo_create(
             cls.cfg,
             feed=DOCKER_V1_FEED_URL,
@@ -100,6 +103,9 @@ class SyncPublishV2TestCase(_SuccessMixin, _BaseTestCase):
         super(SyncPublishV2TestCase, cls).setUpClass()
         if cls.cfg.version < Version('2.8'):
             raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
+        if (cls.cfg.version >= Version('2.9') and
+                selectors.bug_is_untestable(1909, cls.cfg.version)):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1909')
         docker_utils.repo_create(
             cls.cfg,
             feed=DOCKER_V2_FEED_URL,
@@ -234,6 +240,9 @@ class SyncUnnamespacedV2TestCase(_SuccessMixin, _BaseTestCase):
         super(SyncUnnamespacedV2TestCase, cls).setUpClass()
         if cls.cfg.version < Version('2.8'):
             raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
+        if (cls.cfg.version >= Version('2.9') and
+                selectors.bug_is_untestable(1909, cls.cfg.version)):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1909')
         docker_utils.repo_create(
             cls.cfg,
             feed=DOCKER_V2_FEED_URL,
