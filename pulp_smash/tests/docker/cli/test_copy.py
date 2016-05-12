@@ -7,7 +7,7 @@ import re
 import unittest2
 from packaging.version import Version
 
-from pulp_smash import config, utils
+from pulp_smash import config, selectors, utils
 from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
 from pulp_smash.tests.docker.cli import utils as docker_utils
 from pulp_smash.tests.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -153,6 +153,9 @@ class CopyAllManifestsTestCase(_BaseTestCase, _CopyMixin):
     def setUpClass(cls):
         """Create and sync a docker repository with a v2 registry."""
         super(CopyAllManifestsTestCase, cls).setUpClass()
+        if (cls.cfg.version >= Version('2.9') and
+                selectors.bug_is_untestable(1909, cls.cfg.version)):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1909')
 
         # Create a pair of repositories.
         docker_utils.repo_create(
@@ -207,6 +210,9 @@ class CopyAllTagsTestCase(_BaseTestCase, _CopyMixin):
     def setUpClass(cls):
         """Create and sync a docker repository with a v2 registry."""
         super(CopyAllTagsTestCase, cls).setUpClass()
+        if (cls.cfg.version >= Version('2.9') and
+                selectors.bug_is_untestable(1909, cls.cfg.version)):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1909')
 
         # Create a pair of repositories.
         docker_utils.repo_create(
