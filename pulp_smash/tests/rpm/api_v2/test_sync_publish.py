@@ -430,14 +430,15 @@ class RedundantPublishSameMetadataTestCase(utils.BaseAPITestCase):
 
         Do the following:
 
-        1. Create a new repo with zoo's feed
-        2. Publish the repo a first time
-        3. Publish the repo a second time, without any changes
+        1. Create a repository with a feed and a distributor, and sync it.
+        2. Publish the repository twice in a row, without making any changes
+           between the two publishes.
         """
         super(RedundantPublishSameMetadataTestCase, cls).setUpClass()
         if selectors.bug_is_untestable(1724, cls.cfg.version):
             raise unittest2.SkipTest('https://pulp.plan.io/issues/1724')
 
+        # Create and sync a repository.
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['description'] = 'TwoPublishes test repo - delete me'
@@ -446,31 +447,27 @@ class RedundantPublishSameMetadataTestCase(utils.BaseAPITestCase):
         distributor = gen_distributor()
         distributor['distributor_config']['http'] = False
         distributor['distributor_config']['relative_url'] = body['id']
-
+        body['distributors'] = [distributor]
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
         utils.sync_repo(cls.cfg, repo['_href'])
 
-        repomd_xml_path = (
-            '{repo_publish_path}{relative_url}/repodata/repomd.xml'
-            .format(
-                relative_url=body['id'],
-                repo_publish_path=_REPO_PUBLISH_PATH,
-            )
-        )
-        publish_data = {'override_config': {}, 'id': 'yum_distributor'}
+        # Get info about the repository, including its distributors.
+        repo = client.get(repo['_href'], params={'details': True})
+
+        # Publish the repository to the distributor twice.
         publish_path = urljoin(repo['_href'], 'actions/publish/')
+        repomd_xml_path = urljoin(_REPO_PUBLISH_PATH, repo['id'] + '/')
+        repomd_xml_path = urljoin(repomd_xml_path, 'repodata/repomd.xml')
         cls.publish_repomd_data = []
         for _ in range(2):
-            client.post(publish_path, publish_data)
+            client.post(publish_path, {'id': repo['distributors'][0]['id']})
             cls.publish_repomd_data.append(
                 api.Client(cls.cfg).get(repomd_xml_path)
             )
 
     def test_compare_repomd(self):
         """Assert identical metadata on redundant publish."""
-        if selectors.bug_is_untestable(1724, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/1724')
         self.assertEqual(
             self.publish_repomd_data[0].content,
             self.publish_repomd_data[1].content
