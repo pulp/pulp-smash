@@ -32,7 +32,7 @@ import random
 
 import unittest2
 
-from pulp_smash import api, config, utils
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import USER_PATH
 from pulp_smash.utils import uuid4
 
@@ -136,7 +136,6 @@ class SortTestCase(_BaseTestCase):
         self.assertEqual(ids, sorted(ids, reverse=True))
 
 
-@unittest2.skip('See: https://pulp.plan.io/issues/1332')
 class FieldTestCase(_BaseTestCase):
     """Ask for a single field in search results.
 
@@ -150,6 +149,8 @@ class FieldTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create one user. Execute searches."""
         super(FieldTestCase, cls).setUpClass()
+        if selectors.bug_is_untestable(1332, cls.cfg.version):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1332')
         client = api.Client(cls.cfg)
         cls.searches = {
             'get': client.get(_SEARCH_PATH, params={'field': 'name'}),
@@ -164,10 +165,9 @@ class FieldTestCase(_BaseTestCase):
         for method, response in self.searches.items():
             with self.subTest(method=method):
                 for result in response.json():  # for result in results:
-                    self.assertEqual(set(result.keys()), {'name'})
+                    self.assertEqual(set(result.keys()), {'name'}, result)
 
 
-@unittest2.skip('See: https://pulp.plan.io/issues/1332')
 class FieldsTestCase(_BaseTestCase):
     """Ask for several fields in search results.
 
@@ -181,9 +181,11 @@ class FieldsTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create one user. Execute searches."""
         super(FieldsTestCase, cls).setUpClass()
+        if selectors.bug_is_untestable(1332, cls.cfg.version):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1332')
         client = api.Client(cls.cfg)
         cls.searches = {
-            'get': client.get(_SEARCH_PATH, params='?field=login&field=roles'),
+            'get': client.get(_SEARCH_PATH, params='field=login&field=roles'),
             'post': client.post(
                 _SEARCH_PATH,
                 {'criteria': {'fields': ['login', 'roles']}},
@@ -192,10 +194,11 @@ class FieldsTestCase(_BaseTestCase):
 
     def test_fields(self):
         """Only the requested keys should be in each response."""
-        for action, response in self.searches.items():
-            with self.subTest(action=action):
+        expected_keys = {'login', 'roles'}
+        for method, response in self.searches.items():
+            with self.subTest(method=method):
                 for result in response.json():  # for result in results:
-                    self.assertEqual(set(result.keys()), {'login', 'roles'})
+                    self.assertEqual(set(result.keys()), expected_keys, result)
 
 
 class FiltersIdTestCase(_BaseTestCase):
