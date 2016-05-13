@@ -120,14 +120,20 @@ class ExportDistributorTestCase(utils.BaseAPITestCase):
         This test is skipped if selinux is installed and enabled on the target
         system an `Pulp issue 616 <https://pulp.plan.io/issues/616>`_ is open.
         """
+        # Issue 616 describes how SELinux prevents Pulp from writing to an
+        # export directory. If that bug affects us, and if SELinux is enforcing
+        # on the target system, then we disable SELinux for the duration of
+        # this one test and re-enable it afterwards.
+        client = cli.Client(self.cfg)
         if (_has_getenforce(self.cfg) and
                 _run_getenforce(self.cfg).lower() == 'enforcing' and
                 selectors.bug_is_untestable(616, self.cfg.version)):
-            self.skipTest('https://pulp.plan.io/issues/616')
+            sudo = 'sudo ' if utils.is_root(self.cfg) else ''
+            client.run((sudo + 'setenforce 0').split())
+            self.addCleanup(client.run, (sudo + 'setenforce 1').split())
 
         # Create a custom directory, and ensure apache can create files in it.
         # Schedule it for deletion, as Pulp doesn't do this during repo removal
-        client = cli.Client(self.cfg)
         export_dir = client.run('mktemp --directory'.split()).stdout.strip()
         self.addCleanup(client.run, 'rm -rf {}'.format(export_dir).split())
         for acl in ('user:apache:rwx', 'default:apache:rwx'):
