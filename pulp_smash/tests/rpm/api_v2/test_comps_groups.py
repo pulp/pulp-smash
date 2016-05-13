@@ -241,8 +241,16 @@ class CompsGroupsTestCase(utils.BaseAPITestCase):
                 output_value = output.find(output_key).text
                 self.assertEqual(input_value, output_value)
 
-    def test_default_display_order(self):
-        """Assert display_order is omitted from XML if omitted from unit.
+    def test_display_order_occurences(self):
+        """Assert ``display_order`` occurs once if omitted from the unit."""
+        if selectors.bug_is_untestable(1787, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/1787')
+        input_id = self.package_groups[0]['id']  # minimal package group
+        output = _get_groups_by_id(self.root_element)[input_id]
+        self.assertEqual(len(output.findall('display_order')), 1)
+
+    def test_display_order_value(self):
+        """Assert ``display_order`` is "1024" if omitted from the unit.
 
         This test may be skipped if `Pulp #1787
         <https://pulp.plan.io/issues/1787>`_ is open.
@@ -251,7 +259,7 @@ class CompsGroupsTestCase(utils.BaseAPITestCase):
             self.skipTest('https://pulp.plan.io/issues/1787')
         input_id = self.package_groups[0]['id']  # minimal package group
         output = _get_groups_by_id(self.root_element)[input_id]
-        self.assertEqual(len(output.findall('display_order')), 0)
+        self.assertEqual(output.find('display_order').text, '1024')
 
     def test_single_elements(self):
         """Assert that certain tags appear under groups exactly once."""
