@@ -283,7 +283,16 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
 
     def test_units_after_download(self):
         """Assert all units are downloaded after download_repo finishes."""
-        self.assertEqual(self.repo_post_download['locally_stored_units'], 39)
+        # Support for package langpacks has been added in Pulp 2.9. In earlier
+        # versions, langpacks are ignored.
+        locally_stored_units = 39  # See repo['content_unit_counts']
+        if self.cfg.version >= Version('2.9'):
+            locally_stored_units += 1
+        self.assertEqual(
+            self.repo_post_download['locally_stored_units'],
+            locally_stored_units,
+            self.repo_post_download,
+        )
 
     def test_corruption_occurred(self):
         """Assert the checksum after corrupting an RPM isn't the same.
