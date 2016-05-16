@@ -1,0 +1,108 @@
+{"status": "final",
+"issued": "2014-09-24 00:00:00",
+"references": [
+    {
+        "href": "https://rhn.redhat.com/errata/RHSA-9999-0001.html",
+        "type": "self",
+        "id": null,
+        "title": "RHSA-9999:0001"
+    },
+    {
+        "href": "https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=1141597",
+        "type": "bugzilla",
+        "id": "1141597",
+        "title": "CVE-2014-6271 bash: specially-crafted environment variables can be used to inject shell commands"
+    },
+    {
+        "href": "https://www.redhat.com/security/data/cve/CVE-2014-6271.html",
+        "type": "cve",
+        "id": "CVE-2014-6271",
+        "title": "CVE-2014-6271"
+    },
+    {
+        "href": "https://access.redhat.com/security/updates/classification/#critical",
+        "type": "other",
+        "id": null,
+        "title": null
+    },
+    {
+        "href": "https://access.redhat.com/articles/1200223",
+        "type": "other",
+        "id": null,
+        "title": null
+    }
+],
+"pkglist": [
+    {
+        "short": "",
+        "name": "RHSA-2014:1293",
+        "packages": [
+            {
+                "src": "bear-4.1-1.src.rpm",
+                "name": "bear",
+                "sum": [
+                    "sha256",
+                    "7a831f9f90bf4d21027572cb503d20b702de8e8785b02c0397445c2e481d81b3"
+                ],
+                "filename": "bear-4.1-1.noarch.rpm",
+                "epoch": "0",
+                "version": "1.0",
+                "release": "1",
+                "arch": "noarch"
+            },
+            {
+                "src": "camel-0.1-1.src.rpm",
+                "name": "camel",
+                "sum": [
+                    "sha256",
+                    "82e497ca3e7affb5682362b50537af290d0a202e4ad00b6ef62357a2cc9819ba"
+                ],
+                "filename": "camel-0.1-1.noarch.rpm",
+                "epoch": "0",
+                "version": "0.1",
+                "release": "1",
+                "arch": "noarch"
+            },
+            {
+                "src": "cat-1.0-1.src.rpm",
+                "name": "cat",
+                "sum": [
+                    "sha256",
+                    "43e77adb7f51b5542b813024a8ee3e477175c142f35982ab5ae2b2978486239f"
+                ],
+                "filename": "cat-1.0-1.noarch.rpm",
+                "epoch": "0",
+                "version": "1.0",
+                "release": "1",
+                "arch": "noarch"
+            },
+            {
+                "src": "cheetah-1.25.3-5.src.rpm",
+                "name": "dummy-vim",
+                "sum": [
+                    "sha256",
+                    "2189ac4bf059f98a8d48136eb72b46415f3aa263026443ebd8879d415eacaf42"
+                ],
+                "filename": "cheetah-1.25.3-5.noarch.rpm",
+                "epoch": "0",
+                "version": "1.25.3",
+                "release": "5",
+                "arch": "noarch"
+            }
+        ]
+    }
+],
+"from": "nobody@redhat.com",
+"severity": "Critical",
+"title": "Dummy advisory 1",
+"id": "RHSA-9999-0001",
+"version": "1",
+"reboot_suggested": false,
+"type": "security",
+"updated": "2014-09-24 00:00:00",
+"description": "Dummy advisory for testing purposes\n",
+"pushcount": "1",
+"rights": "Copyright 2014 Red Hat Inc",
+"solution": "Eat sleep rave repeat\n",
+"summary": "This advisory solves nothing\n"
+}
