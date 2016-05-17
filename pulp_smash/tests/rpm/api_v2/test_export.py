@@ -128,7 +128,7 @@ class ExportDistributorTestCase(utils.BaseAPITestCase):
         if (_has_getenforce(self.cfg) and
                 _run_getenforce(self.cfg).lower() == 'enforcing' and
                 selectors.bug_is_untestable(616, self.cfg.version)):
-            sudo = 'sudo ' if utils.is_root(self.cfg) else ''
+            sudo = '' if utils.is_root(self.cfg) else 'sudo '
             client.run((sudo + 'setenforce 0').split())
             self.addCleanup(client.run, (sudo + 'setenforce 1').split())
 
