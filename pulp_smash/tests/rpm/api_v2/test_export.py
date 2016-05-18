@@ -52,34 +52,48 @@ def _run_getenforce(server_config):
     return client.run(('/usr/sbin/getenforce',)).stdout.strip()
 
 
+def _create_distributor(server_config, repo_href):
+    """Create an export distributor for the repository at ``repo_href``."""
+    path = urljoin(repo_href, 'distributors/')
+    body = gen_distributor()
+    body['distributor_type_id'] = 'export_distributor'
+    return api.Client(server_config).post(path, body).json()
+
+
 class ExportDistributorTestCase(utils.BaseAPITestCase):
     """Establish we can publish a repository using an export distributor."""
 
     @classmethod
     def setUpClass(cls):
-        """Export the repository as an ISO to the default directory.
+        """Create and sync a repository. Optionally create a distributor.
 
-        Do the following:
+        Create an export distributor only if `Pulp #1928`_ is fixed.
 
-        1. Create a repository with a feed and sync it.
-        2. Add an export distributor to the repository, where the distributor
-           is configured to publish over HTTP and HTTPS.
+        .. _Pulp #1928: https://pulp.plan.io/issues/1928
         """
         super(ExportDistributorTestCase, cls).setUpClass()
-
-        # Create and sync a repository.
-        client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = RPM_FEED_URL
-        cls.repo = client.post(REPOSITORY_PATH, body)
+        cls.repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
         cls.resources.add(cls.repo['_href'])
         utils.sync_repo(cls.cfg, cls.repo['_href'])
+        if selectors.bug_is_testable(1928, cls.cfg.version):
+            cls.distributor = _create_distributor(cls.cfg, cls.repo['_href'])
+        else:
+            cls.distributor = None
 
-        # Add an "export" distributor to the repository.
-        path = urljoin(cls.repo['_href'], 'distributors/')
-        body = gen_distributor()
-        body['distributor_type_id'] = 'export_distributor'
-        cls.distributor = client.post(path, body)
+    def setUp(self):
+        """Optionally create an export distributor.
+
+        Create an export distributor only if one is not already present. (See
+        :meth:`setUpClass`.)
+        """
+        super(ExportDistributorTestCase, self).setUp()
+        if self.distributor is None:
+            self.distributor = _create_distributor(
+                self.cfg,
+                self.repo['_href'],
+            )
 
     def test_publish_to_web(self):
         """Publish the repository to the web, and fetch the ISO file.
