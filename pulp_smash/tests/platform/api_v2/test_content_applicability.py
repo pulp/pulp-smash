@@ -15,8 +15,10 @@ and :class:`ParallelTestCase` test these two use cases, respectively.
 """
 from __future__ import unicode_literals
 
+import inspect
+
+import unittest2
 from packaging.version import Version
-from unittest2 import TestCase
 
 from pulp_smash import api, config
 from pulp_smash.constants import CALL_REPORT_KEYS, GROUP_CALL_REPORT_KEYS
@@ -27,11 +29,13 @@ _PATHS = {
 }
 
 
-class _SuccessTestCase(TestCase):
+class _SuccessTestCase(unittest2.TestCase):
 
     @classmethod
     def setUpClass(cls):
         """Provide a server config and an empty set of responses."""
+        if inspect.getmro(cls)[0] == _SuccessTestCase:
+            raise unittest2.SkipTest('Abstract base class.')
         cls.cfg = config.get_config()
         cls.responses = {}
 
@@ -99,7 +103,7 @@ class ParallelTestCase(_SuccessTestCase):
                 self.assertEqual(response_keys, GROUP_CALL_REPORT_KEYS)
 
 
-class FailureTestCase(TestCase):
+class FailureTestCase(unittest2.TestCase):
     """Fail to generate content applicability for consumers and repos."""
 
     @classmethod
