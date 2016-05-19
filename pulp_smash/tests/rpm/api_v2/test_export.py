@@ -134,6 +134,8 @@ class ExportDistributorTestCase(utils.BaseAPITestCase):
         This test is skipped if selinux is installed and enabled on the target
         system an `Pulp issue 616 <https://pulp.plan.io/issues/616>`_ is open.
         """
+        sudo = '' if utils.is_root(self.cfg) else 'sudo '
+
         # Issue 616 describes how SELinux prevents Pulp from writing to an
         # export directory. If that bug affects us, and if SELinux is enforcing
         # on the target system, then we disable SELinux for the duration of
@@ -142,25 +144,28 @@ class ExportDistributorTestCase(utils.BaseAPITestCase):
         if (_has_getenforce(self.cfg) and
                 _run_getenforce(self.cfg).lower() == 'enforcing' and
                 selectors.bug_is_untestable(616, self.cfg.version)):
-            sudo = '' if utils.is_root(self.cfg) else 'sudo '
             client.run((sudo + 'setenforce 0').split())
             self.addCleanup(client.run, (sudo + 'setenforce 1').split())
 
         # Create a custom directory, and ensure apache can create files in it.
-        # Schedule it for deletion, as Pulp doesn't do this during repo removal
+        # We must schedule it for deletion, as Pulp doesn't do this during repo
+        # removal. Due to the amount of permission twiddling done below, we use
+        # root to reliably `rm -rf ${export_dir}`.
         export_dir = client.run('mktemp --directory'.split()).stdout.strip()
-        self.addCleanup(client.run, 'rm -rf {}'.format(export_dir).split())
-        for acl in ('user:apache:rwx', 'default:apache:rwx'):
-            client.run('setfacl -m {} {}'.format(acl, export_dir).split())
+        self.addCleanup(client.run, (sudo + 'rm -rf {} ' + export_dir).split())
+        client.run((sudo + 'chown apache ' + export_dir).split())
 
-        # Publish into this directory
+        # Publish into the directory
         path = urljoin(self.repo['_href'], 'actions/publish/')
         api.Client(self.cfg).post(path, {
             'id': self.distributor['id'],
             'override_config': {'export_dir': export_dir},
         })
 
-        # See if at least one expected RPM is present
+        # Make sure *we* can read the files, and ensure at least one expected
+        # RPM is present.
+        uid = client.run('id -u'.split()).stdout.strip()
+        client.run((sudo + 'chown -R {} {}'.format(uid, export_dir)).split())
         checksum = client.run(('sha256sum', os.path.join(
             export_dir,
             self.distributor['config']['relative_url'],
