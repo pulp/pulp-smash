@@ -149,8 +149,8 @@ class FieldTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create one user. Execute searches."""
         super(FieldTestCase, cls).setUpClass()
-        if selectors.bug_is_untestable(1332, cls.cfg.version):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1332')
+        if selectors.bug_is_untestable(1933, cls.cfg.version):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1933')
         client = api.Client(cls.cfg)
         cls.searches = {
             'get': client.get(_SEARCH_PATH, params={'field': 'name'}),
@@ -181,8 +181,8 @@ class FieldsTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create one user. Execute searches."""
         super(FieldsTestCase, cls).setUpClass()
-        if selectors.bug_is_untestable(1332, cls.cfg.version):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1332')
+        if selectors.bug_is_untestable(1933, cls.cfg.version):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1933')
         client = api.Client(cls.cfg)
         cls.searches = {
             'get': client.get(_SEARCH_PATH, params='field=login&field=roles'),
