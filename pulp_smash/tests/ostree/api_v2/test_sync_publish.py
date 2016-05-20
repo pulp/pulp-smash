@@ -23,7 +23,9 @@ assumptions are explored in this module::
 """
 from __future__ import unicode_literals
 
-from pulp_smash import api, utils
+import unittest2
+
+from pulp_smash import api, selectors, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import OSTREE_FEED, OSTREE_BRANCH, REPOSITORY_PATH
 from pulp_smash.tests.ostree.utils import gen_repo
@@ -110,6 +112,8 @@ class SyncTestCase(_SyncMixin, utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create an OSTree repository with a valid feed and branch."""
         super(SyncTestCase, cls).setUpClass()
+        if selectors.bug_is_untestable(1934, cls.cfg.version):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1934')
         body = gen_repo()
         body['importer_config']['feed'] = OSTREE_FEED
         body['importer_config']['branches'] = [OSTREE_BRANCH]
