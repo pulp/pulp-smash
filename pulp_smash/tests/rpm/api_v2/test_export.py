@@ -13,6 +13,7 @@ from __future__ import unicode_literals
 import os
 
 from dateutil.parser import parse
+from packaging.version import Version
 
 from pulp_smash import api, cli, selectors, utils
 from pulp_smash.compat import urljoin, urlparse, urlunparse
@@ -67,7 +68,8 @@ class ExportDistributorTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create and sync a repository. Optionally create a distributor.
 
-        Create an export distributor only if `Pulp #1928`_ is fixed.
+        Skip creating the distributor if we are testing Pulp 2.9 and it is
+        affected by `Pulp #1928`_.
 
         .. _Pulp #1928: https://pulp.plan.io/issues/1928
         """
@@ -77,10 +79,11 @@ class ExportDistributorTestCase(utils.BaseAPITestCase):
         cls.repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
         cls.resources.add(cls.repo['_href'])
         utils.sync_repo(cls.cfg, cls.repo['_href'])
-        if selectors.bug_is_testable(1928, cls.cfg.version):
-            cls.distributor = _create_distributor(cls.cfg, cls.repo['_href'])
-        else:
+        if (cls.cfg.version >= Version('2.9') and
+                selectors.bug_is_untestable(1928, cls.cfg.version)):
             cls.distributor = None
+        else:
+            cls.distributor = _create_distributor(cls.cfg, cls.repo['_href'])
 
     def setUp(self):
         """Optionally create an export distributor.
