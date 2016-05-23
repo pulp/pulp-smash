@@ -12,6 +12,13 @@ CALL_REPORT_KEYS = frozenset(('error', 'result', 'spawned_tasks'))
     http://pulp.readthedocs.io/en/latest/dev-guide/conventions/sync-v-async.html#call-report
 """
 
+CONTENT_UNITS_PATH = '/pulp/api/v2/content/units/'
+"""See: `Search for Units`_.
+
+.. _Search for Units:
+    http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/content/units.html#search-for-units
+"""
+
 CONTENT_UPLOAD_PATH = '/pulp/api/v2/content/uploads/'
 """See: `Creating an Upload Request`_.
 
@@ -211,6 +218,9 @@ RPM_SHA256_CHECKSUM = (
 
 RPM_URL = urljoin(RPM_FEED_URL, RPM)
 """The URL to an RPM file. Built from :data:`RPM_FEED_URL` and :data:`RPM`."""
+
+SRPM = 'test-srpm02-1.0-1.src.rpm'
+"""The name of an SRPM file at :data:`pulp_smash.constants.SRPM_FEED_URL`."""
 
 SRPM_FEED_URL = (
     'https://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/test_srpm_repo/'
