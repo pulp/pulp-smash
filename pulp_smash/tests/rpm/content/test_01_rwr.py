@@ -10,7 +10,7 @@ import requests
 
 import pulp_smash.tests.rpm.content.xmlparser as xmlparser
 
-from pulp_smash import api, utils
+from pulp_smash import api, utils, selectors
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import (CONTENT_UPLOAD_PATH, REPOSITORY_PATH,
                                   RPM_FEED_URL)
@@ -20,7 +20,7 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     gen_repo,
 )
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
-from pulp_smash.tests.rpm.content.utils import dict_cmp, open_gzipped
+from pulp_smash.tests.rpm.content.utils import dict_cmp, open_gzipped, isstring
 
 try:
     import StringIO
@@ -76,6 +76,33 @@ def _upload_import_rpm(server_config, rpm_url, repo_href):
     return call_report
 
 
+def _upload_import_comps(obj, server_config, repo, client):
+    """Import a comps object to a Pulp server.
+
+    Create an upload request import it
+    into the repository at ``repo_href``, and close the upload request. Return
+    the call report received when importing the rpm.
+    """
+    client = api.Client(server_config, api.json_handler)
+    malloc = client.post(CONTENT_UPLOAD_PATH)
+    if obj['unit_type_id'] == 'package_langpack':
+        unit_key = {'name': obj['unit_metadata']['name'],
+                    'repo_id': repo['id']}
+    else:
+        unit_key = {'id': obj['unit_metadata']['id'],
+                    'repo_id': repo['id']}
+
+    _data = {'unit_type_id': obj['unit_type_id'],
+             'unit_metadata': obj['unit_metadata'],
+             'unit_key': unit_key,
+             'upload_id': malloc['upload_id']}
+
+    call_report = client.post(urljoin(repo['_href'], 'actions/import_upload/'),
+                              _data)
+    client.delete(malloc['_href'])
+    return call_report
+
+
 def get_repo_md_type_url(server_config, distributor, _type):
     """Return relative url of metadata type in repomd file."""
     client = api.Client(server_config)
@@ -110,13 +137,15 @@ def _cdata_to_text(obj):
                         continue
                     stack.insert(0, (obj, key, obj[key]))
         elif isinstance(obj, list):
-            for index in enumerate(obj):
+            for index, _ in enumerate(obj):
                 stack.insert(0, (obj, index, obj[index]))
     return obj
 
 
 def force_list(obj, unexpected_type):
     """Return list for of obj."""
+    if isinstance(obj, list):
+        return obj
     if isinstance(obj, unexpected_type):
         return [obj]
 
@@ -138,7 +167,7 @@ def _updateinfo_transform(updateinfos):
         updateinfo = update['update']
         reboot_suggested = updateinfo.get('reboot_suggested',
                                           {'.cdata': 'False'})
-        strbool = strbool_convert(reboot_suggested)
+        strbool = strbool_convert(reboot_suggested['.cdata'])
         updateinfo['reboot_suggested'] = strbool
 
         updateinfo['pushcount'] = int(updateinfo['pushcount']['.cdata'])
@@ -198,11 +227,168 @@ def parse_repomd(repomd_fp):
     return repomd
 
 
+def _comps_categories_transform(categories):
+    """transform parsed comps categories into pulp acceptable format."""
+    for category in categories:
+        group_ids = []
+        for group_id in category.get('grouplist', {}).get('groupid', []):
+            group_ids.append(group_id['.cdata'])
+        category.pop('grouplist')
+        category['packagegroupids'] = group_ids
+
+
+def _comps_environments_transform(environments):
+    """transform parsed comps environments into pulp acceptable format."""
+    for env in environments:
+        group_ids = []
+        for group_id in env.get('grouplist', {}).get('groupid', []):
+            group_ids.append(group_id['.cdata'])
+        env.pop('grouplist')
+        env['group_ids'] = group_ids
+        option_ids = []
+        for option_id in env.get('optionlist', {}).get('groupid', []):
+            converted_oid = {'group': option_id['.cdata']}
+            default = option_id.get('default', 'False')
+            converted_oid['default'] = strbool_convert(default)
+            converted_oid['default'] = default
+            option_ids.append(converted_oid)
+        env.pop('optionlist')
+        env['options'] = option_ids
+
+        uservisible = env.get('uservisible', {'.cdata': 'False'})
+        env['user_visible'] = strbool_convert(uservisible)
+
+        default = env.get('default', {'.cdata': 'True'})
+        env['default'] = strbool_convert(default)
+
+
+def _comps_groups_transform(groups):
+    """transform parsed comps groups into pulp acceptable format."""
+    for group in groups:
+        default_packages = []
+        mandatory_packages = []
+        optional_packages = []
+        conditional_packages = []
+
+        for package in group.get('packagelist', {}).get('packagereq', []):
+            p_type = package.get('type', 'mandatory')
+            if p_type == 'mandatory':
+                mandatory_packages.append(package['.cdata'])
+            if p_type == 'default':
+                default_packages.append(package['.cdata'])
+            if p_type == 'optional':
+                optional_packages.append(package['.cdata'])
+            if p_type == 'conditional':
+                conditional_packages.append(package['.cdata'])
+
+        uservisible = group.get('uservisible', {'.cdata': 'False'})
+        group['user_visible'] = strbool_convert(uservisible['.cdata'])
+        if 'uservisible' in group:
+            group.pop('uservisible')
+
+        group.pop('packagelist')
+        group['mandatory_package_names'] = mandatory_packages
+        group['optional_package_names'] = optional_packages
+        group['conditional_package_names'] = conditional_packages
+        group['default_package_names'] = default_packages
+        group['display_order'] = int(group['display_order']['.cdata'])
+
+        default = group.get('default', {'.cdata': 'True'})
+        group['default'] = strbool_convert(default['.cdata'])
+
+
+def _lang_transform(attr, obj, langs):
+    """tranform localized elements."""
+    if 'xml:lang' in obj:
+        langs[obj['xml:lang']] = obj['.cdata']
+    elif '.cdata' in obj:
+        obj[attr] = obj['.cdata']
+
+
+def _comps_transform(compsdata, repo_id):
+    """transform parsed comps into pulp acceptable format."""
+    comps = compsdata['comps']
+    comps['categories'] = sorted(comps.pop('category', []),
+                                 key=lambda x: x['id']['.cdata'],
+                                 reverse=False)
+    comps['groups'] = sorted(comps.pop('groups', []),
+                             key=lambda x: x['id']['.cdata'],
+                             reverse=False)
+    comps['environments'] = sorted(comps.pop('environemnts', []),
+                                   key=lambda x: x['id']['.cdata'],
+                                   reverse=False)
+    comps['groups'] = comps.pop('group', [])
+    comps['environments'] = comps.pop('environment', [])
+    for objs in (comps['categories'], comps['groups'], comps['environments']):
+        for obj in objs:
+            obj['translated_description'] = {}
+            langs = obj['translated_description']
+            descriptions = obj.pop('description', [])
+            descriptions = force_list(descriptions, dict)
+            for desc in descriptions:
+                _lang_transform('description', desc, langs)
+
+            obj['translated_name'] = {}
+            langs = obj['translated_name']
+            names = obj.pop('name', [])
+            names = force_list(names, dict)
+            for name in names:
+                _lang_transform('name', name, langs)
+
+            for objs in ('description', 'translated_description', 'name',
+                         'translated_name'):
+                if not obj.get(objs, None):
+                    obj[objs] = None
+
+    _comps_categories_transform(comps['categories'])
+    _comps_environments_transform(comps['environments'])
+    _comps_groups_transform(comps['groups'])
+
+    langpacks_converted = []
+    for match in compsdata['comps'].get('langpacks', {}).get('match', []):
+        langpacks_converted.append({'name': match['name'],
+                                    'install': match['install']})
+
+    compsdata['comps']['langpacks'] = langpacks_converted
+
+    for objs, type_id in ((comps['environments'], 'package_environment'),
+                          (comps['groups'], 'package_group'),
+                          (comps['categories'], 'package_category')):
+        for obj_x, _ in enumerate(objs):
+            objs[obj_x] = {'unit_metadata': objs[obj_x],
+                           'unit_type_id': type_id,
+                           'unit_key': {'id': objs[obj_x]['id'],
+                                        'repo_id': repo_id}}
+    objs = compsdata['comps']['langpacks']
+    type_id = 'package_langpack'
+    for obj_x, _ in enumerate(objs):
+        objs[obj_x] = {'unit_metadata': objs[obj_x],
+                       'unit_type_id': type_id}
+    objs = sorted(objs, key=lambda x: x['unit_metadata']['name'])
+    compsdata['comps']['langpacks'] = objs
+
+
 class ErratumContentRWRTest(utils.BaseAPITestCase):
     """Test ability to generate erratum equal to input data."""
 
     @classmethod
     def setUpClass(cls):
+        """Test ability to generate erratum equal to input data."""
+        super(ErratumContentRWRTest, cls).setUpClass()
+        cls.tasks = {}  # {'import_no_pkglist': (…), 'import_typical': (…)}
+        cls.shared = type(str('shared'), (object,), {})()
+        cls.shared.gcol = GC(cls.cfg)
+        cls.shared.parsed = None
+        cls.shared.comps1 = None
+        cls.shared.init_passed = False
+
+    @classmethod
+    def tearDownClass(cls):
+        """Free all resources in garbage collector."""
+        super(ErratumContentRWRTest, cls).setUpClass()
+        cls.shared.gcol.free()
+
+    def test_00(self):
         """Create repo, upload, publish, compare.
 
         More specifically:
@@ -215,55 +401,241 @@ class ErratumContentRWRTest(utils.BaseAPITestCase):
         6. Fetch and parse generated ``comps.xml``.
         6. Fetch and parse generated ``updateinfo.xml``.
         """
-        super(ErratumContentRWRTest, cls).setUpClass()
-
         # Create a repository and add a distributor to it.
-        client = api.Client(cls.cfg, api.json_handler)
+        client = api.Client(self.cfg, api.json_handler)
+        self.shared.gcol(client)  # install garbage collector to client
         repo = client.post(REPOSITORY_PATH, gen_repo())
-        cls.resources.add(repo['_href'])
+        self.resources.add(repo['_href'])
         distributor = client.post(
             urljoin(repo['_href'], 'distributors/'),
             gen_distributor(),
         )
 
-        cls.tasks = {}  # {'import_no_pkglist': (…), 'import_typical': (…)}
-
         content_dir = os.path.join(os.path.dirname(__file__), 'test_content')
 
-        cls.adv1 = json.load(open(os.path.join(content_dir,
-                                               'dummy_adv1.json')))
+        adv1 = json.load(open(os.path.join(content_dir,
+                                           'dummy_adv1.json')))
 
-        dummy_tomcat = urljoin(RPM_FEED_URL, 'bear-4.1-1.noarch.rpm')
-        dummy_vim = urljoin(RPM_FEED_URL, 'camel-0.1-1.noarch.rpm')
-        dummy_apache = urljoin(RPM_FEED_URL, 'cat-1.0-1.noarch.rpm ')
-        dummy_ssh = urljoin(RPM_FEED_URL, 'cheetah-1.25.3-5.noarch.rpm')
+        rpms = [urljoin(RPM_FEED_URL, 'bear-4.1-1.noarch.rpm'),
+                urljoin(RPM_FEED_URL, 'camel-0.1-1.noarch.rpm'),
+                urljoin(RPM_FEED_URL, 'cat-1.0-1.noarch.rpm'),
+                urljoin(RPM_FEED_URL, 'cheetah-1.25.3-5.noarch.rpm')]
 
-        report = _upload_import_erratum(cls.cfg, cls.adv1, repo['_href'])
-        cls.tasks[cls.adv1['id']] = tuple(api.poll_spawned_tasks(cls.cfg,
-                                                                 report))
+        report = _upload_import_erratum(self.cfg, adv1, repo['_href'])
+        self.tasks[adv1['id']] = tuple(api.poll_spawned_tasks(self.cfg,
+                                                              report))
 
-        for rpm in (dummy_tomcat, dummy_vim, dummy_apache, dummy_ssh):
-            report = _upload_import_rpm(cls.cfg, rpm, repo['_href'])
-            cls.tasks[rpm] = tuple(api.poll_spawned_tasks(cls.cfg, report))
+        for rpm in rpms:
+            report = _upload_import_rpm(self.cfg, rpm, repo['_href'])
+            self.tasks[rpm] = tuple(api.poll_spawned_tasks(self.cfg, report))
 
         client.post(
             urljoin(repo['_href'], 'actions/publish/'),
             {'id': distributor['id']},
         )
-        updateinfo_fpath = get_repo_md_type_url(cls.cfg, distributor,
+        updateinfo_fpath = get_repo_md_type_url(self.cfg, distributor,
                                                 'updateinfo')
 
-        updateinfo_f = get_metadata(cls.cfg, distributor, updateinfo_fpath)
+        updateinfo_f = get_metadata(self.cfg, distributor, updateinfo_fpath)
 
         with open_gzipped(updateinfo_f) as gz_file:
             parser = xmlparser.Parser()
-            cls.parsed = parser.parse_file(gz_file)
+            self.shared.parsed = parser.parse_file(gz_file)
 
-        _updateinfo_transform(cls.parsed)
-        _cdata_to_text(cls.parsed)
+        self.shared.adv1 = adv1
+        _updateinfo_transform(self.shared.parsed)
+        _cdata_to_text(self.shared.parsed)
+        self.shared.init_passed = True
 
     def test_01_content_equal(self):
         """test if content is equal."""
-        diff = dict_cmp(self.parsed['updates']['update'], self.adv1,
+        self.assertTrue(self.shared.init_passed)
+        diff = dict_cmp(self.shared.parsed['updates']['update'],
+                        self.shared.adv1, 'PUBLISHED', 'UPLOADED')
+        self.assertTrue(not diff, json.dumps(diff, indent=4, sort_keys=True))
+
+
+class GC(object):
+    """Pulp garbage collector class."""
+
+    URLS = [('POST', REPOSITORY_PATH, 'del_repo')]
+    #        ('POST', re.compile(r'\/pulp\/api\/v2\/'
+    #                            r'repositories\/(.*)'
+    #                            r'\/actions\/import_upload\/'), 'del_orphan')]
+
+    def __init__(self, cfg):
+        """Garbage colletor init method."""
+        self.resources = []
+        self.server_cfg = cfg
+        self.client = None
+
+    def __call__(self, client):
+        """Apply GC on pulp client calls."""
+        client.request = self.request(client.request)
+        self.client = client
+
+    def del_repo(self, url, ret):
+        """Remove repo from pulp after end of test run."""
+        del url  # unused
+        self.client.delete('/pulp/api/v2/repositories/%s/' % ret['id'])
+
+    def del_orphan(self, url, ret):
+        """Remove orphan from pulp after end of test run."""
+        del url  # unused
+        report = next(api.poll_spawned_tasks(self.server_cfg, ret))
+        self.client.delete('/pulp/api/v2/content/actions/delete_orphans/',
+                           data={'content_type_id': '',
+                                 'unit_id': report['unit_id']})
+
+    def add_resource(self, url, ret, delete_resource):
+        """Add resource to garbage collector."""
+        self.resources.append(((url, ret), getattr(self, delete_resource)))
+
+    def request(self, orig_request):
+        """Modified pulp client request method."""
+        def new_request(method, url, **kwargs):
+            """New request method."""
+            ret = orig_request(method, url, **kwargs)
+            for match in self.URLS:
+                if method == match[0]:
+                    if isstring(match[1]) and match[1] == url:
+                        self.add_resource(url, ret, match[2])
+                    elif not isstring(match[1]) and hasattr(match[1], 'match')\
+                            and match[1].match(url):  # noqa pylint:disable=no-member
+                        self.add_resource(url, ret, match[2])
+            return ret
+        return new_request
+
+    def free(self):
+        """Remove all created resources."""
+        for resource, remove in self.resources:
+            remove(*resource)
+
+
+class CompsContentRWRTest(utils.BaseAPITestCase):
+    """Test ability to generate erratum equal to input data."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Setup garbage collector for TestCase."""
+        super(CompsContentRWRTest, cls).setUpClass()
+        cls.shared = type(str('shared'), (object,), {})()
+        cls.shared.gcol = GC(cls.cfg)
+        cls.shared.parsed = None
+        cls.shared.comps1 = None
+        cls.shared.init_passed = False
+
+    @classmethod
+    def tearDownClass(cls):
+        """Free all resources in garbage collector."""
+        super(CompsContentRWRTest, cls).setUpClass()
+        cls.shared.gcol.free()
+
+    def test_00(self):
+        """Create repo, upload, publish, compare.
+
+        More specifically:
+
+        1. Create a repository.
+        2. Add yum distributor to it.
+        3. Import comps file.
+        4. Import advisory
+        5. Publish repository.
+        6. Fetch and parse generated ``comps.xml``.
+        6. Fetch and parse generated ``updateinfo.xml``.
+        """
+        # Create a repository and add a distributor to it.
+        client = api.Client(self.cfg, api.json_handler)
+        self.shared.gcol(client)
+        repo = client.post(REPOSITORY_PATH, gen_repo())
+        distributor = client.post(
+            urljoin(repo['_href'], 'distributors/'),
+            gen_distributor(),
+        )
+
+        self.shared.tasks = {}
+
+        self.shared.comps1 = json.load(
+            open(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    'test_content',
+                    'fedora_comps-small.json')))
+
+        for objs in ['categories', 'groups', 'environments']:
+            if objs in self.shared.comps1:
+                self.shared.comps1[objs] = sorted(
+                    self.shared.comps1[objs],
+                    key=lambda x: x['unit_key']['id'],
+                    reverse=False)
+
+        for group in self.shared.comps1['groups']:
+            for pkgs in ['default_package_names', 'mandatory_package_names',
+                         'optional_package_names',
+                         'conditional_package_names']:
+                if pkgs in group['unit_metadata']:
+                    group['unit_metadata'][pkgs] = sorted(
+                        group['unit_metadata'][pkgs]
+                    )
+
+            report = _upload_import_comps(group, self.cfg, repo, client)
+            task = api.poll_spawned_tasks(self.cfg, report)
+            self.shared.tasks[group['unit_key']['id']] = tuple(task)
+        for cat in self.shared.comps1['categories']:
+            report = _upload_import_comps(cat, self.cfg, repo, client)
+            task = api.poll_spawned_tasks(self.cfg, report)
+            self.shared.tasks[cat['unit_key']['id']] = tuple(task)
+
+        if selectors.bug_is_testable(1003, self.cfg.version):
+            for env in self.shared.comps1['environments'][:3]:
+                report = _upload_import_comps(env, self.cfg, repo, client)
+                task = api.poll_spawned_tasks(self.cfg, report)
+                self.shared.tasks[env['unit_key']['id']] = tuple(task)
+
+        if selectors.bug_is_testable(1928, self.cfg.version):
+            for langpack in self.shared.comps1['langpacks'][:3]:
+                report = _upload_import_comps(langpack, self.cfg,
+                                              repo, client)
+                task = api.poll_spawned_tasks(self.cfg, report)
+                self.shared.tasks[langpack['unit_key']['id']] = tuple(task)
+
+        client.post(urljoin(repo['_href'], 'actions/publish/'),
+                    {'id': distributor['id']})
+        comps_fpath = get_repo_md_type_url(self.cfg, distributor, 'group')
+        comps_f = get_metadata(self.cfg, distributor, comps_fpath)
+        parser = xmlparser.Parser()
+
+        self.shared.parsed = parser.parse_file(comps_f)
+
+        _comps_transform(self.shared.parsed, repo['id'])
+        _cdata_to_text(self.shared.parsed)
+        self.shared.init_passed = True
+
+    def test_01_categories_equal(self):
+        """test if categories are equal."""
+        self.assertTrue(self.shared.init_passed)
+        for cat in self.shared.parsed['comps']['categories']:
+            cat['unit_key'].pop('repo_id')
+        for cat in self.shared.comps1['categories']:
+            cat['unit_key'].pop('repo_id')
+
+        parsed_categories = self.shared.parsed['comps']['categories']
+        uploaded_categories = self.shared.comps1['categories']
+        diff = dict_cmp({'categories': parsed_categories},
+                        {'categories': uploaded_categories},
                         'PUBLISHED', 'UPLOADED')
+        self.assertTrue(not diff, json.dumps(diff, indent=4, sort_keys=True))
+
+    def test_02_groups_equal(self):
+        """test if groups are equal."""
+        self.assertTrue(self.shared.init_passed)
+        for group in self.shared.parsed['comps']['groups']:
+            group['unit_key'].pop('repo_id')
+        for group in self.shared.comps1['groups']:
+            group['unit_key'].pop('repo_id')
+
+        diff = dict_cmp({'groups': self.shared.parsed['comps']['groups']},
+                        {'groups': self.shared.comps1['groups']},
+                        'PUBLISHED', 'UPLOADED',
+                        required_fields={'groups.unit_metadata': 'id'})
         self.assertTrue(not diff, json.dumps(diff, indent=4, sort_keys=True))

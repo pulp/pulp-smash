@@ -46,7 +46,7 @@
                 ],
                 "filename": "bear-4.1-1.noarch.rpm",
                 "epoch": "0",
-                "version": "1.0",
+                "version": "4.1",
                 "release": "1",
                 "arch": "noarch"
             },
@@ -78,7 +78,7 @@
             },
             {
                 "src": "cheetah-1.25.3-5.src.rpm",
-                "name": "dummy-vim",
+                "name": "cheetah",
                 "sum": [
                     "sha256",
                     "2189ac4bf059f98a8d48136eb72b46415f3aa263026443ebd8879d415eacaf42"
