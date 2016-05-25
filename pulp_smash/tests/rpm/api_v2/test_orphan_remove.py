@@ -15,7 +15,7 @@ import random
 
 from packaging.version import Version
 
-from pulp_smash import api, selectors, utils
+from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import ORPHANS_PATH, REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
@@ -136,15 +136,13 @@ class OrphansTestCase(utils.BaseAPITestCase):
 
         This test exercises `Pulp #1923 <https://pulp.plan.io/issues/1923>`_.
         """
-        if selectors.bug_is_untestable(1923, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/1923')
         client = api.Client(self.cfg, api.json_handler)
         orphans_pre = client.get(ORPHANS_PATH)
         orphan = random.choice(client.get(urljoin(ORPHANS_PATH, 'erratum/')))
-        client.post('pulp/api/v2/content/actions/delete_orphans/', {
+        client.post('pulp/api/v2/content/actions/delete_orphans/', [{
             'content_type_id': 'erratum',
             'unit_id': orphan['_id'],
-        })
+        }])
         orphans_post = client.get(ORPHANS_PATH)
         self.check_one_orphan_deleted(orphans_pre, orphans_post, orphan)
 
