@@ -258,13 +258,12 @@ class PublishTestCase(utils.BaseAPITestCase):
         2. Upload an RPM to the first repository.
         3. Associate the first repository with the second, causing the RPM to
            be copied.
-        4. Add a distributor to both repositories, publish them, and download
-           RPMs from both repositories.
+        4. Add a distributor to both repositories and publish them.
         """
         super(PublishTestCase, cls).setUpClass()
         utils.reset_pulp(cls.cfg)  # See: https://pulp.plan.io/issues/1406
         cls.responses = {}
-        cls.rpms = []  # Raw RPMs
+        cls.rpms = None  # Raw RPM
 
         # Download an RPM and create two repositories.
         client = api.Client(cls.cfg, api.json_handler)
@@ -272,14 +271,14 @@ class PublishTestCase(utils.BaseAPITestCase):
         for repo in repos:
             cls.resources.add(repo['_href'])
         client.response_handler = api.safe_handler
-        cls.rpms.append(utils.http_get(RPM_URL))
+        cls.rpm = utils.http_get(RPM_URL)
 
         # Begin an upload request, upload an RPM, move the RPM into a
         # repository, and end the upload request.
         cls.responses['malloc'] = client.post(CONTENT_UPLOAD_PATH)
         cls.responses['upload'] = client.put(
             urljoin(cls.responses['malloc'].json()['_href'], '0/'),
-            data=cls.rpms[0],
+            data=cls.rpm,
         )
         cls.responses['import'] = client.post(
             urljoin(repos[0]['_href'], 'actions/import_upload/'),
@@ -311,15 +310,6 @@ class PublishTestCase(utils.BaseAPITestCase):
                 urljoin(repo['_href'], 'actions/publish/'),
                 {'id': cls.responses['distribute'][-1].json()['id']},
             ))
-
-        # Download the RPM from both repositories.
-        for response in cls.responses['distribute']:
-            url = urljoin(
-                '/pulp/repos/',
-                response.json()['config']['relative_url']
-            )
-            url = urljoin(url, RPM)
-            cls.rpms.append(client.get(url).content)
 
         # Search for all units in each of the two repositories.
         body = {'criteria': {}}
@@ -415,11 +405,17 @@ class PublishTestCase(utils.BaseAPITestCase):
         )  # indices. But the data is complex, and this makes things simpler.
 
     def test_unit_integrity(self):
-        """Verify the integrity of the RPMs downloaded from Pulp."""
-        # First module is downloaded from external source, others from Pulp.
-        for i, module in enumerate(self.rpms[1:]):
-            with self.subTest(i=i):
-                self.assertEqual(self.rpms[0], module)
+        """Download and verify an RPM from each Pulp distributor."""
+        for response in self.responses['distribute']:
+            distributor = response.json()
+            with self.subTest(distributor=distributor):
+                url = urljoin(
+                    '/pulp/repos/',
+                    response.json()['config']['relative_url']
+                )
+                url = urljoin(url, RPM)
+                rpm = api.Client(self.cfg).get(url).content
+                self.assertEqual(rpm, self.rpm)
 
 
 class RedundantPublishSameMetadataTestCase(utils.BaseAPITestCase):
