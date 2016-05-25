@@ -8,9 +8,17 @@ containing metadata are present. This module houses test cases which verify the
 """
 from __future__ import unicode_literals
 
+from xml.etree import ElementTree
+
+from packaging.version import Version
+
 from pulp_smash import api, selectors, utils
 from pulp_smash.compat import urljoin
-from pulp_smash.constants import CONTENT_UPLOAD_PATH, REPOSITORY_PATH
+from pulp_smash.constants import (
+    CONTENT_UPLOAD_PATH,
+    REPOSITORY_PATH,
+    RPM_FEED_URL,
+)
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -94,6 +102,71 @@ def _upload_import_package_group(server_config, repo, unit_metadata):
     )
     client.delete(malloc['_href'])
     return call_report
+
+
+class SyncRepoTestCase(utils.BaseAPITestCase):
+    """Sync in content from another RPM repository and publish it.
+
+    More specifically, this test case does the following:
+
+    1. Create a repository with a feed and a distributor.
+    2. Sync and publish the repository.
+    3. Verify the ``comps.xml`` file available in the published repository.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create, sync and publish a repository. Fetch its ``comps.xml``."""
+        super(SyncRepoTestCase, cls).setUpClass()
+        client = api.Client(cls.cfg, api.json_handler)
+
+        # Create a repo.
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_FEED_URL
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(REPOSITORY_PATH, body)
+        cls.resources.add(repo['_href'])
+
+        # Sync and publish the repo.
+        repo = client.get(repo['_href'], params={'details': True})
+        utils.sync_repo(cls.cfg, repo['_href'])
+        client.post(
+            urljoin(repo['_href'], 'actions/publish/'),
+            {'id': repo['distributors'][0]['id']},
+        )
+        repo = client.get(repo['_href'], params={'details': True})
+
+        # Fetch and parse comps.xml.
+        dist = repo['distributors'][0]
+        dist_url = urljoin('/pulp/repos/', dist['config']['relative_url'])
+        cls.root_element = get_repomd_xml(cls.cfg, dist_url, 'group')
+        cls.xml_as_str = ElementTree.tostring(cls.root_element)
+
+    def test_first_level_element(self):
+        """Verify the top-level element is named "comps"."""
+        self.assertEqual(self.root_element.tag, 'comps')
+
+    def test_second_level_elements(self):
+        """Verify the correct second-level elements are present."""
+        have = [child.tag for child in self.root_element]
+        have.sort()
+        want = ['category', 'group', 'group']
+        if self.cfg.version >= Version('2.9'):
+            want.append('langpacks')
+        self.assertEqual(have, want)
+
+    def test_langpacks_element(self):
+        """Verify a ``langpacks`` element is in ``comps.xml``.
+
+        Support for package langpacks has been added in Pulp 2.9. Consequently,
+        this test is skipped on earlier versions of Pulp.
+        """
+        if self.cfg.version < Version('2.9'):
+            self.skipTest('This test requires Pulp 2.9 or greater.')
+        langpacks_elements = self.root_element.findall('langpacks')
+        self.assertEqual(len(langpacks_elements), 1, self.xml_as_str)
+        match_elements = langpacks_elements[0].findall('match')
+        self.assertEqual(len(match_elements), 2, self.xml_as_str)
 
 
 class UploadPackageGroupsTestCase(utils.BaseAPITestCase):
