@@ -35,6 +35,7 @@ import inspect
 from itertools import product
 
 import unittest2
+from packaging.version import Version
 
 from pulp_smash import api, selectors, utils
 from pulp_smash.compat import urljoin
@@ -167,16 +168,16 @@ class SyncRpmRepoTestCase(SyncRepoBaseTestCase):
         Compare these attributes to metadata from the remote repository.
         Expected values are currently hard-coded into this test.
         """
+        content_unit_counts = {
+            'rpm': 32,
+            'erratum': 4,
+            'package_group': 2,
+            'package_category': 1,
+        }
+        if self.cfg.version >= Version('2.9'):  # langpack support added in 2.9
+            content_unit_counts['package_langpacks'] = 1
         repo = api.Client(self.cfg).get(self.repo_href).json()
-        counts = repo.get('content_unit_counts', {})
-        for unit_type, count in {
-                'rpm': 32,
-                'erratum': 4,
-                'package_group': 2,
-                'package_category': 1,
-        }.items():
-            with self.subTest(unit_type=unit_type):
-                self.assertEqual(counts.get(unit_type), count)
+        self.assertEqual(repo['content_unit_counts'], content_unit_counts)
 
 
 class SyncDrpmRepoTestCase(SyncRepoBaseTestCase):
