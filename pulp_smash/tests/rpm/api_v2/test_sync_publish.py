@@ -263,7 +263,6 @@ class PublishTestCase(utils.BaseAPITestCase):
         super(PublishTestCase, cls).setUpClass()
         utils.reset_pulp(cls.cfg)  # See: https://pulp.plan.io/issues/1406
         cls.responses = {}
-        cls.rpms = None  # Raw RPM
 
         # Download an RPM and create two repositories.
         client = api.Client(cls.cfg, api.json_handler)
