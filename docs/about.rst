@@ -56,9 +56,23 @@ Contributing
 Contributions are encouraged. The easiest way to contribute is to submit a pull
 request on GitHub, but patches are welcome no matter how they arrive.
 
-A strategy for creating a development environment is listed in
-:doc:`/installation`. To verify the sanity of your development environment,
+Learning Pulp Smash
+~~~~~~~~~~~~~~~~~~~
+
+Not sure where to start? Consider reading an existing test module, creating a
+development environment, and tackling an open issue.
+
+The :doc:`/introductory-module` is a great candidate for study.
+
+:doc:`/installation` provides a recipe for creating a virtualenv-based
+development environment. To verify the sanity of your development environment,
 ``cd`` into the Pulp Smash source code directory and execute ``make all``.
+
+The `Pulp Smash issues`_ list includes test cases that should be automated and
+added to the test suite.
+
+Code Standards
+~~~~~~~~~~~~~~
 
 Please adhere to the following guidelines:
 
@@ -85,9 +99,11 @@ Please adhere to the following guidelines:
   reason. As another example, do not add a test that makes dozens of concurrent
   requests to a public service such as docker hub.
 
-Your changes will eventually be reviewed and merged if they meet these
-requirements. Join the #pulp IRC channel on `freenode`_ if you have further
-questions.
+Review Process
+~~~~~~~~~~~~~~
+
+Changes that meet the `code standards`_ will be reviewed by a Pulp Smash
+developer and are likely to be merged.
 
 Though commits are accepted as-is, they are frequently accompanied by a
 follow-up commit in which the reviewer makes a variety of changes, ranging from
@@ -98,6 +114,8 @@ accepted with little to no modifications, take the time to really make your
 changes shine: ensure your code is DRY, matches existing formatting conventions,
 is organized into easy-to-read blocks, has isolated unit test assertions, and so
 on.
+
+Join the #pulp IRC channel on `freenode`_ if you have further questions.
 
 .. [1] Portable software cannot make assumptions about its environment. It
     cannot reference ``/etc/pki/tls/certs/ca-bundle.crt``  or call ``yum``.
@@ -114,6 +132,7 @@ on.
 .. _Command-Line Interface: https://docs.python.org/3/library/unittest.html#command-line-interface
 .. _GNU Make: https://www.gnu.org/software/make/
 .. _OpenSSH: http://www.openssh.com/
+.. _Pulp Smash issues: https://github.com/PulpQE/pulp-smash/issues
 .. _Travis CI: https://travis-ci.org/PulpQE/pulp-smash
 .. _XDG Base Directory Specification: http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
 .. _freenode: https://freenode.net/

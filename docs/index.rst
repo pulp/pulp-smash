@@ -25,4 +25,5 @@ Documentation contents:
     installation
     usage
     about
+    introductory-module
     api
