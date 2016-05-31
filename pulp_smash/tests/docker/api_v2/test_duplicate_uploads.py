@@ -16,7 +16,10 @@ The second upload should silently fail for all Pulp releases in the 2.x series.
 """
 from __future__ import unicode_literals
 
-from pulp_smash import api, utils
+import unittest2
+from packaging.version import Version
+
+from pulp_smash import api, selectors, utils
 from pulp_smash.constants import DOCKER_IMAGE_URL, REPOSITORY_PATH
 from pulp_smash.tests.docker.api_v2.utils import gen_repo
 from pulp_smash.tests.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -29,8 +32,17 @@ class DuplicateUploadsTestCase(
 
     @classmethod
     def setUpClass(cls):
-        """Create a Docker repository. Upload a Docker image into it twice."""
+        """Create a Docker repository. Upload a Docker image into it twice.
+
+        Skip this test if `Pulp #1957`_ affects us.
+
+        .. _Pulp #1957: https://pulp.plan.io/issues/1957
+        """
         super(DuplicateUploadsTestCase, cls).setUpClass()
+        # This issue affects some 2.8 versions, but not 2.9.
+        if (selectors.bug_is_untestable(1957, cls.cfg.version) and
+                cls.cfg.version < Version('2.9')):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1957')
         unit = utils.http_get(DOCKER_IMAGE_URL)
         unit_type_id = 'docker_image'
         client = api.Client(cls.cfg, api.json_handler)
