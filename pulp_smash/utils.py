@@ -313,20 +313,23 @@ class DuplicateUploadsMixin(object):  # pylint:disable=too-few-public-methods
     * https://pulp.plan.io/issues/1406
     * https://github.com/PulpQE/pulp-smash/issues/81
 
-    This mixin adds tests for this case. This mixin requires an attribute named
-    ``call_reports`` be present, where this attribute is an iterable of the
-    call reports produced by steps 2 and 3, above.
+    This mixin adds tests for this case. Child classes should do the following:
+
+    * Create a repository. Content units will be uploaded into this repository.
+    * Create a class or instance attribute named ``upload_import_unit_args``.
+      It should be an iterable whose contents match the signature of
+      :meth:`upload_import_unit`.
     """
 
-    def test_call_report_result(self):
-        """Assert each call report's "result" field is null.
+    def test_01_first_upload(self):
+        """Upload a content unit to a repository."""
+        call_report = upload_import_unit(*self.upload_import_unit_args)
+        self.assertIsNone(call_report['result'])
 
-        Other checks are done automatically by
-        :func:`pulp_smash.api.json_handler`. See it for details.
-        """
-        for i, call_report in enumerate(self.call_reports):
-            with self.subTest(i=i):
-                self.assertIsNone(call_report['result'])
+    def test_02_second_upload(self):
+        """Upload the same content unit to the same repository."""
+        call_report = upload_import_unit(*self.upload_import_unit_args)
+        self.assertIsNone(call_report['result'])
 
 
 def reset_squid(server_config):

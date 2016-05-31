@@ -29,14 +29,11 @@ class DuplicateUploadsTestCase(
 
     @classmethod
     def setUpClass(cls):
-        """Create a Puppet repository. Upload a Puppet module into it twice."""
+        """Create a Puppet repository."""
         super(DuplicateUploadsTestCase, cls).setUpClass()
         unit = utils.http_get(PUPPET_MODULE_URL)
         unit_type_id = 'puppet_module'
         client = api.Client(cls.cfg, api.json_handler)
         repo_href = client.post(REPOSITORY_PATH, gen_repo())['_href']
         cls.resources.add(repo_href)
-        cls.call_reports = tuple((
-            utils.upload_import_unit(cls.cfg, unit, unit_type_id, repo_href)
-            for _ in range(2)
-        ))
+        cls.upload_import_unit_args = (cls.cfg, unit, unit_type_id, repo_href)
