@@ -1,206 +1,120 @@
 # coding=utf-8
-"""Test pulp ability to run publish from scratch with 'force_full' parameter.
+"""Tests for publishing with the ``force_full`` parameter set.
 
-Following steps are executed in order to test correct functionality of
-repository created with valid feed.
+When a repository is published, Pulp checks to see if certain steps can be
+skipped. For example, if one publishes a repository twice in a row, the second
+publish is a no-op, as nothing needs to be done. As of Pulp 2.9, clients can
+tell Pulp to perform a "full" publish. When this is done, Pulp executes all
+publication steps, even steps that normally would be skipped.
 
-1. Create repository1 with valid feed, run sync
-2. Create repository2 add distributor to it
-3. Copy 3 units from repository1 to repository2
-3. Publish repository2
-3. Copy 3 units from repository1 to repository2
-3. Publish repository2
-3. Publish repository2 with force_full = true
-
-4. Assert number of processed units from first publish == 3
-4. Assert number of processed units from second publish == 3
-4. Assert number of processed units from third publish == 6
+This module tests Pulp's handling of "full" publishes.
 """
 from __future__ import unicode_literals
 
-import time
+from packaging.version import Version
 
-from pulp_smash import api, utils, selectors
+from pulp_smash import api, selectors, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
-_PUBLISH_DIR = 'pulp/repos/'
-
-
-class WaitForTasksTimeoutError(Exception):
-    """Raised when wait_for_task method waited too long."""
-
-    pass
-
-
-def wait_for_tasks(client, cfg, tasks):
-    """Wait until all tasks finish or raise exception."""
-    task_ids = set()
-    tasks_search = '/pulp/api/v2/tasks/search/'
-    search_criteria = {'filters': {'state': {'$ne': 'running'}}}
-    polls = 0
-    for task in tasks:
-        for spawned in task['spawned_tasks']:
-            task_ids.add(spawned['task_id'])
-    results = {}
-    while task_ids:
-        search_criteria['filters']['task_id'] = {'$in': list(task_ids)}
-        finished_tasks = client.post(urljoin(cfg.base_url, tasks_search),
-                                     {'criteria': search_criteria}).json()
-        for task in finished_tasks:
-            results[task['task_id']] = task
-            task_ids -= set([task['task_id']])
-        time.sleep(2)
-        polls += 1
-        if polls > 20:
-            raise WaitForTasksTimeoutError()
-    return results
-
-
-def _copy_units(server_config, dest_repo_href, source_repo_id, units):
-    """Copy units ``units`` from the repository ``repo1`` to ``repo2``.
-
-    Return the JSON-decoded response body.
-    """
-    path = urljoin(dest_repo_href, 'actions/associate/')
-    type_ids = list(set([unit['unit_type_id'] for unit in units]))
-    units_ids = [unit['unit_id'] for unit in units]
-    body = {'criteria': {'filters': {'unit': {'_id': {'$in': units_ids}}},
-                         'type_ids': type_ids},
-            'source_repo_id': source_repo_id}
-    return api.Client(server_config).post(path, body).json()
-
 
 class ForceFullTestCase(utils.BaseAPITestCase):
-    """Test Forcefull feature."""
+    """Test the ``force_full`` option.
 
-    @classmethod
-    def setup_repo(cls, client):
-        """Create repository and associate distributor with it."""
-        body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
-        repo = client.post(REPOSITORY_PATH, body).json()
-
-        # Add a distributor.
-        distributor = client.post(
-            urljoin(repo['_href'], 'distributors/'),
-            gen_distributor(),
-        ).json()
-        return (repo, distributor)
+    Repeatedly publish a repository. Set the ``force_full`` option to various
+    values, and try omitting it too.
+    """
 
     @classmethod
     def setUpClass(cls):
-        """Create repository, associate, publish, associate, publish, publish.
-
-        Following steps are executed:
-
-        1. Create repository 1 with feed, sync and publish it.
-        2. Create repository 2 with feed
-        3. Copy 3 random units from repository 1 to repository 2
-        4. Publish repository 2
-        5. Copy 3 random units from repository 1 to repository 2
-        6. Publish repository 2
-        7. Publish repository 2 with force_full
-        """
+        """Create and sync a repository."""
         super(ForceFullTestCase, cls).setUpClass()
-        cls.responses = {}
-        client = api.Client(cls.cfg)
+        client = api.Client(cls.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_FEED_URL
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(REPOSITORY_PATH, body)
+        cls.resources.add(repo['_href'])
+        utils.sync_repo(cls.cfg, repo['_href'])
+        cls.repo = client.get(repo['_href'], params={'details': True})
 
-        # Create repo 1
-        repo1, _ = cls.setup_repo(client)
-        cls.resources.add(repo1['_href'])  # mark for deletion
+    def publish_repo(self, body_overrides=None):
+        """Publish the repository.
 
-        # Sync repo 1
-        cls.responses['sync'] = utils.sync_repo(cls.cfg, repo1['_href'])
-        report = cls.responses['sync'].json()
-        next(api.poll_spawned_tasks(cls.cfg, report))
+        :param body_overrides: A dict of parameters to merge into the call
+            body.
+        :returns: A call report.
+        """
+        path = urljoin(self.repo['_href'], 'actions/publish/')
+        body = {'id': self.repo['distributors'][0]['id']}
+        if body_overrides is not None:
+            body.update(body_overrides)
+        return api.Client(self.cfg).post(path, body).json()
 
-        # Get all units
-        cls.responses['repo1_units'] = client.post(
-            urljoin(repo1['_href'], 'search/units/'),
-            {'criteria': {'type_ids': ['rpm']}},
-        ).json()
+    def get_step(self, steps, step_type):
+        """Return the task step with the given ``step_type``.
 
-        # Create repo 2
-        repo2, distributor2 = cls.setup_repo(client)
-        cls.resources.add(repo2['_href'])  # mark for deletion
+        :param steps: A list of dicts, as can be accessed by
+            ``call_report_task['result']['details']``.
+        :param step_type: The ``step_type`` of a particular step, such as
+            ``save_tar``.
+        :returns: The matching step.
+        :raises: An assertion error if exactly one match is not found.
+        """
+        matching_steps = [
+            step for step in steps if step['step_type'] == step_type
+        ]
+        self.assertEqual(len(matching_steps), 1, (steps, step_type))
+        return matching_steps[0]
 
-        rpm_units = cls.responses['repo1_units']
+    def test_01_force_full_false(self):
+        """Publish the repository and set ``force_full`` to false.
 
-        # copy 3 random units
-        units_to_copy = []
-        for _ in range(0, 3):
-            units_to_copy.append(rpm_units.pop(0))
+        A full publish should occur.
+        """
+        call_report = self.publish_repo({'force_full': False})
+        last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
+        task_steps = last_task['result']['details']
+        step = self.get_step(task_steps, 'rpms')
+        self.assertGreater(step['num_processed'], 0, step)
 
-        report = _copy_units(cls.cfg, repo2['_href'],
-                             repo1['id'], units_to_copy)
-        next(api.poll_spawned_tasks(cls.cfg, report))
+    def test_02_force_full_omit(self):
+        """Publish the repository and omit ``force_full``.
 
-        cls.responses['repo2_publish1'] = client.post(
-            urljoin(repo2['_href'], 'actions/publish/'),
-            {'id': distributor2['id']},
-        ).json()
-        next(api.poll_spawned_tasks(cls.cfg, cls.responses['repo2_publish1']))
+        A fast-forward publish should occur. This test targets `Pulp #1966`_.
 
-        # copy another 3 random units
-        units_to_copy2 = []
-        for _ in range(0, 3):
-            units_to_copy2.append(rpm_units.pop(0))
+        .. _Pulp #1966: https://pulp.plan.io/issues/1966
+        """
+        if (self.cfg.version >= Version('2.9') and
+                selectors.bug_is_untestable(1966, self.cfg.version)):
+            self.skipTest('https://pulp.plan.io/issues/1966')
+        call_report = self.publish_repo()
+        last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
+        task_steps = last_task['result']['details']
+        step = self.get_step(task_steps, 'rpms')
+        self.assertEqual(step['num_processed'], 0, step)
 
-        report = _copy_units(cls.cfg, repo2['_href'],
-                             repo1['id'], units_to_copy2)
-        wait_for_tasks(client, cls.cfg, [report])
+    def test_03_force_full_true(self):
+        """Publish the repository and set ``force_full`` to true.
 
-        cls.responses['repo2_publish2'] = client.post(
-            urljoin(repo2['_href'], 'actions/publish/'),
-            {'id': distributor2['id']},
-        ).json()
-        wait_for_tasks(client, cls.cfg, [cls.responses['repo2_publish2']])
+        A full publish should occur. This test targets `Pulp #1938`_, and as
+        such, will skip when run against older versions of Pulp. This test also
+        targets `Pulp #1965`_.
 
-        # publish with force_full
-        cls.responses['repo2_publish_full'] = client.post(
-            urljoin(repo2['_href'], 'actions/publish/'),
-            {'id': distributor2['id'], 'force_full': True},
-        ).json()
-
-    def test_initial_publish(self):
-        """Verify the number of processes units == 3."""
-        report = self.responses['repo2_publish1']
-        result = next(api.poll_spawned_tasks(self.cfg, report))
-        details = result['result']['details']
-        for step in details:
-            if step['step_type'] == 'rpms':
-                break
-        else:
-            step = None
-        self.assertNotEqual(step, None)
-        self.assertEqual(step['num_processed'], 3)
-
-    def test_incremental_publish(self):
-        """Verify the number of processes units == 3."""
-        report = self.responses['repo2_publish2']
-        result = next(api.poll_spawned_tasks(self.cfg, report))
-        details = result['result']['details']
-        for step in details:
-            if step['step_type'] == 'rpms':
-                break
-        else:
-            step = None
-        self.assertNotEqual(step, None)
-        self.assertEqual(step['num_processed'], 3)
-
-    def test_force_full_publish(self):
-        """Verify the number of processes units == 6."""
-        if selectors.bug_is_testable(1158, self.cfg.version):
-            report = self.responses['repo2_publish_full']
-            result = next(api.poll_spawned_tasks(self.cfg, report))
-            details = result['result']['details']
-            for step in details:
-                if step['step_type'] == 'rpms':
-                    break
-            else:
-                step = None
-            self.assertNotEqual(step, None)
-            self.assertEqual(step['num_processed'], 6)
+        .. _Pulp #1938: https://pulp.plan.io/issues/1938
+        .. _Pulp #1965: https://pulp.plan.io/issues/1965
+        """
+        if self.cfg.version < Version('2.9'):
+            self.skipTest(
+                'This test requires Pulp 2.9. See: '
+                'https://pulp.plan.io/issues/1938'
+            )
+        if selectors.bug_is_untestable(1965, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/1965')
+        call_report = self.publish_repo({'force_full': True})
+        last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
+        task_steps = last_task['result']['details']
+        step = self.get_step(task_steps, 'rpms')
+        self.assertGreater(step['num_processed'], 0, step)
