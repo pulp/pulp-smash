@@ -40,17 +40,17 @@ class ForceFullTestCase(utils.BaseAPITestCase):
         utils.sync_repo(cls.cfg, repo['_href'])
         cls.repo = client.get(repo['_href'], params={'details': True})
 
-    def publish_repo(self, body_overrides=None):
+    def publish_repo(self, force_full=None):
         """Publish the repository.
 
-        :param body_overrides: A dict of parameters to merge into the call
-            body.
+        :param override_config: A boolean value. If ``None``, no ``force_full``
+            flag is passed in the request.
         :returns: A call report.
         """
         path = urljoin(self.repo['_href'], 'actions/publish/')
         body = {'id': self.repo['distributors'][0]['id']}
-        if body_overrides is not None:
-            body.update(body_overrides)
+        if force_full is not None:
+            body['override_config'] = {'force_full': force_full}
         return api.Client(self.cfg).post(path, body).json()
 
     def get_step(self, steps, step_type):
@@ -74,7 +74,7 @@ class ForceFullTestCase(utils.BaseAPITestCase):
 
         A full publish should occur.
         """
-        call_report = self.publish_repo({'force_full': False})
+        call_report = self.publish_repo(force_full=False)
         last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
         task_steps = last_task['result']['details']
         step = self.get_step(task_steps, 'rpms')
@@ -99,21 +99,18 @@ class ForceFullTestCase(utils.BaseAPITestCase):
     def test_03_force_full_true(self):
         """Publish the repository and set ``force_full`` to true.
 
-        A full publish should occur. This test targets `Pulp #1938`_, and as
-        such, will skip when run against older versions of Pulp. This test also
-        targets `Pulp #1965`_.
+        A full publish should occur. The "force" publish feature was introduced
+        in Pulp 2.9, and as such, this test will skip when run against an older
+        version of Pulp. See `Pulp #1938`_.
 
         .. _Pulp #1938: https://pulp.plan.io/issues/1938
-        .. _Pulp #1965: https://pulp.plan.io/issues/1965
         """
         if self.cfg.version < Version('2.9'):
             self.skipTest(
                 'This test requires Pulp 2.9. See: '
                 'https://pulp.plan.io/issues/1938'
             )
-        if selectors.bug_is_untestable(1965, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/1965')
-        call_report = self.publish_repo({'force_full': True})
+        call_report = self.publish_repo(force_full=True)
         last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
         task_steps = last_task['result']['details']
         step = self.get_step(task_steps, 'rpms')
