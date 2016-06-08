@@ -14,6 +14,33 @@ _REPO_ID = None
 """The ID of the repository created by ``setUpModule``."""
 
 
+def _get_num_langpacks_in_repo(server_config, repo_id):
+    """Tell how many langpack content units are in the given repository.
+
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        Pulp server being targeted.
+    :param repo_id: A repository ID.
+    :returns: The number of langpacks in the named repository, as an integer.
+    """
+    # This function could be refactored to take a third "keyword" argument. But
+    # what do we do about the "rpm" word in the command below?
+    keyword = 'Package Langpacks:'
+    completed_proc = cli.Client(server_config).run(
+        'pulp-admin rpm repo list --repo-id {} --fields content_unit_counts'
+        .format(repo_id).split()
+    )
+    lines = [
+        line for line in completed_proc.stdout.splitlines() if keyword in line
+    ]
+    # A "Package Langpacks: n" line is printed only if at least one unit of
+    # that kind is present.
+    assert len(lines) in (0, 1)
+    if len(lines) == 0:
+        return 0
+    else:
+        return int(lines[0].split(keyword)[1].strip())
+
+
 def setUpModule():  # pylint:disable=invalid-name
     """Possibly skip tests. Create and sync an RPM repository.
 
@@ -146,3 +173,37 @@ class CopyRecursiveTestCase(CopyBaseTestCase):
             if line.startswith('Name:')
         ))
         self.assertEqual(names.count('walrus'), 1, names)
+
+
+class CopyLangpacksTestCase(CopyBaseTestCase):
+    """Copy langpacks from one repository to another.
+
+    This test case verifies that it is possible to sue the ``pulp-admin rpm
+    repo copy langpacks`` command to copy langpacks from one repository to
+    another. See `Pulp Smash #255`_.
+
+    .. _Pulp Smash #107: https://github.com/PulpQE/pulp-smash/issues/107
+    """
+
+    def test_copy_langpacks(self):
+        """Copy langpacks from one repository to another.
+
+        Assert that:
+
+        * ``pulp-admin`` does not produce any errors.
+        * A non-zero number of langpacks are present in the target repository.
+        """
+        if selectors.bug_is_untestable(1367, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/1367')
+        completed_proc = cli.Client(self.cfg).run(
+            'pulp-admin rpm repo copy langpacks '
+            '--from-repo-id {} --to-repo-id {}'
+            .format(_REPO_ID, self.repo_id).split()
+        )
+        with self.subTest(comment='verify copy command stdout'):
+            self.assertNotIn('Task Failed', completed_proc.stdout)
+        with self.subTest(comment='verify langpack count in repo'):
+            self.assertGreater(
+                _get_num_langpacks_in_repo(self.cfg, self.repo_id),
+                0,
+            )
