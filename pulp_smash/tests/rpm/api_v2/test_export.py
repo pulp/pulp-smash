@@ -11,7 +11,9 @@ This module assumes that the tests in
 from __future__ import unicode_literals
 
 import os
+from xml.dom import minidom
 
+import unittest2
 from dateutil.parser import parse
 from packaging.version import Version
 
@@ -53,15 +55,207 @@ def _run_getenforce(server_config):
     return client.run(('/usr/sbin/getenforce',)).stdout.strip()
 
 
-def _create_distributor(server_config, repo_href):
+def _create_distributor(server_config, repo_href, checksum_type=None):
     """Create an export distributor for the repository at ``repo_href``."""
     path = urljoin(repo_href, 'distributors/')
     body = gen_distributor()
     body['distributor_type_id'] = 'export_distributor'
+    if checksum_type is not None:
+        body['distributor_config']['checksum_type'] = checksum_type
     return api.Client(server_config).post(path, body).json()
 
 
-class ExportDistributorTestCase(utils.BaseAPITestCase):
+def _get_iso_url(cfg, repo, distributor):
+    """Build the URL to the ISO file.
+
+    By default, the file is named like so:
+    {repo_id}-{iso_creation_time}-{iso_number}.iso
+    """
+    iso_name = '{}-{}-01.iso'.format(
+        repo['id'],
+        parse(distributor['last_publish']).strftime('%Y-%m-%dT%H.%M')
+    )
+    path = '/pulp/exports/repos/'
+    path = urljoin(path, distributor['config']['relative_url'])
+    iso_path = urljoin(path, iso_name)
+    return urljoin(cfg.base_url, iso_path)
+
+
+class ExportDirMixin(object):
+    """Mixin with repo export to dir utilities.
+
+    A mixin with methods for managing an export directory on a Pulp server.
+    This mixin is designed to support the following work flow:
+
+    1. Create a directory. (See :meth:`create_export_dir`.)
+    2. Export a repository to the directory.
+    3. Make the directory readable. (See :meth:`change_export_dir_owner`.)
+    4. Inspect the contents of the directory.
+
+    A class attribute named ``cfg`` must be present. It should be a
+    :class:`pulp_smash.config.ServerConfig`.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Initialize variables."""
+        self.__sudo = None
+        super(ExportDirMixin, self).__init__(*args, **kwargs)
+
+    def sudo(self):
+        """Return either ``''`` or ``'sudo '``.
+
+        Return the former if root, and the latter if not.
+        """
+        if self.__sudo is None:
+            self.__sudo = '' if utils.is_root(self.cfg) else 'sudo '
+        return self.__sudo
+
+    def create_export_dir(self):
+        """Create a directory, and ensure Pulp can export to it.
+
+        Create a directory, and set its owner and group to ``apache``. If `Pulp
+        issue 616`_ affects the current Pulp system, disable SELinux, and
+        schedule a clean-up command that re-enables SELinux.
+
+        .. WARNING:: Only call this method from a unittest ``test*`` method. If
+            called from elsewhere, SELinux may be left disabled.
+
+        :returns: The path to the created directory, as a string.
+        """
+        # Issue 616 describes how SELinux prevents Pulp from writing to an
+        # export directory. If that bug affects us, and if SELinux is enforcing
+        # on the target system, then we disable SELinux for the duration of
+        # this one test and re-enable it afterwards.
+        client = cli.Client(self.cfg)
+        if (_has_getenforce(self.cfg) and
+                _run_getenforce(self.cfg).lower() == 'enforcing' and
+                selectors.bug_is_untestable(616, self.cfg.version)):
+            client.run((self.sudo() + 'setenforce 0').split())
+            self.addCleanup(client.run, (self.sudo() + 'setenforce 1').split())
+
+        # Create a custom directory, and ensure apache can create files in it.
+        # We must schedule it for deletion, as Pulp doesn't do this during repo
+        # removal. Due to the amount of permission twiddling done below, we use
+        # root to reliably `rm -rf ${export_dir}`.
+        export_dir = client.run('mktemp --directory'.split()).stdout.strip()
+        self.addCleanup(
+            client.run, (self.sudo() + 'rm -rf {} ' + export_dir).split())
+        client.run((self.sudo() + 'chown apache ' + export_dir).split())
+        return export_dir
+
+    def change_export_dir_owner(self, export_dir):
+        """Change the owner to the running Pulp Smash user.
+
+        Update the remote path ``dir`` owner to the user running Pulp Smash.
+        """
+        client = cli.Client(self.cfg)
+        uid = client.run('id -u'.split()).stdout.strip()
+        client.run(
+            (self.sudo() + 'chown -R {} {}'.format(uid, export_dir)).split())
+
+
+class ExportChecksumTypeTestCase(ExportDirMixin, utils.BaseAPITestCase):
+    """Publish a repository choosing the distributor checksum type."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Create and sync a repository. Creates some distributors.
+
+        Each distributor is configured with a valid checksum type.
+        """
+        super(ExportChecksumTypeTestCase, cls).setUpClass()
+        if cls.cfg.version < Version('2.9'):
+            raise unittest2.SkipTest('This test requires Pulp 2.9 or newer')
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_FEED_URL
+        cls.repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
+        cls.resources.add(cls.repo['_href'])
+        utils.sync_repo(cls.cfg, cls.repo['_href'])
+        cls.distributors = [
+            _create_distributor(cls.cfg, cls.repo['_href'], checksum_type)
+            for checksum_type in ('md5', 'sha1', 'sha256')
+        ]
+
+    def _publish_to_dir(self, distributor):
+        """Publish repository to dir using the ``distributor`` argument."""
+        export_dir = self.create_export_dir()
+        # Publish into the directory
+        path = urljoin(self.repo['_href'], 'actions/publish/')
+        api.Client(self.cfg).post(path, {
+            'id': distributor['id'],
+            'override_config': {'export_dir': export_dir},
+        })
+        self.change_export_dir_owner(export_dir)
+        return export_dir
+
+    def _publish_to_web(self, distributor):
+        """Publish repository to web using the ``distributor`` argument.
+
+        Return the updated distributor information.
+        """
+        client = api.Client(self.cfg, api.json_handler)
+        path = urljoin(self.repo['_href'], 'actions/publish/')
+        client.post(path, {'id': distributor['id']})
+        return client.get(distributor['_href'])
+
+    def _assert_checksum_type(self, export_dir, distributor, checksum_type):
+        repomd_path = os.path.join(
+            export_dir,
+            distributor['config']['relative_url'],
+            'repodata',
+            'repomd.xml'
+        )
+        document = minidom.parseString(cli.Client(self.cfg).run(
+            'cat {}'.format(repomd_path).split()).stdout)
+        self.assertTrue(all([
+            element.attributes.get('type').value == checksum_type
+            for element in document.getElementsByTagName('checksum')
+        ]))
+
+    def test_publish_to_dir_checksum_type(self):  # pylint:disable=invalid-name
+        """Publish to a directory choosing the checksum type."""
+        for distributor in self.distributors:
+            checksum_type = distributor['config']['checksum_type']
+            with self.subTest(msg=checksum_type):
+                self._assert_checksum_type(
+                    self._publish_to_dir(distributor),
+                    distributor,
+                    checksum_type
+                )
+
+    def test_publish_to_web_checksum_type(self):  # pylint:disable=invalid-name
+        """Publish to web choosing the checksum type."""
+        client = cli.Client(self.cfg)
+        for distributor in self.distributors:
+            checksum_type = distributor['config']['checksum_type']
+            with self.subTest(msg=checksum_type):
+                distributor = self._publish_to_web(distributor)
+                url = _get_iso_url(self.cfg, self.repo, distributor)
+                export_dir = client.run(
+                    'mktemp --directory'.split()).stdout.strip()
+                iso_path = client.run('mktemp'.split()).stdout.strip()
+                self.addCleanup(
+                    client.run,
+                    '{}rm -rf {} {}'.format(
+                        self.sudo(), export_dir, iso_path
+                    ).split()
+                )
+                client.run(
+                    'curl --insecure -o {} {}'.format(iso_path, url).split())
+                client.run((self.sudo() + 'mount -o loop {} {}'.format(
+                    iso_path, export_dir)).split())
+                self.addCleanup(
+                    client.run,
+                    (self.sudo() + 'umount {}'.format(export_dir)).split()
+                )
+                self._assert_checksum_type(
+                    export_dir,
+                    distributor,
+                    checksum_type
+                )
+
+
+class ExportDistributorTestCase(ExportDirMixin, utils.BaseAPITestCase):
     """Establish we can publish a repository using an export distributor."""
 
     @classmethod
@@ -110,19 +304,9 @@ class ExportDistributorTestCase(utils.BaseAPITestCase):
         client.post(path, {'id': self.distributor['id']})
         distributor = client.get(self.distributor['_href'])
 
-        # Build the path to the ISO file. By default, the file is named like
-        # so: {repo_id}-{iso_creation_time}-{iso_number}.iso
-        iso_creation_time = parse(
-            distributor['last_publish']
-        ).strftime('%Y-%m-%dT%H.%M')
-        iso_name = '{}-{}-01.iso'.format(self.repo['id'], iso_creation_time)
-        path = '/pulp/exports/repos/'
-        path = urljoin(path, distributor['config']['relative_url'])
-        iso_path = urljoin(path, iso_name)
-
         # Fetch the ISO file via HTTP and HTTPS.
         client.response_handler = api.safe_handler
-        url = urljoin(self.cfg.base_url, iso_path)
+        url = _get_iso_url(self.cfg, self.repo, distributor)
         for scheme in ('http', 'https'):
             url = urlunparse((scheme,) + urlparse(url)[1:])
             with self.subTest(url=url):
@@ -137,39 +321,15 @@ class ExportDistributorTestCase(utils.BaseAPITestCase):
         This test is skipped if selinux is installed and enabled on the target
         system an `Pulp issue 616 <https://pulp.plan.io/issues/616>`_ is open.
         """
-        sudo = '' if utils.is_root(self.cfg) else 'sudo '
-
-        # Issue 616 describes how SELinux prevents Pulp from writing to an
-        # export directory. If that bug affects us, and if SELinux is enforcing
-        # on the target system, then we disable SELinux for the duration of
-        # this one test and re-enable it afterwards.
-        client = cli.Client(self.cfg)
-        if (_has_getenforce(self.cfg) and
-                _run_getenforce(self.cfg).lower() == 'enforcing' and
-                selectors.bug_is_untestable(616, self.cfg.version)):
-            client.run((sudo + 'setenforce 0').split())
-            self.addCleanup(client.run, (sudo + 'setenforce 1').split())
-
-        # Create a custom directory, and ensure apache can create files in it.
-        # We must schedule it for deletion, as Pulp doesn't do this during repo
-        # removal. Due to the amount of permission twiddling done below, we use
-        # root to reliably `rm -rf ${export_dir}`.
-        export_dir = client.run('mktemp --directory'.split()).stdout.strip()
-        self.addCleanup(client.run, (sudo + 'rm -rf {} ' + export_dir).split())
-        client.run((sudo + 'chown apache ' + export_dir).split())
-
+        export_dir = self.create_export_dir()
         # Publish into the directory
         path = urljoin(self.repo['_href'], 'actions/publish/')
         api.Client(self.cfg).post(path, {
             'id': self.distributor['id'],
             'override_config': {'export_dir': export_dir},
         })
-
-        # Make sure *we* can read the files, and ensure at least one expected
-        # RPM is present.
-        uid = client.run('id -u'.split()).stdout.strip()
-        client.run((sudo + 'chown -R {} {}'.format(uid, export_dir)).split())
-        checksum = client.run(('sha256sum', os.path.join(
+        self.change_export_dir_owner(export_dir)
+        checksum = cli.Client(self.cfg).run(('sha256sum', os.path.join(
             export_dir,
             self.distributor['config']['relative_url'],
             RPM,
