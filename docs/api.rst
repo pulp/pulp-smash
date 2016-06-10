@@ -63,6 +63,7 @@ developers, not a gospel.
     api/pulp_smash.tests.rpm.api_v2
     api/pulp_smash.tests.rpm.api_v2.test_broker
     api/pulp_smash.tests.rpm.api_v2.test_comps_xml
+    api/pulp_smash.tests.rpm.api_v2.test_crud
     api/pulp_smash.tests.rpm.api_v2.test_download_policies
     api/pulp_smash.tests.rpm.api_v2.test_duplicate_uploads
     api/pulp_smash.tests.rpm.api_v2.test_export
