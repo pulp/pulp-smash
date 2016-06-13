@@ -12,6 +12,13 @@ CALL_REPORT_KEYS = frozenset(('error', 'result', 'spawned_tasks'))
     http://docs.pulpproject.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
 """
 
+CONTENT_SOURCE_ID = 'content-world'
+"""See: `Content Sources`_.
+
+.. _Content Sources:
+    http://pulp.readthedocs.io/en/latest/user-guide/content-sources.html
+"""
+
 CONTENT_UNITS_PATH = '/pulp/api/v2/content/units/'
 """See: `Search for Units`_.
 
