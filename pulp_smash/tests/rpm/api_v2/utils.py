@@ -23,6 +23,13 @@ def gen_repo():
     }
 
 
+def gen_repo_group():
+    """Return a semi-random dict for use in creating a RPM repository group."""
+    return {
+        'id': utils.uuid4(),
+    }
+
+
 def gen_distributor():
     """Return a semi-random dict for use in creating a YUM distributor."""
     return {

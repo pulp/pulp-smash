@@ -192,6 +192,14 @@ REPOSITORY_PATH = '/pulp/api/v2/repositories/'
     https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/index.html
 """
 
+REPOSITORY_GROUP_PATH = '/pulp/api/v2/repo_groups/'
+"""See: `Repository Group APIs`_
+
+.. _Repository Group APIs:
+    http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/groups/index.html
+"""
+
+
 CONSUMER_PATH = '/pulp/api/v2/consumers/'
 """See: `Consumer APIs`_.
 
