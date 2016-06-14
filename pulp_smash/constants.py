@@ -185,6 +185,20 @@ PYTHON_WHEEL_URL = (
 )
 """The URL to a Python wheel."""
 
+REPOSITORY_EXPORT_DISTRIBUTOR = 'export_distributor'
+"""A ``distributor_type_id`` to export a repository.
+
+See: `Export Distributors
+<https://pulp-rpm.readthedocs.io/en/latest/tech-reference/export-distributor.html>`_.
+"""
+
+REPOSITORY_GROUP_EXPORT_DISTRIBUTOR = 'group_export_distributor'
+"""A ``distributor_type_id`` to export a repository group.
+
+See: `Export Distributors
+<https://pulp-rpm.readthedocs.io/en/latest/tech-reference/export-distributor.html>`_.
+"""
+
 REPOSITORY_PATH = '/pulp/api/v2/repositories/'
 """See: `Repository APIs`_.
 
