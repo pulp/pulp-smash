@@ -178,11 +178,11 @@ class CopyRecursiveTestCase(CopyBaseTestCase):
 class CopyLangpacksTestCase(CopyBaseTestCase):
     """Copy langpacks from one repository to another.
 
-    This test case verifies that it is possible to sue the ``pulp-admin rpm
+    This test case verifies that it is possible to use the ``pulp-admin rpm
     repo copy langpacks`` command to copy langpacks from one repository to
     another. See `Pulp Smash #255`_.
 
-    .. _Pulp Smash #107: https://github.com/PulpQE/pulp-smash/issues/107
+    .. _Pulp Smash #255: https://github.com/PulpQE/pulp-smash/issues/255
     """
 
     def test_copy_langpacks(self):
