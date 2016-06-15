@@ -153,6 +153,31 @@ def upload_import_unit(server_config, unit, unit_type_id, repo_href):
     return call_report
 
 
+def upload_import_erratum(server_config, erratum, repo_href):
+    """Upload an erratum to a Pulp server and import it into a repository.
+
+    For most content types, use :meth:`upload_import_unit`.
+
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        Pulp server being targeted.
+    :param erratum: A dict, with keys such as "id," "status," "issued," and
+        "references."
+    :param repo_href: The path to the repository into which ``erratum`` will be
+        imported.
+    :returns: The call report returned when importing the erratum.
+    """
+    client = api.Client(server_config, api.json_handler)
+    malloc = client.post(CONTENT_UPLOAD_PATH)
+    call_report = client.post(urljoin(repo_href, 'actions/import_upload/'), {
+        'unit_key': {'id': erratum['id']},
+        'unit_metadata': erratum,
+        'unit_type_id': 'erratum',
+        'upload_id': malloc['upload_id'],
+    })
+    client.delete(malloc['_href'])
+    return call_report
+
+
 class BaseAPITestCase(unittest2.TestCase):
     """A class with behaviour that is of use in many API test cases.
 

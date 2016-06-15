@@ -201,6 +201,28 @@ class UploadImportUnitTestCase(unittest2.TestCase):
         self.assertIs(response, client.return_value.post.return_value)
 
 
+class UploadImportErratumTestCase(unittest2.TestCase):
+    """Test :func:`pulp_smash.utils.upload_import_unit`."""
+
+    def test_post(self):
+        """Assert the function makes an HTTP POST request."""
+        with mock.patch.object(api, 'Client') as client:
+            # post() is called twice, first to start a content upload and
+            # second to import and upload. In both cases, a dict is returned.
+            # Our dict mocks the first case, and just happens to work in the
+            # second case too.
+            client.return_value.post.return_value = {
+                '_href': 'foo',
+                'upload_id': 'bar',
+            }
+            response = utils.upload_import_erratum(
+                mock.Mock(),  # server_config
+                {'id': 'abc123'},  # erratum
+                'http://example.com',  # repo_href
+            )
+        self.assertIs(response, client.return_value.post.return_value)
+
+
 class PulpAdminLoginTestCase(unittest2.TestCase):
     """Test :func:`pulp_smash.utils.pulp_admin_login`."""
 

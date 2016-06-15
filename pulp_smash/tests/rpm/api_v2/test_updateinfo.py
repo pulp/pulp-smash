@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 from pulp_smash import api, selectors, utils
 from pulp_smash.compat import urljoin
-from pulp_smash.constants import CONTENT_UPLOAD_PATH, REPOSITORY_PATH
+from pulp_smash.constants import REPOSITORY_PATH
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -83,25 +83,6 @@ def _get_updates_by_id(update_info_tree):
     }
 
 
-def _upload_import_erratum(server_config, erratum, repo_href):
-    """Upload an erratum to a Pulp server and import it into a repository.
-
-    Create an upload request, upload ``erratum`` (after wrapping it), import it
-    into the repository at ``repo_href``, and close the upload request. Return
-    the call report received when importing the erratum.
-    """
-    client = api.Client(server_config, api.json_handler)
-    malloc = client.post(CONTENT_UPLOAD_PATH)
-    call_report = client.post(urljoin(repo_href, 'actions/import_upload/'), {
-        'unit_key': {'id': erratum['id']},
-        'unit_metadata': erratum,
-        'unit_type_id': 'erratum',
-        'upload_id': malloc['upload_id'],
-    })
-    client.delete(malloc['_href'])
-    return call_report
-
-
 class UpdateInfoTestCase(utils.BaseAPITestCase):
     """Tests to ensure ``updateinfo.xml`` can be created and is valid."""
 
@@ -136,7 +117,11 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
 
         # Import errata into our repository. Publish the repository.
         for key, erratum in cls.errata.items():
-            report = _upload_import_erratum(cls.cfg, erratum, repo['_href'])
+            report = utils.upload_import_erratum(
+                cls.cfg,
+                erratum,
+                repo['_href'],
+            )
             cls.tasks[key] = tuple(api.poll_spawned_tasks(cls.cfg, report))
         client.post(
             urljoin(repo['_href'], 'actions/publish/'),
