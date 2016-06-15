@@ -230,6 +230,12 @@ RPM_ABS_PATH = (
 )
 """The absolute path to :data:`pulp_smash.constants.RPM` in the filesystem."""
 
+RPM_ERRATUM_URL = (
+    'https://repos.fedorapeople.org'
+    '/repos/pulp/pulp/fixtures/rpm-erratum/erratum.json'
+)
+"""The URL to an JSON erratum file for an RPM repository."""
+
 RPM_FEED_URL = 'https://repos.fedorapeople.org/repos/pulp/pulp/fixtures/rpm/'
 """The URL to an RPM repository. See :data:`RPM_URL`."""
 
