@@ -87,6 +87,7 @@ developers, not a gospel.
     api/pulp_smash.tests.rpm.cli.test_copy_units
     api/pulp_smash.tests.rpm.cli.test_langpacks
     api/pulp_smash.tests.rpm.cli.test_search
+    api/pulp_smash.tests.rpm.cli.test_sync
     api/pulp_smash.tests.rpm.utils
     api/pulp_smash.utils
     api/tests
