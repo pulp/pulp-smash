@@ -221,6 +221,20 @@ CONSUMER_PATH = '/pulp/api/v2/consumers/'
     https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/consumer/index.html
 """
 
+RPM_ERRATUM_ID = 'RHEA-2012:0058'
+"""The ID of an erratum.
+
+The package contained on this erratum is defined by
+:data:`pulp_smash.constants.RPM_ERRATUM_RPM_NAME` and the erratum is present on
+repository which feed is :data:`pulp_smash.constants.RPM_FEED_URL`.
+"""
+
+RPM_ERRATUM_RPM_NAME = 'gorilla'
+"""The name of the RPM present on an erratum.
+
+The erratum ID is defined by :data:`pulp_smash.constants.RPM_ERRATUM_ID`.
+"""
+
 RPM = 'bear-4.1-1.noarch.rpm'
 """The name of an RPM file. See :data:`pulp_smash.constants.RPM_URL`."""
 

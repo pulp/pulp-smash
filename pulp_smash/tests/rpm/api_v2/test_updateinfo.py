@@ -4,11 +4,17 @@ from __future__ import unicode_literals
 
 from pulp_smash import api, selectors, utils
 from pulp_smash.compat import urljoin
-from pulp_smash.constants import REPOSITORY_PATH
+from pulp_smash.constants import (
+    REPOSITORY_PATH,
+    RPM_ERRATUM_ID,
+    RPM_ERRATUM_RPM_NAME,
+    RPM_FEED_URL,
+)
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
     get_repomd_xml,
+    get_unit_unassociate_criteria,
 )
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
@@ -227,3 +233,81 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
         reboot_elements = update_element.findall('reboot_suggested')
         self.assertEqual(len(reboot_elements), 1, reboot_elements)
         self.assertEqual(reboot_elements[0].text, 'False')
+
+
+class ErratumPkgListCountTestCase(utils.BaseAPITestCase):
+    """Tests for ``updateinfo.xml`` erratum package list count."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Create RPM repository, delete a package, and publish the repository.
+
+        More specifically, do the following:
+
+        1. Create an RPM repository.
+        2. Add a YUM distributor.
+        3. Sync the created repository.
+        4. Remove the ``gorilla`` package
+        5. Publish the repository. Fetch the ``updateinfo.xml`` file from the
+           distributor (via ``repomd.xml``), and parse it.
+        """
+        super(ErratumPkgListCountTestCase, cls).setUpClass()
+
+        # Create a repository, sync it, and add a yum distributor.
+        client = api.Client(cls.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_FEED_URL
+        repo = client.post(REPOSITORY_PATH, body)
+        cls.resources.add(repo['_href'])
+        utils.sync_repo(cls.cfg, repo['_href'])
+        distributor = client.post(
+            urljoin(repo['_href'], 'distributors/'),
+            gen_distributor(),
+        )
+
+        # Remove the gorilla package unit
+        client.post(
+            urljoin(repo['_href'], 'actions/unassociate/'),
+            {'criteria': get_unit_unassociate_criteria(RPM_ERRATUM_RPM_NAME)},
+        )
+
+        # Publish the repository
+        client.post(
+            urljoin(repo['_href'], 'actions/publish/'),
+            {'id': distributor['id']},
+        )
+
+        # Fetch and parse updateinfo.xml (or updateinfo.xml.gz), via repomd.xml
+        root_element = get_repomd_xml(
+            cls.cfg,
+            urljoin('/pulp/repos/', distributor['config']['relative_url']),
+            'updateinfo'
+        )
+
+        # Fetch the erratum and erratum pkglist for the gorilla package
+        updates = _get_updates_by_id(root_element)
+        erratum = updates[RPM_ERRATUM_ID]
+        cls.erratum_pkglists = erratum.findall('pkglist')
+
+    def test_one_pkglist(self):
+        """Ensure there is only one pkglist element on a erratum."""
+        self.assertEqual(len(self.erratum_pkglists), 1)
+
+    def test_pkglist_children(self):
+        """Ensure pkglist children structure.
+
+        Check if the erratum pkglist have the following structure::
+
+            <collection short="">
+                <name>1</name>
+            </collection>
+        """
+        pkglist = self.erratum_pkglists[0]
+        names = pkglist.findall('collection[@short=""]/name')
+        with self.subTest(comment='pkglist have one name children'):
+            self.assertEqual(len(names), 1)
+        name = names[0]
+        with self.subTest(comment='name have no children'):
+            self.assertEqual(len(name.getchildren()), 0)
+        with self.subTest(comment='name have 1 as text'):
+            self.assertEqual(name.text, '1')
