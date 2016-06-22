@@ -9,9 +9,9 @@ The test cases in this module searches for content units by their type. See:
 
 .. _Pulp Smash #133: https://github.com/PulpQE/pulp-smash/issues/133
 .. _Search for Units:
-    http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/content/units.html#search-for-units
+    http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/units.html#search-for-units
 .. _Searching:
-    http://pulp.readthedocs.io/en/latest/dev-guide/conventions/criteria.html
+    http://docs.pulpproject.org/en/latest/dev-guide/conventions/criteria.html
 """
 from __future__ import unicode_literals
 

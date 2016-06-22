@@ -224,13 +224,13 @@ class BaseAPICrudTestCase(unittest2.TestCase):
     Relevant Pulp documentation:
 
     Create
-        http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/cud.html#create-a-repository
+        http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/cud.html#create-a-repository
     Read
-        http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/retrieval.html#retrieve-a-single-repository
+        http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/retrieval.html#retrieve-a-single-repository
     Update
-        http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/cud.html#update-a-repository
+        http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/cud.html#update-a-repository
     Delete
-        http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/cud.html#delete-a-repository
+        http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/cud.html#delete-a-repository
     """
 
     @classmethod
@@ -412,9 +412,9 @@ def get_unit_type_ids(server_config):
     :returns: A set of content unit type IDs. For example: ``{'ostree',
         'python_package'}``.
 
-    .. [1] http://pulp-python.readthedocs.io/en/latest/
+    .. [1] http://docs.pulpproject.org/plugins/pulp_python/
     .. [2]
-        http://pulp-python.readthedocs.io/en/latest/reference/python-type.html
+       http://docs.pulpproject.org/plugins/pulp_python/reference/python-type.html
     """
     unit_types = api.Client(server_config).get(PLUGIN_TYPES_PATH).json()
     return {unit_type['id'] for unit_type in unit_types}

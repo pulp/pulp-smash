@@ -2,7 +2,7 @@
 """Test the `consumer`_ API endpoints.
 
 .. _consumer:
-    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/consumer/index.html
+    https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/consumer/index.html
 """
 from __future__ import unicode_literals
 
@@ -16,7 +16,7 @@ class BindConsumerTestCase(utils.BaseAPITestCase):
     """Show that one can `bind a consumer to a repository`_.
 
     .. _bind a consumer to a repository:
-        https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/consumer/bind.html#bind-a-consumer-to-a-repository
+        https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/consumer/bind.html#bind-a-consumer-to-a-repository
     """
 
     @classmethod

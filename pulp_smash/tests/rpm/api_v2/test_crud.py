@@ -3,7 +3,7 @@
 
 For information on repository CRUD operations, see `Creation, Deletion and
 Configuration
-<http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/cud.html>`_.
+<http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/cud.html>`_.
 """
 from __future__ import unicode_literals
 
@@ -43,7 +43,7 @@ class RepositoryGroupCrudTestCase(utils.BaseAPITestCase):
 
     For information on repositories' groups CRUD operations, see `Creation,
     Delete, and Update
-    <http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/groups/cud.html>`
+    <http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/groups/cud.html>`
     """
 
     @classmethod

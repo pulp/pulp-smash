@@ -6,7 +6,7 @@ This module assumes that the tests in
 :mod:`pulp_smash.tests.rpm.api_v2.test_sync_publish` hold true.
 
 .. _Unassociating Content Units from a Repository:
-   http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/content/associate.html#unassociating-content-units-from-a-repository
+   http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/associate.html#unassociating-content-units-from-a-repository
 """
 from __future__ import unicode_literals
 

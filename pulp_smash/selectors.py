@@ -16,7 +16,7 @@ from pulp_smash import exceptions
 # These statuses apply to bugs filed at https://pulp.plan.io. They are ordered
 # according to an ideal workflow. As of this writing, these is no canonical
 # public source for this information. But see:
-# http://pulp.readthedocs.io/en/latest/dev-guide/contributing/bugs.html#fixing
+# http://docs.pulpproject.org/en/latest/dev-guide/contributing/bugs.html#fixing
 _UNTESTABLE_BUGS = frozenset((
     'NEW',  # bug just entered into tracker
     'ASSIGNED',  # bug has been assigned to an engineer

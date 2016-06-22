@@ -17,7 +17,7 @@ class SearchReposWithFiltersTestCase(unittest2.TestCase):
     .. _Pulp #1784:  https://pulp.plan.io/issues/1784
     .. _Pulp Smash #184: https://github.com/PulpQE/pulp-smash/issues/184
     .. _repository search:
-        http://pulp.readthedocs.io/en/latest/user-guide/consumer-client/repositories.html
+        http://docs.pulpproject.org/en/latest/user-guide/consumer-client/repositories.html
     """
 
     @classmethod

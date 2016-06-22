@@ -7,7 +7,7 @@ describes specific tests that should be in this module.
 .. _Pulp Fixtures: https://github.com/PulpQE/pulp-fixtures
 .. _Pulp Smash #134: https://github.com/PulpQE/pulp-smash/issues/134
 .. _orphaned content units:
-    http://pulp.readthedocs.io/en/latest/user-guide/admin-client/orphan.html
+    http://docs.pulpproject.org/en/latest/user-guide/admin-client/orphan.html
 """
 from __future__ import unicode_literals
 

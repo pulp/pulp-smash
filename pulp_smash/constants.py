@@ -9,21 +9,21 @@ CALL_REPORT_KEYS = frozenset(('error', 'result', 'spawned_tasks'))
 """See: `Call Report`_.
 
 .. _Call Report:
-    http://pulp.readthedocs.io/en/latest/dev-guide/conventions/sync-v-async.html#call-report
+    http://docs.pulpproject.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
 """
 
 CONTENT_UNITS_PATH = '/pulp/api/v2/content/units/'
 """See: `Search for Units`_.
 
 .. _Search for Units:
-    http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/content/units.html#search-for-units
+    http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/units.html#search-for-units
 """
 
 CONTENT_UPLOAD_PATH = '/pulp/api/v2/content/uploads/'
 """See: `Creating an Upload Request`_.
 
 .. _Creating an Upload Request:
-   http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/content/upload.html#creating-an-upload-request
+   http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/upload.html#creating-an-upload-request
 """
 
 DOCKER_IMAGE_URL = (
@@ -62,7 +62,7 @@ ERROR_KEYS = frozenset((
 No ``href`` field should be present. See `Issue #1310`_.
 
 .. _Exception Handling:
-    https://pulp.readthedocs.io/en/latest/dev-guide/conventions/exceptions.html
+    https://docs.pulpproject.org/en/latest/dev-guide/conventions/exceptions.html
 .. _Issue #1310: https://pulp.plan.io/issues/1310
 """
 
@@ -70,28 +70,28 @@ GROUP_CALL_REPORT_KEYS = frozenset(('_href', 'group_id'))
 """See: `Group Call Report`_.
 
 .. _Group Call Report:
-    http://pulp.readthedocs.io/en/latest/dev-guide/conventions/sync-v-async.html#group-call-report
+    http://docs.pulpproject.org/en/latest/dev-guide/conventions/sync-v-async.html#group-call-report
 """
 
 LOGIN_KEYS = frozenset(('certificate', 'key'))
 """See: `User Certificates`_.
 
 .. _User Certificates:
-    http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/authentication.html#user-certificates
+    http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/authentication.html#user-certificates
 """
 
 LOGIN_PATH = '/pulp/api/v2/actions/login/'
 """See: `Authentication`_.
 
 .. _Authentication:
-    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/authentication.html
+    https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/authentication.html
 """
 
 ORPHANS_PATH = 'pulp/api/v2/content/orphans/'
 """See: `Orphaned Content`_.
 
 .. _Orphaned Content:
-    http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/content/orphan.html
+    http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/orphan.html
 """
 
 OSTREE_FEED = (
@@ -100,21 +100,21 @@ OSTREE_FEED = (
 """The URL to a URL of OSTree branches. See OSTree `Importer Configuration`_.
 
 .. _Importer Configuration:
-    http://pulp-ostree.readthedocs.io/en/latest/tech-reference/importer.html
+    http://docs.pulpproject.org/plugins/pulp_ostree/tech-reference/importer.html
 """
 
 OSTREE_BRANCH = 'fedora-atomic/f21/x86_64/updates/docker-host'
 """A branch in :data:`OSTREE_FEED`. See OSTree `Importer Configuration`_.
 
 .. _Importer Configuration:
-    http://pulp-ostree.readthedocs.io/en/latest/tech-reference/importer.html
+    http://docs.pulpproject.org/plugins/pulp_ostree/tech-reference/importer.html
 """
 
 PLUGIN_TYPES_PATH = '/pulp/api/v2/plugins/types/'
 """See: `Retrieve All Content Unit Types`_.
 
 .. _Retrieve All Content Unit Types:
-   http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/server_plugins.html#retrieve-all-content-unit-types
+   http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/server_plugins.html#retrieve-all-content-unit-types
 """
 
 PULP_SERVICES = {
@@ -189,28 +189,28 @@ REPOSITORY_EXPORT_DISTRIBUTOR = 'export_distributor'
 """A ``distributor_type_id`` to export a repository.
 
 See: `Export Distributors
-<https://pulp-rpm.readthedocs.io/en/latest/tech-reference/export-distributor.html>`_.
+<https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/export-distributor.html>`_.
 """
 
 REPOSITORY_GROUP_EXPORT_DISTRIBUTOR = 'group_export_distributor'
 """A ``distributor_type_id`` to export a repository group.
 
 See: `Export Distributors
-<https://pulp-rpm.readthedocs.io/en/latest/tech-reference/export-distributor.html>`_.
+<https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/export-distributor.html>`_.
 """
 
 REPOSITORY_PATH = '/pulp/api/v2/repositories/'
 """See: `Repository APIs`_.
 
 .. _Repository APIs:
-    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/index.html
+    https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/index.html
 """
 
 REPOSITORY_GROUP_PATH = '/pulp/api/v2/repo_groups/'
 """See: `Repository Group APIs`_
 
 .. _Repository Group APIs:
-    http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/groups/index.html
+    http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/groups/index.html
 """
 
 
@@ -218,7 +218,7 @@ CONSUMER_PATH = '/pulp/api/v2/consumers/'
 """See: `Consumer APIs`_.
 
 .. _Consumer APIs:
-    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/consumer/index.html
+    https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/consumer/index.html
 """
 
 RPM = 'bear-4.1-1.noarch.rpm'
@@ -259,5 +259,5 @@ USER_PATH = '/pulp/api/v2/users/'
 """See: `User APIs`_.
 
 .. _User APIs:
-    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/user/index.html
+    https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/user/index.html
 """

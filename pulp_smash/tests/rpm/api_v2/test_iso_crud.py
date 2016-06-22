@@ -204,9 +204,9 @@ class AddImporterDistributorTestCase(utils.BaseAPITestCase):
     See:
 
     * `Associate an Importer to a Repository
-      <http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/cud.html#associate-an-importer-to-a-repository>`_
+      <http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/cud.html#associate-an-importer-to-a-repository>`_
     * `Associate a Distributor with a Repository
-      <http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/cud.html#associate-a-distributor-with-a-repository>`_
+      <http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/cud.html#associate-a-distributor-with-a-repository>`_
     """
 
     @classmethod

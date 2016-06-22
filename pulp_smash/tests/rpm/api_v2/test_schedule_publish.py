@@ -6,7 +6,7 @@ This module assumes that the tests in
 :mod:`pulp_smash.tests.rpm.api_v2.test_sync_publish` hold true.
 
 .. _publication:
-    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/publish.html#scheduling-a-publish
+    https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/publish.html#scheduling-a-publish
 """
 
 from __future__ import unicode_literals
@@ -77,7 +77,7 @@ class CreateFailureTestCase(utils.BaseAPITestCase):
     """Establish that schedules are not created in `documented scenarios`_.
 
     .. _documented scenarios:
-        https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/publish.html#scheduling-a-publish
+        https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/publish.html#scheduling-a-publish
     """
 
     @classmethod
@@ -147,11 +147,11 @@ class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
     hold true.
 
     .. _read:
-        https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/publish.html#listing-a-single-scheduled-publish
+        https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/publish.html#listing-a-single-scheduled-publish
     .. _update:
-        https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/publish.html#updating-a-scheduled-publish
+        https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/publish.html#updating-a-scheduled-publish
     .. _delete:
-        https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/publish.html#deleting-a-scheduled-publish
+        https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/publish.html#deleting-a-scheduled-publish
     """
 
     @classmethod

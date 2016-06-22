@@ -12,7 +12,7 @@ repository created with valid feed and `retain_old_count`_ option set.
 4. Assert that number or RPMs in repo bar is less then in foo repo.
 
 .. _retain_old_count:
-    https://pulp-rpm.readthedocs.io/en/latest/tech-reference/yum-plugins.html
+    https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/yum-plugins.html
 """
 from __future__ import unicode_literals
 

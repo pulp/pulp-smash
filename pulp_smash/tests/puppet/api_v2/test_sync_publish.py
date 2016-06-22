@@ -30,7 +30,7 @@ Assertions not explored in this module include:
   in single directory on pulp server over HTTPS.
 
 .. _repositories:
-   http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/cud.html
+   http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/cud.html
 """
 from __future__ import unicode_literals
 
@@ -383,7 +383,7 @@ class PublishTestCase(utils.BaseAPITestCase):
         """Verify the response body for `creating an upload request`_.
 
         .. _creating an upload request:
-           http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/content/upload.html#creating-an-upload-request
+           http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/upload.html#creating-an-upload-request
         """
         keys = set(self.responses['malloc'].json().keys())
         self.assertLessEqual({'_href', 'upload_id'}, keys)
@@ -392,7 +392,7 @@ class PublishTestCase(utils.BaseAPITestCase):
         """Verify the response body for `uploading bits`_.
 
         .. _uploading bits:
-           http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/content/upload.html#upload-bits
+           http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/upload.html#upload-bits
         """
         self.assertIsNone(self.responses['upload'].json())
 
@@ -400,9 +400,9 @@ class PublishTestCase(utils.BaseAPITestCase):
         """Verify each call report has a sane structure.
 
         * `Import into a Repository
-          <http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/content/upload.html#import-into-a-repository>`_
+          <http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/upload.html#import-into-a-repository>`_
         * `Copying Units Between Repositories
-          <http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/content/associate.html#copying-units-between-repositories>`_
+          <http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/associate.html#copying-units-between-repositories>`_
         """
         for step in {'import', 'copy'}:
             with self.subTest(step=step):
@@ -419,7 +419,7 @@ class PublishTestCase(utils.BaseAPITestCase):
         """Verify the response body for ending an upload.
 
         `Delete an Upload Request
-        <http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/content/upload.html#delete-an-upload-request>`_
+        <http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/upload.html#delete-an-upload-request>`_
         """
         self.assertIsNone(self.responses['free'].json())
 

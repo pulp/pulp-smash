@@ -2,7 +2,7 @@
 """Test the API's `authentication`_ functionality.
 
 .. _authentication:
-    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/authentication.html
+    https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/authentication.html
 """
 # Why The Comments?
 # =================

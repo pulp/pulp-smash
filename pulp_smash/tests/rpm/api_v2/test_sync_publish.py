@@ -5,9 +5,9 @@ For information on repository sync and publish operations, see
 `Synchronization`_ and `Publication`_.
 
 .. _Publication:
-    http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/publish.html
+    http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/publish.html
 .. _Synchronization:
-    http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/sync.html
+    http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/sync.html
 """
 from __future__ import unicode_literals
 

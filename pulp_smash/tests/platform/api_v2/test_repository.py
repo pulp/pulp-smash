@@ -12,7 +12,7 @@ The assumptions explored in this module have the following dependencies::
         └── It is possible to delete a repository.
 
 .. _repository:
-    https://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/repo/index.html
+    https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/index.html
 """
 from __future__ import unicode_literals
 

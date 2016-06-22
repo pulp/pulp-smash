@@ -25,9 +25,9 @@ class CallReportError(Exception):
     `Synchronous and Asynchronous Calls`_ and `Task Management`_.
 
     .. _Synchronous and Asynchronous Calls:
-        http://pulp.readthedocs.io/en/latest/dev-guide/conventions/sync-v-async.html
+        http://docs.pulpproject.org/en/latest/dev-guide/conventions/sync-v-async.html
     .. _Task Management:
-        http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/tasks.html
+        http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/tasks.html
     """
 
 
@@ -68,9 +68,9 @@ class TaskReportError(Exception):
     `Synchronous and Asynchronous Calls`_ and `Task Management`_.
 
     .. _Synchronous and Asynchronous Calls:
-        http://pulp.readthedocs.io/en/latest/dev-guide/conventions/sync-v-async.html
+        http://docs.pulpproject.org/en/latest/dev-guide/conventions/sync-v-async.html
     .. _Task Management:
-        http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/tasks.html
+        http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/tasks.html
     """
 
 

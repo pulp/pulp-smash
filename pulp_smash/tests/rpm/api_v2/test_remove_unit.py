@@ -14,7 +14,7 @@ of repository created with valid feed and remove_missing option set.
 6. Assert that both repositories contain same units.
 
 .. _remove_missing:
-    https://pulp-rpm.readthedocs.io/en/latest/tech-reference/yum-plugins.html
+    https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/yum-plugins.html
 """
 
 from __future__ import unicode_literals
