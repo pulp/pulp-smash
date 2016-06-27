@@ -7,30 +7,7 @@ from packaging.version import Version
 
 from pulp_smash import cli, config, utils
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
-
-
-def _count_langpacks(server_config, repo_id):
-    """Tell how many package langpacks are in a repository.
-
-    :param server_config: pulp_smash.config.ServerConfig server_config:
-        Information about the Pulp server being targeted.
-    :param repo_id: A RPM repository ID.
-    :returns: The number of package langpacks in a repository, as an ``int``.
-    """
-    keyword = 'Package Langpacks:'
-    completed_proc = cli.Client(server_config).run((
-        'pulp-admin repo list --repo-id {} '
-        '--fields content_unit_counts'
-    ).format(repo_id).split())
-    lines = [
-        line for line in completed_proc.stdout.splitlines()
-        if keyword in line
-    ]
-    assert len(lines) in (0, 1)
-    if len(lines) == 0:
-        return 0
-    else:
-        return int(lines[0].split(keyword)[1].strip())
+from pulp_smash.tests.rpm.cli.utils import _count_langpacks
 
 
 class UploadAndRemoveLangpacksTestCase(unittest2.TestCase):
