@@ -13,7 +13,7 @@ from __future__ import unicode_literals
 
 from itertools import product
 
-from pulp_smash import api, selectors, utils
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     CALL_REPORT_KEYS,
@@ -132,7 +132,6 @@ def _get_pkglist(update):
         'short': src_pkglist.find('collection').attrib['short'],
     }]
     for package in src_pkglist.find('collection').findall('package'):
-        checksum = package.find('sum')
         out_pkglist[0]['packages'].append({
             'arch': package.attrib['arch'],
             'epoch': package.attrib['epoch'],
@@ -140,9 +139,13 @@ def _get_pkglist(update):
             'name': package.attrib['name'],
             'release': package.attrib['release'],
             'src': package.attrib['src'],
-            'sum': [checksum.attrib['type'], checksum.text],
             'version': package.attrib['version'],
         })
+        if selectors.bug_is_testable(2042, config.get_config().version):
+            checksum = package.find('sum')
+            out_pkglist[0]['packages'][-1]['sum'] = [
+                checksum.attrib['type'], checksum.text
+            ]
     return out_pkglist
 
 
@@ -392,6 +395,10 @@ class UploadErratumTestCase(utils.BaseAPITestCase):
         old_erratum = self.erratum.copy()
         if selectors.bug_is_untestable(2021, self.cfg.version):
             del old_erratum['release']
+        if selectors.bug_is_untestable(2042, self.cfg.version):
+            for package_list in old_erratum['pkglist']:
+                for package in package_list['packages']:
+                    del package['sum']
         new_erratum = parse_updateinfo_update(updates[0])
         for key, value in old_erratum.items():
             with self.subTest(key=key):
