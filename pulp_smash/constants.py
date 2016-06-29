@@ -173,17 +173,14 @@ to Pulp.
     http://projects.puppetlabs.com/projects/module-site/wiki/Server-api
 """
 
-PYTHON_EGG_URL = (
-    'https://pypi.python.org/packages/source/p/pulp-smash/'
-    'pulp-smash-2016.4.14.tar.gz'
-)
-"""The URL to a Python egg."""
+PYTHON_FEED_URL = 'https://repos.fedorapeople.org/pulp/pulp/fixtures/python/'
+"""The URL to a Python repository."""
 
-PYTHON_WHEEL_URL = (
-    'https://pypi.python.org/packages/py2.py3/p/pulp-smash/'
-    'pulp_smash-2016.4.14-py2.py3-none-any.whl'
+PYTHON_EGG_URL = urljoin(
+    PYTHON_FEED_URL,
+    'packages/source/s/shelf-reader/shelf-reader-0.1.tar.gz'
 )
-"""The URL to a Python wheel."""
+"""The URL to a Python egg at :data:`PYTHON_FEED_URL`."""
 
 REPOSITORY_EXPORT_DISTRIBUTOR = 'export_distributor'
 """A ``distributor_type_id`` to export a repository.
