@@ -22,6 +22,7 @@ Documentation contents:
 .. toctree::
     :maxdepth: 2
 
+    introductory-video
     installation
     usage
     about
