@@ -12,7 +12,7 @@ CALL_REPORT_KEYS = frozenset(('error', 'result', 'spawned_tasks'))
     http://docs.pulpproject.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
 """
 
-CONTENT_SOURCE_ID = 'content-world'
+CONTENT_SOURCES_PATH = '/etc/pulp/content/sources/conf.d'
 """See: `Content Sources`_.
 
 .. _Content Sources:
