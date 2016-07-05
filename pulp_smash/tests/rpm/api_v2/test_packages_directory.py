@@ -1,152 +1,182 @@
 # coding=utf-8
-"""Test re-publish repository after unassociating content.
+"""Tests for the ``packages_directory`` distributor option.
 
-Following steps are executed in order to test correct functionality of
-repository created with valid feed.
+One can configure a distributor with a ``packages_directory`` configuration
+option. This option controls whether RPMs are published in the same directory
+as the ``repodata`` directory, or somewhere else. This module tests this
+feature. For more information, see `Pulp issue #1976`_.
 
-1. Create repository foo with valid feed, run sync, add distributor to it and
-   publish over http and https.
-2. Pick a unit X and and assert it is accessible.
-3. Remove unit X from repository foo and re-publish.
-4. Assert unit X is not accessible.
+.. _Pulp issue #1976: https://pulp.plan.io/issues/1976
 """
 from __future__ import unicode_literals
 
 import os
 
-from pulp_smash import api, utils, selectors
+from pulp_smash import api, selectors, utils
 from pulp_smash.compat import urljoin
-from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
+from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL, RPM_NAMESPACES
 from pulp_smash.tests.rpm.api_v2.utils import (
-    NAMESPACE,
     gen_distributor,
     gen_repo,
     xml_handler,
 )
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
-_PUBLISH_DIR = 'pulp/repos/'
+
+def get_parse_repodata_xml(server_config, distributor, file_path):
+    """Fetch, parse and return an XML file from a ``repodata`` directory.
+
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        Pulp server being targeted.
+    :param distributor: Information about a distributor. It should be a dict
+        containing at least ``{'config': {'relative_url': …}}``.
+    :param file_path: The path to an XML file, relative to the distributor's
+        relative URL. For example: ``repodata/repomd.xml``.
+    :returns: The XML document, parsed as an ``xml.etree.ElementTree`` object.
+    """
+    path = urljoin('/pulp/repos/', distributor['config']['relative_url'])
+    path = urljoin(path, file_path)
+    return api.Client(server_config, xml_handler).get(path)
 
 
-def get_repo_md(cfg, distributor_rel_url):
-    """Return parsed repomd.xml file."""
-    path = urljoin('/pulp/repos/', distributor_rel_url)
-    path = urljoin(path, 'repodata/repomd.xml')
-    return api.Client(cfg, xml_handler).get(path)
+def get_parse_repodata_primary_xml(cfg, distributor):
+    """Fetch, decompress, parse and return a ``repodata/…primary.xml.gz`` file.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about the Pulp
+        server being targeted.
+    :param distributor: Information about a distributor. It should be a dict
+        containing at least ``{'config': {'relative_url': …}}``.
+    :returns: An ``xml.etree.ElementTree`` object.
+    """
+    repomd_xml = get_parse_repodata_xml(
+        cfg,
+        distributor,
+        'repodata/repomd.xml'
+    )
+    primary_xml_hrefs = [
+        href for href in get_file_hrefs(repomd_xml)
+        if href.endswith('primary.xml.gz')
+    ]
+    assert len(primary_xml_hrefs) == 1
+    return get_parse_repodata_xml(cfg, distributor, primary_xml_hrefs[0])
 
 
-def get_repo_primary(cfg, distributor_rel_url, relative_location):
-    """Return parsed primary.xml file."""
-    path = urljoin('/pulp/repos/', distributor_rel_url)
-    path = urljoin(path, relative_location)
-    return api.Client(cfg, xml_handler).get(path)
+def get_package_hrefs(primary_xml):
+    """Return the href of each package in a ``primary.xml`` file.
+
+    :param primary_xml: An ``xml.etree.ElementTree`` object representing the
+        root of a ``primary.xml`` document.
+    :returns: An iterable of hrefs, with each href as a string.
+    """
+    package_xpath = '{{{}}}package'.format(RPM_NAMESPACES['metadata/common'])
+    location_xpath = '{{{}}}location'.format(RPM_NAMESPACES['metadata/common'])
+    packages = primary_xml.findall(package_xpath)
+    locations = [package.find(location_xpath) for package in packages]
+    return tuple((location.get('href') for location in locations))
 
 
-def gen_rpm_repo(client):
-    """Create rpm repo with importer and associate it with yum_distributor."""
-    body = gen_repo()
-    body['importer_config']['feed'] = RPM_FEED_URL
-    repo_href = client.post(REPOSITORY_PATH, body).json()['_href']
-    distributor = client.post(
-        urljoin(repo_href, 'distributors/'),
-        gen_distributor(),
-    ).json()
-    return repo_href, distributor
+def get_file_hrefs(repomd_xml):
+    """Return the href of each file in a ``repomd.xml`` file.
 
-
-def get_locations(xml_elem):
-    """Get 'location' elements for xml string."""
-    xpath = '{{{}}}data'.format(NAMESPACE)
-    data_elements = xml_elem.findall(xpath)
-    xpath = '{{{}}}location'.format(NAMESPACE)
-    locations = [element.find(xpath) for element in data_elements]
-    ret = [location.get('href') for location in locations]
-    return ret
+    :param repomd_xml: An ``xml.etree.ElementTree`` object representing the
+        root of a ``repomd.xml`` document.
+    :returns: An iterable of hrefs, with each href as a string.
+    """
+    data_xpath = '{{{}}}data'.format(RPM_NAMESPACES['metadata/repo'])
+    location_xpath = '{{{}}}location'.format(RPM_NAMESPACES['metadata/repo'])
+    data = repomd_xml.findall(data_xpath)
+    locations = [datum.find(location_xpath) for datum in data]
+    return tuple((location.get('href') for location in locations))
 
 
 class PackagesDirectoryTestCase(utils.BaseAPITestCase):
-    """Test packages_directory feature."""
+    """Test the distributor ``packages_directory`` option."""
 
     @classmethod
     def setUpClass(cls):
-        """Create one repository with feed, publish, test packages location.
-
-        Following steps are executed:
-
-        1. Create repository foo with feed, sync and publish it.
-        2. Check packages locations in repodata
-        3. Republish with 'packages_directory' in  config_override
-        4. Check packages locations in repodata
-        """
+        """Create a repository with a feed and sync it."""
         super(PackagesDirectoryTestCase, cls).setUpClass()
-        cls.responses = {}
-        cls.xmldata = {}
+        client = api.Client(cls.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_FEED_URL
+        cls.repo_href = client.post(REPOSITORY_PATH, body)['_href']
+        cls.resources.add(cls.repo_href)
+        utils.sync_repo(cls.cfg, cls.repo_href)
 
-        # Create and sync a repository.
-        client = api.Client(cls.cfg)
+    def test_default_behaviour(self):
+        """Do not use the ``packages_directory`` option.
 
-        repo_href, distributor = gen_rpm_repo(client)
-        cls.resources.add(repo_href)
-        cls.responses['sync'] = utils.sync_repo(cls.cfg, repo_href)
-
-        repo_href2, distributor2 = gen_rpm_repo(client)
-        cls.resources.add(repo_href2)
-        cls.responses['sync'] = utils.sync_repo(cls.cfg, repo_href2)
-
-        # first publish - default packages directory
-        cls.responses['first publish'] = client.post(
-            urljoin(repo_href, 'actions/publish/'),
-            {'id': distributor['id']},
+        Create a distributor with default options, and use it to publish the
+        repository. Verify packages end up in the current directory, relative
+        to the published repository's root. (This same directory contains the
+        ``repodata`` directory, and it may be changed by setting the
+        distributor's ``relative_url``.)
+        """
+        client = api.Client(self.cfg, api.json_handler)
+        distributor = client.post(
+            urljoin(self.repo_href, 'distributors/'),
+            gen_distributor(),
         )
-        repomd_xml = get_repo_md(
-            cls.cfg,
-            distributor['config']['relative_url'],
-        )
-        types_locations = get_locations(repomd_xml)
-        location = None
-        for location in types_locations:
-            if 'primary.xml.gz' in location:
-                break
-        cls.responses['publish1_xml'] = get_repo_primary(
-            cls.cfg,
-            distributor['config']['relative_url'],
-            location
-        )
+        client.post(urljoin(self.repo_href, 'actions/publish/'), {
+            'id': distributor['id']
+        })
+        primary_xml = get_parse_repodata_primary_xml(self.cfg, distributor)
+        package_hrefs = get_package_hrefs(primary_xml)
+        self.assertGreater(len(package_hrefs), 0)
+        for package_href in package_hrefs:
+            with self.subTest(package_href=package_href):
+                self.assertEqual(os.path.dirname(package_href), '')
 
-        # second publish - custom packages directory
-        cls.responses['second publish'] = client.post(
-            urljoin(repo_href2, 'actions/publish/'),
-            {'id': distributor2['id'],
-             'config_overrides': {'packages_directory': 'Packages'}},
-        )
+    def test_distributor_config(self):
+        """Use the ``packages_directory`` distributor option.
 
-        if selectors.bug_is_untestable(1976, cls.cfg.version):
-            return
-
-        repomd_xml = get_repo_md(
-            cls.cfg,
-            distributor2['config']['relative_url'],
-        )
-        types_locations = get_locations(repomd_xml)
-        for location in types_locations:
-            if 'primary.xml.gz' in location:
-                break
-        cls.responses['publish2_xml'] = get_repo_primary(
-            cls.cfg,
-            distributor2['config']['relative_url'],
-            location
-        )
-
-    def test_default_packages_directory(self):
-        """Verify the packages are places with same directory as repodata."""
-        packages_locations = get_locations(self.responses['publish1_xml'])
-        for location in packages_locations:
-            self.assertEqual(os.path.dirname(location), '')
-
-    def test_custom_packages_directory(self):
-        """Verify the packages are places with 'Packages' directory."""
+        Create a distributor with the ``packages_directory`` option set, and
+        use it to publish the repository. Verify packages end up in the
+        specified directory, relative to the published repository's root.
+        """
         if selectors.bug_is_untestable(1976, self.cfg.version):
-            return
-        packages_locations = get_locations(self.responses['publish2_xml'])
-        for location in packages_locations:
-            self.assertEqual(os.path.dirname(location), 'Packages')
+            self.skipTest('https://pulp.plan.io/issues/1976')
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_distributor()
+        packages_dir = utils.uuid4()
+        body['distributor_config']['packages_directory'] = packages_dir
+        distributor = client.post(
+            urljoin(self.repo_href, 'distributors/'),
+            body
+        )
+        client.post(urljoin(self.repo_href, 'actions/publish/'), {
+            'id': distributor['id'],
+        })
+        primary_xml = get_parse_repodata_primary_xml(self.cfg, distributor)
+        package_hrefs = get_package_hrefs(primary_xml)
+        self.assertGreater(len(package_hrefs), 0)
+        for package_href in package_hrefs:
+            with self.subTest(package_href=package_href):
+                self.assertEqual(os.path.dirname(package_href), packages_dir)
+
+    def test_publish_override_config(self):
+        """Use the ``packages_directory`` publish override option.
+
+        Create a distributor with default options, and use it to publish the
+        repository. Specify the ``packages_directory`` option during the
+        publish as an override option. Verify packages end up in the specified
+        directory, relative to the published repository's root.
+        """
+        if selectors.bug_is_untestable(1976, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/1976')
+        client = api.Client(self.cfg, api.json_handler)
+        distributor = client.post(
+            urljoin(self.repo_href, 'distributors/'),
+            gen_distributor(),
+        )
+        packages_dir = utils.uuid4()
+        client.post(urljoin(self.repo_href, 'actions/publish/'), {
+            'id': distributor['id'],
+            'override_config': {'packages_directory': packages_dir},
+        })
+        primary_xml = get_parse_repodata_primary_xml(self.cfg, distributor)
+        package_hrefs = get_package_hrefs(primary_xml)
+        self.assertGreater(len(package_hrefs), 0)
+        for package_href in package_hrefs:
+            with self.subTest(package_href=package_href):
+                self.assertEqual(os.path.dirname(package_href), packages_dir)
