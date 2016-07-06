@@ -7,9 +7,8 @@ from __future__ import unicode_literals
 
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
-from pulp_smash.constants import REPOSITORY_PATH
+from pulp_smash.constants import REPOSITORY_PATH, RPM_NAMESPACES
 from pulp_smash.tests.rpm.api_v2.utils import (
-    NAMESPACE,
     gen_distributor,
     gen_repo,
     xml_handler,
@@ -53,12 +52,12 @@ class RepoMDTestCase(utils.BaseAPITestCase):
 
     def test_tag(self):
         """Assert the XML tree's root element has the correct tag."""
-        xpath = '{{{}}}repomd'.format(NAMESPACE)
+        xpath = '{{{}}}repomd'.format(RPM_NAMESPACES['metadata/repo'])
         self.assertEqual(self.root_element.tag, xpath)
 
     def test_data(self):
         """Assert the tree's "data" elements have correct "type" attributes."""
-        xpath = '{{{}}}data'.format(NAMESPACE)
+        xpath = '{{{}}}data'.format(RPM_NAMESPACES['metadata/repo'])
         data_elements = self.root_element.findall(xpath)
         data_types = [element.get('type') for element in data_elements]
         data_types.sort()

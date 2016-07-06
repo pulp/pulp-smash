@@ -8,9 +8,7 @@ from xml.etree import ElementTree
 
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
-
-NAMESPACE = 'http://linux.duke.edu/metadata/repo'
-"""An XPath namespace used by ``repomd.xml`` files."""
+from pulp_smash.constants import RPM_NAMESPACES
 
 
 def gen_repo():
@@ -48,8 +46,8 @@ def get_repomd_xml_href(repomd_xml, repomd_type):
     """Parse a ``repomd.xml`` string. Find and return a path.
 
     Given a ``repomd.xml`` file as a string, use an XPath selector (with
-    namespace :data:`pulp_smash.tests.rpm.api_v2.utils.NAMESPACE`) to find a
-    path. The XML should have this general form::
+    namespace from :data:`pulp_smash.constants.RPM_NAMESPACES`) to find a path.
+    The XML should have this general form::
 
         <data type="…"><location href="…" /></data>
 
@@ -63,7 +61,7 @@ def get_repomd_xml_href(repomd_xml, repomd_type):
     """
     xpath = (
         "{{{namespace}}}data[@type='{type}']/{{{namespace}}}location"
-        .format(namespace=NAMESPACE, type=repomd_type)
+        .format(namespace=RPM_NAMESPACES['metadata/repo'], type=repomd_type)
     )
     location_elements = ElementTree.fromstring(repomd_xml).findall(xpath)
     if len(location_elements) != 1:
