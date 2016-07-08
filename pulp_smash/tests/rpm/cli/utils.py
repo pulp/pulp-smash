@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from pulp_smash import cli
 
 
-def _count_langpacks(server_config, repo_id):
+def count_langpacks(server_config, repo_id):
     """Tell how many langpack content units are in the given repository.
 
     :param pulp_smash.config.ServerConfig server_config: Information about the

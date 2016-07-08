@@ -7,7 +7,7 @@ from packaging.version import Version
 
 from pulp_smash import cli, config, utils
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
-from pulp_smash.tests.rpm.cli.utils import _count_langpacks
+from pulp_smash.tests.rpm.cli.utils import count_langpacks
 
 
 class UploadAndRemoveLangpacksTestCase(unittest2.TestCase):
@@ -44,7 +44,7 @@ class UploadAndRemoveLangpacksTestCase(unittest2.TestCase):
             '--name {1} --install {1}-%s'
         ).format(self.repo_id, utils.uuid4()).split()
         self.client.run(cmd)
-        num_langpacks = _count_langpacks(self.cfg, self.repo_id)
+        num_langpacks = count_langpacks(self.cfg, self.repo_id)
         self.assertEqual(num_langpacks, 1, cmd)
 
     def test_02_remove_langpacks(self):
@@ -54,7 +54,7 @@ class UploadAndRemoveLangpacksTestCase(unittest2.TestCase):
             '--str-eq repo_id={0}'
         ).format(self.repo_id).split()
         self.client.run(cmd)
-        package_counts = _count_langpacks(self.cfg, self.repo_id)
+        package_counts = count_langpacks(self.cfg, self.repo_id)
         self.assertEqual(package_counts, 0, cmd)
 
     @classmethod

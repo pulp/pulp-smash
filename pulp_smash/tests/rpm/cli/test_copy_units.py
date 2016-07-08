@@ -10,7 +10,7 @@ import unittest2
 from pulp_smash import cli, config, constants, selectors, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.tests.rpm.utils import set_up_module
-from pulp_smash.tests.rpm.cli.utils import _count_langpacks
+from pulp_smash.tests.rpm.cli.utils import count_langpacks
 
 _REPO_ID = None
 """The ID of the repository created by ``setUpModule``."""
@@ -284,7 +284,7 @@ class CopyLangpacksTestCase(CopyBaseTestCase):
             self.assertNotIn('Task Failed', completed_proc.stdout)
         with self.subTest(comment='verify langpack count in repo'):
             self.assertGreater(
-                _count_langpacks(self.cfg, self.repo_id),
+                count_langpacks(self.cfg, self.repo_id),
                 0,
             )
 
