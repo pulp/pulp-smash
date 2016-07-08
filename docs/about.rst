@@ -117,6 +117,53 @@ on.
 
 Join the #pulp IRC channel on `freenode`_ if you have further questions.
 
+Labels
+~~~~~~
+
+`Labels`_ are used to categorize issues and pull requests. The "Issue Type"
+labels may be applied to issues, and the "Status" labels may be applied to
+either issues or pull requests.
+
+============  ====================  ===============================
+Label Prefix  Applicable to Issues  Applicable to Pull Requests
+============  ====================  ===============================
+Issue Type:   ✓                     ✗
+Status:       ✓                     ✓
+============  ====================  ===============================
+
+The specific meaning of each label is as follows.
+
+Issue Type: Bug
+    This label denotes an issue that describes a specific counter-productive
+    behaviour. For example, an issue entitled "test X contains an incorrect
+    assertion" is a great candidate for this label.
+
+Issue Type: Discussion
+    This label denotes an issue that broadly discusses some topic. Feature
+    requests should be given this label. If a discussion results in a specific
+    and concrete plan of action, a new issue should be opened, where that issue
+    outlines a specific solution and has a label of "Issue Type: Plan".
+
+Issue Type: Plan
+    This label denotes an issue that outlines a specific, concrete plan of
+    action for improving Pulp Smash. Open-ended discussions (including feature
+    requests) should go into issues labeled "Issue Type: Discussion."
+
+Issue Type: Test Case
+    This label indicates that an issue is asking for a test case to be
+    automated. (Issues with this label are a special type of plan.)
+
+Status: LGTM
+    This label denotes an issue or pull request that has been reviewed by a
+    `Pulp QE member`_ and is ready for further action.
+
+Status: Needs Review
+    This label denotes an issue or pull request that is awaiting review by a
+    `Pulp QE member`_.
+
+Status: Needs Work
+    This label denotes an issue or pull request that is awaiting improvements.
+
 .. [1] Portable software cannot make assumptions about its environment. It
     cannot reference ``/etc/pki/tls/certs/ca-bundle.crt``  or call ``yum``.
     Instead, it must use standardized mechanisms for interacting with its
@@ -131,7 +178,9 @@ Join the #pulp IRC channel on `freenode`_ if you have further questions.
 
 .. _Command-Line Interface: https://docs.python.org/3/library/unittest.html#command-line-interface
 .. _GNU Make: https://www.gnu.org/software/make/
+.. _Labels: https://github.com/PulpQE/pulp-smash/labels
 .. _OpenSSH: http://www.openssh.com/
+.. _Pulp QE Member: https://github.com/orgs/PulpQE/people
 .. _Pulp Smash issues: https://github.com/PulpQE/pulp-smash/issues
 .. _Travis CI: https://travis-ci.org/PulpQE/pulp-smash
 .. _XDG Base Directory Specification: http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
