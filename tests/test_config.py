@@ -217,7 +217,7 @@ class ReprTestCase(unittest2.TestCase):
 
     def test_can_eval(self):
         """Assert that the result can be parsed by ``eval``."""
-        from pulp_smash.config import ServerConfig  # noqa
+        from pulp_smash.config import ServerConfig  # noqa pylint:disable=unused-variable
         # pylint:disable=eval-used
         self.assertEqual(self.result, repr(eval(self.result)))
 
