@@ -3,17 +3,50 @@
 from __future__ import unicode_literals
 
 import inspect
+import os
+import random
 import subprocess
 
 import unittest2
 
 from pulp_smash import cli, config, constants, selectors, utils
-from pulp_smash.compat import urljoin
-from pulp_smash.tests.rpm.utils import set_up_module
+from pulp_smash.compat import StringIO, urljoin
 from pulp_smash.tests.rpm.cli.utils import count_langpacks
+from pulp_smash.tests.rpm.utils import set_up_module
+from pulp_smash.utils import is_root
 
-_REPO_ID = None
+_REPO_ID = utils.uuid4()
 """The ID of the repository created by ``setUpModule``."""
+
+
+def generate_repo_file(server_config, name, **kwargs):
+    """Generate a repository file and returns its remote path.
+
+    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
+    :param name: file name and repo id (string inside []).
+    :param kwargs: each item will be converted to repository properties where
+        the key is the property name and the value its value.
+    :returns: the remote path of the created repository file.
+    """
+    repo = StringIO()
+    repo.write('[{}]\n'.format(name))
+    path = os.path.join(
+        '{}'.format('/etc/yum.repos.d/'), '{}.repo'.format(name))
+    if 'name' not in kwargs:
+        repo.write('{}: {}\n'.format('name', name))
+    for key, value in kwargs.items():
+        repo.write('{}: {}\n'.format(key, value))
+    client = cli.Client(server_config)
+    sudo = '' if is_root(server_config) else 'sudo '
+    client.machine.session().run(
+        'echo "{}" | {}tee {} > /dev/null'.format(
+            repo.getvalue(),
+            sudo,
+            path
+        )
+    )
+    repo.close()
+    return path
 
 
 def _get_rpm_names_versions(server_config, repo_id):
@@ -30,95 +63,19 @@ def _get_rpm_names_versions(server_config, repo_id):
         'pulp-admin rpm repo content rpm --repo-id {}'.format(repo_id).split()
     )
     filenames = [
-        line for line in completed_proc.stdout.splitlines() if keyword in line
+        line.lstrip(keyword).strip()
+        for line in completed_proc.stdout.splitlines()
+        if keyword in line
     ]
     assert len(filenames) > 0
-    rpm_dict = {}
-    for file_name_str in filenames:
-        # Example of a filename string: 'Filename: walrus-0.71-1.noarch.rpm'.
-        name_version = file_name_str.split('-')
-        rpm_dict.setdefault(
-            name_version[0].split(keyword)[1].strip(),
-            []
-        ).append(name_version[1])
-    return rpm_dict
-
-
-def _copy_repo(server_config, source, destination, rpm_name, rpm_version=None):
-    """Copy specific module name and version from repo1 to repo2.
-
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
-    :param source: The source module to copy from.
-    :param destination: The destination module to copy to.
-    :param rpm_name: The name of target module.
-    :param rpm_version: The version of target module.
-    :returns: A :class: `pulp_smash.cli.CompletedProcess`.
-    """
-    return cli.Client(server_config).run(
-        ' '.join([
-            'pulp-admin rpm repo copy rpm --from-repo-id {}'.format(source),
-            '--to-repo-id {}'.format(destination),
-            '--str-eq=name={}'.format(rpm_name)
-            if rpm_name is not None else '',
-            '--str-eq=version={}'.format(rpm_version)
-            if rpm_version is not None else '',
-        ]).split()
-    )
-
-
-def _get_rpm_dependencies(server_config, repo_id, rpm_name):
-    """Get a list of all required packages for a given RPM in repository.
-
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
-    :param repo_id: The ID of repository which contains the module.
-    :param rpm_name: The name of module to query with. It is assumed that
-        there's no cycle in the dependecy relations; that is, a RPM cannot
-        point itself as required package.
-    """
-    keyword = 'Requires:'
-    res = []
-    stack = [rpm_name]
-    while len(stack) > 0:
-        top = stack.pop()
-        if top is not rpm_name:
-            res.append(top)
-        # Query parent modules for the current RPM `top`.
-        completed_proc = cli.Client(server_config).run(
-            'pulp-admin rpm repo content rpm --repo-id {0} --str-eq name={1} '
-            '--fields=requires'.format(repo_id, top).split()
-        )
-        # Depth-First-Search for parent's dependencies.
-        # E.g., 'walrus-0.71' <- 'whale' <- 'shark, stork' <- ''.
-        # But 'walrus-5.21' <- '', i.e., it has no parent package.
-        parent_modules = [
-            line.split(keyword)[1].strip()
-            for line in completed_proc.stdout.splitlines()
-            if keyword in line and len(line.split(keyword)[1].strip()) > 0
-        ]
-        if len(parent_modules) == 0:
-            continue
-        stack.extend(parent_modules[0].split(', '))
-    # Return [u'whale', u'stork', u'shark'] for 'walrus-0.71'.
-    return res
-
-
-def _clean_cache(server_config):
-    """Utility function to execute `yum clean`."""
-    cli.Client(server_config).run('yum clean all'.split())
-
-
-def _query_rpm(server_config, rpm_name):
-    """Utility function to query if a package is installed.
-
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
-    :param rpm_name: The name of target module.
-    """
-    return cli.Client(server_config).machine.session().run(
-        'rpm -qa | grep "{}"'.format(rpm_name)
-    )[1]
+    rpms = {}
+    for filename in filenames:
+        # Example of a filename string: 'walrus-0.71-1.noarch.rpm'.
+        filename_parts = filename.split('-')[:-1]
+        name = '-'.join(filename_parts[:-1])
+        version = filename_parts[-1]
+        rpms.setdefault(name, []).append(version)
+    return rpms
 
 
 def setUpModule():  # pylint:disable=invalid-name
@@ -134,8 +91,6 @@ def setUpModule():  # pylint:disable=invalid-name
 
     # log in, then create repository
     utils.pulp_admin_login(cfg)
-    global _REPO_ID  # pylint:disable=global-statement
-    _REPO_ID = utils.uuid4()
     client.run(
         'pulp-admin rpm repo create --repo-id {} --feed {}'
         .format(_REPO_ID, constants.RPM_FEED_URL).split()
@@ -292,8 +247,7 @@ class CopyLangpacksTestCase(CopyBaseTestCase):
 class CopyAndPublishTwoVersionsRepoTestCase(CopyBaseTestCase):
     """Test whether a repo can copy two versions of RPMs and publish itself.
 
-    This test case targets `Pulp Smash #311`_ and `Pulp # 1684`_.
-    The test steps are as following:
+    This test case targets `Pulp Smash #311`_. The test steps are as following:
 
     1. Create a repo1 and sync from upstream.
     2. Find a RPM that has two different versions in this repo.
@@ -307,80 +261,106 @@ class CopyAndPublishTwoVersionsRepoTestCase(CopyBaseTestCase):
     a feed.
 
     .. _Pulp Smash #311: https://github.com/PulpQE/pulp-smash/issues/311
-    .. _Pulp # 1684: https://pulp.plan.io/issues/1684
     """
 
     @classmethod
     def setUpClass(cls):
-        """Create two repositories and synchronize the 1st repo only."""
+        """Find a RPM with more than one version on repo1."""
         super(CopyAndPublishTwoVersionsRepoTestCase, cls).setUpClass()
-        _clean_cache(cls.cfg)
+        cls.client = cli.Client(cls.cfg)
+        cls.sudo = '' if is_root(cls.cfg) else 'sudo '
         # Retrieve all modules with multiple versions in the repo1.
-        cls.rpm_dict = {
-            key: value for (key, value)
-            in _get_rpm_names_versions(cls.cfg, _REPO_ID).items()
+        rpms = {
+            key: value
+            for key, value in _get_rpm_names_versions(
+                cls.cfg, _REPO_ID).items()
             if len(value) > 1
         }
-        assert len(cls.rpm_dict) > 0
-        # Choose the first module with multiple versions.
-        cls.rpm_name = list(cls.rpm_dict)[0]
-        cls.rpm_dict.get(cls.rpm_name).sort()
+        assert len(rpms) > 0
+        # Choose a random module with multiple versions.
+        cls.rpm_name = random.choice(list(rpms.keys()))
+        versions = rpms[cls.rpm_name]
+        versions.sort()
+        cls.rpm_old_version = versions[-2]
+        cls.rpm_new_version = versions[-1]
 
-    def test_01_copy_older_publish(self):
-        """Copy a RPM with older version into repo2 and publish repo2."""
-        # Choose the oldest version of the given RPM.
-        rpm_version = self.rpm_dict.get(self.rpm_name, [None, None])[0]
-        # Copy dependency packages of the chosen RPM.
-        for rpm in _get_rpm_dependencies(self.cfg, _REPO_ID, self.rpm_name):
-            _copy_repo(self.cfg, _REPO_ID, self.repo_id, rpm)
-        self._copy_and_publish(self.rpm_name, rpm_version)
+    def test_update_copied_rpm(self):
+        """Check if a client can update a copied RPM.
 
-        # Setup the repo2 on the same host.
-        cli.Client(self.cfg).run(
-            'sudo yum-config-manager --add-repo {}'
-            .format(urljoin('https://dev/pulp/repos/', self.repo_id)).split()
+        Do the following:
+
+        1. Copy an old version of a RPM and its dependencies from one repo to
+           another.
+        2. Publish the target repository.
+        3. Install the RPM.
+        4. Copy an updated version of the RPM copied on step 1.
+        5. Publish the target repository again.
+        6. Check if the yum will install the updated RPM.
+        """
+        # Copy and publish the old RPM package version.
+        self._copy_and_publish(self.rpm_name, self.rpm_old_version)
+
+        repo_path = generate_repo_file(
+            self.cfg,
+            self.repo_id,
+            baseurl=urljoin(
+                self.cfg.base_url, 'pulp/repos/{}'.format(self.repo_id)),
+            enabled=1,
+            gpgcheck=0,
+            metadata_expire=0,  # force metadata to load every time
         )
-        cli.Client(self.cfg).run('yum repolist enabled'.split())
-
-        cli.Client(self.cfg).run(
-            'dnf --disablerepo=* --enablerepo=dev_pulp_repos_{} list available'
-            .format(self.repo_id).split()
+        self.addCleanup(
+            self.client.run,
+            '{}rm {}'.format(self.sudo, repo_path).split()
         )
-
-        # Execute `yum install` to deploy the RPM on the host.
-        cli.Client(self.cfg).run(
-            'sudo dnf install -y --nogpgcheck {}'.format(self.rpm_name).split()
+        self.client.run(
+            '{}yum install -y {}'
+            .format(self.sudo, self.rpm_name).split()
         )
-        self.assertIn(self.rpm_name, _query_rpm(self.cfg, self.rpm_name))
-
-    def test_02_copy_newer_publish(self):
-        """Copy a RPM with newer version into repo2 and publish repo2."""
-        if selectors.bug_is_untestable(1684, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/1684')
-        if self.rpm_name not in _query_rpm(self.cfg, self.rpm_name):
-            self.skipTest('https://pulp.plan.io/issues/1684')
-        # Choose the newest version of the given RPM.
-        rpm_version = self.rpm_dict.get(self.rpm_name, [None, None])[1]
-        self._copy_and_publish(self.rpm_name, rpm_version)
+        self.addCleanup(
+            self.client.run,
+            '{}yum remove -y {}'.format(self.sudo, self.rpm_name).split()
+        )
+        self.assertEqual(
+            cli.Client(self.cfg, cli.echo_handler).run(
+                'rpm -q {}'.format(self.rpm_name).split()).returncode,
+            0
+        )
+        self._copy_and_publish(self.rpm_name, self.rpm_new_version)
         # Execute `yum update` on the RPM.
-        completed_proc = cli.Client(self.cfg).run(
-            'sudo yum update {}'.format(self.rpm_name).split()
+        completed_proc = self.client.run(
+            '{}yum -y update {}'
+            .format(self.sudo, self.rpm_name).split()
         )
         # Check if the update succeeds; it should have updates.
-        self.assertNotIn('Nothing to do.', completed_proc.stdout.splitlines())
+        self.assertNotIn('Nothing to do.', completed_proc.stdout)
 
     def _copy_and_publish(self, rpm_name, rpm_version):
-        """Copy the RPM with given name and version into 2nd repo and publish it.
+        """Copy the RPM with given name and version into repo2 and publish it.
 
         :param rpm_name: The name of target module.
         :param rpm_version: The version of target module.
         """
-        # Copy the module from repo1 to repo2.
-        _copy_repo(self.cfg, _REPO_ID, self.repo_id, rpm_name, rpm_version)
+        # Copy the package and its dependencies to the new repo
+        self.client.run(
+            'pulp-admin rpm repo copy rpm --from-repo-id {} --to-repo-id {} '
+            '--str-eq=name={} --str-eq=version={} --recursive'
+            .format(_REPO_ID, self.repo_id, rpm_name, rpm_version).split()
+        )
+
         # Search for the RPM's name/version in repo2's content.
-        self._search_rpm(self.repo_id, rpm_name, rpm_version)
+        result = self.client.run(
+            'pulp-admin rpm repo content rpm --repo-id {} --str-eq name={} '
+            '--str-eq version={}'
+            .format(self.repo_id, rpm_name, rpm_version).split()
+        )
+        with self.subTest(comment='rpm name present'):
+            self.assertIn(rpm_name, result.stdout)
+        with self.subTest(comment='rpm version present'):
+            self.assertIn(rpm_version, result.stdout)
+
         # Publish repo2 and verify no errors.
-        completed_proc = cli.Client(self.cfg).run(
+        completed_proc = self.client.run(
             'pulp-admin rpm repo publish run --repo-id {}'
             .format(self.repo_id).split()
         )
@@ -389,45 +369,3 @@ class CopyAndPublishTwoVersionsRepoTestCase(CopyBaseTestCase):
                 self.assertNotIn(
                     'Task Failed', getattr(completed_proc, stream)
                 )
-
-    def _search_rpm(self, repo_id, rpm_name=None, rpm_version=None):
-        """Search for a RPM in the repository with optional name or version.
-
-        :param repo_id: A RPM repository ID.
-        :param rpm_name: The name of target module.
-        :param rpm_version: The version of target module.
-        :returns: A :class: `pulp_smash.cli.CompletedProcess`.
-        """
-        completed_proc = cli.Client(self.cfg).run(
-            ' '.join([
-                'pulp-admin rpm repo content rpm --repo-id {}'.format(repo_id),
-                '--str-eq name={}'.format(rpm_name)
-                if rpm_name is not None else '',
-                '--str-eq version={}'.format(rpm_version)
-                if rpm_version is not None else ''
-            ]).split()
-        )
-        if rpm_name is None:
-            self.assertNotEqual('\x1b[0m', getattr(completed_proc, 'stdout'))
-        else:
-            self.assertIn(rpm_name, getattr(completed_proc, 'stdout'))
-            # Check if the version is matched iif rpm's name is found.
-            with self.subTest():
-                self.assertIn(rpm_version, getattr(completed_proc, 'stdout'))
-
-    @classmethod
-    def tearDownClass(cls):
-        """Delete the repositories and clean up orphans."""
-        super(CopyAndPublishTwoVersionsRepoTestCase, cls).tearDownClass()
-        # Delete the published repositories in yum.repos.d.
-        cli.Client(cls.cfg).run(
-            'sudo rm /etc/yum.repos.d/dev_pulp_repos_{}.repo'
-            .format(cls.repo_id).split()
-        )
-        # Execute `yum remove` to delete the installed RPMs.
-        # Add an error check to make the test robust.
-        if cls.rpm_name not in _query_rpm(cls.cfg, cls.rpm_name):
-            return
-        cli.Client(cls.cfg).run(
-            'sudo dnf remove -y {}'.format(cls.rpm_name).split()
-        )
