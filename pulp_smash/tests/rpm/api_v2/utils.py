@@ -8,6 +8,7 @@ from xml.etree import ElementTree
 
 from pulp_smash import api, utils
 from pulp_smash.compat import urljoin
+from pulp_smash.constants import RPM, RPM_URL, RPM_FEED_URL, REPOSITORY_PATH
 
 NAMESPACE = 'http://linux.duke.edu/metadata/repo'
 """An XPath namespace used by ``repomd.xml`` files."""
@@ -160,3 +161,45 @@ def xml_handler(_, response):
     #
     # We are trusting the parser to handle this correctly.
     return ElementTree.fromstring(xml_bytes)
+
+
+def health_check(server_config):
+    """Test Pulp's health.
+
+    Create an RPM repository, sync it, add a distributor, publish it,
+    and download an RPM. Return True upon success and False upon failure
+
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        Pulp server being targeted.
+    """
+    client = api.Client(server_config, api.json_handler)
+    body = gen_repo()
+    body['importer_config']['feed'] = RPM_FEED_URL
+    repo = client.post(REPOSITORY_PATH, body)
+    utils.sync_repo(server_config, repo['_href'])
+    distributor = client.post(
+        urljoin(repo['_href'], 'distributors/'),
+        gen_distributor(),
+    )
+    client.post(
+        urljoin(repo['_href'], 'actions/publish/'),
+        {'id': distributor['id']},
+    )
+    client.response_handler = api.safe_handler
+    url = urljoin('/pulp/repos/', distributor['config']['relative_url'])
+    url = urljoin(url, RPM)
+
+    # Does this RPM match the original RPM?
+    pulp_rpm = client.get(url).content
+    rpm = utils.http_get(RPM_URL)
+    api.Client(server_config).delete(repo['_href'])
+    return rpm == pulp_rpm
+
+
+def get_status(server_config):
+    """Query the status API and return the result.
+
+    :param pulp_smash.config.ServerConfig server_config: Information about the
+        Pulp server being targeted.
+    """
+    return api.Client(server_config).get('/pulp/api/v2/status/')
