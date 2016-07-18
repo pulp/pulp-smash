@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 from packaging.version import Version
+from unittest2 import SkipTest
 
 from pulp_smash import api, selectors, utils
 from pulp_smash.compat import urljoin, urlparse
@@ -221,6 +222,9 @@ class AddImporterDistributorTestCase(utils.BaseAPITestCase):
         4. Re-read the repository's importers and distributors.
         """
         super(AddImporterDistributorTestCase, cls).setUpClass()
+        if (cls.cfg.version >= Version('2.10') and
+                selectors.bug_is_untestable(2082, cls.cfg.version)):
+            raise SkipTest('https://pulp.plan.io/issues/2082')
 
         # Steps 1 and 2.
         client = api.Client(cls.cfg, api.json_handler)
