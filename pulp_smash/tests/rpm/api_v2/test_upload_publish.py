@@ -13,8 +13,6 @@ from __future__ import unicode_literals
 
 from itertools import product
 
-import os
-
 import unittest2
 
 from pulp_smash import api, config, selectors, utils
@@ -23,12 +21,12 @@ from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,
+    DRPM,
+    DRPM_URL,
     REPOSITORY_PATH,
     RPM,
     RPM_FEED_URL,
     RPM_URL,
-    DRPM_URL,
-    DRPM
 )
 from pulp_smash.tests.rpm.utils import gen_erratum
 from pulp_smash.tests.rpm.api_v2.utils import (
@@ -157,43 +155,33 @@ def _get_pkglist(update):
 
 
 class UploadDrpmTestCase(utils.BaseAPITestCase):
-    """Test whether one can upload and associate DRPMs.
+    """Test whether one can upload a DRPM into a repository.
 
-    Steps:
-
-    1. Create a RPM repo.
-    2. Upload DRPM to repo.
-    3. Check if DRPM has been uploaded.
-
-
-    This test case targets
-    `Pulp Smash #336 <https://github.com/PulpQE/pulp-smash/issues/336>`_
+    This test case targets `Pulp Smash #336
+    <https://github.com/PulpQE/pulp-smash/issues/336>`_
     """
 
     @classmethod
     def setUpClass(cls):
-        """Upload DRPM to a repo."""
-        super(UploadDrpmTestCase, cls).setUpClass()
+        """Import a DRPM into a repository and search it for content units.
 
+        Specifically, this method does the following:
+
+        1. Create a yum repository.
+        2. Upload a DRPM into the repository.
+        3. Search for all content units in the repository.
+        """
+        super(UploadDrpmTestCase, cls).setUpClass()
         if selectors.bug_is_untestable(1806, cls.cfg.version):
             raise unittest2.SkipTest('https://pulp.plan.io/issues/1806')
-
-        # init repo and client
-        client = api.Client(cls.cfg, api.json_handler)
-        repo = client.post(REPOSITORY_PATH, gen_repo())
+        client = api.Client(cls.cfg)
+        repo = client.post(REPOSITORY_PATH, gen_repo()).json()
         cls.resources.add(repo['_href'])
-        client.response_handler = api.safe_handler
-
-        # Download DRPM
-        cls.drpm = utils.http_get(DRPM_URL)
-
-        upload_import_unit(cls.cfg, cls.drpm, 'drpm', repo['_href'])
-
-        # Search for drpm to determine if is present
-        body = {'criteria': {}}
+        drpm = utils.http_get(DRPM_URL)
+        upload_import_unit(cls.cfg, drpm, 'drpm', repo['_href'])
         cls.repo_units = client.post(
             urljoin(repo['_href'], 'search/units/'),
-            body
+            {'criteria': {}},
         )
 
     def test_status_code_repo_units(self):
@@ -206,9 +194,10 @@ class UploadDrpmTestCase(utils.BaseAPITestCase):
 
     def test_drpm_file_name_is_correct(self):
         """Test if DRPM extracted correct metadata for creating filename."""
-        fname = self.repo_units.json()[0]['metadata']['filename']
-        expected_filename = os.path.join('drpms/', DRPM)
-        self.assertEqual(fname, expected_filename)
+        self.assertEqual(
+            self.repo_units.json()[0]['metadata']['filename'],
+            DRPM,
+        )
 
 
 class UploadRpmTestCase(utils.BaseAPITestCase):

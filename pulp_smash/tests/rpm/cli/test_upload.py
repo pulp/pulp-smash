@@ -1,13 +1,13 @@
 # coding=utf-8
-"""Tests upload of units via client."""
+"""Tests that upload content units into repositories."""
 from __future__ import unicode_literals
 
 import os
 
 import unittest2
 
-from pulp_smash import cli, config, utils, selectors
-from pulp_smash.constants import DRPM_URL, DRPM
+from pulp_smash import cli, config, selectors, utils
+from pulp_smash.constants import DRPM, DRPM_URL
 from pulp_smash.tests.rpm.utils import set_up_module
 
 
@@ -18,92 +18,61 @@ def setUpModule():  # pylint:disable=invalid-name
 
 
 class UploadDrpmTestCase(unittest2.TestCase):
-    """Test whether one can upload DRPMs."""
+    """Test whether one can upload a DRPM into a repository.
 
-    @classmethod
-    def setUpClass(cls):
-        """Create a repository and download temporary drpm."""
-        super(UploadDrpmTestCase, cls).setUpClass()
+    This test case targets `Pulp Smash #336
+    <https://github.com/PulpQE/pulp-smash/issues/336>`_
+    """
 
-        cls.cfg = config.get_config()
+    def test_upload(self):
+        """Create a repository and upload DRPMs into it.
 
-        if selectors.bug_is_untestable(1806, cls.cfg.version):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1806')
+        Specifically, do the following:
 
-        cls.repo_id = utils.uuid4()
-        cls.client = cli.Client(cls.cfg)
-
-        cls.client.run(
-            'pulp-admin rpm repo create --repo-id {}'
-            .format(cls.repo_id).split()
-        )
-
-        completed_process = cls.client.run(
-            'mktemp --directory'.split()
-        )
-        cls.temp_folder = completed_process.stdout.strip()
-        cls.temp_drpm = os.path.join(cls.temp_folder, DRPM)
-
-        cls.client.run(
-            'curl -o {} {}'
-            .format(cls.temp_drpm, DRPM_URL).split()
-        )
-
-    @classmethod
-    def tearDownClass(cls):
-        """Delete the repository and drpm created by :meth:`setUpClass`."""
-        super(UploadDrpmTestCase, cls).tearDownClass()
-
-        cls.client.run(
-            'pulp-admin rpm repo delete --repo-id {}'
-            .format(cls.repo_id).split()
-        )
-        cls.client.run('pulp-admin orphan remove --all'.split())
-        cls.client.run('rm -rf {}'.format(cls.temp_folder).split())
-
-    def test_upload_and_output(self):
-        """Test upload of DRPM.
-
-        Steps
-
-        1. Upload DRPM
-        2. Check output of ``pulp-admin rpm repo content drpm``
-
-        This test case targets
-        `Pulp Smash #336 <https://github.com/PulpQE/pulp-smash/issues/336>`_
+        1. Create a yum repository.
+        2. Download a DRPM file.
+        3. Upload the DRPM into it. Use ``pulp-admin`` to verify its presence
+           in the repository.
+        4. Upload the same DRPM into the same repository, and use the
+           ``--skip-existing`` flag during the upload. Verify that Pulp skips
+           the upload.
         """
-        self.client.run(
-            'pulp-admin rpm repo uploads drpm --repo-id {} -f {}'
-            .format(self.repo_id, self.temp_drpm).split()
+        if selectors.bug_is_untestable(1806, config.get_config().version):
+            self.skipTest('https://pulp.plan.io/issues/1806')
+
+        # Create a repository
+        client = cli.Client(config.get_config())
+        repo_id = utils.uuid4()
+        client.run(
+            'pulp-admin rpm repo create --repo-id {}'.format(repo_id).split()
         )
-        completed_process = self.client.run(
+        self.addCleanup(
+            client.run,
+            'pulp-admin rpm repo delete --repo-id {}'.format(repo_id).split()
+        )
+
+        # Create a temporary directory, and download a DRPM file into it
+        temp_dir = client.run('mktemp --directory'.split()).stdout.strip()
+        self.addCleanup(client.run, 'rm -rf {}'.format(temp_dir).split())
+        drpm_file = os.path.join(temp_dir, os.path.split(DRPM)[-1])
+        client.run('curl -o {} {}'.format(drpm_file, DRPM_URL).split())
+
+        # Upload the DRPM into the repository. Don't use subTest, as if this
+        # test fails, the following one is invalid anyway.
+        client.run(
+            'pulp-admin rpm repo uploads drpm --repo-id {} --file {}'
+            .format(repo_id, drpm_file).split()
+        )
+        proc = client.run(
             'pulp-admin rpm repo content drpm --repo-id {} --fields filename'
-            .format(self.repo_id).split()
+            .format(repo_id).split()
         )
+        self.assertEqual(proc.stdout.split('Filename:')[1].strip(), DRPM)
 
-        filename = completed_process.stdout.split('Filename:')[1].strip()
-
-        self.assertEqual(filename, 'drpms/' + DRPM)
-
-    def test_upload_skip_existing(self):
-        """Test duplicit upload of DRPM with flag ``--skip-existing``.
-
-        Steps
-
-        1. Upload DRPM
-        2. Upload again with flag and check if it wasn't uploaded.
-
-        This test case targets
-        `Pulp Smash #336 <https://github.com/PulpQE/pulp-smash/issues/336>`_
-        """
-        self.client.run(
-            'pulp-admin rpm repo uploads drpm --repo-id {} -f {}'
-            .format(self.repo_id, self.temp_drpm).split()
-        )
-        completed_process = self.client.run(
-            ('pulp-admin rpm repo uploads drpm --repo-id {} -f {} '
+        # Upload the DRPM into the repository. Pass --skip-existing.
+        proc = client.run(
+            ('pulp-admin rpm repo uploads drpm --repo-id {} --file {} '
              '--skip-existing')
-            .format(self.repo_id, self.temp_drpm).split()
+            .format(repo_id, drpm_file).split()
         )
-
-        self.assertIn('No files eligible for upload', completed_process.stdout)
+        self.assertIn('No files eligible for upload', proc.stdout)

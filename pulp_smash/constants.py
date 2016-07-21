@@ -56,13 +56,13 @@ DRPM_FEED_URL = (
 )
 """The URL to an DRPM repository."""
 
-DRPM = 'yum-3.4.3-10.fc16_3.4.3-11.fc16.noarch.drpm'
-"""The name of an DRPM file. See :data:`pulp_smash.constants.DRPM_URL`."""
+DRPM = 'drpms/yum-3.4.3-10.fc16_3.4.3-11.fc16.noarch.drpm'
+"""The name of a DRPM file, relative to :data:`DRPM_FEED_URL`."""
 
-DRPM_URL = urljoin(urljoin(DRPM_FEED_URL, 'drpms/'), DRPM)
-"""The URL to an DRPM file.
+DRPM_URL = urljoin(DRPM_FEED_URL, DRPM)
+"""The URL to a DRPM file.
 
-Built from :data:`DRPM_FEED_URL`, '/drpms/' and :data:`DRPM`.
+Built from :data:`DRPM_FEED_URL` and :data:`DRPM`.
 """
 
 ERROR_KEYS = frozenset((
