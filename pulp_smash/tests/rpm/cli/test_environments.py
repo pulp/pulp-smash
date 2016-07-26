@@ -3,7 +3,10 @@
 from __future__ import unicode_literals
 
 import subprocess
+import uuid
+
 import unittest2
+from packaging.version import Version
 
 from pulp_smash import cli, config, utils
 from pulp_smash.constants import RPM_FEED_URL
@@ -22,13 +25,16 @@ class UploadPackageEnvTestCase(unittest2.TestCase):
     .. _Pulp #1003: https://pulp.plan.io/issues/1003
     .. _Pulp Smash #319: https://github.com/PulpQE/pulp-smash/issues/319
     .. _Pulp RPM Recipes: http://docs.pulpproject.org/plugins/pulp_rpm/
-            user-guide/recipes.html#create-your-own-package-environment
+        user-guide/recipes.html#create-your-own-package-environment
     """
 
     @classmethod
     def setUpClass(cls):
         """Create and sync a repository."""
         cls.cfg = config.get_config()
+        if cls.cfg.version < Version('2.9'):
+            raise unittest2.SkipTest('These tests require Pulp 2.9 or above.')
+        utils.pulp_admin_login(cls.cfg)
         cls.repo_id = utils.uuid4()
         cls.client = cli.Client(cls.cfg)
         cls.client.run(
@@ -57,20 +63,20 @@ class UploadPackageEnvTestCase(unittest2.TestCase):
 
     def test_upload_environment(self):
         """Test if package environments can be uploaded."""
-        rpm_env_name = 'Pulp Test Packages'
-        rpm_env_desc = 'A package environment of Pulp tests.'
-        proc_upload = self.client.machine.session().run(
-            'pulp-admin rpm repo uploads environment '
-            '--repo-id {0} --environment-id {1} '
-            '--name "{2}" --description "{3}"'
+        rpm_env_name = str(uuid.uuid4())
+        rpm_env_desc = str(uuid.uuid4())
+        result = self.client.run(
+            'pulp-admin rpm repo uploads environment --repo-id {0} '
+            '--environment-id {1} --name {2} --description {3}'
             .format(self.repo_id, utils.uuid4(), rpm_env_name, rpm_env_desc)
+            .split()
         )
         with self.subTest(comment='verify upload environments stdout'):
-            self.assertNotIn('Task Failed', proc_upload[1])
-        proc_content = self.client.run(
+            self.assertNotIn('Task Failed', result.stdout)
+        result = self.client.run(
             'pulp-admin rpm repo content environment --repo-id {}'
             .format(self.repo_id).split()
         )
         for expected in (rpm_env_name, rpm_env_desc):
             with self.subTest():
-                self.assertIn(expected, proc_content.stdout)
+                self.assertIn(expected, result.stdout)
