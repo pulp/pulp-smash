@@ -56,7 +56,7 @@ gen-api-docs: clean
 	cd ..; ./scripts/gen_api_docs.sh
 
 html: gen-api-docs
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	$(SPHINXBUILD) -W -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
