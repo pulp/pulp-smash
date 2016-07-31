@@ -4,6 +4,9 @@ from __future__ import unicode_literals
 
 from pulp_smash.compat import quote_plus, urljoin
 
+BASE_PULP_FIXTURES_URL = 'https://repos.fedorapeople.org/repos/' \
+                         'pulp/pulp/fixtures/'
+"""The base URL to Pulp Test Fixtures."""
 
 CALL_REPORT_KEYS = frozenset(('error', 'result', 'spawned_tasks'))
 """See: `Call Report`_.
@@ -51,18 +54,31 @@ DOCKER_V2_FEED_URL = 'https://registry-1.docker.io'
 This URL can be used as the "feed" property of a Pulp Docker registry.
 """
 
-DRPM_FEED_URL = (
-    'https://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/test_drpm_repo/'
+DRPM_FEED_URL = urljoin(
+    BASE_PULP_FIXTURES_URL,
+    'drpm-unsigned/'
 )
-"""The URL to an DRPM repository."""
+"""The URL to a DRPM repository."""
 
-DRPM = 'drpms/yum-3.4.3-10.fc16_3.4.3-11.fc16.noarch.drpm'
+DRPM_UNSIGNED_FEED_URL = urljoin(
+    BASE_PULP_FIXTURES_URL,
+    'drpm-unsigned/'
+)
+"""The URL to an unsigned DRPM repository."""
+
+DRPM = 'drpms/test-alpha-1.1-1_1.1-2.noarch.drpm'
 """The name of a DRPM file, relative to :data:`DRPM_FEED_URL`."""
 
 DRPM_URL = urljoin(DRPM_FEED_URL, DRPM)
 """The URL to a DRPM file.
 
 Built from :data:`DRPM_FEED_URL` and :data:`DRPM`.
+"""
+
+DRPM_UNSIGNED_URL = urljoin(DRPM_UNSIGNED_FEED_URL, DRPM)
+"""The URL to a unsigned DRPM file.
+
+Built from :data:`DRPM_UNSIGNED_FEED_URL` and :data:`DRPM`.
 """
 
 ERROR_KEYS = frozenset((
@@ -263,13 +279,22 @@ RPM_ERRATUM_URL = (
 )
 """The URL to an JSON erratum file for an RPM repository."""
 
-RPM_FEED_URL = 'https://repos.fedorapeople.org/repos/pulp/pulp/fixtures/rpm/'
+RPM_FEED_URL = urljoin(BASE_PULP_FIXTURES_URL, 'rpm/')
 """The URL to an RPM repository. See :data:`RPM_URL`."""
 
 RPM_SHA256_CHECKSUM = (
     '7a831f9f90bf4d21027572cb503d20b702de8e8785b02c0397445c2e481d81b3'
 )
 """The sha256 checksum of :data:`pulp_smash.constants.RPM`."""
+
+RPM_UNSIGNED_FEED_URL = urljoin(BASE_PULP_FIXTURES_URL, 'rpm-unsigned/')
+"""The URL to an unsigned RPM repository. See :data:`RPM_URL`."""
+
+RPM_UNSIGNED_URL = urljoin(RPM_UNSIGNED_FEED_URL, RPM)
+"""The URL to an unsigned RPM file.
+
+Built from :data:`RPM_UNSIGNED_FEED_URL` and :data:`RPM`.
+"""
 
 RPM_URL = urljoin(RPM_FEED_URL, RPM)
 """The URL to an RPM file. Built from :data:`RPM_FEED_URL` and :data:`RPM`."""
@@ -297,10 +322,29 @@ metadata/rpm
 SRPM = 'test-srpm02-1.0-1.src.rpm'
 """The name of an SRPM file at :data:`pulp_smash.constants.SRPM_FEED_URL`."""
 
-SRPM_FEED_URL = (
-    'https://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/test_srpm_repo/'
+SRPM_FEED_URL = urljoin(
+    BASE_PULP_FIXTURES_URL,
+    'srpm/'
 )
 """The URL to an SRPM repository."""
+
+SRPM_UNSIGNED_FEED_URL = urljoin(
+    BASE_PULP_FIXTURES_URL,
+    'srpm-unsigned/'
+)
+"""The URL to an unsigned SRPM repository."""
+
+SRPM_UNSIGNED_URL = urljoin(SRPM_UNSIGNED_FEED_URL, SRPM)
+"""The URL to an unsigned SRPM file.
+
+Built from :data:`SRPM_UNSIGNED_FEED_URL` and :data:`SRPM`.
+"""
+
+SRPM_URL = urljoin(SRPM_FEED_URL, SRPM)
+"""The URL to an SRPM file.
+
+Built from :data:`SRPM_FEED_URL` and :data:`SRPM`.
+"""
 
 USER_PATH = '/pulp/api/v2/users/'
 """See: `User APIs`_.
