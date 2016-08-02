@@ -129,9 +129,17 @@ class NoOpPublishMixin(object):
         """Assert the second publish's last task reports a no-op publish."""
         call_report = self.call_reports[1]
         last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
+
+        if hasattr(self, 'cfg') and self.cfg.version < Version('2.10'):
+            summary = 'Skipped. Nothing changed since last publish'
+        else:
+            summary = (
+                'Skipped: Repository content has not changed since last '
+                'publish.'
+            )
         self.assertEqual(
             last_task['result']['summary'],
-            'Skipped: Repository content has not changed since last publish.',
+            summary,
             last_task,
         )
 
