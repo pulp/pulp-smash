@@ -131,7 +131,7 @@ class NoOpPublishMixin(object):
         last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
         self.assertEqual(
             last_task['result']['summary'],
-            'Skipped. Nothing changed since last publish',
+            'Skipped: Repository content has not changed since last publish.',
             last_task,
         )
 
