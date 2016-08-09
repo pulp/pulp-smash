@@ -39,8 +39,11 @@ def _os_is_rhel6(server_config):
 def setUpModule():  # pylint:disable=invalid-name
     """Skip tests if the RPM plugin is not installed."""
     set_up_module()
-    if config.get_config().version < Version('2.8'):
+    cfg = config.get_config()
+    if cfg.version < Version('2.8'):
         raise unittest2.SkipTest('This module requires Pulp 2.8 or greater.')
+    if selectors.bug_is_untestable(2144, cfg.version):
+        raise unittest2.SkipTest('https://pulp.plan.io/issues/2144')
 
 
 def _create_repo(server_config, download_policy):
