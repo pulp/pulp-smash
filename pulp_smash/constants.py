@@ -4,9 +4,11 @@ from __future__ import unicode_literals
 
 from pulp_smash.compat import quote_plus, urljoin
 
-BASE_PULP_FIXTURES_URL = 'https://repos.fedorapeople.org/repos/' \
-                         'pulp/pulp/fixtures/'
-"""The base URL to Pulp Test Fixtures."""
+PULP_FIXTURES_BASE_URL = 'https://repos.fedorapeople.org/pulp/pulp/fixtures/'
+"""A URL at which generated `pulp fixtures`_ are hosted.
+
+.. _pulp fixtures: https://github.com/PulpQE/pulp-fixtures/
+"""
 
 CALL_REPORT_KEYS = frozenset(('error', 'result', 'spawned_tasks'))
 """See: `Call Report`_.
@@ -36,10 +38,7 @@ CONTENT_UPLOAD_PATH = '/pulp/api/v2/content/uploads/'
    http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/upload.html#creating-an-upload-request
 """
 
-DOCKER_IMAGE_URL = (
-    'https://repos.fedorapeople.org/repos/pulp/pulp/fixtures/docker/'
-    'busybox:latest.tar'
-)
+DOCKER_IMAGE_URL = urljoin(PULP_FIXTURES_BASE_URL, 'docker/busybox:latest.tar')
 """The URL to a Docker image as created by ``docker save``."""
 
 DOCKER_V1_FEED_URL = 'https://index.docker.io'
@@ -54,16 +53,10 @@ DOCKER_V2_FEED_URL = 'https://registry-1.docker.io'
 This URL can be used as the "feed" property of a Pulp Docker registry.
 """
 
-DRPM_FEED_URL = urljoin(
-    BASE_PULP_FIXTURES_URL,
-    'drpm-unsigned/'
-)
+DRPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'drpm-unsigned/')
 """The URL to a DRPM repository."""
 
-DRPM_UNSIGNED_FEED_URL = urljoin(
-    BASE_PULP_FIXTURES_URL,
-    'drpm-unsigned/'
-)
+DRPM_UNSIGNED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'drpm-unsigned/')
 """The URL to an unsigned DRPM repository."""
 
 DRPM = 'drpms/test-alpha-1.1-1_1.1-2.noarch.drpm'
@@ -205,7 +198,7 @@ to Pulp.
     http://projects.puppetlabs.com/projects/module-site/wiki/Server-api
 """
 
-PYTHON_FEED_URL = 'https://repos.fedorapeople.org/pulp/pulp/fixtures/python/'
+PYTHON_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'python/')
 """The URL to a Python repository."""
 
 PYTHON_EGG_URL = urljoin(
@@ -279,7 +272,7 @@ RPM_ERRATUM_URL = (
 )
 """The URL to an JSON erratum file for an RPM repository."""
 
-RPM_FEED_URL = urljoin(BASE_PULP_FIXTURES_URL, 'rpm/')
+RPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm/')
 """The URL to an RPM repository. See :data:`RPM_URL`."""
 
 RPM_SHA256_CHECKSUM = (
@@ -287,7 +280,7 @@ RPM_SHA256_CHECKSUM = (
 )
 """The sha256 checksum of :data:`pulp_smash.constants.RPM`."""
 
-RPM_UNSIGNED_FEED_URL = urljoin(BASE_PULP_FIXTURES_URL, 'rpm-unsigned/')
+RPM_UNSIGNED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-unsigned/')
 """The URL to an unsigned RPM repository. See :data:`RPM_URL`."""
 
 RPM_UNSIGNED_URL = urljoin(RPM_UNSIGNED_FEED_URL, RPM)
@@ -322,16 +315,10 @@ metadata/rpm
 SRPM = 'test-srpm02-1.0-1.src.rpm'
 """The name of an SRPM file at :data:`pulp_smash.constants.SRPM_FEED_URL`."""
 
-SRPM_FEED_URL = urljoin(
-    BASE_PULP_FIXTURES_URL,
-    'srpm/'
-)
+SRPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'srpm/')
 """The URL to an SRPM repository."""
 
-SRPM_UNSIGNED_FEED_URL = urljoin(
-    BASE_PULP_FIXTURES_URL,
-    'srpm-unsigned/'
-)
+SRPM_UNSIGNED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'srpm-unsigned/')
 """The URL to an unsigned SRPM repository."""
 
 SRPM_UNSIGNED_URL = urljoin(SRPM_UNSIGNED_FEED_URL, SRPM)
