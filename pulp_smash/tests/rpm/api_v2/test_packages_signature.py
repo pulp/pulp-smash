@@ -1,15 +1,15 @@
 # coding=utf-8
-"""Tests for how well Pulp can deal with signatures of RPMs.
+"""Tests for how well Pulp can deal with package signatures.
 
-When RPM/DRPM/SRPM packages are added to rpm repositories, signature
-attribute should be stored for those packages.
+When a package is added to an RPM repository, its signature should be stored by
+Pulp. This is true regardless of whether the package is an RPM, DRPM or SRPM.
 
 Tests for this feature include the following:
 
-* Upload signed and unsigned RPM/DRPM/SRPM packages to rpm repositories
-  (See :class:`UploadRPMSignatureTestCase`.)
-* Synchronize signed and unsigned RPM/DRPM/SRPM packages to rpm repositories
-  (See :class:`SyncRPMSignatureTestCase`.)
+* Upload signed and unsigned packages to RPM repositories. (See
+  :class:`UploadPackageTestCase`.)
+* Synchronize signed and unsigned packages to RPM repositories. (See
+  :class:`SyncPackageTestCase`.)
 
 For more information, see:
 
@@ -17,14 +17,17 @@ For more information, see:
 """
 from __future__ import unicode_literals
 
+import inspect
+
 import unittest2
 
-from pulp_smash import api, selectors, utils
-from pulp_smash.compat import urljoin
+from pulp_smash import api, config, selectors, utils
+from pulp_smash.compat import urljoin, urlparse
 from pulp_smash.constants import (
     DRPM_UNSIGNED_FEED_URL,
     DRPM_UNSIGNED_URL,
     ORPHANS_PATH,
+    PULP_FIXTURES_KEY_ID,
     REPOSITORY_PATH,
     RPM_FEED_URL,
     RPM_UNSIGNED_FEED_URL,
@@ -33,236 +36,169 @@ from pulp_smash.constants import (
     SRPM_FEED_URL,
     SRPM_UNSIGNED_FEED_URL,
     SRPM_UNSIGNED_URL,
-    SRPM_URL
+    SRPM_URL,
 )
-from pulp_smash.tests.rpm.api_v2.utils import (
-    gen_repo
-)
-
-_PACKAGE_URLS = {
-    'drpm-unsigned': {
-        'repo_url': DRPM_UNSIGNED_FEED_URL,
-        'pkg_url': DRPM_UNSIGNED_URL
-    },
-    'rpm': {
-        'repo_url': RPM_FEED_URL,
-        'pkg_url': RPM_URL
-    },
-    'rpm-unsigned': {
-        'repo_url': RPM_UNSIGNED_FEED_URL,
-        'pkg_url': RPM_UNSIGNED_URL
-    },
-    'srpm': {
-        'repo_url': SRPM_FEED_URL,
-        'pkg_url': SRPM_URL
-    },
-    'srpm-unsigned': {
-        'repo_url': SRPM_UNSIGNED_FEED_URL,
-        'pkg_url': SRPM_UNSIGNED_URL
-    }
-}
-"""A dict of information about urls of test repositories and packages."""
+from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 
 
-class UploadRPMSignatureTestCase(utils.BaseAPITestCase):
-    """Test how well Pulp can deal with package signature.
+def _get_pkg_filename(pkg_url):
+    """Given the URL of a package, return its filename."""
+    return urlparse(pkg_url).path.split('/')[-1]
 
-    When uploading and importing packages.
+
+def _get_pkg_unit_type(pkg_filename):
+    """Given the filename of package, return its unit type.
+
+    :param pkg_url: A string such as 'bear-4.1-1.noarch.rpm'.
+    :returns: A string such as 'rpm', 'srpm' or 'drpm'.
     """
+    suffix = pkg_filename.split('.')[-2:]
+    if suffix[-2] == 'src':
+        return 'srpm'
+    else:
+        return suffix[-1]
+
+
+class _BaseTestCase(unittest2.TestCase):
+    """An abstract base class for the test cases in this module."""
 
     @classmethod
     def setUpClass(cls):
         """Create a shared client."""
-        super(UploadRPMSignatureTestCase, cls).setUpClass()
+        if inspect.getmro(cls)[0] == _BaseTestCase:
+            raise unittest2.SkipTest('Abstract base class.')
+        cls.cfg = config.get_config()
         if selectors.bug_is_untestable(1156, cls.cfg.version):
             raise unittest2.SkipTest('https://pulp.plan.io/issues/1156')
         cls.client = api.Client(cls.cfg, api.json_handler)
 
-    def setUp(self):
-        """Set up common test variable."""
-        super(UploadRPMSignatureTestCase, self).setUp()
-        self.signature = None
-        self.package_type = None
+    def _find_unit(self, repo_href, pkg_url):
+        """Search the given repository for a package.
 
-        # Create RPM Repository
-        self.repo = self.client.post(REPOSITORY_PATH, gen_repo())
-
-    def tearDown(self):
-        """Delete repo and orphans after each test case."""
-        super(UploadRPMSignatureTestCase, self).tearDown()
-        # Note: signed and unsigned packages in pulp-fixture share
-        # same file name. In order to make sure Pulp doesn't handle
-        # a package as a duplicate upload because of the package uploaded
-        # in previous tests. Make sure the repo and packages created
-        # are removed before running next tests.
-        if self.repo:
-            self.client.delete(self.repo['_href'])
-        self.client.delete(ORPHANS_PATH)
-
-    def _import_pkg_validate_signature(self):
-        """Import a package to the repo.
-
-        Validate the signature stored for the package.
+        Search the repository for content units having the same filename as
+        ``pkg_url``, verify only one result is found, and return it.
         """
-        repo_url = self.repo['_href']
-        pkg_url = _PACKAGE_URLS[self.package_type]['pkg_url']
-        if pkg_url.split('.')[-2] == 'src':
-            unit_type = 'srpm'
-        else:
-            unit_type = pkg_url.split('.')[-1]
-        unit_name = pkg_url.split('/')[-1]
-
-        # Upload and import the package to the repo
-        utils.upload_import_unit(
-            self.cfg,
-            utils.http_get(pkg_url),
-            unit_type,
-            repo_url)
-        # Get the package imported
-        units = self.client.post(
-            urljoin(repo_url, 'search/units/'),
-            {
-                'criteria': {
-                    'type_ids': [unit_type],
-                    'filters': {
-                        'unit': {
-                            'filename': {'$in': [unit_name]}
-                        }
-                    }
-                }
+        pkg_filename = _get_pkg_filename(pkg_url)
+        pkg_unit_type = _get_pkg_unit_type(pkg_filename)
+        if pkg_unit_type == 'drpm':
+            # This is the location of the package relative to the repo root.
+            pkg_filename = 'drpms/' + pkg_filename
+        units = self.client.post(urljoin(repo_href, 'search/units/'), {
+            'criteria': {
+                'filters': {'unit': {'filename': {'$in': [pkg_filename]}}},
+                'type_ids': [pkg_unit_type],
             }
-        )
-        # Validate the signature of the package imported
+        })
         self.assertEqual(len(units), 1)
-        if self.signature:
-            self.assertTrue('signature' in units[0]['metadata'])
-            self.assertEqual(units[0]['metadata']['signature'], self.signature)
-        else:
-            self.assertFalse('signature' in units[0]['metadata'])
+        return units[0]
 
-    def test_import_rpm_signed(self):
-        """Assert signature is stored for signed rpm imported."""
-        self.package_type = 'rpm'
-        self.signature = 'f78fb195'
-        self._import_pkg_validate_signature()
+    def _verify_pkg_key(self, content_unit, key_id):
+        """Verify the given content unit has the given key.
 
-    def test_import_srpm_signed(self):
-        """Assert signature is stored for signed srpm imported."""
-        self.package_type = 'srpm'
-        self.signature = '260f3a2b'
-        self._import_pkg_validate_signature()
-
-    def test_import_rpm_unsigned(self):
-        """Assert no signature is stored for unsigned rpm imported."""
-        self.package_type = 'rpm-unsigned'
-        self._import_pkg_validate_signature()
-
-    def test_import_srpm_unsigned(self):
-        """Assert no signature is stored for unsigned srpm imported."""
-        self.package_type = 'srpm-unsigned'
-        self._import_pkg_validate_signature()
-
-
-class SyncRPMSignatureTestCase(utils.BaseAPITestCase):
-    """Test how well Pulp can deal with package sig when syncing a repo."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Create a shared client."""
-        super(SyncRPMSignatureTestCase, cls).setUpClass()
-        if selectors.bug_is_untestable(1156, cls.cfg.version):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1156')
-        cls.client = api.Client(cls.cfg, api.json_handler)
-
-    def setUp(self):
-        """Set up common test variable."""
-        super(SyncRPMSignatureTestCase, self).setUp()
-        self.signature = None
-        self.package_type = None
-        self.repo = None
-
-    def tearDown(self):
-        """Delete repo and orphans after each test case."""
-        super(SyncRPMSignatureTestCase, self).tearDown()
-        # Note: signed and unsigned packages in pulp-fixture share
-        # same file name. In order to make sure pulp doesn't handle
-        # a package as a duplicate upload because of the package uploaded
-        # in previous tests. Make sure the repo and packages created
-        # are removed before running next tests.
-        if self.repo:
-            self.client.delete(self.repo['_href'])
-        self.client.delete(ORPHANS_PATH)
-
-    def _sync_repo_validate_package_sig(self):
-        """Sync a repo from feed.
-
-        Validate the signature stored for the package after sync.
+        :param content_unit: A single content unit as returned by a repository
+            content unit search.
+        :param key_id: A 32-bit OpenPGP key fingerprint, as a string.
         """
-        # Create a rpm repository with feed
+        unit_metadata = content_unit['metadata']
+        self.assertIn('signing_key', unit_metadata)
+        self.assertEqual(unit_metadata['signing_key'], key_id)
+
+
+class UploadPackageTestCase(_BaseTestCase):
+    """Test if Pulp saves signatures from uploaded packages."""
+
+    def _create_repo_import_unit(self, pkg_url):
+        """Create a repository, and import the given package into it.
+
+        Schedule the repository and all orphan content units for deletion.
+        Return the repository's href.
+        """
+        self.addCleanup(self.client.delete, ORPHANS_PATH)
+        repo_href = self.client.post(REPOSITORY_PATH, gen_repo())['_href']
+        self.addCleanup(self.client.delete, repo_href)
+
+        pkg = utils.http_get(pkg_url)
+        pkg_filename = _get_pkg_filename(pkg_url)
+        pkg_unit_type = _get_pkg_unit_type(pkg_filename)
+        utils.upload_import_unit(self.cfg, pkg, pkg_unit_type, repo_href)
+
+        return repo_href
+
+    def test_signed_rpm(self):
+        """Import a signed RPM into Pulp. Verify its signature."""
+        repo_href = self._create_repo_import_unit(RPM_URL)
+        unit = self._find_unit(repo_href, RPM_URL)
+        self._verify_pkg_key(unit, PULP_FIXTURES_KEY_ID)
+
+    def test_signed_srpm(self):
+        """Import a signed SRPM into Pulp. Verify its signature."""
+        repo_href = self._create_repo_import_unit(SRPM_URL)
+        unit = self._find_unit(repo_href, SRPM_URL)
+        self._verify_pkg_key(unit, PULP_FIXTURES_KEY_ID)
+
+    def test_unsigned_drpm(self):
+        """Import an unsigned DRPM into Pulp. Verify it has no signature."""
+        if selectors.bug_is_untestable(1806, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/1806')
+        repo_href = self._create_repo_import_unit(DRPM_UNSIGNED_URL)
+        unit = self._find_unit(repo_href, DRPM_UNSIGNED_URL)
+        self.assertNotIn('signing_key', unit['metadata'])
+
+    def test_unsigned_rpm(self):
+        """Import an unsigned RPM into Pulp. Veriy it has no signature."""
+        repo_href = self._create_repo_import_unit(RPM_UNSIGNED_URL)
+        unit = self._find_unit(repo_href, RPM_UNSIGNED_URL)
+        self.assertNotIn('signing_key', unit['metadata'])
+
+    def test_unsigned_srpm(self):
+        """Import an unsigned SRPM into Pulp. Verify it has no signature."""
+        repo_href = self._create_repo_import_unit(SRPM_UNSIGNED_URL)
+        unit = self._find_unit(repo_href, SRPM_UNSIGNED_URL)
+        self.assertNotIn('signing_key', unit['metadata'])
+
+
+class SyncPackageTestCase(_BaseTestCase):
+    """Test if Pulp saves signatures from synced-in packages."""
+
+    def _create_sync_repo(self, feed_url):
+        """Create a repository with the given feed and sync it.
+
+        Return the repository's href.
+        """
+        self.addCleanup(self.client.delete, ORPHANS_PATH)
         body = gen_repo()
-        body['importer_config']['feed'] = \
-            _PACKAGE_URLS[self.package_type]['repo_url']
-        self.repo = self.client.post(REPOSITORY_PATH, body)
+        body['importer_config']['feed'] = feed_url
+        repo_href = self.client.post(REPOSITORY_PATH, body)['_href']
+        self.addCleanup(self.client.delete, repo_href)
+        utils.sync_repo(self.cfg, repo_href)
+        return repo_href
 
-        # Sync content into the rpm repository
-        repo_url = self.repo['_href']
-        pkg_url = _PACKAGE_URLS[self.package_type]['pkg_url']
-        if pkg_url.split('.')[-2] == 'src':
-            unit_type = 'srpm'
-        else:
-            unit_type = pkg_url.split('.')[-1]
-        unit_name = pkg_url.split('/')[-1]
-        if unit_type == 'drpm':
-            unit_name = 'drpms/%s' % unit_name
-
-        utils.sync_repo(self.cfg, repo_url)
-
-        # Search units from repo
-        units = self.client.post(
-            urljoin(repo_url, 'search/units/'),
-            {
-                'criteria': {
-                    'type_ids': [unit_type],
-                    'filters': {
-                        'unit': {
-                            'filename': {'$in': [unit_name]}
-                        }
-                    }
-                }
-            }
-        )
-
-        # Validate the signature of the package
-        self.assertEqual(len(units), 1)
-        if self.signature:
-            self.assertTrue('signature' in units[0]['metadata'])
-            self.assertEqual(units[0]['metadata']['signature'], self.signature)
-        else:
-            self.assertFalse('signature' in units[0]['metadata'])
-
-    def test_sync_rpm_signed(self):
+    def test_signed_rpm(self):
         """Assert signature is stored for signed rpm during sync."""
-        self.package_type = 'rpm'
-        self.signature = 'f78fb195'
-        self._sync_repo_validate_package_sig()
+        repo_href = self._create_sync_repo(RPM_FEED_URL)
+        unit = self._find_unit(repo_href, RPM_URL)
+        self._verify_pkg_key(unit, PULP_FIXTURES_KEY_ID)
 
-    def test_sync_srpm_signed(self):
+    def test_signed_srpm(self):
         """Assert signature is stored for signed srpm during sync."""
-        self.package_type = 'srpm'
-        self.signature = '260f3a2b'
-        self._sync_repo_validate_package_sig()
+        repo_href = self._create_sync_repo(SRPM_FEED_URL)
+        unit = self._find_unit(repo_href, SRPM_URL)
+        self._verify_pkg_key(unit, PULP_FIXTURES_KEY_ID)
 
-    def test_sync_rpm_unsigned(self):
-        """Assert no signature is stored for unsigned rpm during sync."""
-        self.package_type = 'rpm-unsigned'
-        self._sync_repo_validate_package_sig()
-
-    def test_sync_srpm_unsigned(self):
-        """Assert no signature is stored for unsigned srpm during sync."""
-        self.package_type = 'srpm-unsigned'
-        self._sync_repo_validate_package_sig()
-
-    def test_sync_drpm_unsigned(self):
+    def test_unsigned_drpm(self):
         """Assert no signature is stored for unsigned drpm during sync."""
-        self.package_type = 'drpm-unsigned'
-        self._sync_repo_validate_package_sig()
+        repo_href = self._create_sync_repo(DRPM_UNSIGNED_FEED_URL)
+        unit = self._find_unit(repo_href, DRPM_UNSIGNED_URL)
+        self.assertNotIn('signing_key', unit['metadata'])
+
+    def test_unsigned_rpm(self):
+        """Assert no signature is stored for unsigned rpm during sync."""
+        repo_href = self._create_sync_repo(RPM_UNSIGNED_FEED_URL)
+        unit = self._find_unit(repo_href, RPM_UNSIGNED_URL)
+        self.assertNotIn('signing_key', unit['metadata'])
+
+    def test_unsigned_srpm(self):
+        """Assert no signature is stored for unsigned srpm during sync."""
+        repo_href = self._create_sync_repo(SRPM_UNSIGNED_FEED_URL)
+        unit = self._find_unit(repo_href, SRPM_UNSIGNED_URL)
+        self.assertNotIn('signing_key', unit['metadata'])
