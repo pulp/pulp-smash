@@ -276,7 +276,7 @@ RPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm/')
 """The URL to an RPM repository. See :data:`RPM_URL`."""
 
 RPM_SHA256_CHECKSUM = (
-    '7a831f9f90bf4d21027572cb503d20b702de8e8785b02c0397445c2e481d81b3'
+    '4fe8d0e21ee6d56d420c396a02aeaeb59feb00b625811b6a2b4d8f0c1aad80ca'
 )
 """The sha256 checksum of :data:`pulp_smash.constants.RPM`."""
 
