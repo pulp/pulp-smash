@@ -2,7 +2,6 @@
 """Tests that sync RPM repositories."""
 from __future__ import unicode_literals
 
-import os
 import random
 
 import unittest2
@@ -134,29 +133,27 @@ class ForceSyncTestCase(unittest2.TestCase):
         )
         sync_repo(cls.cfg, cls.repo_id)
 
-    def test_force_sync(self):
-        """Test force sync can restore deleted units."""
-        content_dir = '/var/lib/pulp/content/units/rpm/'
-        expected_content_count = self.client.machine.session().run(
-            'ls -l {} | wc -l'.format(content_dir)
-        )[1].strip()
-        random_unit = random.choice(
-            [d for d in os.listdir('{}'.format(content_dir))]
-        )
-        self.client.machine.session().run(
-            '{0}rm -rf {1}{2}'
-            .format(self.sudo, content_dir, random_unit)
-        )
-        sync_repo(self.cfg, self.repo_id, True)
-        actual_content_count = self.client.machine.session().run(
-            'ls -l {} | wc -l'.format(content_dir)
-        )[1].strip()
-        self.assertEqual(actual_content_count, expected_content_count)
-
     @classmethod
     def tearDownClass(cls):
         """Delete the repository and clean up orphans."""
-        cli.Client(cls.cfg).run(
+        cls.client.run(
             'pulp-admin rpm repo delete --repo-id {}'
             .format(cls.repo_id).split()
         )
+
+    def _content_rpms(self):
+        """Find all RPM files under /var/lib/pulp/content/units/rpm."""
+        return self.client.run(
+            'find /var/lib/pulp/content/units/rpm/ -name *.rpm'.split()
+        ).stdout.splitlines()
+
+    def test_force_sync(self):
+        """Test force sync can restore deleted units."""
+        content = self._content_rpms()
+        self.client.run(
+            '{}rm -rf {}'.format(self.sudo, random.choice(content)).split())
+        with self.subTest(comment='check if the unit was removed'):
+            self.assertEqual(len(self._content_rpms()), len(content) - 1)
+        sync_repo(self.cfg, self.repo_id, force_sync=True)
+        with self.subTest(comment='check if the unit was restored'):
+            self.assertEqual(len(self._content_rpms()), len(content))
