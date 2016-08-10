@@ -2,6 +2,7 @@
 """Tests that sync RPM repositories."""
 from __future__ import unicode_literals
 
+import os
 import random
 
 import unittest2
@@ -9,6 +10,7 @@ import unittest2
 from pulp_smash import cli, config, utils
 from pulp_smash.constants import RPM_FEED_URL
 from pulp_smash.tests.rpm.utils import set_up_module
+from pulp_smash.utils import is_root
 
 
 def setUpModule():  # pylint:disable=invalid-name
@@ -35,16 +37,18 @@ def get_rpm_names(server_config, repo_id):
     ]
 
 
-def sync_repo(server_config, repo_id):
+def sync_repo(server_config, repo_id, force_sync=False):
     """Sync an RPM repository.
 
     :param pulp_smash.config.ServerConfig server_config: Information about the
         Pulp server being targeted.
     :param repo_id: A RPM repository ID.
+    :param repo_id: A boolean flag to denote if is a force-full sync.
     :returns: A :class:`pulp_smash.cli.CompletedProcess`.
     """
     return cli.Client(server_config).run(
-        'pulp-admin rpm repo sync run --repo-id {}'.format(repo_id).split()
+        'pulp-admin rpm repo sync run --repo-id {0}{1}'
+        .format(repo_id, ' --force-full' if force_sync else '').split()
     )
 
 
@@ -91,6 +95,63 @@ class RemovedContentTestCase(unittest2.TestCase):
         for stream in ('stdout', 'stderr'):
             with self.subTest(stream=stream):
                 self.assertNotIn(phrase, getattr(completed_proc, stream))
+
+    @classmethod
+    def tearDownClass(cls):
+        """Delete the repository and clean up orphans."""
+        cli.Client(cls.cfg).run(
+            'pulp-admin rpm repo delete --repo-id {}'
+            .format(cls.repo_id).split()
+        )
+
+
+class ForceSyncTestCase(unittest2.TestCase):
+    """Test whether Pulp can force sync content by ignoring cache.
+
+    This test case targets Redmine story `Pulp #1938`_ and Pulp Smash issue
+    `Pulp Smash #301`_. The test steps are as following:
+
+    1. Create and sync a repository.
+    2. Checkout to content directory /var/lib/pulp/content/units/rpm/.
+    3. Remove some random contents in that folder.
+    4. Trigger a force sync to verify if the removed contents will be
+        restored.
+
+    .. _Pulp #1938: https://pulp.plan.io/issues/1938
+    .. _Pulp Smash #301: https://github.com/PulpQE/pulp-smash/issues/301
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create and sync a repository."""
+        cls.cfg = config.get_config()
+        cls.repo_id = utils.uuid4()
+        cls.client = cli.Client(cls.cfg)
+        cls.sudo = '' if is_root(cls.cfg) else 'sudo '
+        cls.client.run(
+            'pulp-admin rpm repo create --repo-id {} --feed {}'
+            .format(cls.repo_id, RPM_FEED_URL).split()
+        )
+        sync_repo(cls.cfg, cls.repo_id)
+
+    def test_force_sync(self):
+        """Test force sync can restore deleted units."""
+        content_dir = '/var/lib/pulp/content/units/rpm/'
+        expected_content_count = self.client.machine.session().run(
+            'ls -l {} | wc -l'.format(content_dir)
+        )[1].strip()
+        random_unit = random.choice(
+            [d for d in os.listdir('{}'.format(content_dir))]
+        )
+        self.client.machine.session().run(
+            '{0}rm -rf {1}{2}'
+            .format(self.sudo, content_dir, random_unit)
+        )
+        sync_repo(self.cfg, self.repo_id, True)
+        actual_content_count = self.client.machine.session().run(
+            'ls -l {} | wc -l'.format(content_dir)
+        )[1].strip()
+        self.assertEqual(actual_content_count, expected_content_count)
 
     @classmethod
     def tearDownClass(cls):
