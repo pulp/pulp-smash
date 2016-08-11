@@ -6,7 +6,7 @@ import random
 
 import unittest2
 
-from pulp_smash import cli, config, utils
+from pulp_smash import cli, config, selectors, utils
 from pulp_smash.constants import RPM_FEED_URL
 from pulp_smash.tests.rpm.utils import set_up_module
 from pulp_smash.utils import is_root
@@ -124,6 +124,8 @@ class ForceSyncTestCase(unittest2.TestCase):
     def setUpClass(cls):
         """Create and sync a repository."""
         cls.cfg = config.get_config()
+        if selectors.bug_is_untestable(1982, cls.cfg.version):
+            raise unittest2.SkipTest('https://pulp.plan.io/issues/1982')
         cls.repo_id = utils.uuid4()
         cls.client = cli.Client(cls.cfg)
         cls.sudo = '' if is_root(cls.cfg) else 'sudo '
