@@ -105,57 +105,57 @@ class RemovedContentTestCase(unittest2.TestCase):
 
 
 class ForceSyncTestCase(unittest2.TestCase):
-    """Test whether Pulp can force sync content by ignoring cache.
+    """Test whether one can force Pulp to perform a full sync.
 
-    This test case targets Redmine story `Pulp #1938`_ and Pulp Smash issue
-    `Pulp Smash #301`_. The test steps are as following:
+    This test case targets `Pulp #1982`_ and `Pulp Smash #353`_. The test
+    procedure is as follows:
 
     1. Create and sync a repository.
-    2. Checkout to content directory /var/lib/pulp/content/units/rpm/.
-    3. Remove some random contents in that folder.
-    4. Trigger a force sync to verify if the removed contents will be
-        restored.
+    2. Remove one or more random RPMs from
+       ``/var/lib/pulp/content/units/rpm/``.
+    3. Sync the repository.
+    4. Verify that all removed units have been re-downloaded to the directory.
 
-    .. _Pulp #1938: https://pulp.plan.io/issues/1938
-    .. _Pulp Smash #301: https://github.com/PulpQE/pulp-smash/issues/301
+    .. _Pulp #1982: https://pulp.plan.io/issues/1982
+    .. _Pulp Smash #353: https://github.com/PulpQE/pulp-smash/issues/353
     """
 
-    @classmethod
-    def setUpClass(cls):
-        """Create and sync a repository."""
-        cls.cfg = config.get_config()
-        if selectors.bug_is_untestable(1982, cls.cfg.version):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1982')
-        cls.repo_id = utils.uuid4()
-        cls.client = cli.Client(cls.cfg)
-        cls.sudo = '' if is_root(cls.cfg) else 'sudo '
-        cls.client.run(
-            'pulp-admin rpm repo create --repo-id {} --feed {}'
-            .format(cls.repo_id, RPM_FEED_URL).split()
-        )
-        sync_repo(cls.cfg, cls.repo_id)
-
-    @classmethod
-    def tearDownClass(cls):
-        """Delete the repository and clean up orphans."""
-        cls.client.run(
-            'pulp-admin rpm repo delete --repo-id {}'
-            .format(cls.repo_id).split()
-        )
-
-    def _content_rpms(self):
-        """Find all RPM files under /var/lib/pulp/content/units/rpm."""
-        return self.client.run(
+    @staticmethod
+    def _list_rpms(cfg):
+        """Return a list of RPMs in ``/var/lib/pulp/content/units/rpm/``."""
+        return cli.Client(cfg).run(
             'find /var/lib/pulp/content/units/rpm/ -name *.rpm'.split()
         ).stdout.splitlines()
 
     def test_force_sync(self):
-        """Test force sync can restore deleted units."""
-        content = self._content_rpms()
-        self.client.run(
-            '{}rm -rf {}'.format(self.sudo, random.choice(content)).split())
-        with self.subTest(comment='check if the unit was removed'):
-            self.assertEqual(len(self._content_rpms()), len(content) - 1)
-        sync_repo(self.cfg, self.repo_id, force_sync=True)
-        with self.subTest(comment='check if the unit was restored'):
-            self.assertEqual(len(self._content_rpms()), len(content))
+        """Test whether one can force Pulp to perform a full sync."""
+        cfg = config.get_config()
+        if selectors.bug_is_untestable(1982, cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/1982')
+
+        # Create and sync a repository.
+        client = cli.Client(cfg)
+        repo_id = utils.uuid4()
+        client.run(
+            'pulp-admin rpm repo create --repo-id {} --feed {}'
+            .format(repo_id, RPM_FEED_URL).split()
+        )
+        self.addCleanup(
+            client.run,
+            'pulp-admin rpm repo delete --repo-id {}'.format(repo_id).split()
+        )
+        sync_repo(cfg, repo_id)
+
+        # Delete a random RPM
+        rpms = self._list_rpms(cfg)
+        client.run('{} rm -rf {}'.format(
+            'sudo' if is_root(cfg) else '',
+            random.choice(rpms),
+        ).split())
+        with self.subTest(comment='Verify the RPM was removed.'):
+            self.assertEqual(len(self._list_rpms(cfg)), len(rpms) - 1)
+
+        # Sync the repository again
+        sync_repo(cfg, repo_id, force_sync=True)
+        with self.subTest(comment='Verify the RPM has been restored.'):
+            self.assertEqual(len(self._list_rpms(cfg)), len(rpms))
