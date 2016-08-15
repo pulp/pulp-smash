@@ -103,7 +103,7 @@ def reset_pulp(server_config):
     client = cli.Client(server_config)
     prefix = '' if is_root(server_config) else 'sudo '
     client.run('mongo pulp_database --eval db.dropDatabase()'.split())
-    client.run('sudo -u apache pulp-manage-db'.split())
+    client.run((prefix + 'runuser -u apache pulp-manage-db').split())
     client.run((prefix + 'rm -rf /var/lib/pulp/content').split())
     client.run((prefix + 'rm -rf /var/lib/pulp/published').split())
 
