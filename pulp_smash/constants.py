@@ -277,8 +277,8 @@ RPM = 'bear-4.1-1.noarch.rpm'
 """The name of an RPM file. See :data:`pulp_smash.constants.RPM_URL`."""
 
 RPM_ABS_PATH = (
-    '/var/lib/pulp/content/units/rpm/76/78177c241777af22235092f21c3932d'
-    'd4f0664e1624e5a2c77a201ec70f930/' + RPM
+    '/var/lib/pulp/content/units/rpm/'
+    '62/7c493152b5de3cfccb681fb98b0f56089425db3030328767c0cc031b2235b3/' + RPM
 )
 """The absolute path to :data:`pulp_smash.constants.RPM` in the filesystem."""
 
