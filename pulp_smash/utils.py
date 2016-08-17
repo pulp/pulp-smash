@@ -100,10 +100,20 @@ def reset_pulp(server_config):
         service.stop()
 
     # Reset the database and nuke accumulated files.
+    #
+    # Why use `runuser` instead of `sudo`? Because some systems are configured
+    # to refuse to execute `sudo` unless a tty is present (The author has
+    # encountered this on at least one RHEL 7.2 system.)
+    #
+    # Why not use runuser's `-u` flag? Because RHEL 6 ships an old version of
+    # runuser that doesn't support the flag, and RHEL 6 is a supported Pulp
+    # platform.
     client = cli.Client(server_config)
     prefix = '' if is_root(server_config) else 'sudo '
     client.run('mongo pulp_database --eval db.dropDatabase()'.split())
-    client.run((prefix + 'runuser -u apache pulp-manage-db').split())
+    client.run((
+        prefix + 'runuser --shell /bin/sh apache --command pulp-manage-db'
+    ).split())
     client.run((prefix + 'rm -rf /var/lib/pulp/content').split())
     client.run((prefix + 'rm -rf /var/lib/pulp/published').split())
 
