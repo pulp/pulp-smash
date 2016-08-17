@@ -149,7 +149,7 @@ class ForceSyncTestCase(unittest2.TestCase):
         # Delete a random RPM
         rpms = self._list_rpms(cfg)
         client.run('{} rm -rf {}'.format(
-            'sudo' if is_root(cfg) else '',
+            'sudo' if not is_root(cfg) else '',
             random.choice(rpms),
         ).split())
         with self.subTest(comment='Verify the RPM was removed.'):
