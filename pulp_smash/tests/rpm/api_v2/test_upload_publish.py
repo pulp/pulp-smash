@@ -440,17 +440,28 @@ class UploadErratumTestCase(utils.BaseAPITestCase):
         ]
         self.assertEqual(len(updates), 1)
 
-        # Parse and verify the erratum. Simply asserting that the original
-        # erratum and constructed erratum are equal produces awful failure
-        # messages. Iterating like this lets us narrow things down a bit.
-        old_erratum = self.erratum.copy()
+        # The erratum we uploaded will be different from the erratum that Pulp
+        # published. Here, we try to erase the differences between the two, by
+        # modifying the uploaded erratum.
+        old_erratum = self.erratum.copy()  # dont modify original
         if selectors.bug_is_untestable(2021, self.cfg.version):
             del old_erratum['release']
-        if selectors.bug_is_untestable(2042, self.cfg.version):
+        if selectors.bug_is_testable(2042, self.cfg.version):
+            for package_list in old_erratum['pkglist']:
+                for package in package_list['packages']:
+                    # ['md5', '…', 'sha256', '…'] → ['sha256': '…']
+                    i = package['sum'].index('sha256')
+                    package['sum'] = package['sum'][i:i + 2]
+        else:
             for package_list in old_erratum['pkglist']:
                 for package in package_list['packages']:
                     del package['sum']
         new_erratum = parse_updateinfo_update(updates[0])
+
+        # Parse and verify the erratum. Simply asserting that the original
+        # erratum and constructed erratum are equal produces awful failure
+        # messages. Iterating like this lets us narrow things down a bit.
         for key, value in old_erratum.items():
             with self.subTest(key=key):
+                self.assertIn(key, new_erratum)
                 self.assertEqual(value, new_erratum[key])
