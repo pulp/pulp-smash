@@ -85,8 +85,20 @@ def _make_user(cfg):
     yield private_key
 
 
-class _MakeUserMixin(object):  # pylint:disable=too-few-public-methods
-    """A mixin providing the ability to create a temporary user.
+def _get_dists_by_type_id(cfg, repo_href):
+    """Return the named repository's distributors, keyed by their type IDs.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about the Pulp
+        server being targeted.
+    :param repo_href: The path to a repository with a yum distributor.
+    :returns: A dict in the form ``{'type_id': {distributor_info}}``.
+    """
+    dists = api.Client(cfg).get(urljoin(repo_href, 'distributors/')).json()
+    return {dist['distributor_type_id']: dist for dist in dists}
+
+
+class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
+    """A mixin providing methods for working with the RPM rsync distributor.
 
     This mixin requires that the ``unittest.TestCase`` class from the standard
     library is a parent class.
@@ -133,8 +145,43 @@ class _MakeUserMixin(object):  # pylint:disable=too-few-public-methods
         client.run((sudo + 'chown apache ' + ssh_identity_file).split())
         return ssh_identity_file
 
+    def make_repo(self, cfg, remote):
+        """Create a repository with an importer and pair of distributors.
 
-class PublishBeforeYumDistTestCase(_MakeUserMixin, utils.BaseAPITestCase):
+        Create an RPM repository with:
+
+        * A yum importer with a valid feed.
+        * A yum distributor.
+        * An RPM rsync distributor referencing the yum distributor.
+
+        In addition, schedule the repository for deletion.
+
+        :param pulp_smash.config.ServerConfig cfg: Information about the Pulp
+            server being targeted.
+        :param remote: A dict for the RPM rsync distributor's ``remote``
+            section.
+        :returns: The repository's href, as a string.
+        """
+        api_client = api.Client(cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_FEED_URL
+        body['distributors'] = [gen_distributor()]
+        body['distributors'].append({
+            'distributor_id': utils.uuid4(),
+            'distributor_type_id': 'rpm_rsync_distributor',
+            'distributor_config': {
+                'predistributor_id': body['distributors'][0]['distributor_id'],
+                'remote': remote,
+            }
+        })
+        repo_href = api_client.post(REPOSITORY_PATH, body)['_href']
+        self.addCleanup(api_client.delete, repo_href)
+        return repo_href
+
+
+class PublishBeforeYumDistTestCase(
+        _RsyncDistUtilsMixin,
+        utils.BaseAPITestCase):
     """Publish a repo with the rsync distributor before the yum distributor.
 
     Do the following:
@@ -145,36 +192,21 @@ class PublishBeforeYumDistTestCase(_MakeUserMixin, utils.BaseAPITestCase):
 
     def test_all(self):
         """Publish the rpm rsync distributor before the yum distributor."""
-        # Create a user. Save its private key where Pulp can find it.
+        # Create a user and a repository.
         ssh_user, priv_key = self.make_user(self.cfg)
         ssh_identity_file = self.write_private_key(self.cfg, priv_key)
-
-        # Create a repository with an importer and pair of distributors, and
-        # sync it.
-        api_client = api.Client(self.cfg, api.json_handler)
-        body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
-        body['distributors'] = [gen_distributor()]
-        body['distributors'].append({
-            'distributor_id': utils.uuid4(),
-            'distributor_type_id': 'rpm_rsync_distributor',
-            'distributor_config': {
-                'predistributor_id': body['distributors'][0]['distributor_id'],
-                'remote': {
-                    'host': urlparse(self.cfg.base_url).netloc,
-                    'root': '/home/' + ssh_user,
-                    'ssh_identity_file': ssh_identity_file,
-                    'ssh_user': ssh_user,
-                }
-            }
+        repo_href = self.make_repo(self.cfg, {
+            'host': urlparse(self.cfg.base_url).netloc,
+            'root': '/home/' + ssh_user,
+            'ssh_identity_file': ssh_identity_file,
+            'ssh_user': ssh_user,
         })
-        repo_href = api_client.post(REPOSITORY_PATH, body)['_href']
-        self.resources.add(repo_href)
 
-        # Publish with the rpm rsync distributor
+        # Publish with the rsync distributor.
+        dists_by_type_id = _get_dists_by_type_id(self.cfg, repo_href)
         with self.assertRaises(exceptions.TaskReportError):
-            api_client.post(urljoin(repo_href, 'actions/publish/'), {
-                'id': body['distributors'][1]['distributor_id']
+            api.Client(self.cfg).post(urljoin(repo_href, 'actions/publish/'), {
+                'id': dists_by_type_id['rpm_rsync_distributor']['id'],
             })
 
         # Verify that the rsync distributor hasn't placed files
@@ -184,7 +216,7 @@ class PublishBeforeYumDistTestCase(_MakeUserMixin, utils.BaseAPITestCase):
         self.assertNotIn('content', dirs)
 
 
-class PublishTestCase(_MakeUserMixin, utils.BaseAPITestCase):
+class PublishTestCase(_RsyncDistUtilsMixin, utils.BaseAPITestCase):
     """Publish a repository with the rsync distributor.
 
     Do the following:
@@ -198,38 +230,22 @@ class PublishTestCase(_MakeUserMixin, utils.BaseAPITestCase):
 
     def test_all(self):
         """Publish a repository several times with the rsync distributor."""
-        # Create a user. Save its private key where Pulp can find it.
+        # Create a user and a repository. Sync the repo.
         ssh_user, priv_key = self.make_user(self.cfg)
         ssh_identity_file = self.write_private_key(self.cfg, priv_key)
-
-        # Create a repository with an importer and pair of distributors, and
-        # sync it.
-        api_client = api.Client(self.cfg, api.json_handler)
-        body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
-        body['distributors'] = [gen_distributor()]
-        body['distributors'].append({
-            'distributor_id': utils.uuid4(),
-            'distributor_type_id': 'rpm_rsync_distributor',
-            'distributor_config': {
-                'predistributor_id': body['distributors'][0]['distributor_id'],
-                'remote': {
-                    'host': urlparse(self.cfg.base_url).netloc,
-                    'root': '/home/' + ssh_user,
-                    'ssh_identity_file': ssh_identity_file,
-                    'ssh_user': ssh_user,
-                }
-            }
+        repo_href = self.make_repo(self.cfg, {
+            'host': urlparse(self.cfg.base_url).netloc,
+            'root': '/home/' + ssh_user,
+            'ssh_identity_file': ssh_identity_file,
+            'ssh_user': ssh_user,
         })
-        repo_href = api_client.post(REPOSITORY_PATH, body)['_href']
-        self.resources.add(repo_href)
         utils.sync_repo(self.cfg, repo_href)
 
-        # Publish with the yum and rsync distributors
-        yum_dist_id = body['distributors'][0]['distributor_id']
-        rpm_rsync_dist_id = body['distributors'][1]['distributor_id']
-        for dist_id in (yum_dist_id, rpm_rsync_dist_id):
-            body = {'id': dist_id}
+        # Publish with the yum and rsync distributors.
+        api_client = api.Client(self.cfg)
+        dists_by_type_id = _get_dists_by_type_id(self.cfg, repo_href)
+        for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
+            body = {'id': dists_by_type_id[type_id]['id']}
             api_client.post(urljoin(repo_href, 'actions/publish/'), body)
 
         # Verify what the rsync distributor has done
