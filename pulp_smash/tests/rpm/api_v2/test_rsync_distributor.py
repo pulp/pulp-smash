@@ -75,9 +75,9 @@ def _make_user(cfg):
     client.run((sudo + cmd.format(username)).split())
     yield username
 
-    cmd = 'runuser -u {0} -- ssh-keygen -N . -f /home/{0}/.ssh/mykey'
-    cmd = (sudo + cmd.format(username)).split()
-    cmd[cmd.index('-N') + 1] = ''
+    cmd = 'runuser --shell /bin/sh {} --command'.format(username)
+    cmd = (sudo + cmd).split()
+    cmd.append('ssh-keygen -N "" -f /home/{}/.ssh/mykey'.format(username))
     client.run(cmd)
     cmd = 'cp /home/{0}/.ssh/mykey.pub /home/{0}/.ssh/authorized_keys'
     client.run((sudo + cmd.format(username)).split())
