@@ -21,6 +21,7 @@ For more information on the RPM rsync distributor, see `Pulp #1759`_.
 from __future__ import unicode_literals
 
 import unittest2
+from requests.exceptions import HTTPError
 
 from pulp_smash import api, cli, config, exceptions, selectors, utils
 from pulp_smash.compat import urljoin, urlparse
@@ -269,3 +270,94 @@ class PublishTestCase(_RsyncDistUtilsMixin, utils.BaseAPITestCase):
         ))
         files = cli_client.run(cmd.split()).stdout.strip().split('\n')
         self.assertEqual(len(files), 32, files)
+
+
+class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest2.TestCase):
+    """Test Pulp's verification of RPM rsync distributor configuration options.
+
+    Do the following:
+
+    * Repeatedly attempt to create an RPM repository with an importer and pair
+      of distributors. Each time, pass an invalid option, or omit a required
+      option.
+    * Create an RPM repository with an importer and pair of distributors. Pass
+      valid configuration options. This demonstrates that creation failures are
+      due to Pulp's validation logic, not some other factor.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create a value for the rsync distrib's ``remote`` config section.
+
+        Using the same config for each of the test methods allows the test
+        methods to behave more similarly.
+        """
+        cls.cfg = config.get_config()
+        ssh_user = utils.uuid4()[:12]
+        cls.remote = {
+            'host': 'example.com',
+            'root': '/home/' + ssh_user,
+            'ssh_identity_file': '/' + utils.uuid4(),
+            'ssh_user': ssh_user,
+        }
+        cls._remote = cls.remote.copy()
+
+    def tearDown(self):
+        """Verify that the ``remote`` config section hasn't changed."""
+        # We could also create a setUp() that executes `self.remote =
+        # self.remote.copy()`, thus shadowing the class var. However, that
+        # would merely mask a mis-behaving test method. This assertion lets us
+        # discover it instead.
+        self.assertEqual(self.remote, self._remote)
+
+    def test_success(self):
+        """Successfully create an RPM repo with importers and distributors."""
+        self.make_repo(self.cfg, self.remote)
+
+    def test_required_options(self):
+        """Omit each of the required RPM rsync distributor config options."""
+        for key in self.remote:
+            remote = self.remote.copy()
+            remote.pop(key)
+            with self.subTest(remote=remote):
+                with self.assertRaises(HTTPError):
+                    self.make_repo(self.cfg, remote)
+
+    def test_predistributor_id(self):
+        """Pass a bogus ID as the ``predistributor_id`` config option."""
+        if selectors.bug_is_untestable(2191, self.cfg.version):
+            raise self.skipTest('https://pulp.plan.io/issues/2191')
+        api_client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_FEED_URL
+        body['distributors'] = [gen_distributor()]
+        body['distributors'].append({
+            'distributor_id': utils.uuid4(),
+            'distributor_type_id': 'rpm_rsync_distributor',
+            'distributor_config': {
+                'predistributor_id': utils.uuid4(),
+                'remote': self.remote,
+            }
+        })
+        try:
+            with self.assertRaises(HTTPError, msg=body):
+                repo_href = api_client.post(REPOSITORY_PATH, body)['_href']
+        except AssertionError as err:
+            self.addCleanup(api_client.delete, repo_href)
+            raise err
+
+    def test_root(self):
+        """Pass a relative path to the ``root`` configuration option."""
+        if selectors.bug_is_untestable(2192, self.cfg.version):
+            raise self.skipTest('https://pulp.plan.io/issues/2192')
+        remote = self.remote.copy()
+        remote['root'] = remote['root'][1:]
+        with self.assertRaises(HTTPError, msg=remote):
+            self.make_repo(self.cfg, remote)
+
+    def test_remote_units_path(self):
+        """Pass an absolute path to the ``remote_units_path`` config option."""
+        remote = self.remote.copy()
+        remote['remote_units_path'] = '/foo'
+        with self.assertRaises(HTTPError, msg=remote):
+            self.make_repo(self.cfg, remote)
