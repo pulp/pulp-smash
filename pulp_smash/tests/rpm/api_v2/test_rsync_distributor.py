@@ -26,7 +26,11 @@ from requests.exceptions import HTTPError
 from pulp_smash import api, cli, config, exceptions, selectors, utils
 from pulp_smash.compat import urljoin, urlparse
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
-from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
+from pulp_smash.tests.rpm.api_v2.utils import (
+    DisableSELinuxMixin,
+    gen_distributor,
+    gen_repo,
+)
 from pulp_smash.tests.rpm.utils import set_up_module
 
 
@@ -217,7 +221,10 @@ class PublishBeforeYumDistTestCase(
         self.assertNotIn('content', dirs)
 
 
-class PublishTestCase(_RsyncDistUtilsMixin, utils.BaseAPITestCase):
+class PublishTestCase(
+        _RsyncDistUtilsMixin,
+        DisableSELinuxMixin,
+        utils.BaseAPITestCase):
     """Publish a repository with the rsync distributor.
 
     Do the following:
@@ -245,6 +252,7 @@ class PublishTestCase(_RsyncDistUtilsMixin, utils.BaseAPITestCase):
         # Publish with the yum and rsync distributors.
         api_client = api.Client(self.cfg)
         dists_by_type_id = _get_dists_by_type_id(self.cfg, repo_href)
+        self.maybe_disable_selinux(self.cfg, 2196)
         for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
             body = {'id': dists_by_type_id[type_id]['id']}
             api_client.post(urljoin(repo_href, 'actions/publish/'), body)
