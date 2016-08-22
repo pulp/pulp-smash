@@ -6,7 +6,7 @@ import gzip
 import io
 from xml.etree import ElementTree
 
-from pulp_smash import api, utils
+from pulp_smash import api, cli, selectors, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import RPM_NAMESPACES
 
@@ -158,3 +158,53 @@ def xml_handler(_, response):
     #
     # We are trusting the parser to handle this correctly.
     return ElementTree.fromstring(xml_bytes)
+
+
+class DisableSELinuxMixin(object):  # pylint:disable=too-few-public-methods
+    """A mixin providing the ability to temporarily disable SELinux."""
+
+    def maybe_disable_selinux(self, cfg, pulp_issue_id):
+        """Disable SELinux if appropriate.
+
+        If the given Pulp issue is unresolved, and if SELinux is installed and
+        enforcing on the target Pulp system, then disable SELinux and schedule
+        it to be re-enabled. (Method ``addCleanup`` is used for the schedule.)
+
+        :param pulp_smash.config.ServerConfig cfg: Information about the Pulp
+            server being targeted.
+        :param pulp_issue_id: The (integer) ID of a `Pulp issue`_. If the
+            referenced issue is fixed in the Pulp system under test, this
+            method immediately returns.
+        :returns: Nothing.
+
+        .. _Pulp issue: https://pulp.plan.io/issues/
+        """
+        # Abort if the Pulp issue is resolved, if SELinux is not installed or
+        # if SELinux is not enforcing.
+        #
+        # NOTE: Hard-coding the absolute path to a command is a Bad Idea™.
+        # However, non-login non-root shells may have short PATH environment
+        # variables. For example:
+        #
+        #     /usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin
+        #
+        # We cannot execute `PATH=${PATH}:/usr/sbin which getenforce` because
+        # Plumbum does a good job of preventing shell expansions. See:
+        # https://github.com/PulpQE/pulp-smash/issues/89
+        if selectors.bug_is_testable(pulp_issue_id, cfg.version):
+            return
+        client = cli.Client(cfg, cli.echo_handler)
+        cmd = 'test -e /usr/sbin/getenforce'.split()
+        if client.run(cmd).returncode != 0:
+            return
+        client.response_handler = cli.code_handler
+        cmd = ['/usr/sbin/getenforce']
+        if client.run(cmd).stdout.strip().lower() != 'enforcing':
+            return
+
+        # Temporarily disable SELinux.
+        sudo = '' if utils.is_root(self.cfg) else 'sudo '
+        cmd = (sudo + 'setenforce 0').split()
+        client.run(cmd)
+        cmd = (sudo + 'setenforce 1').split()
+        self.addCleanup(client.run, cmd)

@@ -30,37 +30,12 @@ from pulp_smash.constants import (
     RPM_SHA256_CHECKSUM,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
+    DisableSELinuxMixin,
     gen_distributor,
     gen_repo,
     gen_repo_group,
 )
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
-
-
-def _has_getenforce(server_config):
-    """Tell whether the ``getenforce`` executable is on the target system."""
-    # When executing commands over SSH, in a non-login shell, and as a non-root
-    # user, the PATH environment variable is quite short. For example:
-    #
-    #     /usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin
-    #
-    # We cannot execute `PATH=${PATH}:/usr/sbin which getenforce` because
-    # Plumbum does a good job of preventing shell expansions. See:
-    # https://github.com/PulpQE/pulp-smash/issues/89
-    client = cli.Client(server_config, cli.echo_handler)
-    if client.run('test -e /usr/sbin/getenforce'.split()).returncode == 0:
-        return True
-    return False
-
-
-def _run_getenforce(server_config):
-    """Run ``getenforce`` on the target system. Return ``stdout.strip()``."""
-    # Hard-coding a path to an executable is a Bad Idea™. We're doing this
-    # it's simple (see _has_getenforce()), because Pulp is available on a
-    # limited number of platforms, and because we may move to an SSH client
-    # that allows for shell expansion.
-    client = cli.Client(server_config)
-    return client.run(('/usr/sbin/getenforce',)).stdout.strip()
 
 
 def _create_distributor(
@@ -90,7 +65,7 @@ def _get_iso_url(cfg, entity, entity_type, distributor):
     return urljoin(cfg.base_url, iso_path)
 
 
-class ExportDirMixin(object):
+class ExportDirMixin(DisableSELinuxMixin):
     """Mixin with repo export to dir utilities.
 
     A mixin with methods for managing an export directory on a Pulp server.
@@ -135,20 +110,16 @@ class ExportDirMixin(object):
         :returns: The path to the created directory, as a string.
         """
         # Issue 616 describes how SELinux prevents Pulp from writing to an
-        # export directory. If that bug affects us, and if SELinux is enforcing
-        # on the target system, then we disable SELinux for the duration of
-        # this one test and re-enable it afterwards.
-        client = cli.Client(self.cfg)
-        if (_has_getenforce(self.cfg) and
-                _run_getenforce(self.cfg).lower() == 'enforcing' and
-                selectors.bug_is_untestable(616, self.cfg.version)):
-            client.run((self.sudo() + 'setenforce 0').split())
-            self.addCleanup(client.run, (self.sudo() + 'setenforce 1').split())
+        # export directory. If that bug affects us, and if SELinux is present
+        # and enforcing on the target system, then we disable SELinux for the
+        # duration of this one test and re-enable it afterwards.
+        self.maybe_disable_selinux(self.cfg, 616)
 
         # Create a custom directory, and ensure apache can create files in it.
         # We must schedule it for deletion, as Pulp doesn't do this during repo
         # removal. Due to the amount of permission twiddling done below, we use
         # root to reliably `rm -rf ${export_dir}`.
+        client = cli.Client(self.cfg)
         export_dir = client.run('mktemp --directory'.split()).stdout.strip()
         self.addCleanup(
             client.run, (self.sudo() + 'rm -rf {} ' + export_dir).split())
