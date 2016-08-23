@@ -252,7 +252,7 @@ class PublishTestCase(
         # Publish with the yum and rsync distributors.
         api_client = api.Client(self.cfg)
         dists_by_type_id = _get_dists_by_type_id(self.cfg, repo_href)
-        self.maybe_disable_selinux(self.cfg, 2196)
+        self.maybe_disable_selinux(self.cfg, 2199)
         for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
             body = {'id': dists_by_type_id[type_id]['id']}
             api_client.post(urljoin(repo_href, 'actions/publish/'), body)
