@@ -20,6 +20,7 @@ For more information on the RPM rsync distributor, see `Pulp #1759`_.
 """
 from __future__ import unicode_literals
 
+import os
 import unittest2
 from requests.exceptions import HTTPError
 
@@ -225,20 +226,40 @@ class PublishTestCase(
         _RsyncDistUtilsMixin,
         DisableSELinuxMixin,
         utils.BaseAPITestCase):
-    """Publish a repository with the rsync distributor.
+    """Publish a repository with the RPM rsync distributor, several times.
 
     Do the following:
 
-    1. Create a repository with a yum distributor and rsync distributor. Add
-       content units to the repository.
+    1. Create a repository with a yum distributor and RPM rsync distributor.
+       Add content units to the repository.
     2. Publish with the yum distributor.
-    3. Publish with the rpm rsync distributor. Verify that the correct files
+    3. Publish with the RPM rsync distributor. Verify that the correct files
        are in the target directory.
+    4. Remove all files from the target directory. Publish again, and verify
+       that:
+
+       * The task for publishing has a result of "skipped."
+       * No files are placed in the target directory. (This tests Pulp's
+         fast-forward logic.)
+
+    5. Publish with the RPM rsync distributor, with ``force_full`` set to true.
+       Verify that files are placed in the target directory. Skip this step if
+       `Pulp #2202`_ is not yet fixed.
+
+    Additionally, SELinux is temporarily set to "permissive" mode on the target
+    system if `Pulp #2199`_ is not yet fixed.
+
+    .. _Pulp #2199: https://pulp.plan.io/issues/2199
+    .. _Pulp #2202: https://pulp.plan.io/issues/2202
     """
 
     def test_all(self):
         """Publish a repository several times with the rsync distributor."""
-        # Create a user and a repository. Sync the repo.
+        api_client = api.Client(self.cfg)
+        cli_client = cli.Client(self.cfg)
+        sudo = '' if utils.is_root(self.cfg) else 'sudo '
+
+        # Create a user and repo with an importer and distribs. Sync the repo.
         ssh_user, priv_key = self.make_user(self.cfg)
         ssh_identity_file = self.write_private_key(self.cfg, priv_key)
         repo_href = self.make_repo(self.cfg, {
@@ -249,33 +270,71 @@ class PublishTestCase(
         })
         utils.sync_repo(self.cfg, repo_href)
 
-        # Publish with the yum and rsync distributors.
-        api_client = api.Client(self.cfg)
+        # Publish the repo with the yum and rsync distributors, respectively.
+        # Verify that the RPM rsync distributor has placed files.
         dists_by_type_id = _get_dists_by_type_id(self.cfg, repo_href)
         self.maybe_disable_selinux(self.cfg, 2199)
         for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
-            body = {'id': dists_by_type_id[type_id]['id']}
-            api_client.post(urljoin(repo_href, 'actions/publish/'), body)
+            api_client.post(urljoin(repo_href, 'actions/publish/'), {
+                'id': dists_by_type_id[type_id]['id']
+            })
+        self.verify_files_in_dir(self.cfg, os.path.join('/home', ssh_user))
 
-        # Verify what the rsync distributor has done
-        cli_client = cli.Client(self.cfg)
-        sudo = '' if utils.is_root(self.cfg) else 'sudo '
-
+        # Remove all files from the target directory, and publish again. Verify
+        # that the RPM rsync distributor didn't place any files.
+        cmd = sudo + 'rm -rf /home/{}/content'.format(ssh_user)
+        cli_client.run(cmd.split())
+        self.verify_publish_is_skip(self.cfg, api_client.post(
+            urljoin(repo_href, 'actions/publish/'),
+            {'id': dists_by_type_id['rpm_rsync_distributor']['id']}
+        ).json())
         cmd = sudo + 'ls -1 /home/{}'.format(ssh_user)
+        dirs = set(cli_client.run(cmd.split()).stdout.strip().split('\n'))
+        self.assertNotIn('content', dirs)
+
+        # Publish the repo with ``force_full`` set to true. Verify that the RPM
+        # rsync distributor placed files.
+        if selectors.bug_is_untestable(2202, self.cfg.version):
+            return
+        api_client.post(urljoin(repo_href, 'actions/publish/'), {
+            'id': dists_by_type_id['rpm_rsync_distributor']['id'],
+            'override_config': {'force_full': True},
+        })
+        self.verify_files_in_dir(self.cfg, os.path.join('/home', ssh_user))
+
+    def verify_publish_is_skip(self, cfg, call_report):
+        """Find the 'publish' task and verify it has a result of 'skipped'."""
+        tasks = [
+            task for task in api.poll_spawned_tasks(cfg, call_report)
+            if task['task_type'] == 'pulp.server.managers.repo.publish.publish'
+        ]
+        self.assertEqual(len(tasks), 1, tasks)
+        self.assertEqual(tasks[0]['result']['result'], 'skipped', tasks[0])
+
+    def verify_files_in_dir(self, cfg, base_path):
+        """Verify the RPM rsync distributor has placed RPMs in the given path.
+
+        Verify that the path ``content/units/rpm/`` exists directly below
+        ``base_path`` in the target system's filesystem. Verify that 32 RPMs
+        are present in this directory.
+        """
+        cli_client = cli.Client(cfg)
+        sudo = '' if utils.is_root(cfg) else 'sudo '
+
+        cmd = sudo + 'ls -1 ' + base_path
         dirs = set(cli_client.run(cmd.split()).stdout.strip().split('\n'))
         self.assertGreaterEqual(dirs, {'content'})
 
-        cmd = sudo + 'ls -1 /home/{}/content'.format(ssh_user)
+        cmd = sudo + 'ls -1 ' + os.path.join(base_path, 'content')
         dirs = set(cli_client.run(cmd.split()).stdout.strip().split('\n'))
         self.assertGreaterEqual(dirs, {'units'})
 
-        cmd = sudo + 'ls -1 /home/{}/content/units'.format(ssh_user)
+        cmd = sudo + 'ls -1 ' + os.path.join(base_path, 'content', 'units')
         dirs = set(cli_client.run(cmd.split()).stdout.strip().split('\n'))
         self.assertGreaterEqual(dirs, {'rpm'})
 
-        cmd = (sudo + (
-            'find /home/{}/content/units/rpm/ -name *.rpm'.format(ssh_user)
-        ))
+        cmd = sudo + 'find {} -name *.rpm'
+        cmd = cmd.format(os.path.join(base_path, 'content', 'units', 'rpm'))
         files = cli_client.run(cmd.split()).stdout.strip().split('\n')
         self.assertEqual(len(files), 32, files)
 
