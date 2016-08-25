@@ -24,7 +24,7 @@ import os
 import unittest2
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, cli, config, exceptions, selectors, utils
+from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.compat import urljoin, urlparse
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import (
@@ -184,6 +184,27 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
         self.addCleanup(api_client.delete, repo_href)
         return repo_href
 
+    def verify_publish_is_skip(self, cfg, call_report):
+        """Find the 'publish' task and verify it has a result of 'skipped'.
+
+        Recursively search through the tasks named by ``call_report`` for a
+        task with a type of ``pulp.server.managers.repo.publish.publish``.
+        Assert that only one task has this type, and that this task has a
+        result of ``skipped``.
+
+        :param pulp_smash.config.ServerConfig cfg: Information about the Pulp
+            server being targeted.
+        :param call_report: A call report returned from Pulp after requesting a
+            publish; a dict.
+        :returns: Nothing.
+        """
+        tasks = [
+            task for task in api.poll_spawned_tasks(cfg, call_report)
+            if task['task_type'] == 'pulp.server.managers.repo.publish.publish'
+        ]
+        self.assertEqual(len(tasks), 1, tasks)
+        self.assertEqual(tasks[0]['result']['result'], 'skipped', tasks[0])
+
 
 class PublishBeforeYumDistTestCase(
         _RsyncDistUtilsMixin,
@@ -194,10 +215,15 @@ class PublishBeforeYumDistTestCase(
 
     1. Create a repository with a yum distributor and rsync distributor.
     2. Publish with the rpm rsync distributor. Verify that the publish fails.
+
+    This test targets `Pulp #2187 <https://pulp.plan.io/issues/2187>`_.
     """
 
     def test_all(self):
         """Publish the rpm rsync distributor before the yum distributor."""
+        if selectors.bug_is_untestable(2187, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2187')
+
         # Create a user and a repository.
         ssh_user, priv_key = self.make_user(self.cfg)
         ssh_identity_file = self.write_private_key(self.cfg, priv_key)
@@ -210,10 +236,10 @@ class PublishBeforeYumDistTestCase(
 
         # Publish with the rsync distributor.
         dists_by_type_id = _get_dists_by_type_id(self.cfg, repo_href)
-        with self.assertRaises(exceptions.TaskReportError):
-            api.Client(self.cfg).post(urljoin(repo_href, 'actions/publish/'), {
-                'id': dists_by_type_id['rpm_rsync_distributor']['id'],
-            })
+        self.verify_publish_is_skip(self.cfg, api.Client(self.cfg).post(
+            urljoin(repo_href, 'actions/publish/'),
+            {'id': dists_by_type_id['rpm_rsync_distributor']['id']}
+        ).json())
 
         # Verify that the rsync distributor hasn't placed files
         sudo = '' if utils.is_root(self.cfg) else 'sudo '
@@ -301,15 +327,6 @@ class PublishTestCase(
             'override_config': {'force_full': True},
         })
         self.verify_files_in_dir(self.cfg, os.path.join('/home', ssh_user))
-
-    def verify_publish_is_skip(self, cfg, call_report):
-        """Find the 'publish' task and verify it has a result of 'skipped'."""
-        tasks = [
-            task for task in api.poll_spawned_tasks(cfg, call_report)
-            if task['task_type'] == 'pulp.server.managers.repo.publish.publish'
-        ]
-        self.assertEqual(len(tasks), 1, tasks)
-        self.assertEqual(tasks[0]['result']['result'], 'skipped', tasks[0])
 
     def verify_files_in_dir(self, cfg, base_path):
         """Verify the RPM rsync distributor has placed RPMs in the given path.
