@@ -203,7 +203,7 @@ class DisableSELinuxMixin(object):  # pylint:disable=too-few-public-methods
             return
 
         # Temporarily disable SELinux.
-        sudo = '' if utils.is_root(self.cfg) else 'sudo '
+        sudo = '' if utils.is_root(cfg) else 'sudo '
         cmd = (sudo + 'setenforce 0').split()
         client.run(cmd)
         cmd = (sudo + 'setenforce 1').split()
