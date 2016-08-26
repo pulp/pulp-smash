@@ -149,6 +149,12 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
         )
         client.run(['chmod', '600', ssh_identity_file])
         client.run((sudo + 'chown apache ' + ssh_identity_file).split())
+        # Pulp's SELinux policy requires files handled by Pulp to have the
+        # httpd_sys_rw_content_t label
+        client.run(
+            (sudo + 'chcon -t httpd_sys_rw_content_t ' + ssh_identity_file)
+            .split()
+        )
         return ssh_identity_file
 
     def make_repo(self, cfg, remote):
