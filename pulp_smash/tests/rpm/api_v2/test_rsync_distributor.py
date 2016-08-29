@@ -152,7 +152,7 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
         # Pulp's SELinux policy requires files handled by Pulp to have the
         # httpd_sys_rw_content_t label
         enforcing = client.run(['getenforce']).stdout.strip()
-        if enforcing != 'Disabled':
+        if enforcing.lower() != 'disabled':
             client.run(
                 (sudo + 'chcon -t httpd_sys_rw_content_t ' + ssh_identity_file)
                 .split()
