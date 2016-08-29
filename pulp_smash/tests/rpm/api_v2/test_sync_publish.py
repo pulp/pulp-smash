@@ -21,6 +21,7 @@ from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     DRPM_FEED_URL,
     REPOSITORY_PATH,
+    RPM_FEED_COUNT,
     RPM_FEED_URL,
     SRPM_FEED_URL,
 )
@@ -95,7 +96,7 @@ class SyncRpmRepoTestCase(SyncRepoBaseTestCase):
         Expected values are currently hard-coded into this test.
         """
         content_unit_counts = {
-            'rpm': 32,
+            'rpm': RPM_FEED_COUNT,
             'erratum': 4,
             'package_group': 2,
             'package_category': 1,

@@ -288,6 +288,9 @@ RPM_ERRATUM_URL = (
 )
 """The URL to an JSON erratum file for an RPM repository."""
 
+RPM_FEED_COUNT = 32
+"""The number of RPMs available at :data:`RPM_FEED_URL`."""
+
 RPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm/')
 """The URL to an RPM repository. See :data:`RPM_URL`."""
 

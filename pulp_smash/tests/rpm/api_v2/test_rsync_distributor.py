@@ -26,7 +26,7 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.compat import urljoin, urlparse
-from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
+from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_COUNT, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import (
     DisableSELinuxMixin,
     gen_distributor,
@@ -227,7 +227,8 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
         """Verify the RPM rsync distributor has placed RPMs in the given path.
 
         Verify that path ``{root}/{remote_units_path}/rpm`` exists in the
-        target system's filesystem, and that 32 RPMs are present in this
+        target system's filesystem, and that
+        :data:`pulp_smash.constants.RPM_FEED_COUNT` RPMs are present in this
         directory.
 
         :param pulp_smash.config.ServerConfig cfg: Information about the system
@@ -252,7 +253,7 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
             path = os.path.join(path, segment)
         cmd = sudo + ('find', path, '-name', '*.rpm')
         files = cli_client.run(cmd).stdout.strip().split('\n')
-        self.assertEqual(len(files), 32, files)
+        self.assertEqual(len(files), RPM_FEED_COUNT, files)
 
 
 class PublishBeforeYumDistTestCase(
