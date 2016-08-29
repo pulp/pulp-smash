@@ -465,3 +465,61 @@ class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest2.TestCase):
         remote['remote_units_path'] = '/foo'
         with self.assertRaises(HTTPError, msg=remote):
             self.make_repo(self.cfg, {'remote': remote})
+
+
+class RemoteUnitsPathTestCase(
+        _RsyncDistUtilsMixin,
+        DisableSELinuxMixin,
+        utils.BaseAPITestCase):
+    """Exercise the ``remote_units_path`` option.
+
+    Do the following:
+
+    1. Create a repository with a yum distributor and RPM rsync distributor,
+       and ensure that the latter distributor's ``remote_units_path`` option is
+       set to a non-default value (not ``content/units``). Add content units to
+       the repository.
+    2. Publish with the yum distributor.
+    3. Publish with the RPM rsync distributor. Verify that files are placed in
+       the correct directory.
+    4. Publish with the RPM rsync distributor, with ``remote_units_path``
+       passed as publish option. Verify that files are placed in this
+       directory.
+    """
+
+    def test_all(self):
+        """Exercise the ``remote_units_path`` option."""
+        api_client = api.Client(self.cfg)
+        # We already know Pulp can deal with 2-segment paths, due to the
+        # default remote_units_path of 'content/units'.
+        paths = (
+            os.path.join(*[utils.uuid4() for _ in range(3)]),
+            os.path.join(*[utils.uuid4() for _ in range(1)]),
+        )
+
+        # Create a user and repo with an importer and distribs. Sync the repo.
+        ssh_user, priv_key = self.make_user(self.cfg)
+        ssh_identity_file = self.write_private_key(self.cfg, priv_key)
+        repo_href = self.make_repo(self.cfg, {
+            'remote': {
+                'host': urlparse(self.cfg.base_url).netloc,
+                'root': '/home/' + ssh_user,
+                'ssh_identity_file': ssh_identity_file,
+                'ssh_user': ssh_user,
+            },
+            'remote_units_path': paths[0],
+        })
+        distribs = _get_dists_by_type_id(self.cfg, repo_href)
+        utils.sync_repo(self.cfg, repo_href)
+
+        # Publish the repo with the yum and rpm rsync distributors,
+        # respectively. Verify that files have been correctly placed.
+        distribs = _get_dists_by_type_id(self.cfg, repo_href)
+        self.maybe_disable_selinux(self.cfg, 2199)
+        for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
+            api_client.post(urljoin(repo_href, 'actions/publish/'), {
+                'id': distribs[type_id]['id'],
+                'config': {'remote_units_path': paths[1]},
+            })
+        distribs['rpm_rsync_distributor']['remote_units_path'] = paths[1]
+        self.verify_files_in_dir(self.cfg, distribs['rpm_rsync_distributor'])
