@@ -35,6 +35,15 @@ from pulp_smash.tests.rpm.api_v2.utils import (
 from pulp_smash.tests.rpm.utils import set_up_module
 
 
+def _split_path(path):
+    """Split a filesystem path into all of its component pieces."""
+    head, tail = os.path.split(path)
+    if head == '':
+        return (tail,)
+    else:
+        return _split_path(head) + (tail,)
+
+
 def setUpModule():  # pylint:disable=invalid-name
     """Conditionally skip the tests in this module.
 
@@ -159,7 +168,7 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
             )
         return ssh_identity_file
 
-    def make_repo(self, cfg, remote):
+    def make_repo(self, cfg, dist_cfg_updates):
         """Create a repository with an importer and pair of distributors.
 
         Create an RPM repository with:
@@ -172,8 +181,9 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
 
         :param pulp_smash.config.ServerConfig cfg: Information about the Pulp
             server being targeted.
-        :param remote: A dict for the RPM rsync distributor's ``remote``
-            section.
+        :param dist_cfg_updates: A dict to be merged into the RPM rsync
+            distributor's ``distributor_config`` dict. At a minimum, this
+            argument should have a value of ``{'remote': {…}}``.
         :returns: The repository's href, as a string.
         """
         api_client = api.Client(cfg, api.json_handler)
@@ -185,9 +195,9 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
             'distributor_type_id': 'rpm_rsync_distributor',
             'distributor_config': {
                 'predistributor_id': body['distributors'][0]['distributor_id'],
-                'remote': remote,
             }
         })
+        body['distributors'][1]['distributor_config'].update(dist_cfg_updates)
         repo_href = api_client.post(REPOSITORY_PATH, body)['_href']
         self.addCleanup(api_client.delete, repo_href)
         return repo_href
@@ -213,6 +223,37 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
         self.assertEqual(len(tasks), 1, tasks)
         self.assertEqual(tasks[0]['result']['result'], 'skipped', tasks[0])
 
+    def verify_files_in_dir(self, cfg, distributor_cfg):
+        """Verify the RPM rsync distributor has placed RPMs in the given path.
+
+        Verify that path ``{root}/{remote_units_path}/rpm`` exists in the
+        target system's filesystem, and that 32 RPMs are present in this
+        directory.
+
+        :param pulp_smash.config.ServerConfig cfg: Information about the system
+            onto which files have been published.
+        :param distributor_cfg: A dict of information about an RPM rsync
+            distributor.
+        :returns: Nothing.
+        """
+        # This method avoids calling command_string.split() to avoid issues
+        # with spaces and other funny character in path names.
+        cli_client = cli.Client(cfg)
+        sudo = () if utils.is_root(cfg) else ('sudo',)
+        path = distributor_cfg['config']['remote']['root']
+        remote_units_path = distributor_cfg['config'].get(
+            'remote_units_path',
+            'content/units',
+        )
+        for segment in _split_path(remote_units_path):
+            cmd = sudo + ('ls', '-1', path)
+            files = set(cli_client.run(cmd).stdout.strip().split('\n'))
+            self.assertIn(segment, files)
+            path = os.path.join(path, segment)
+        cmd = sudo + ('find', path, '-name', '*.rpm')
+        files = cli_client.run(cmd).stdout.strip().split('\n')
+        self.assertEqual(len(files), 32, files)
+
 
 class PublishBeforeYumDistTestCase(
         _RsyncDistUtilsMixin,
@@ -235,18 +276,18 @@ class PublishBeforeYumDistTestCase(
         # Create a user and a repository.
         ssh_user, priv_key = self.make_user(self.cfg)
         ssh_identity_file = self.write_private_key(self.cfg, priv_key)
-        repo_href = self.make_repo(self.cfg, {
+        repo_href = self.make_repo(self.cfg, {'remote': {
             'host': urlparse(self.cfg.base_url).netloc,
             'root': '/home/' + ssh_user,
             'ssh_identity_file': ssh_identity_file,
             'ssh_user': ssh_user,
-        })
+        }})
 
         # Publish with the rsync distributor.
-        dists_by_type_id = _get_dists_by_type_id(self.cfg, repo_href)
+        distribs = _get_dists_by_type_id(self.cfg, repo_href)
         self.verify_publish_is_skip(self.cfg, api.Client(self.cfg).post(
             urljoin(repo_href, 'actions/publish/'),
-            {'id': dists_by_type_id['rpm_rsync_distributor']['id']}
+            {'id': distribs['rpm_rsync_distributor']['id']}
         ).json())
 
         # Verify that the rsync distributor hasn't placed files
@@ -296,23 +337,23 @@ class PublishTestCase(
         # Create a user and repo with an importer and distribs. Sync the repo.
         ssh_user, priv_key = self.make_user(self.cfg)
         ssh_identity_file = self.write_private_key(self.cfg, priv_key)
-        repo_href = self.make_repo(self.cfg, {
+        repo_href = self.make_repo(self.cfg, {'remote': {
             'host': urlparse(self.cfg.base_url).netloc,
             'root': '/home/' + ssh_user,
             'ssh_identity_file': ssh_identity_file,
             'ssh_user': ssh_user,
-        })
+        }})
         utils.sync_repo(self.cfg, repo_href)
 
         # Publish the repo with the yum and rsync distributors, respectively.
         # Verify that the RPM rsync distributor has placed files.
-        dists_by_type_id = _get_dists_by_type_id(self.cfg, repo_href)
+        distribs = _get_dists_by_type_id(self.cfg, repo_href)
         self.maybe_disable_selinux(self.cfg, 2199)
         for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
             api_client.post(urljoin(repo_href, 'actions/publish/'), {
-                'id': dists_by_type_id[type_id]['id']
+                'id': distribs[type_id]['id']
             })
-        self.verify_files_in_dir(self.cfg, os.path.join('/home', ssh_user))
+        self.verify_files_in_dir(self.cfg, distribs['rpm_rsync_distributor'])
 
         # Remove all files from the target directory, and publish again. Verify
         # that the RPM rsync distributor didn't place any files.
@@ -320,7 +361,7 @@ class PublishTestCase(
         cli_client.run(cmd.split())
         self.verify_publish_is_skip(self.cfg, api_client.post(
             urljoin(repo_href, 'actions/publish/'),
-            {'id': dists_by_type_id['rpm_rsync_distributor']['id']}
+            {'id': distribs['rpm_rsync_distributor']['id']}
         ).json())
         cmd = sudo + 'ls -1 /home/{}'.format(ssh_user)
         dirs = set(cli_client.run(cmd.split()).stdout.strip().split('\n'))
@@ -331,37 +372,10 @@ class PublishTestCase(
         if selectors.bug_is_untestable(2202, self.cfg.version):
             return
         api_client.post(urljoin(repo_href, 'actions/publish/'), {
-            'id': dists_by_type_id['rpm_rsync_distributor']['id'],
+            'id': distribs['rpm_rsync_distributor']['id'],
             'override_config': {'force_full': True},
         })
-        self.verify_files_in_dir(self.cfg, os.path.join('/home', ssh_user))
-
-    def verify_files_in_dir(self, cfg, base_path):
-        """Verify the RPM rsync distributor has placed RPMs in the given path.
-
-        Verify that the path ``content/units/rpm/`` exists directly below
-        ``base_path`` in the target system's filesystem. Verify that 32 RPMs
-        are present in this directory.
-        """
-        cli_client = cli.Client(cfg)
-        sudo = '' if utils.is_root(cfg) else 'sudo '
-
-        cmd = sudo + 'ls -1 ' + base_path
-        dirs = set(cli_client.run(cmd.split()).stdout.strip().split('\n'))
-        self.assertGreaterEqual(dirs, {'content'})
-
-        cmd = sudo + 'ls -1 ' + os.path.join(base_path, 'content')
-        dirs = set(cli_client.run(cmd.split()).stdout.strip().split('\n'))
-        self.assertGreaterEqual(dirs, {'units'})
-
-        cmd = sudo + 'ls -1 ' + os.path.join(base_path, 'content', 'units')
-        dirs = set(cli_client.run(cmd.split()).stdout.strip().split('\n'))
-        self.assertGreaterEqual(dirs, {'rpm'})
-
-        cmd = sudo + 'find {} -name *.rpm'
-        cmd = cmd.format(os.path.join(base_path, 'content', 'units', 'rpm'))
-        files = cli_client.run(cmd.split()).stdout.strip().split('\n')
-        self.assertEqual(len(files), 32, files)
+        self.verify_files_in_dir(self.cfg, distribs['rpm_rsync_distributor'])
 
 
 class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest2.TestCase):
@@ -404,7 +418,7 @@ class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest2.TestCase):
 
     def test_success(self):
         """Successfully create an RPM repo with importers and distributors."""
-        self.make_repo(self.cfg, self.remote)
+        self.make_repo(self.cfg, {'remote': self.remote})
 
     def test_required_options(self):
         """Omit each of the required RPM rsync distributor config options."""
@@ -413,7 +427,7 @@ class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest2.TestCase):
             remote.pop(key)
             with self.subTest(remote=remote):
                 with self.assertRaises(HTTPError):
-                    self.make_repo(self.cfg, remote)
+                    self.make_repo(self.cfg, {'remote': remote})
 
     def test_predistributor_id(self):
         """Pass a bogus ID as the ``predistributor_id`` config option."""
@@ -445,11 +459,11 @@ class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest2.TestCase):
         remote = self.remote.copy()
         remote['root'] = remote['root'][1:]
         with self.assertRaises(HTTPError, msg=remote):
-            self.make_repo(self.cfg, remote)
+            self.make_repo(self.cfg, {'remote': remote})
 
     def test_remote_units_path(self):
         """Pass an absolute path to the ``remote_units_path`` config option."""
         remote = self.remote.copy()
         remote['remote_units_path'] = '/foo'
         with self.assertRaises(HTTPError, msg=remote):
-            self.make_repo(self.cfg, remote)
+            self.make_repo(self.cfg, {'remote': remote})
