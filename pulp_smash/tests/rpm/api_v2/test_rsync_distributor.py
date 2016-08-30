@@ -526,3 +526,88 @@ class RemoteUnitsPathTestCase(
             })
         distribs['rpm_rsync_distributor']['remote_units_path'] = paths[1]
         self.verify_files_in_dir(self.cfg, distribs['rpm_rsync_distributor'])
+
+
+class DeleteTestCase(
+        _RsyncDistUtilsMixin,
+        DisableSELinuxMixin,
+        utils.BaseAPITestCase):
+    """Use the ``delete`` RPM rsync distributor option.
+
+    Do the following:
+
+    1. Create a repository with a yum distributor and RPM rsync distributor.
+       Add content units to the repository.
+    2. Publish with the yum distributor.
+    3. Publish with the RPM rsync distributor. Verify that the correct files
+       are in the target directory.
+    4. Remove all files from the repository, and publish with the yum
+       distributor.
+    5. Publish with the RPM rsync distributor, with ``delete`` set to true.
+       Verify that all files are removed from the target directory.
+
+    This test targets `Pulp #2221 <https://pulp.plan.io/issues/2221>`_.
+    """
+
+    def test_all(self):
+        """Use the ``delete`` RPM rsync distributor option."""
+        if selectors.bug_is_untestable(2221, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2221')
+        api_client = api.Client(self.cfg)
+
+        # Create a user and repo with an importer and distribs. Sync the repo.
+        ssh_user, priv_key = self.make_user(self.cfg)
+        ssh_identity_file = self.write_private_key(self.cfg, priv_key)
+        repo_href = self.make_repo(self.cfg, {'remote': {
+            'host': urlparse(self.cfg.base_url).netloc,
+            'root': '/home/' + ssh_user,
+            'ssh_identity_file': ssh_identity_file,
+            'ssh_user': ssh_user,
+        }})
+        utils.sync_repo(self.cfg, repo_href)
+
+        # Publish the repo with the yum and rsync distributors, respectively.
+        # Verify that the RPM rsync distributor has placed files.
+        distribs = _get_dists_by_type_id(self.cfg, repo_href)
+        self.maybe_disable_selinux(self.cfg, 2199)
+        for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
+            api_client.post(urljoin(repo_href, 'actions/publish/'), {
+                'id': distribs[type_id]['id']
+            })
+        self.verify_files_in_dir(self.cfg, distribs['rpm_rsync_distributor'])
+
+        # Disassociate all units from the repo, publish the repo, and verify.
+        api_client.post(urljoin(repo_href, 'actions/unassociate/'), {
+            'criteria': {}
+        })
+        api_client.post(urljoin(repo_href, 'actions/publish/'), {
+            'id': distribs['yum_distributor']['id']
+        })
+        self._verify_units_not_in_repo(repo_href)
+
+        # Publish with the RPM rsync distributor, and verify that no RPMs are
+        # in the target directory.
+        api_client.post(urljoin(repo_href, 'actions/publish/'), {
+            'id': distribs['rpm_rsync_distributor']['id'],
+            'override_config': {'delete': True},
+        })
+        self._verify_files_not_in_dir(distribs['rpm_rsync_distributor'])
+
+    def _verify_units_not_in_repo(self, repo_href):
+        """Verify no content units are in the specified repository."""
+        repo = api.Client(self.cfg).get(repo_href).json()
+        for key, val in repo['content_unit_counts'].items():
+            with self.subTest(key=key):
+                self.assertEqual(val, 0)
+
+    def _verify_files_not_in_dir(self, distributor_cfg):
+        """Verify no RPMs are in the distributor's ``remote_units_path``."""
+        path = os.path.join(
+            distributor_cfg['config']['remote']['root'],
+            distributor_cfg['config'].get('remote_units_path', 'content/units')
+        )
+        cmd = ['find', path, '-name', '*.rpm']
+        if not utils.is_root(self.cfg):
+            cmd.insert(0, 'sudo')
+        files = cli.Client(self.cfg).run(cmd).stdout.strip().split('\n')
+        self.assertEqual(len(files), 0, files)
