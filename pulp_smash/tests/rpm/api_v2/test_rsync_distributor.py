@@ -298,11 +298,11 @@ class PublishBeforeYumDistTestCase(
         self.assertNotIn('content', dirs)
 
 
-class PublishTestCase(
+class ForceFullTestCase(
         _RsyncDistUtilsMixin,
         DisableSELinuxMixin,
         utils.BaseAPITestCase):
-    """Publish a repository with the RPM rsync distributor, several times.
+    """Use the ``force_full`` RPM rsync distributor option.
 
     Do the following:
 
@@ -330,7 +330,7 @@ class PublishTestCase(
     """
 
     def test_all(self):
-        """Publish a repository several times with the rsync distributor."""
+        """Use the ``force_full`` RPM rsync distributor option."""
         api_client = api.Client(self.cfg)
         cli_client = cli.Client(self.cfg)
         sudo = '' if utils.is_root(self.cfg) else 'sudo '
