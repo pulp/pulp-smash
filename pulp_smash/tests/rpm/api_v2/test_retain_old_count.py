@@ -93,7 +93,7 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
                 self.assertEqual(self.responses[step].status_code, code)
 
     def test_retain_old_count_works(self):
-        """Test that ``content_units_counts`` in repositories differ.
+        """Test that ``content_unit_counts`` in repositories differ.
 
         Most of the RPMs in the first repository are unique. However, there are
         two different versions of the "walrus" RPM. When we copy its contents
