@@ -111,10 +111,11 @@ class ForceSyncTestCase(unittest2.TestCase):
     procedure is as follows:
 
     1. Create and sync a repository.
-    2. Remove one or more random RPMs from
-       ``/var/lib/pulp/content/units/rpm/``.
-    3. Sync the repository.
-    4. Verify that all removed units have been re-downloaded to the directory.
+    2. Remove some number of RPMs from ``/var/lib/pulp/content/units/rpm/``.
+       Verify they are missing.
+    3. Sync the repository. Verify the RPMs are still missing.
+    4. Sync the repository with ``--force-full true``. Verify all RPMs are
+       present.
 
     .. _Pulp #1982: https://pulp.plan.io/issues/1982
     .. _Pulp Smash #353: https://github.com/PulpQE/pulp-smash/issues/353
@@ -153,6 +154,11 @@ class ForceSyncTestCase(unittest2.TestCase):
             random.choice(rpms),
         ).split())
         with self.subTest(comment='Verify the RPM was removed.'):
+            self.assertEqual(len(self._list_rpms(cfg)), len(rpms) - 1)
+
+        # Sync the repository *without* force_sync.
+        sync_repo(cfg, repo_id)
+        with self.subTest(comment='Verify the RPM has not been restored.'):
             self.assertEqual(len(self._list_rpms(cfg)), len(rpms) - 1)
 
         # Sync the repository again
