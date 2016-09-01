@@ -72,6 +72,9 @@ This URL can be used as the "feed" property of a Pulp Docker registry.
 DRPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'drpm-unsigned/')
 """The URL to a DRPM repository."""
 
+DRPM_UNSIGNED_FEED_COUNT = 4
+"""The number of packages available at :data:`DRPM_UNSIGNED_FEED_URL`."""
+
 DRPM_UNSIGNED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'drpm-unsigned/')
 """The URL to an unsigned DRPM repository."""
 
@@ -289,7 +292,7 @@ RPM_ERRATUM_URL = (
 """The URL to an JSON erratum file for an RPM repository."""
 
 RPM_FEED_COUNT = 32
-"""The number of RPMs available at :data:`RPM_FEED_URL`."""
+"""The number of packages available at :data:`RPM_FEED_URL`."""
 
 RPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm/')
 """The URL to an RPM repository. See :data:`RPM_URL`."""
@@ -298,6 +301,9 @@ RPM_SHA256_CHECKSUM = (
     '4fe8d0e21ee6d56d420c396a02aeaeb59feb00b625811b6a2b4d8f0c1aad80ca'
 )
 """The sha256 checksum of :data:`pulp_smash.constants.RPM`."""
+
+RPM_UNSIGNED_FEED_COUNT = 32
+"""The number of packages available at :data:`RPM_UNSIGNED_FEED_URL`."""
 
 RPM_UNSIGNED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-unsigned/')
 """The URL to an unsigned RPM repository. See :data:`RPM_URL`."""
@@ -334,8 +340,14 @@ metadata/rpm
 SRPM = 'test-srpm02-1.0-1.src.rpm'
 """The name of an SRPM file at :data:`pulp_smash.constants.SRPM_FEED_URL`."""
 
+SRPM_FEED_COUNT = 3
+"""The number of packages available at :data:`SRPM_FEED_URL`."""
+
 SRPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'srpm/')
 """The URL to an SRPM repository."""
+
+SRPM_UNSIGNED_FEED_COUNT = 3
+"""The number of packages available at :data:`SRPM_UNSIGNED_FEED_COUNT`."""
 
 SRPM_UNSIGNED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'srpm-unsigned/')
 """The URL to an unsigned SRPM repository."""

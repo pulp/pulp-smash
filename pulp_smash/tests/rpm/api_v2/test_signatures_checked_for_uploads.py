@@ -12,6 +12,11 @@ are available:
     A list of 32-bit key IDs, as hex characters. (e.g. ``["deadbeef"]``) An
     empty list is treated as the list of all possible key IDs.
 
+Beware that if a package has a signature, its signature *must* be listed in
+``allowed_keys``, even when ``require_signature`` is false. The only importer
+configuration that allows all packages is ``{'require_signature': False,
+'allowed_keys': []}``.
+
 To test this feature, importers with at least the following options should be
 created::
 
@@ -36,7 +41,10 @@ gracefully handle those changes.
 
 For more information, see `Pulp #1991`_ and `Pulp Smash #347`_.
 
+..NOTE:: No signed DRPMs are used due to `Pulp Fixtures #25`_.
+
 .. _Pulp #1991: https://pulp.plan.io/issues/1991
+.. _Pulp Fixtures #25: https://github.com/PulpQE/pulp-fixtures/issues/25
 .. _Pulp Smash #347: https://github.com/PulpQE/pulp-smash/issues/347
 """
 from __future__ import unicode_literals
