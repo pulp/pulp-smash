@@ -35,6 +35,7 @@ lint-flake8:
 lint-pylint:
 	pylint -j $(CPU_COUNT) --reports=n --disable=I \
 		docs/conf.py \
+		scripts/run_functional_tests.py \
 		setup.py \
 		tests \
 		pulp_smash/__init__.py \
