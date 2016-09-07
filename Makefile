@@ -42,6 +42,7 @@ lint-pylint:
 		pulp_smash/__main__.py \
 		pulp_smash/api.py \
 		pulp_smash/cli.py \
+		pulp_smash/compat.py \
 		pulp_smash/config.py \
 		pulp_smash/constants.py \
 		pulp_smash/exceptions.py \
