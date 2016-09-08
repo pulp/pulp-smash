@@ -139,7 +139,7 @@ class RequireValidKeyTestCase(_BaseTestCase):
                     'feed': feed,
                     'require_signature': True,
                 })['content_unit_counts']
-                self.assertNotIn(type_id, cu_counts, cu_counts)
+                self.assertNotIn(type_id, cu_counts)
 
 
 class RequireInvalidKeyTestCase(_BaseTestCase):
@@ -174,7 +174,7 @@ class RequireInvalidKeyTestCase(_BaseTestCase):
                     'feed': feed,
                     'require_signature': True,
                 })['content_unit_counts']
-                self.assertNotIn(type_id, cu_counts, cu_counts)
+                self.assertNotIn(type_id, cu_counts)
 
 
 class RequireAnyKeyTestCase(_BaseTestCase):
@@ -228,7 +228,7 @@ class RequireAnyKeyTestCase(_BaseTestCase):
                     'feed': feed,
                     'require_signature': True,
                 })['content_unit_counts']
-                self.assertNotIn(type_id, cu_counts, cu_counts)
+                self.assertNotIn(type_id, cu_counts)
 
 
 class AllowInvalidKeyTestCase(_BaseTestCase):
@@ -260,7 +260,7 @@ class AllowInvalidKeyTestCase(_BaseTestCase):
                     'feed': feed,
                     'require_signature': False,
                 })['content_unit_counts']
-                self.assertNotIn(type_id, cu_counts, cu_counts)
+                self.assertNotIn(type_id, cu_counts)
 
     def test_unsigned_rpms(self):
         """Import unsigned RPMs into a repository.
