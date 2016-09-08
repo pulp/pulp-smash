@@ -48,6 +48,8 @@ def setUpModule():  # pylint:disable=invalid-name
     """Conditionally skip tests."""
     if selectors.bug_is_untestable(1991, config.get_config().version):
         raise unittest2.SkipTest('https://pulp.plan.io/issues/1991')
+    if selectors.bug_is_untestable(2242, config.get_config().version):
+        raise unittest2.SkipTest('https://pulp.plan.io/issues/2242')
     set_up_module()
 
 
