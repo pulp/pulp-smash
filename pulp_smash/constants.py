@@ -57,6 +57,9 @@ CONTENT_UPLOAD_PATH = '/pulp/api/v2/content/uploads/'
 DOCKER_IMAGE_URL = urljoin(PULP_FIXTURES_BASE_URL, 'docker/busybox:latest.tar')
 """The URL to a Docker image as created by ``docker save``."""
 
+DOCKER_UPSTREAM_NAME = 'library/busybox'
+"""The name of a repository present in each of the two docker feeds."""
+
 DOCKER_V1_FEED_URL = 'https://index.docker.io'
 """The URL to a V1 Docker registry.
 

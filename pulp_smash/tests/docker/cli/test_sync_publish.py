@@ -9,12 +9,15 @@ import unittest2
 from packaging.version import Version
 
 from pulp_smash import api, cli, config, selectors, utils
-from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
+from pulp_smash.constants import (
+    DOCKER_UPSTREAM_NAME,
+    DOCKER_V1_FEED_URL,
+    DOCKER_V2_FEED_URL,
+)
 from pulp_smash.tests.docker.cli import utils as docker_utils
 from pulp_smash.tests.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _BYTE_UNICODE = (type(b''), type(u''))
-_UPSTREAM_NAME = 'library/busybox'
 
 
 class _BaseTestCase(unittest2.TestCase):
@@ -57,7 +60,7 @@ class SyncV1TestCase(_SuccessMixin, _BaseTestCase):
             cls.cfg,
             feed=DOCKER_V1_FEED_URL,
             repo_id=cls.repo_id,
-            upstream_name=_UPSTREAM_NAME,
+            upstream_name=DOCKER_UPSTREAM_NAME,
         )
         cls.completed_proc = docker_utils.repo_sync(cls.cfg, cls.repo_id)
 
@@ -110,7 +113,7 @@ class SyncPublishV2TestCase(_SuccessMixin, _BaseTestCase):
             cls.cfg,
             feed=DOCKER_V2_FEED_URL,
             repo_id=cls.repo_id,
-            upstream_name=_UPSTREAM_NAME,
+            upstream_name=DOCKER_UPSTREAM_NAME,
         )
         cls.completed_proc = docker_utils.repo_sync(cls.cfg, cls.repo_id)
         cls.app_file = _get_app_file(cls.cfg, cls.repo_id)
@@ -243,11 +246,12 @@ class SyncUnnamespacedV2TestCase(_SuccessMixin, _BaseTestCase):
         if (cls.cfg.version >= Version('2.9') and
                 selectors.bug_is_untestable(1909, cls.cfg.version)):
             raise unittest2.SkipTest('https://pulp.plan.io/issues/1909')
+        # The split() drops 'library/'.
         docker_utils.repo_create(
             cls.cfg,
             feed=DOCKER_V2_FEED_URL,
             repo_id=cls.repo_id,
-            upstream_name=_UPSTREAM_NAME.split('/')[-1],  # drop 'library/'
+            upstream_name=DOCKER_UPSTREAM_NAME.split('/')[-1],
         )
         cls.completed_proc = docker_utils.repo_sync(cls.cfg, cls.repo_id)
 
@@ -263,7 +267,7 @@ class InvalidFeedTestCase(_BaseTestCase):
             cls.cfg,
             feed='https://docker.example.com',
             repo_id=cls.repo_id,
-            upstream_name=_UPSTREAM_NAME,
+            upstream_name=DOCKER_UPSTREAM_NAME,
         )
         cls.completed_proc = cli.Client(cls.cfg, cli.echo_handler).run(
             'pulp-admin docker repo sync run --repo-id {}'
