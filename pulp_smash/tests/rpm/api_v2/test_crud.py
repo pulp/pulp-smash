@@ -7,9 +7,16 @@ Configuration
 """
 from __future__ import unicode_literals
 
+import unittest2
+from packaging import version
+
 from pulp_smash import api, utils
-from pulp_smash.constants import REPOSITORY_GROUP_PATH
-from pulp_smash.tests.rpm.api_v2.utils import gen_repo, gen_repo_group
+from pulp_smash.constants import REPOSITORY_PATH, REPOSITORY_GROUP_PATH
+from pulp_smash.tests.rpm.api_v2.utils import (
+    gen_distributor,
+    gen_repo,
+    gen_repo_group
+)
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -99,3 +106,30 @@ class RepositoryGroupCrudTestCase(utils.BaseAPITestCase):
         for key, value in self.bodies['update'].items():
             with self.subTest(key=key, value=value):
                 self.assertEqual(received[key], value)
+
+
+class RPMDistributorTestCase(utils.BaseAPITestCase):
+    """RPM distributor tests."""
+
+    def test_update_checksum_type(self):
+        """Check if RPM distributor can receive null checksum_type.
+
+        See: https://pulp.plan.io/issues/2134.
+        """
+        if self.cfg.version < version.Version('2.9'):
+            raise unittest2.SkipTest('This test requires Pulp 2.9 or above.')
+        client = api.Client(self.cfg, api.json_handler)
+        distributor = gen_distributor()
+        body = gen_repo()
+        body['distributors'] = [distributor]
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        for checksum_type in (None, 'sha256', None):
+            response = client.put(repo['_href'], {
+                'distributor_configs': {
+                    distributor['distributor_id']: {
+                        'checksum_type': checksum_type,
+                    }
+                }
+            })
+            self.assertIsNone(response['error'])
