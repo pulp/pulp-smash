@@ -125,11 +125,13 @@ class RPMDistributorTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         for checksum_type in (None, 'sha256', None):
-            response = client.put(repo['_href'], {
+            client.put(repo['_href'], {
                 'distributor_configs': {
                     distributor['distributor_id']: {
                         'checksum_type': checksum_type,
                     }
                 }
             })
-            self.assertIsNone(response['error'])
+            repo = client.get(repo['_href'], params={'details': True})
+            config = repo['distributors'][0]['config']
+            self.assertEqual(config.get('checksum_type'), checksum_type)
