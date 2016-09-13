@@ -1,5 +1,5 @@
 # coding=utf-8
-"""Test the API endpoints `OSTree`_ `repositories`_.
+"""Tests that sync `OSTree`_ `repositories`_.
 
 This module assumes that the tests in
 :mod:`pulp_smash.tests.platform.api_v2.test_repository` and
