@@ -10,12 +10,10 @@ repository created with valid feed.
 3. Remove unit X from repository foo and re-publish.
 4. Assert unit X is not accessible.
 """
-from __future__ import unicode_literals
-
 import random
+from urllib.parse import urljoin
 
 from pulp_smash import api, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import

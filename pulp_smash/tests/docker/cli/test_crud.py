@@ -4,10 +4,9 @@
 These tests can also be accomplished via the API. However, there is value in
 showing that the pulp-admin CLI client correctly interfaces with the API.
 """
-from __future__ import unicode_literals
 import re
+import unittest
 
-import unittest2
 from packaging import version
 
 from pulp_smash import api, cli, config, selectors, utils
@@ -18,7 +17,7 @@ _FEED = 'https://example.com'
 _UPSTREAM_NAME = 'foo/bar'
 
 
-class CreateTestCase(unittest2.TestCase):
+class CreateTestCase(unittest.TestCase):
     """Create docker repositories, both successfully and unsuccessfully."""
 
     def setUp(self):
@@ -68,7 +67,7 @@ class CreateTestCase(unittest2.TestCase):
         self.assertNotEqual(client.run(command.split()).returncode, 0)
 
 
-class DeleteV2TestCase(unittest2.TestCase):
+class DeleteV2TestCase(unittest.TestCase):
     """Delete a populated v2 repository.
 
     There was a bug in the Docker server plugin that caused a traceback when
@@ -83,7 +82,7 @@ class DeleteV2TestCase(unittest2.TestCase):
         cls.cfg = config.get_config()
 
         if cls.cfg.version < version.Version('2.8'):
-            raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
+            raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
 
         utils.pulp_admin_login(cls.cfg)
 
@@ -113,7 +112,7 @@ class DeleteV2TestCase(unittest2.TestCase):
         self.assertIn(phrase, self.delete_cmd.stdout)
 
 
-class UpdateEnableV1TestCase(unittest2.TestCase):
+class UpdateEnableV1TestCase(unittest.TestCase):
     """Update a docker repository's --enable-v1 flag.
 
     There was a bug in pulp-admin wherein the --enable-v1 flag could be set
@@ -127,9 +126,9 @@ class UpdateEnableV1TestCase(unittest2.TestCase):
         cls.cfg = config.get_config()
 
         if cls.cfg.version < version.Version('2.8'):
-            raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
+            raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
         if selectors.bug_is_untestable(1710, cls.cfg.version):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1710')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1710')
 
         utils.pulp_admin_login(cls.cfg)
 
@@ -167,7 +166,7 @@ class UpdateEnableV1TestCase(unittest2.TestCase):
         self.assertTrue('Task Succeeded' in self.update_response.stdout)
 
 
-class UpdateEnableV2TestCase(unittest2.TestCase):
+class UpdateEnableV2TestCase(unittest.TestCase):
     """Update a docker repository's --enable-v2 flag.
 
     There was a bug in pulp-admin wherein the --enable-v2 flag could be set
@@ -181,9 +180,9 @@ class UpdateEnableV2TestCase(unittest2.TestCase):
         cls.cfg = config.get_config()
 
         if cls.cfg.version < version.Version('2.8'):
-            raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
+            raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
         if selectors.bug_is_untestable(1710, cls.cfg.version):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1710')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1710')
 
         utils.pulp_admin_login(cls.cfg)
 
@@ -221,7 +220,7 @@ class UpdateEnableV2TestCase(unittest2.TestCase):
         self.assertTrue('Task Succeeded' in self.update_response.stdout)
 
 
-class UpdateDistributorTestCase(unittest2.TestCase):
+class UpdateDistributorTestCase(unittest.TestCase):
     """Update a docker repository and use the ``--repo-registry-id`` flag.
 
     This test case targets `Pulp issue 1710`_. According to this bug, updating
@@ -235,9 +234,9 @@ class UpdateDistributorTestCase(unittest2.TestCase):
         """Provide a server config and a repository ID."""
         cls.cfg = config.get_config()
         if cls.cfg.version < version.Version('2.8'):
-            raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
+            raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
         if selectors.bug_is_untestable(1710, cls.cfg.version):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1710')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1710')
 
         utils.pulp_admin_login(cls.cfg)
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding=utf-8
 """Run the entire suite of functional Pulp Smash tests.
 
@@ -11,9 +11,7 @@ information while Pulp Smash runs. A typical use case is the following::
 This requires that gprof2dot and GraphViz be installed. The former is available
 via PyPi, and the latter must be installed on your system.
 """
-from __future__ import unicode_literals
-
-import unittest2
+import unittest
 
 
 def main():
@@ -21,9 +19,9 @@ def main():
     # discover() searches for test cases within a *package*. Even if pointed at
     # a module, it will go up a level and search through the parent package.
     # One can select a module with e.g. `pattern='test_login.py'`.
-    suite = unittest2.TestSuite()
-    suite.addTests(unittest2.TestLoader().discover('pulp_smash.tests'))
-    runner = unittest2.TextTestRunner()
+    suite = unittest.TestSuite()
+    suite.addTests(unittest.TestLoader().discover('pulp_smash.tests'))
+    runner = unittest.TextTestRunner()
     runner.run(suite)
 
 

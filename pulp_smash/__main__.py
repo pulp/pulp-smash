@@ -1,7 +1,5 @@
 # coding=utf-8
 """The entry point for Pulp Smash's user interface."""
-from __future__ import print_function, unicode_literals
-
 import textwrap
 from os.path import join
 
@@ -11,7 +9,7 @@ from pulp_smash.config import ServerConfig
 
 MESSAGE = tuple((
     '''\
-    Please create a configuration file at {} and call `python -m unittest2
+    Please create a configuration file at {} and call `python3 -m unittest
     discover pulp_smash.tests`. The configuration file should have this
     structure:
     ''',
@@ -56,14 +54,14 @@ MESSAGE = tuple((
     ''',
     '''\
     A non-default configuration file can be selected with an environment
-    variable like so: `PULP_SMASH_CONFIG_FILE=alternate-{} python -m unittest2
+    variable like so: `PULP_SMASH_CONFIG_FILE=alternate-{} python3 -m unittest
     discover pulp_smash.tests`. This variable should be a file name, not a
     path.
     ''',
     '''\
     The provided command will run all tests, but any subset of tests may also
-    be selected. For example, you may also run `python -m unittest2
-    pulp_smash.tests.platform.api_v2.test_login`. Consult the unittest2
+    be selected. For example, you may also run `python3 -m unittest
+    pulp_smash.tests.platform.api_v2.test_login`. Consult the unittest
     documentation for test selection syntax, and consult the source code to see
     which test modules are available.
     ''',

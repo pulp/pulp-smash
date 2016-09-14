@@ -26,11 +26,8 @@ The assumptions explored in this module have the following dependencies::
 .. _User APIs:
     https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/user/index.html
 """
-from __future__ import unicode_literals
-
 import random
-
-import unittest2
+import unittest
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import USER_PATH
@@ -150,7 +147,7 @@ class FieldTestCase(_BaseTestCase):
         """Create one user. Execute searches."""
         super(FieldTestCase, cls).setUpClass()
         if selectors.bug_is_untestable(1933, cls.cfg.version):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1933')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1933')
         client = api.Client(cls.cfg)
         cls.searches = {
             'get': client.get(_SEARCH_PATH, params={'field': 'name'}),
@@ -182,7 +179,7 @@ class FieldsTestCase(_BaseTestCase):
         """Create one user. Execute searches."""
         super(FieldsTestCase, cls).setUpClass()
         if selectors.bug_is_untestable(1933, cls.cfg.version):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1933')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1933')
         client = api.Client(cls.cfg)
         cls.searches = {
             'get': client.get(_SEARCH_PATH, params='field=login&field=roles'),

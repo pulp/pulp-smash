@@ -18,14 +18,13 @@ For more information on the RPM rsync distributor, see `Pulp #1759`_.
 
 .. _Pulp #1759: https://pulp.plan.io/issues/1759
 """
-from __future__ import unicode_literals
-
 import os
-import unittest2
+import unittest
+from urllib.parse import urljoin, urlparse
+
 from requests.exceptions import HTTPError
 
 from pulp_smash import api, cli, config, selectors, utils
-from pulp_smash.compat import urljoin, urlparse
 from pulp_smash.constants import (
     ORPHANS_PATH,
     REPOSITORY_PATH,
@@ -61,7 +60,7 @@ def setUpModule():  # pylint:disable=invalid-name
     """
     set_up_module()
     if selectors.bug_is_untestable(1759, config.get_config().version):
-        raise unittest2.SkipTest('https://pulp.plan.io/issues/1759')
+        raise unittest.SkipTest('https://pulp.plan.io/issues/1759')
 
 
 def tearDownModule():  # pylint:disable=invalid-name
@@ -268,7 +267,7 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
 
 class PublishBeforeYumDistTestCase(
         _RsyncDistUtilsMixin,
-        unittest2.TestCase):
+        unittest.TestCase):
     """Publish a repo with the rsync distributor before the yum distributor.
 
     Do the following:
@@ -312,7 +311,7 @@ class PublishBeforeYumDistTestCase(
 class ForceFullTestCase(
         _RsyncDistUtilsMixin,
         DisableSELinuxMixin,
-        unittest2.TestCase):
+        unittest.TestCase):
     """Use the ``force_full`` RPM rsync distributor option.
 
     Do the following:
@@ -391,7 +390,7 @@ class ForceFullTestCase(
         self.verify_files_in_dir(cfg, distribs['rpm_rsync_distributor'])
 
 
-class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest2.TestCase):
+class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest.TestCase):
     """Test Pulp's verification of RPM rsync distributor configuration options.
 
     Do the following:
@@ -485,7 +484,7 @@ class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest2.TestCase):
 class RemoteUnitsPathTestCase(
         _RsyncDistUtilsMixin,
         DisableSELinuxMixin,
-        unittest2.TestCase):
+        unittest.TestCase):
     """Exercise the ``remote_units_path`` option.
 
     Do the following:
@@ -544,7 +543,7 @@ class RemoteUnitsPathTestCase(
 class DeleteTestCase(
         _RsyncDistUtilsMixin,
         DisableSELinuxMixin,
-        unittest2.TestCase):
+        unittest.TestCase):
     """Use the ``delete`` RPM rsync distributor option.
 
     Do the following:

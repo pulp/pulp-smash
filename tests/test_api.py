@@ -1,14 +1,12 @@
 # coding=utf-8
 """Unit tests for :mod:`pulp_smash.api`."""
-from __future__ import unicode_literals
-
-import mock
-import unittest2
+import unittest
+from unittest import mock
 
 from pulp_smash import api, config
 
 
-class EchoHandlerTestCase(unittest2.TestCase):
+class EchoHandlerTestCase(unittest.TestCase):
     """Tests for :func:`pulp_smash.api.echo_handler`."""
 
     def test_return(self):
@@ -30,7 +28,7 @@ class EchoHandlerTestCase(unittest2.TestCase):
         self.assertEqual(handle_202.call_count, 0)
 
 
-class SafeHandlerTestCase(unittest2.TestCase):
+class SafeHandlerTestCase(unittest.TestCase):
     """Tests for :func:`pulp_smash.api.safe_handler`."""
 
     def test_return(self):
@@ -52,7 +50,7 @@ class SafeHandlerTestCase(unittest2.TestCase):
         self.assertEqual(handle_202.call_count, 1)
 
 
-class JsonHandlerTestCase(unittest2.TestCase):
+class JsonHandlerTestCase(unittest.TestCase):
     """Tests for :func:`pulp_smash.api.json_handler`."""
 
     def test_return(self):
@@ -75,7 +73,7 @@ class JsonHandlerTestCase(unittest2.TestCase):
         self.assertEqual(handle_202.call_count, 1)
 
 
-class ClientTestCase(unittest2.TestCase):
+class ClientTestCase(unittest.TestCase):
     """Tests for :class:`pulp_smash.api.Client`."""
 
     @classmethod
@@ -108,7 +106,7 @@ class ClientTestCase(unittest2.TestCase):
                 self.assertEqual(request.call_args[0][0], meth.upper())
 
 
-class ClientTestCase2(unittest2.TestCase):
+class ClientTestCase2(unittest.TestCase):
     """More tests for :class:`pulp_smash.api.Client`."""
 
     def test_response_handler(self):

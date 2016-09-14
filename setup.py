@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding=utf-8
 """A setuptools-based script for installing Pulp Smash.
 
@@ -7,8 +7,6 @@ For more information, see:
 * https://packaging.python.org/en/latest/index.html
 * https://docs.python.org/distutils/sourcedist.html
 """
-from __future__ import unicode_literals
-
 from setuptools import find_packages, setup  # prefer setuptools over distutils
 
 
@@ -35,20 +33,16 @@ setup(
         'Intended Audience :: Developers',
         ('License :: OSI Approved :: GNU General Public License v3 or later '
          '(GPLv3+)'),
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
     ],
     packages=find_packages(),
     install_requires=[
-        'mock',
         'packaging',
         'plumbum',
         'python-dateutil',
         'pyxdg',
         'requests',
-        'unittest2',
     ],
     test_suite='tests',
 )

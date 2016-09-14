@@ -8,15 +8,13 @@ This module assumes that the tests in
 .. _Unassociating Content Units from a Repository:
    http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/associate.html#unassociating-content-units-from-a-repository
 """
-from __future__ import unicode_literals
-
 import random
 import time
+from urllib.parse import urljoin
 
 from dateutil.parser import parse
 
 from pulp_smash import api, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import

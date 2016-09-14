@@ -8,12 +8,10 @@ feature. For more information, see `Pulp issue #1976`_.
 
 .. _Pulp issue #1976: https://pulp.plan.io/issues/1976
 """
-from __future__ import unicode_literals
-
 import os
+from urllib.parse import urljoin
 
 from pulp_smash import api, selectors, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL, RPM_NAMESPACES
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,

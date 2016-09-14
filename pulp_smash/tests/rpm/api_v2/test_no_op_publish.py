@@ -24,15 +24,13 @@ For more information, see:
 * `Pulp Smash #127 <https://github.com/PulpQE/pulp-smash/issues/127>`_
 * `Pulp Smash #232 <https://github.com/PulpQE/pulp-smash/issues/232>`_
 """
-from __future__ import unicode_literals
-
 import inspect
+import unittest
+from urllib.parse import urljoin
 
-import unittest2
 from packaging.version import Version
 
 from pulp_smash import api, config, exceptions, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module
@@ -54,7 +52,7 @@ def setUpModule():  # pylint:disable=invalid-name
     set_up_module()
     cfg = config.get_config()
     if cfg.version < Version('2.9'):
-        raise unittest2.SkipTest('This module requires Pulp 2.9 or greater.')
+        raise unittest.SkipTest('This module requires Pulp 2.9 or greater.')
 
     # Create and sync a repository. If this set-up procedure grows, consider
     # implementing a stack of tear-down actions
@@ -98,7 +96,7 @@ class BaseTestCase(utils.BaseAPITestCase):
         In addition, create several variables for use by the test methods.
         """
         if inspect.getmro(cls)[0] == BaseTestCase:
-            raise unittest2.SkipTest('Abstract base class.')
+            raise unittest.SkipTest('Abstract base class.')
         super(BaseTestCase, cls).setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
         repo_href = client.post(REPOSITORY_PATH, gen_repo())['_href']

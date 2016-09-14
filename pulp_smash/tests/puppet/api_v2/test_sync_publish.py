@@ -32,14 +32,12 @@ Assertions not explored in this module include:
 .. _repositories:
    http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/cud.html
 """
-from __future__ import unicode_literals
-
 from itertools import product
+from urllib.parse import urljoin
 
 from packaging.version import Version
 
 from pulp_smash import api, selectors, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,

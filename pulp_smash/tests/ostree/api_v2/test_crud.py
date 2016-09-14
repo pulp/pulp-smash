@@ -16,10 +16,9 @@ following trees of assumptions are explored in this module::
 .. _repositories:
    http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/cud.html
 """
-from __future__ import unicode_literals
+from urllib.parse import urljoin
 
 from pulp_smash import api, selectors, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH
 from pulp_smash.tests.ostree.utils import gen_repo
 from pulp_smash.tests.ostree.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import

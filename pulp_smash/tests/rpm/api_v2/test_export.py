@@ -8,18 +8,16 @@ This module assumes that the tests in
 .. _Export Distributors:
     http://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/export-distributor.html
 """
-from __future__ import unicode_literals
-
 import inspect
 import os
+import unittest
+from urllib.parse import urljoin, urlparse, urlunparse
 from xml.dom import minidom
 
-import unittest2
 from dateutil.parser import parse
 from packaging.version import Version
 
 from pulp_smash import api, cli, selectors, utils
-from pulp_smash.compat import urljoin, urlparse, urlunparse
 from pulp_smash.constants import (
     REPOSITORY_EXPORT_DISTRIBUTOR,
     REPOSITORY_GROUP_EXPORT_DISTRIBUTOR,
@@ -169,10 +167,10 @@ class BaseExportChecksumTypeTestCase(ExportDirMixin, utils.BaseAPITestCase):
         group.
         """
         if inspect.getmro(cls)[0] == BaseExportChecksumTypeTestCase:
-            raise unittest2.SkipTest('Abstract base class.')
+            raise unittest.SkipTest('Abstract base class.')
         super(BaseExportChecksumTypeTestCase, cls).setUpClass()
         if cls.cfg.version < Version('2.9'):
-            raise unittest2.SkipTest('This test requires Pulp 2.9 or newer')
+            raise unittest.SkipTest('This test requires Pulp 2.9 or newer')
         body = gen_repo()
         body['importer_config']['feed'] = RPM_FEED_URL
         cls.repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()

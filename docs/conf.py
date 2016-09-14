@@ -5,8 +5,6 @@ The full set of configuration options is listed on the Sphinx website:
 http://sphinx-doc.org/config.html
 
 """
-from __future__ import unicode_literals
-
 import os
 import re
 import sys

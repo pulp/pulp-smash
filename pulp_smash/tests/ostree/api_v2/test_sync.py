@@ -21,12 +21,10 @@ assumptions are explored in this module::
 .. _repositories:
    http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/cud.html
 """
-from __future__ import unicode_literals
-
-import unittest2
+import unittest
+from urllib.parse import urljoin
 
 from pulp_smash import api, selectors, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import OSTREE_FEED, OSTREE_BRANCH, REPOSITORY_PATH
 from pulp_smash.tests.ostree.utils import gen_repo
 from pulp_smash.tests.ostree.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -113,7 +111,7 @@ class SyncTestCase(_SyncMixin, utils.BaseAPITestCase):
         """Create an OSTree repository with a valid feed and branch."""
         super(SyncTestCase, cls).setUpClass()
         if selectors.bug_is_untestable(1934, cls.cfg.version):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1934')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1934')
         body = gen_repo()
         body['importer_config']['feed'] = OSTREE_FEED
         body['importer_config']['branches'] = [OSTREE_BRANCH]

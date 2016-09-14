@@ -47,11 +47,9 @@ For more information, see `Pulp #1991`_ and `Pulp Smash #347`_.
 .. _Pulp Fixtures #25: https://github.com/PulpQE/pulp-fixtures/issues/25
 .. _Pulp Smash #347: https://github.com/PulpQE/pulp-smash/issues/347
 """
-from __future__ import unicode_literals
-
+import unittest
 from itertools import chain
 
-import unittest2
 from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, exceptions, selectors, utils
@@ -84,7 +82,7 @@ def setUpModule():  # pylint:disable=invalid-name
     """
     cfg = config.get_config()
     if selectors.bug_is_untestable(1991, cfg.version):
-        raise unittest2.SkipTest('https://pulp.plan.io/issues/1991')
+        raise unittest.SkipTest('https://pulp.plan.io/issues/1991')
     set_up_module()
     try:
         _SIGNED_PACKAGES['rpm'] = utils.http_get(RPM_URL)
@@ -115,7 +113,7 @@ def _create_repository(cfg, importer_config):
     return api.Client(cfg).post(REPOSITORY_PATH, body).json()['_href']
 
 
-# NOTE: We could inherit from unittest2.TestCase and create a separate
+# NOTE: We could inherit from unittest.TestCase and create a separate
 # repository for each test method. This allows for better test isolation in
 # case of failure. However, re-using just one repo per test case is faster, and
 # it ensures that Pulp doesn't do anything tricky with deduplication logic.
@@ -381,7 +379,7 @@ class AllowAnyKeyTestCase(utils.BaseAPITestCase):
                 )
 
 
-class KeyLengthTestCase(unittest2.TestCase):
+class KeyLengthTestCase(unittest.TestCase):
     """Verify pulp rejects key IDs that are not 32-bits long.
 
     An OpenPGP-compatible key ID (key fingerprint) is traditionally a 32-bit

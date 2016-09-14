@@ -3,10 +3,9 @@
 
 .. _repomd.xml: http://createrepo.baseurl.org/
 """
-from __future__ import unicode_literals
+from urllib.parse import urljoin
 
 from pulp_smash import api, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_NAMESPACES
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,

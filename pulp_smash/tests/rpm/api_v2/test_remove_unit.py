@@ -16,13 +16,10 @@ of repository created with valid feed and remove_missing option set.
 .. _remove_missing:
     https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/yum-plugins.html
 """
-
-from __future__ import unicode_literals
-
 import random
+from urllib.parse import urljoin
 
 from pulp_smash import api, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,

@@ -5,9 +5,8 @@ For information on repository CRUD operations, see `Creation, Deletion and
 Configuration
 <http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/cud.html>`_.
 """
-from __future__ import unicode_literals
+import unittest
 
-import unittest2
 from packaging import version
 
 from pulp_smash import api, utils
@@ -117,7 +116,7 @@ class RPMDistributorTestCase(utils.BaseAPITestCase):
         See: https://pulp.plan.io/issues/2134.
         """
         if self.cfg.version < version.Version('2.9'):
-            raise unittest2.SkipTest('This test requires Pulp 2.9 or above.')
+            raise unittest.SkipTest('This test requires Pulp 2.9 or above.')
         client = api.Client(self.cfg, api.json_handler)
         distributor = gen_distributor()
         body = gen_repo()

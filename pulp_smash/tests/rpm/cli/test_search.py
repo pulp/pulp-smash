@@ -1,14 +1,12 @@
 # coding=utf-8
 """Tests that perform searches."""
-from __future__ import unicode_literals
-
-import unittest2
+import unittest
 
 from pulp_smash import cli, config, utils
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
-class SearchReposWithFiltersTestCase(unittest2.TestCase):
+class SearchReposWithFiltersTestCase(unittest.TestCase):
     """Search for repositories, and use filters to limit matches.
 
     This test case targets `Pulp #1784`_ and `Pulp Smash #184`_. The

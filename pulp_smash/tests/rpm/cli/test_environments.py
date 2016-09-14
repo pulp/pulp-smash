@@ -1,18 +1,16 @@
 # coding=utf-8
 """Tests for RPM package environments."""
-from __future__ import unicode_literals
-
 import subprocess
+import unittest
 import uuid
 
-import unittest2
 from packaging.version import Version
 
 from pulp_smash import cli, config, utils
 from pulp_smash.constants import RPM_FEED_URL
 
 
-class UploadPackageEnvTestCase(unittest2.TestCase):
+class UploadPackageEnvTestCase(unittest.TestCase):
     """Test whether Pulp can upload package environments into a repository.
 
     This test case covers `Pulp #1003`_ and the corresponding Pulp Smash
@@ -33,7 +31,7 @@ class UploadPackageEnvTestCase(unittest2.TestCase):
         """Create and sync a repository."""
         cls.cfg = config.get_config()
         if cls.cfg.version < Version('2.9'):
-            raise unittest2.SkipTest('These tests require Pulp 2.9 or above.')
+            raise unittest.SkipTest('These tests require Pulp 2.9 or above.')
         utils.pulp_admin_login(cls.cfg)
         cls.repo_id = utils.uuid4()
         cls.client = cli.Client(cls.cfg)

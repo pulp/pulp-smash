@@ -1,13 +1,11 @@
 # coding=utf-8
 """Utility functions for RPM API tests."""
-from __future__ import unicode_literals
-
 import gzip
 import io
+from urllib.parse import urljoin
 from xml.etree import ElementTree
 
 from pulp_smash import api, cli, selectors, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import RPM_NAMESPACES
 
 

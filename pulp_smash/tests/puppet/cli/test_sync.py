@@ -1,8 +1,6 @@
 # coding=utf-8
 """Tests that sync Puppet repositories."""
-from __future__ import unicode_literals
-
-import unittest2
+import unittest
 
 from pulp_smash import cli, config, selectors, utils
 from pulp_smash.constants import PUPPET_FEED, PUPPET_QUERY
@@ -33,7 +31,7 @@ def get_num_units_in_repo(server_config, repo_id):
         return int(lines[0].split(keyword)[1].strip())
 
 
-class SyncDownloadedContentTestCase(unittest2.TestCase):
+class SyncDownloadedContentTestCase(unittest.TestCase):
     """Test whether Pulp can associate already-downloaded content with a repo.
 
     Consider the following scenario:
@@ -93,7 +91,7 @@ class SyncDownloadedContentTestCase(unittest2.TestCase):
         self.assertEqual(unit_counts[0], unit_counts[1])
 
 
-class SyncFromPuppetForgeTestCase(unittest2.TestCase):
+class SyncFromPuppetForgeTestCase(unittest.TestCase):
     """Test whether one can sync modules from the Puppet Forge.
 
     According to `Pulp #1846`_, Pulp sometimes fails to sync modules available

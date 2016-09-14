@@ -8,8 +8,6 @@ example, an argument ``to_repo_id`` corresponds to the flag ``--to-repo-id``.
 
 For the meaning of each argument, see pulp-admin.
 """
-from __future__ import unicode_literals
-
 from pulp_smash import cli
 
 

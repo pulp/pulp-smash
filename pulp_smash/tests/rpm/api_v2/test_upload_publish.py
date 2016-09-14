@@ -9,15 +9,12 @@ Content`_ and `Publication`_.
 .. _Uploading Content:
     http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/upload.html
 """
-from __future__ import unicode_literals
-
+import unittest
 from itertools import product
-
-import unittest2
+from urllib.parse import urljoin
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.utils import upload_import_unit
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,
@@ -173,7 +170,7 @@ class UploadDrpmTestCase(utils.BaseAPITestCase):
         """
         super(UploadDrpmTestCase, cls).setUpClass()
         if selectors.bug_is_untestable(1806, cls.cfg.version):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1806')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1806')
         client = api.Client(cls.cfg)
         repo = client.post(REPOSITORY_PATH, gen_repo()).json()
         cls.resources.add(repo['_href'])

@@ -6,14 +6,12 @@ containing metadata are present. This module houses test cases which verify the
 ``comps.xml`` file. For a sample ``comps.xml`` file, search through
 :data:`pulp_smash.constants.RPM_FEED_URL`.
 """
-from __future__ import unicode_literals
-
+from urllib.parse import urljoin
 from xml.etree import ElementTree
 
 from packaging.version import Version
 
 from pulp_smash import api, selectors, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     CONTENT_UPLOAD_PATH,
     REPOSITORY_PATH,

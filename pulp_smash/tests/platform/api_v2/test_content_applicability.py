@@ -13,11 +13,9 @@ and :class:`ParallelTestCase` test these two use cases, respectively.
 .. _content applicability:
     https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/consumer/applicability.html
 """
-from __future__ import unicode_literals
-
 import inspect
+import unittest
 
-import unittest2
 from packaging.version import Version
 
 from pulp_smash import api, config
@@ -29,13 +27,13 @@ _PATHS = {
 }
 
 
-class _SuccessTestCase(unittest2.TestCase):
+class _SuccessTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         """Provide a server config and an empty set of responses."""
         if inspect.getmro(cls)[0] == _SuccessTestCase:
-            raise unittest2.SkipTest('Abstract base class.')
+            raise unittest.SkipTest('Abstract base class.')
         cls.cfg = config.get_config()
         cls.responses = {}
 
@@ -103,7 +101,7 @@ class ParallelTestCase(_SuccessTestCase):
                 self.assertEqual(response_keys, GROUP_CALL_REPORT_KEYS)
 
 
-class FailureTestCase(unittest2.TestCase):
+class FailureTestCase(unittest.TestCase):
     """Fail to generate content applicability for consumers and repos."""
 
     @classmethod

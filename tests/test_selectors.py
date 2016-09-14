@@ -1,12 +1,10 @@
 # coding=utf-8
 """Unit tests for :mod:`pulp_smash.selectors`."""
-from __future__ import unicode_literals
-
 import random
+import unittest
+from unittest import mock
 
-import mock
 import requests
-import unittest2
 from packaging.version import InvalidVersion, Version
 
 from pulp_smash import exceptions, selectors, utils
@@ -15,7 +13,7 @@ from pulp_smash import exceptions, selectors, utils
 # pylint:disable=protected-access
 
 
-class GetTPRTestCase(unittest2.TestCase):
+class GetTPRTestCase(unittest.TestCase):
     """Test method ``_get_tpr``."""
 
     def test_success(self):
@@ -43,7 +41,7 @@ class GetTPRTestCase(unittest2.TestCase):
             selectors._get_tpr(bug_json)
 
 
-class ConvertTPRTestCase(unittest2.TestCase):
+class ConvertTPRTestCase(unittest.TestCase):
     """Test method ``_convert_tpr``."""
 
     def test_valid_version_string(self):
@@ -63,7 +61,7 @@ class ConvertTPRTestCase(unittest2.TestCase):
             selectors._convert_tpr('foo')
 
 
-class GetBugTestCase(unittest2.TestCase):
+class GetBugTestCase(unittest.TestCase):
     """Test method ``_get_bug``."""
 
     def test_invalid_bug_id(self):
@@ -72,7 +70,7 @@ class GetBugTestCase(unittest2.TestCase):
             selectors._get_bug('1')
 
 
-class BugIsTestableTestCase(unittest2.TestCase):
+class BugIsTestableTestCase(unittest.TestCase):
     """Test :meth:`pulp_smash.selectors.bug_is_testable` and its partner."""
 
     def test_testable_status(self):

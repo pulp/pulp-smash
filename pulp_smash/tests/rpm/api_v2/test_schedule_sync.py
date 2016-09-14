@@ -7,14 +7,12 @@ This module assumes that the tests in
 .. _syncronization:
     https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/sync.html#scheduling-a-sync
 """
-from __future__ import unicode_literals
-
 import time
+from urllib.parse import urljoin
 
 from packaging.version import Version
 
 from pulp_smash import api, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import

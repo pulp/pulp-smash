@@ -82,9 +82,9 @@ Please adhere to the following guidelines:
   ``make all``.
 * Test failures must not be introduced. Consider running all new and modified
   tests and copy-pasting the output from the test run as a comment in the GitHub
-  pull request. The simplest way to run the test suite is with ``python -m
-  unittest2 pulp_smash.tests``. See the unittest `Command-Line Interface`_ and
-  ``python -m pulp_smash`` for more information.
+  pull request. The simplest way to run the test suite is with ``python3 -m
+  unittest pulp_smash.tests``. See the unittest `Command-Line Interface`_ and
+  ``python3 -m pulp_smash`` for more information.
 * Each commit in a pull request must be atomic and address a single issue. Try
   asking yourself: "can I revert this commit?" Knowing how to `rewrite history`_
   may help. In addition, please take the time to write a `good

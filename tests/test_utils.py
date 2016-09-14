@@ -1,16 +1,14 @@
 # coding=utf-8
 """Unit tests for :mod:`pulp_smash.utils`."""
-from __future__ import unicode_literals
-
 import random
+import unittest
+from unittest import mock
 
-import mock
-import unittest2
 
 from pulp_smash import api, cli, config, exceptions, utils
 
 
-class UUID4TestCase(unittest2.TestCase):
+class UUID4TestCase(unittest.TestCase):
     """Test :func:`pulp_smash.utils.uuid4`."""
 
     def test_type(self):
@@ -18,7 +16,7 @@ class UUID4TestCase(unittest2.TestCase):
         self.assertIsInstance(utils.uuid4(), type(''))
 
 
-class GetBrokerTestCase(unittest2.TestCase):
+class GetBrokerTestCase(unittest.TestCase):
     """Test :func:`pulp_smash.utils.get_broker`."""
 
     def test_success(self):
@@ -50,7 +48,7 @@ class GetBrokerTestCase(unittest2.TestCase):
                 utils.get_broker(mock.Mock())
 
 
-class BaseAPITestCase(unittest2.TestCase):
+class BaseAPITestCase(unittest.TestCase):
     """Test :class:`pulp_smash.utils.BaseAPITestCase`."""
 
     @classmethod
@@ -99,7 +97,7 @@ class BaseAPITestCase(unittest2.TestCase):
         )
 
 
-class IsRootTestCase(unittest2.TestCase):
+class IsRootTestCase(unittest.TestCase):
     """Test :func:`pulp_smash.utils.is_root`."""
 
     def test_true(self):
@@ -115,7 +113,7 @@ class IsRootTestCase(unittest2.TestCase):
             self.assertFalse(utils.is_root(None))
 
 
-class SkipIfTypeIsUnsupportedTestCase(unittest2.TestCase):
+class SkipIfTypeIsUnsupportedTestCase(unittest.TestCase):
     """Test :func:`pulp_smash.utils.skip_if_type_is_unsupported`."""
 
     def setUp(self):
@@ -146,12 +144,12 @@ class SkipIfTypeIsUnsupportedTestCase(unittest2.TestCase):
         with mock.patch.object(config, 'get_config') as get_config:
             with mock.patch.object(utils, 'get_unit_type_ids') as get_u_t_ids:
                 get_u_t_ids.return_value = set()
-                with self.assertRaises(unittest2.SkipTest):
+                with self.assertRaises(unittest.SkipTest):
                     utils.skip_if_type_is_unsupported(self.unit_type_id)
         self.assertEqual(get_config.call_count, 1)
 
 
-class GetUnitTypeIdsTestCase(unittest2.TestCase):
+class GetUnitTypeIdsTestCase(unittest.TestCase):
     """Test :func:`pulp_smash.utils.skip_if_type_is_unsupported`."""
 
     def test_ids_are_returned(self):
@@ -168,7 +166,7 @@ class GetUnitTypeIdsTestCase(unittest2.TestCase):
             )
 
 
-class SyncRepoTestCase(unittest2.TestCase):
+class SyncRepoTestCase(unittest.TestCase):
     """Test :func:`pulp_smash.utils.sync_repo`."""
 
     def test_post(self):
@@ -178,7 +176,7 @@ class SyncRepoTestCase(unittest2.TestCase):
         self.assertIs(response, client.return_value.post.return_value)
 
 
-class UploadImportUnitTestCase(unittest2.TestCase):
+class UploadImportUnitTestCase(unittest.TestCase):
     """Test :func:`pulp_smash.utils.upload_import_unit`."""
 
     def test_post(self):
@@ -201,7 +199,7 @@ class UploadImportUnitTestCase(unittest2.TestCase):
         self.assertIs(response, client.return_value.post.return_value)
 
 
-class UploadImportErratumTestCase(unittest2.TestCase):
+class UploadImportErratumTestCase(unittest.TestCase):
     """Test :func:`pulp_smash.utils.upload_import_unit`."""
 
     def test_post(self):
@@ -223,7 +221,7 @@ class UploadImportErratumTestCase(unittest2.TestCase):
         self.assertIs(response, client.return_value.post.return_value)
 
 
-class PulpAdminLoginTestCase(unittest2.TestCase):
+class PulpAdminLoginTestCase(unittest.TestCase):
     """Test :func:`pulp_smash.utils.pulp_admin_login`."""
 
     def test_run(self):

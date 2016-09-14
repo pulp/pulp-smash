@@ -1,8 +1,6 @@
 # coding=utf-8
 """Values usable by multiple test modules."""
-from __future__ import unicode_literals
-
-from pulp_smash.compat import quote_plus, urljoin
+from urllib.parse import quote_plus, urljoin
 
 PULP_FIXTURES_BASE_URL = 'https://repos.fedorapeople.org/pulp/pulp/fixtures/'
 """A URL at which generated `pulp fixtures`_ are hosted.

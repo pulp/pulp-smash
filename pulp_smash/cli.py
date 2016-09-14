@@ -1,15 +1,13 @@
 # coding=utf-8
 """A client for working with Pulp systems via their CLI."""
-from __future__ import unicode_literals
-
 import socket
 import subprocess
 from sys import version_info
+from urllib.parse import urlparse
 
 import plumbum
 
 from pulp_smash import exceptions
-from pulp_smash.compat import urlparse
 
 
 # A dict mapping hostnames to *nix service managers.

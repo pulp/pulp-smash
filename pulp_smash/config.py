@@ -7,8 +7,6 @@ Pulp server (e.g. 'https://example.com:250') and how to authenticate with that
 server. :class:`pulp_smash.config.ServerConfig` eases the task of managing that
 information.
 """
-from __future__ import unicode_literals
-
 import json
 import os
 import warnings
@@ -255,7 +253,6 @@ class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
         path = _get_config_file_path(xdg_config_dir, xdg_config_file)
 
         with open(path) as config_file:
-            # keys() returns a list in Python 2 and a view in Python 3.
             return set(json.load(config_file).keys())
 
     def read(self, section=None, xdg_config_file=None, xdg_config_dir=None):

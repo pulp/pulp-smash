@@ -1,12 +1,11 @@
 # coding=utf-8
 """Tests that sync docker repositories."""
-from __future__ import unicode_literals
+import unittest
+from urllib.parse import urljoin
 
-import unittest2
 from packaging.version import Version
 
 from pulp_smash import api, config, selectors, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     DOCKER_UPSTREAM_NAME,
     DOCKER_V1_FEED_URL,
@@ -21,7 +20,7 @@ def setUpModule():  # pylint:disable=invalid-name
     """Skip tests on Pulp versions lower than 2.8."""
     set_up_module()
     if config.get_config().version < Version('2.8'):
-        raise unittest2.SkipTest('These tests require at least Pulp 2.8.')
+        raise unittest.SkipTest('These tests require at least Pulp 2.8.')
 
 
 class UpstreamNameTestsMixin(object):

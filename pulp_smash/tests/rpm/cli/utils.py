@@ -1,7 +1,5 @@
 # coding=utf-8
 """Utility functions for RPM CLI tests."""
-from __future__ import unicode_literals
-
 from pulp_smash import cli
 
 

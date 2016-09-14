@@ -1,16 +1,14 @@
 # coding=utf-8
 """Tests that copy units from one repository to another."""
-from __future__ import unicode_literals
-
 import inspect
 import os
 import random
 import subprocess
-
-import unittest2
+import unittest
+from io import StringIO
+from urllib.parse import urljoin
 
 from pulp_smash import cli, config, constants, selectors, utils
-from pulp_smash.compat import StringIO, urljoin
 from pulp_smash.tests.rpm.cli.utils import count_langpacks
 from pulp_smash.tests.rpm.utils import set_up_module
 from pulp_smash.utils import is_root
@@ -118,14 +116,14 @@ def tearDownModule():  # pylint:disable=invalid-name
     )
 
 
-class CopyBaseTestCase(unittest2.TestCase):
+class CopyBaseTestCase(unittest.TestCase):
     """An abstract base class for test cases that copy units between repos."""
 
     @classmethod
     def setUpClass(cls):
         """Create a repository."""
         if inspect.getmro(cls)[0] == CopyBaseTestCase:
-            raise unittest2.SkipTest('Abstract base class.')
+            raise unittest.SkipTest('Abstract base class.')
         cls.cfg = config.get_config()
         cls.repo_id = utils.uuid4()
         cli.Client(cls.cfg).run(
@@ -186,7 +184,7 @@ class CopyRecursiveTestCase(CopyBaseTestCase):
         """Recursively copy a unit into a repo and list the units in it."""
         super(CopyRecursiveTestCase, cls).setUpClass()
         if selectors.bug_is_untestable(1895, cls.cfg.version):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1895')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1895')
         cli.Client(cls.cfg).run(
             'pulp-admin rpm repo copy rpm --from-repo-id {} --to-repo-id {} '
             '--str-eq name=chimpanzee --recursive'

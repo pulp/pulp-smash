@@ -1,10 +1,7 @@
 # coding=utf-8
 """Tests that upload content units into repositories."""
-from __future__ import unicode_literals
-
 import os
-
-import unittest2
+import unittest
 
 from pulp_smash import cli, config, selectors, utils
 from pulp_smash.constants import DRPM, DRPM_UNSIGNED_URL
@@ -17,7 +14,7 @@ def setUpModule():  # pylint:disable=invalid-name
     utils.pulp_admin_login(config.get_config())
 
 
-class UploadDrpmTestCase(unittest2.TestCase):
+class UploadDrpmTestCase(unittest.TestCase):
     """Test whether one can upload a DRPM into a repository.
 
     This test case targets `Pulp Smash #336

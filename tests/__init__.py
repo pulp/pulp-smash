@@ -6,4 +6,3 @@ verify that Pulp Smash's internal functions and libraries function correctly.
 
 These tests are entirely different from the tests in :mod:`pulp_smash.tests`.
 """
-from __future__ import unicode_literals

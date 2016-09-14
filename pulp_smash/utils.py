@@ -4,16 +4,14 @@
 This module may make use of :mod:`pulp_smash.api` and :mod:`pulp_smash.cli`,
 but the reverse should not be done.
 """
-from __future__ import unicode_literals
-
 import io
+import unittest
 import uuid
+from urllib.parse import urljoin
 
 import requests
-import unittest2
 
 from pulp_smash import api, cli, config, exceptions
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     CONTENT_UPLOAD_PATH,
     ORPHANS_PATH,
@@ -188,7 +186,7 @@ def upload_import_erratum(server_config, erratum, repo_href):
     return call_report
 
 
-class BaseAPITestCase(unittest2.TestCase):
+class BaseAPITestCase(unittest.TestCase):
     """A class with behaviour that is of use in many API test cases.
 
     This test case provides set-up and tear-down behaviour that is common to
@@ -221,7 +219,7 @@ class BaseAPITestCase(unittest2.TestCase):
         client.delete(ORPHANS_PATH)
 
 
-class BaseAPICrudTestCase(unittest2.TestCase):
+class BaseAPICrudTestCase(unittest.TestCase):
     """A parent class for API CRUD test cases.
 
     :meth:`create_body` and :meth:`update_body` should be overridden by
@@ -396,13 +394,13 @@ def skip_if_type_is_unsupported(unit_type_id, server_config=None):
     :param pulp_smash.config.ServerConfig server_config: Information about the
         Pulp server being targeted. If none is provided, the config returned by
         :func:`pulp_smash.config.get_config` is used.
-    :raises: ``unittest2.SkipTest`` if support is unavailable.
+    :raises: ``unittest.SkipTest`` if support is unavailable.
     :returns: Nothing.
     """
     if server_config is None:
         server_config = config.get_config()
     if unit_type_id not in get_unit_type_ids(server_config):
-        raise unittest2.SkipTest(
+        raise unittest.SkipTest(
             'These tests require support for the "{}" content unit type.'
             .format(unit_type_id)
         )

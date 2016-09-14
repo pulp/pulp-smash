@@ -1,12 +1,11 @@
 # coding=utf-8
 """Test CRUD for ISO RPM repositories."""
-from __future__ import unicode_literals
+from unittest import SkipTest
+from urllib.parse import urljoin, urlparse
 
 from packaging.version import Version
-from unittest2 import SkipTest
 
 from pulp_smash import api, selectors, utils
-from pulp_smash.compat import urljoin, urlparse
 from pulp_smash.constants import REPOSITORY_PATH
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 

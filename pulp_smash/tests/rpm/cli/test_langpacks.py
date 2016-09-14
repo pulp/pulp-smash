@@ -1,8 +1,7 @@
 # coding=utf-8
 """Tests for Pulp's langpack support."""
-from __future__ import unicode_literals
+import unittest
 
-import unittest2
 from packaging.version import Version
 
 from pulp_smash import cli, config, utils
@@ -10,7 +9,7 @@ from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pyli
 from pulp_smash.tests.rpm.cli.utils import count_langpacks
 
 
-class UploadAndRemoveLangpacksTestCase(unittest2.TestCase):
+class UploadAndRemoveLangpacksTestCase(unittest.TestCase):
     """Test whether one can upload to and remove langpacks from a repository.
 
     This test targets `Pulp Smash #270`_. The test steps are as follows:
@@ -29,7 +28,7 @@ class UploadAndRemoveLangpacksTestCase(unittest2.TestCase):
         """Create a repository."""
         cls.cfg = config.get_config()
         if cls.cfg.version < Version('2.9'):
-            raise unittest2.SkipTest('This test requires Pulp 2.9 or greater.')
+            raise unittest.SkipTest('This test requires Pulp 2.9 or greater.')
         cls.client = cli.Client(cls.cfg)
         cls.repo_id = utils.uuid4()
         cls.client.run(

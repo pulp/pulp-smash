@@ -1,11 +1,9 @@
 # coding=utf-8
 """Tests for syncing and publishing docker repositories."""
-from __future__ import unicode_literals
-
 import hashlib
 import json
+import unittest
 
-import unittest2
 from packaging.version import Version
 
 from pulp_smash import api, cli, config, selectors, utils
@@ -20,7 +18,7 @@ from pulp_smash.tests.docker.utils import set_up_module as setUpModule  # noqa p
 _BYTE_UNICODE = (type(b''), type(u''))
 
 
-class _BaseTestCase(unittest2.TestCase):
+class _BaseTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -55,7 +53,7 @@ class SyncV1TestCase(_SuccessMixin, _BaseTestCase):
         super(SyncV1TestCase, cls).setUpClass()
         if (cls.cfg.version >= Version('2.9') and
                 selectors.bug_is_untestable(1909, cls.cfg.version)):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1909')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1909')
         docker_utils.repo_create(
             cls.cfg,
             feed=DOCKER_V1_FEED_URL,
@@ -105,10 +103,10 @@ class SyncPublishV2TestCase(_SuccessMixin, _BaseTestCase):
         """
         super(SyncPublishV2TestCase, cls).setUpClass()
         if cls.cfg.version < Version('2.8'):
-            raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
+            raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
         if (cls.cfg.version >= Version('2.9') and
                 selectors.bug_is_untestable(1909, cls.cfg.version)):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1909')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1909')
         docker_utils.repo_create(
             cls.cfg,
             feed=DOCKER_V2_FEED_URL,
@@ -242,10 +240,10 @@ class SyncUnnamespacedV2TestCase(_SuccessMixin, _BaseTestCase):
         """
         super(SyncUnnamespacedV2TestCase, cls).setUpClass()
         if cls.cfg.version < Version('2.8'):
-            raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
+            raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
         if (cls.cfg.version >= Version('2.9') and
                 selectors.bug_is_untestable(1909, cls.cfg.version)):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1909')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1909')
         # The split() drops 'library/'.
         docker_utils.repo_create(
             cls.cfg,

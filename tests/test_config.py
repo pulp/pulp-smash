@@ -1,18 +1,13 @@
 # coding=utf-8
 """Unit tests for :mod:`pulp_smash.config`."""
-from __future__ import unicode_literals
-
+import builtins
 import itertools
 import json
 import os
 import random
-try:  # try Python 3 import first
-    import builtins
-except ImportError:
-    import __builtin__ as builtins  # pylint:disable=C0411,E0401
+import unittest
+from unittest import mock
 
-import mock
-import unittest2
 import xdg
 
 from pulp_smash import config, exceptions, utils
@@ -35,7 +30,7 @@ def _gen_attrs():
     return attrs
 
 
-class GetConfigTestCase(unittest2.TestCase):
+class GetConfigTestCase(unittest.TestCase):
     """Test :func:`pulp_smash.config.get_config`."""
 
     def test_cache_full(self):
@@ -53,7 +48,7 @@ class GetConfigTestCase(unittest2.TestCase):
         self.assertEqual(read.call_count, 1)
 
 
-class InitTestCase(unittest2.TestCase):
+class InitTestCase(unittest.TestCase):
     """Test :class:`pulp_smash.config.ServerConfig` instantiation."""
 
     @classmethod
@@ -75,7 +70,7 @@ class InitTestCase(unittest2.TestCase):
                 self.assertIsNotNone(getattr(self.cfg, attr))
 
 
-class PulpSmashConfigFileTestCase(unittest2.TestCase):
+class PulpSmashConfigFileTestCase(unittest.TestCase):
     """Verify the ``PULP_SMASH_CONFIG_FILE`` environment var is respected."""
 
     def test_var_set(self):
@@ -96,7 +91,7 @@ class PulpSmashConfigFileTestCase(unittest2.TestCase):
         self.assertEqual(cfg._xdg_config_file, 'settings.json')
 
 
-class ReadTestCase(unittest2.TestCase):
+class ReadTestCase(unittest.TestCase):
     """Test :meth:`pulp_smash.config.ServerConfig.read`."""
 
     def setUp(self):
@@ -140,7 +135,7 @@ class ReadTestCase(unittest2.TestCase):
         self.assertEqual(self.config_file['default']['base_url'], cfg.base_url)
 
 
-class SectionsTestCase(unittest2.TestCase):
+class SectionsTestCase(unittest.TestCase):
     """Test :meth:`pulp_smash.config.ServerConfig.sections`."""
 
     @classmethod
@@ -165,7 +160,7 @@ class SectionsTestCase(unittest2.TestCase):
         self.assertEqual(self.open_.call_count, 1)
 
 
-class GetRequestsKwargsTestCase(unittest2.TestCase):
+class GetRequestsKwargsTestCase(unittest.TestCase):
     """Test :meth:`pulp_smash.config.ServerConfig.get_requests_kwargs`."""
 
     @classmethod
@@ -193,7 +188,7 @@ class GetRequestsKwargsTestCase(unittest2.TestCase):
         self.assertIsInstance(self.kwargs['auth'], tuple)
 
 
-class ReprTestCase(unittest2.TestCase):
+class ReprTestCase(unittest.TestCase):
     """Test calling ``repr`` on a :class:`pulp_smash.config.ServerConfig`."""
 
     @classmethod
@@ -222,7 +217,7 @@ class ReprTestCase(unittest2.TestCase):
         self.assertEqual(self.result, repr(eval(self.result)))
 
 
-class DeleteTestCase(unittest2.TestCase):
+class DeleteTestCase(unittest.TestCase):
     """Test :meth:`pulp_smash.config.ServerConfig.delete`."""
 
     def test_delete_default(self):
@@ -245,7 +240,7 @@ class DeleteTestCase(unittest2.TestCase):
         self.assertEqual(_get_written_json(open_), attrs)
 
 
-class SaveTestCase(unittest2.TestCase):
+class SaveTestCase(unittest.TestCase):
     """Test :meth:`pulp_smash.config.ServerConfig.save`."""
 
     def test_save_default(self):
@@ -272,7 +267,7 @@ class SaveTestCase(unittest2.TestCase):
         self.assertEqual(_get_written_json(open_), cfg)
 
 
-class GetConfigFilePathTestCase(unittest2.TestCase):
+class GetConfigFilePathTestCase(unittest.TestCase):
     """Test ``pulp_smash.config._get_config_file_path``."""
 
     def test_success(self):

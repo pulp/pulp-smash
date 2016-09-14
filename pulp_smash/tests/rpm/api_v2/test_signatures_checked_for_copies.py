@@ -21,14 +21,11 @@ uploaded.
 # This module takes advantage of this behaviour. A pair of repositories is
 # created, one containing a signed RPM, SRPM and DRPM, and the other containing
 # the same three packages, but unsigned.
-from __future__ import unicode_literals
-
 import inspect
-
-import unittest2
+import unittest
+from urllib.parse import urljoin
 
 from pulp_smash import api, config, selectors, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     DRPM_UNSIGNED_URL,
     ORPHANS_PATH,
@@ -52,7 +49,7 @@ def setUpModule():  # pylint:disable=invalid-name
     """Conditionally skip tests. Create repositories with fixture data."""
     cfg = config.get_config()
     if selectors.bug_is_untestable(1991, cfg.version):
-        raise unittest2.SkipTest('https://pulp.plan.io/issues/1991')
+        raise unittest.SkipTest('https://pulp.plan.io/issues/1991')
     set_up_module()
 
     # Fetch RPMs.
@@ -93,14 +90,14 @@ def tearDownModule():  # pylint:disable=invalid-name
     client.delete(ORPHANS_PATH)
 
 
-class _BaseTestCase(unittest2.TestCase):
+class _BaseTestCase(unittest.TestCase):
     """Common logic for the test cases in this module."""
 
     @classmethod
     def setUpClass(cls):
         """Skip this test case if no child inherits from it."""
         if inspect.getmro(cls)[0] == _BaseTestCase:
-            raise unittest2.SkipTest('Abstract base class.')
+            raise unittest.SkipTest('Abstract base class.')
 
     def setUp(self):
         """Set common variables."""

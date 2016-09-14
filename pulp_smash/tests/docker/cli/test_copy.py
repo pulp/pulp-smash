@@ -1,10 +1,8 @@
 # coding=utf-8
 """Tests for copying docker units between repositories."""
-from __future__ import unicode_literals
-
 import re
+import unittest
 
-import unittest2
 from packaging.version import Version
 
 from pulp_smash import config, selectors, utils
@@ -56,7 +54,7 @@ def _truncate_ids(unit_ids):
     return {unit_id[:-1] for unit_id in unit_ids}
 
 
-class _BaseTestCase(unittest2.TestCase):
+class _BaseTestCase(unittest.TestCase):
     """Provides common set-up and tear-down behaviour."""
 
     @classmethod
@@ -69,7 +67,7 @@ class _BaseTestCase(unittest2.TestCase):
         """
         cls.cfg = config.get_config()
         if cls.cfg.version < Version('2.8'):
-            raise unittest2.SkipTest('These tests require Pulp 2.8 or above.')
+            raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
         utils.pulp_admin_login(cls.cfg)
         cls.repo_ids = tuple((utils.uuid4() for _ in range(2)))
 
@@ -155,7 +153,7 @@ class CopyAllManifestsTestCase(_BaseTestCase, _CopyMixin):
         super(CopyAllManifestsTestCase, cls).setUpClass()
         if (cls.cfg.version >= Version('2.9') and
                 selectors.bug_is_untestable(1909, cls.cfg.version)):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1909')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1909')
 
         # Create a pair of repositories.
         docker_utils.repo_create(
@@ -212,7 +210,7 @@ class CopyAllTagsTestCase(_BaseTestCase, _CopyMixin):
         super(CopyAllTagsTestCase, cls).setUpClass()
         if (cls.cfg.version >= Version('2.9') and
                 selectors.bug_is_untestable(1909, cls.cfg.version)):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1909')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1909')
 
         # Create a pair of repositories.
         docker_utils.repo_create(

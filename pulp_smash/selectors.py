@@ -1,7 +1,5 @@
 # coding=utf-8
 """Tools for selecting and deselecting tests."""
-from __future__ import unicode_literals
-
 import warnings
 from collections import namedtuple
 from functools import wraps

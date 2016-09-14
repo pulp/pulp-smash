@@ -13,8 +13,6 @@ The assumptions explored in this module have the following dependencies::
 .. _user:
     https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/user/index.html
 """
-from __future__ import unicode_literals
-
 from pulp_smash import api, utils
 from pulp_smash.constants import LOGIN_PATH, USER_PATH
 

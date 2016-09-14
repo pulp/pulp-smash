@@ -1,7 +1,5 @@
 # coding=utf-8
 """Tests that CRUD Puppet repositories."""
-from __future__ import unicode_literals
-
 from pulp_smash import utils
 from pulp_smash.tests.puppet.api_v2.utils import gen_repo
 from pulp_smash.tests.puppet.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import

@@ -9,15 +9,13 @@ For information on repository sync and publish operations, see
 .. _Synchronization:
     http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/sync.html
 """
-from __future__ import unicode_literals
-
 import inspect
+import unittest
+from urllib.parse import urljoin
 
-import unittest2
 from packaging.version import Version
 
 from pulp_smash import api, selectors, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     DRPM_UNSIGNED_FEED_URL,
     REPOSITORY_PATH,
@@ -44,7 +42,7 @@ class SyncRepoBaseTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create an RPM repository with a valid feed and sync it."""
         if inspect.getmro(cls)[0] == SyncRepoBaseTestCase:
-            raise unittest2.SkipTest('Abstract base class.')
+            raise unittest.SkipTest('Abstract base class.')
         super(SyncRepoBaseTestCase, cls).setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()

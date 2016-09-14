@@ -11,4 +11,3 @@ This package contains tests for the Pulp platform. These tests target
 plugin-agnostic functionality. These tests should not rely on any
 plugin-specific functionality, such as the ability to work with RPMs or ISOs.
 """
-from __future__ import unicode_literals

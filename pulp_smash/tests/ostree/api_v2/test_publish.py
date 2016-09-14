@@ -1,17 +1,15 @@
 # coding=utf-8
 """Tests that publish OSTree repositories."""
-from __future__ import unicode_literals
-
-import unittest2
+import unittest
+from urllib.parse import urljoin
 
 from pulp_smash import api, config, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import OSTREE_BRANCH, OSTREE_FEED, REPOSITORY_PATH
 from pulp_smash.tests.ostree.utils import gen_distributor, gen_repo
 from pulp_smash.tests.ostree.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
-class PublishTestCase(unittest2.TestCase):
+class PublishTestCase(unittest.TestCase):
     """Create, sync and publish an OSTree repository."""
 
     def test_all(self):

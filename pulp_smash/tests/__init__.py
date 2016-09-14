@@ -57,8 +57,6 @@ problem, as it is thread-unsafe.
 .. _SkipTest: https://docs.python.org/3.5/library/unittest.html#unittest.SkipTest
 .. _setUpModule: https://docs.python.org/3.5/library/unittest.html#setupmodule-and-teardownmodule
 """
-from __future__ import unicode_literals
-
 from warnings import simplefilter
 
 import requests

@@ -1,5 +1,5 @@
 TEST_OPTIONS=-m unittest discover --start-directory tests --top-level-directory .
-CPU_COUNT=$(shell python -c "from multiprocessing import cpu_count; print(cpu_count())")
+CPU_COUNT=$(shell python3 -c "from multiprocessing import cpu_count; print(cpu_count())")
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of:"
@@ -42,7 +42,6 @@ lint-pylint:
 		pulp_smash/__main__.py \
 		pulp_smash/api.py \
 		pulp_smash/cli.py \
-		pulp_smash/compat.py \
 		pulp_smash/config.py \
 		pulp_smash/constants.py \
 		pulp_smash/exceptions.py \
@@ -53,7 +52,7 @@ lint-pylint:
 lint: lint-flake8 lint-pylint
 
 test:
-	python $(TEST_OPTIONS)
+	python3 $(TEST_OPTIONS)
 
 test-coverage:
 	coverage run --source pulp_smash.api,pulp_smash.cli,pulp_smash.config,pulp_smash.exceptions,pulp_smash.selectors,pulp_smash.utils \

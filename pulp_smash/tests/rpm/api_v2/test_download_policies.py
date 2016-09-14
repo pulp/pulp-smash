@@ -5,15 +5,13 @@ Beware that the test cases for the "on demand" download policy will fail if
 Pulp's Squid server is not configured to return an appropriate hostname or IP
 when performing redirection.
 """
-from __future__ import unicode_literals
-
 import hashlib
+import unittest
+from urllib.parse import urljoin
 
-import unittest2
 from packaging.version import Version
 
 from pulp_smash import api, cli, config, selectors, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     REPOSITORY_PATH,
     RPM,
@@ -41,9 +39,9 @@ def setUpModule():  # pylint:disable=invalid-name
     set_up_module()
     cfg = config.get_config()
     if cfg.version < Version('2.8'):
-        raise unittest2.SkipTest('This module requires Pulp 2.8 or greater.')
+        raise unittest.SkipTest('This module requires Pulp 2.8 or greater.')
     if selectors.bug_is_untestable(2144, cfg.version):
-        raise unittest2.SkipTest('https://pulp.plan.io/issues/2144')
+        raise unittest.SkipTest('https://pulp.plan.io/issues/2144')
 
 
 def _create_repo(server_config, download_policy):
@@ -79,7 +77,7 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         super(BackgroundTestCase, cls).setUpClass()
         if (selectors.bug_is_untestable(1905, cls.cfg.version) and
                 _os_is_rhel6(cls.cfg)):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1905')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1905')
 
         # Required to ensure content is actually downloaded.
         utils.reset_squid(cls.cfg)
@@ -239,7 +237,7 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
         super(FixFileCorruptionTestCase, cls).setUpClass()
         if (selectors.bug_is_untestable(1905, cls.cfg.version) and
                 _os_is_rhel6(cls.cfg)):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1905')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1905')
 
         # Ensure Pulp is empty of units otherwise we might just associate pre-
         # existing units.

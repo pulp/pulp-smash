@@ -13,14 +13,11 @@ The test cases in this module searches for content units by their type. See:
 .. _Searching:
     http://docs.pulpproject.org/en/latest/dev-guide/conventions/criteria.html
 """
-from __future__ import unicode_literals
-
 import inspect
-
-import unittest2
+import unittest
+from urllib.parse import urljoin
 
 from pulp_smash import api, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     CONTENT_UNITS_PATH,
     REPOSITORY_PATH,
@@ -40,7 +37,7 @@ class BaseSearchTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create and sync a repository."""
         if inspect.getmro(cls)[0] == BaseSearchTestCase:
-            raise unittest2.SkipTest('Abstract base class.')
+            raise unittest.SkipTest('Abstract base class.')
         super(BaseSearchTestCase, cls).setUpClass()
         body = gen_repo()
         body['importer_config']['feed'] = cls.get_feed_url()

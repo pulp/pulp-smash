@@ -8,7 +8,7 @@ and activate a virtual environment:
 
 .. code-block:: sh
 
-    pyvenv env  # or `virtualenv env` if using Python 2
+    pyvenv env
     source env/bin/activate  # run `deactivate` to exit environment
 
 To install Pulp Smash from `PyPi`_:
@@ -38,12 +38,11 @@ For an explanation of key concepts and more installation strategies, see
 `Installing Python Modules`_.
 
 .. [1] See `Virtual Environments and Packages`_ for an explanation of virtual
-    environments. If using Python 2, see `Virtualenv`_ instead. The ``pyvenv``
-    and ``virtualenv`` tools are similar, but the former ships with Python as of
-    Python 3.3, whereas the latter is a third party tool.
+    environments. The ``pyvenv`` and ``virtualenv`` tools are similar, but the
+    former ships with Python as of Python 3.3, whereas the latter is a third
+    party tool.
 
 .. _GitHub: https://github.com/PulpQE/pulp-smash
 .. _Installing Python Modules: https://docs.python.org/3/installing/
 .. _PyPi: https://pypi.python.org/pypi/pulp-smash
 .. _Virtual Environments and Packages: https://docs.python.org/3/tutorial/venv.html
-.. _Virtualenv: http://virtualenv.readthedocs.io/en/latest/

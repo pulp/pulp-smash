@@ -1,10 +1,7 @@
 # coding=utf-8
 """Tests that sync RPM repositories."""
-from __future__ import unicode_literals
-
 import random
-
-import unittest2
+import unittest
 
 from pulp_smash import cli, config, selectors, utils
 from pulp_smash.constants import RPM_FEED_URL
@@ -51,7 +48,7 @@ def sync_repo(server_config, repo_id, force_sync=False):
     )
 
 
-class RemovedContentTestCase(unittest2.TestCase):
+class RemovedContentTestCase(unittest.TestCase):
     """Test whether Pulp can sync content into a repo after it's been removed.
 
     This test case targets `Pulp #1775`_ and the corresponding Pulp Smash
@@ -104,7 +101,7 @@ class RemovedContentTestCase(unittest2.TestCase):
         )
 
 
-class ForceSyncTestCase(unittest2.TestCase):
+class ForceSyncTestCase(unittest.TestCase):
     """Test whether one can force Pulp to perform a full sync.
 
     This test case targets `Pulp #1982`_ and `Pulp Smash #353`_. The test

@@ -23,14 +23,11 @@ There are two scenarios to test here:
 Both scenarios are executed by
 :class:`pulp_smash.tests.rpm.api_v2.test_broker.BrokerTestCase`.
 """
-from __future__ import unicode_literals
-
 import time
-
-import unittest2
+import unittest
+from urllib.parse import urljoin
 
 from pulp_smash import api, cli, config, selectors, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
     PULP_SERVICES,
     REPOSITORY_PATH,
@@ -42,7 +39,7 @@ from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
-class BrokerTestCase(unittest2.TestCase):
+class BrokerTestCase(unittest.TestCase):
     """Test Pulp's support for broker connections and reconnections."""
 
     def setUp(self):

@@ -18,11 +18,8 @@ that packages are synced in to Pulp instead of being uploaded.
 #
 # The easiest way to avoid these confusing situations is to ensure that Pulp
 # retains no local content units after each test.
-from __future__ import unicode_literals
-
 import inspect
-
-import unittest2
+import unittest
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
@@ -47,9 +44,9 @@ from pulp_smash.tests.rpm.utils import set_up_module
 def setUpModule():  # pylint:disable=invalid-name
     """Conditionally skip tests."""
     if selectors.bug_is_untestable(1991, config.get_config().version):
-        raise unittest2.SkipTest('https://pulp.plan.io/issues/1991')
+        raise unittest.SkipTest('https://pulp.plan.io/issues/1991')
     if selectors.bug_is_untestable(2242, config.get_config().version):
-        raise unittest2.SkipTest('https://pulp.plan.io/issues/2242')
+        raise unittest.SkipTest('https://pulp.plan.io/issues/2242')
     set_up_module()
 
 
@@ -58,14 +55,14 @@ def tearDownModule():  # pylint:disable=invalid-name
     api.Client(config.get_config()).delete(ORPHANS_PATH)
 
 
-class _BaseTestCase(unittest2.TestCase):
+class _BaseTestCase(unittest.TestCase):
     """Common logic for the test cases in this module."""
 
     @classmethod
     def setUpClass(cls):
         """Skip this test case if no child inherits from it."""
         if inspect.getmro(cls)[0] == _BaseTestCase:
-            raise unittest2.SkipTest('Abstract base class.')
+            raise unittest.SkipTest('Abstract base class.')
 
     def setUp(self):
         """Set common variables."""

@@ -14,12 +14,11 @@ The assumptions explored in this module have the following dependencies::
 .. _repository:
     https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/index.html
 """
-from __future__ import unicode_literals
+from urllib.parse import urljoin, urlparse
 
 from packaging.version import Version
 
 from pulp_smash import api, utils
-from pulp_smash.compat import urljoin, urlparse
 from pulp_smash.constants import REPOSITORY_PATH, ERROR_KEYS
 from pulp_smash.selectors import bug_is_untestable, require
 

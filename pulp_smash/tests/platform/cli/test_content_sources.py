@@ -1,13 +1,11 @@
 # coding=utf-8
 """Tests for list/refresh/delete content sources."""
-from __future__ import unicode_literals
-
 import os
+import unittest
+from io import StringIO
 
-import unittest2
 from packaging.version import Version
 from pulp_smash import cli, config
-from pulp_smash.compat import StringIO
 from pulp_smash.constants import CONTENT_SOURCES_PATH, RPM_FEED_URL
 from pulp_smash.utils import is_root, pulp_admin_login, uuid4
 
@@ -64,7 +62,7 @@ def _get_content_source_ids(server_config):
     return [line.split(keyword)[1].strip() for line in lines]
 
 
-class RefreshAndDeleteContentSourcesTestCase(unittest2.TestCase):
+class RefreshAndDeleteContentSourcesTestCase(unittest.TestCase):
     """Test whether pulp-admin client can refresh and delete content source.
 
     This test case targets Pulp #1692`_ and `Pulp Smash #141`_. The
@@ -90,7 +88,7 @@ class RefreshAndDeleteContentSourcesTestCase(unittest2.TestCase):
         super(RefreshAndDeleteContentSourcesTestCase, cls).setUpClass()
         cls.cfg = config.get_config()
         if cls.cfg.version < Version('2.8.6'):
-            raise unittest2.SkipTest('This test requires at least 2.8.6')
+            raise unittest.SkipTest('This test requires at least 2.8.6')
         pulp_admin_login(cls.cfg)
         cls.client = cli.Client(cls.cfg)
         cls.content_source_id = uuid4()

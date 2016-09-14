@@ -1,18 +1,16 @@
 # coding=utf-8
 """Unit tests for :mod:`pulp_smash.cli`."""
-from __future__ import unicode_literals
-
 import socket
 import subprocess
+import unittest
+from unittest import mock
 
-import mock
-import unittest2
 from plumbum.machines.local import LocalMachine
 
 from pulp_smash import cli, config, utils
 
 
-class GetHostnameTestCase(unittest2.TestCase):
+class GetHostnameTestCase(unittest.TestCase):
     """Tests for ``pulp_smash.cli._get_hostname``."""
 
     def test_parsing(self):
@@ -33,7 +31,7 @@ class GetHostnameTestCase(unittest2.TestCase):
                 self.assertEqual(output, hostname)
 
 
-class EchoHandlerTestCase(unittest2.TestCase):
+class EchoHandlerTestCase(unittest.TestCase):
     """Tests for :func:`pulp_smash.cli.echo_handler`."""
 
     @classmethod
@@ -51,7 +49,7 @@ class EchoHandlerTestCase(unittest2.TestCase):
         self.assertEqual(self.completed_proc.check_returncode.call_count, 0)
 
 
-class CodeHandlerTestCase(unittest2.TestCase):
+class CodeHandlerTestCase(unittest.TestCase):
     """Tests for :func:`pulp_smash.cli.code_handler`."""
 
     @classmethod
@@ -69,7 +67,7 @@ class CodeHandlerTestCase(unittest2.TestCase):
         self.assertEqual(self.completed_proc.check_returncode.call_count, 1)
 
 
-class CompletedProcessTestCase(unittest2.TestCase):
+class CompletedProcessTestCase(unittest.TestCase):
     """Tests for :class:`pulp_smash.cli.CompletedProcess`."""
 
     def setUp(self):
@@ -108,7 +106,7 @@ class CompletedProcessTestCase(unittest2.TestCase):
         self.assertEqual(string, repr(eval(string)))
 
 
-class ClientTestCase(unittest2.TestCase):
+class ClientTestCase(unittest.TestCase):
     """Tests for :class:`pulp_smash.cli.Client`."""
 
     def test_explicit_local_transport(self):
@@ -133,7 +131,7 @@ class ClientTestCase(unittest2.TestCase):
         self.assertIs(cli.Client(cfg, handler).response_handler, handler)
 
 
-class ServiceTestCase(unittest2.TestCase):
+class ServiceTestCase(unittest.TestCase):
     """Tests for :class:`pulp_smash.cli.Service`."""
 
     @classmethod

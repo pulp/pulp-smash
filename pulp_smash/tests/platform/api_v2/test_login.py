@@ -16,11 +16,11 @@
 #
 # The encoding declaration at the beginning of this file tells Python which
 # encoding scheme was used when creating this document, and therefore how to
-# decode the bytes in this document. If omitted, Python might use an ascii
+# decode the bytes in this document. If omitted, Python might use an UTF-8
 # decoder, or a utf-8 decoder, or something else, and that can be problematic.
-# Try running this script with Python 2 and 3 in a variety of environments:
+# Try running this script with Python in a variety of environments:
 #
-#     #!/usr/bin/env python
+#     #!/usr/bin/env python3
 #     # …
 #     import sys
 #     print(sys.getdefaultencoding())
@@ -32,8 +32,7 @@
 # meant to be executed directly. Instead, a "test runner" program will import
 # this module, and it will decide if and how to execute the code herein.
 # Several test runners can run Pulp Smash tests, but with varying degrees of
-# compatibility. The "unittest2" test runner (available from PyPi) is best
-# supported. [1] (We intentionally link to the unittest documentation, below.)
+# compatibility. The "unittest" test runner is best supported. [1]
 #
 # Docstrings
 # ----------
@@ -81,8 +80,6 @@
 # [4] https://docs.python.org/3/library/unittest.html#load-tests-protocol
 # [5] https://www.python.org/dev/peps/pep-0008/#imports
 # [6] https://docs.python.org/3/library/__future__.html
-from __future__ import unicode_literals
-
 from pulp_smash import api, selectors, utils
 from pulp_smash.constants import ERROR_KEYS, LOGIN_KEYS, LOGIN_PATH
 
@@ -92,7 +89,7 @@ class LoginSuccessTestCase(utils.BaseAPITestCase):
 
     # This test case has the following inheritance tree:
     #
-    #     unittest2.TestCase
+    #     unittest.TestCase
     #     └── pulp_smash.utils.BaseAPITestCase
     #         └── pulp_smash.[…].LoginSuccessTestCase
     #

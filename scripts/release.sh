@@ -27,21 +27,19 @@ echo "${NEW_VERSION}" > VERSION
 # Generate the package
 make package-clean package
 
-# Sanity check Pulp Smash packages on both Python 2 and Python 3
-for python in python{2,3}; do
-    venv="$(mktemp --directory)"
-    virtualenv -p "${python}" "${venv}"
-    set +u
-    source "${venv}/bin/activate"
-    set -u
-    for dist in dist/*; do
-        pip install --quiet "${dist}"
-        python -m pulp_smash 1>/dev/null
-        pip uninstall --quiet --yes pulp_smash
-    done
-    deactivate
-    rm -rf "${venv}"
+# Sanity check Pulp Smash packages on Python 3
+venv="$(mktemp --directory)"
+virtualenv -p "python3" "${venv}"
+set +u
+source "${venv}/bin/activate"
+set -u
+for dist in dist/*; do
+    pip install --quiet "${dist}"
+    python -m pulp_smash 1>/dev/null
+    pip uninstall --quiet --yes pulp_smash
 done
+deactivate
+rm -rf "${venv}"
 
 # Get the changes from last release and commit
 git add VERSION

@@ -7,15 +7,13 @@ handling of href paths and HTTP 202 status codes. This module provides a
 customizable client that makes it easier to work with the API in a safe and
 concise manner.
 """
-from __future__ import unicode_literals
-
 import warnings
 from time import sleep
+from urllib.parse import urljoin, urlparse
 
 import requests
 
 from pulp_smash import exceptions
-from pulp_smash.compat import urljoin, urlparse
 
 
 _SENTINEL = object()

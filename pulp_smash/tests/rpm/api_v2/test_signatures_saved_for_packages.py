@@ -15,14 +15,11 @@ For more information, see:
 
 * `Pulp #1156 <https://pulp.plan.io/issues/1156>`_
 """
-from __future__ import unicode_literals
-
 import inspect
-
-import unittest2
+import unittest
+from urllib.parse import urljoin, urlparse
 
 from pulp_smash import api, config, selectors, utils
-from pulp_smash.compat import urljoin, urlparse
 from pulp_smash.constants import (
     DRPM_UNSIGNED_FEED_URL,
     DRPM_UNSIGNED_URL,
@@ -60,17 +57,17 @@ def _get_pkg_unit_type(pkg_filename):
         return suffix[-1]
 
 
-class _BaseTestCase(unittest2.TestCase):
+class _BaseTestCase(unittest.TestCase):
     """An abstract base class for the test cases in this module."""
 
     @classmethod
     def setUpClass(cls):
         """Create a shared client."""
         if inspect.getmro(cls)[0] == _BaseTestCase:
-            raise unittest2.SkipTest('Abstract base class.')
+            raise unittest.SkipTest('Abstract base class.')
         cls.cfg = config.get_config()
         if selectors.bug_is_untestable(1156, cls.cfg.version):
-            raise unittest2.SkipTest('https://pulp.plan.io/issues/1156')
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1156')
         cls.client = api.Client(cls.cfg, api.json_handler)
 
     def _find_unit(self, repo_href, pkg_url):

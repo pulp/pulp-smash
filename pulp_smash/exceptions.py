@@ -1,6 +1,5 @@
 # coding=utf-8
 """Custom exceptions defined by Pulp Smash."""
-from __future__ import unicode_literals
 
 
 class BugStatusUnknownError(Exception):

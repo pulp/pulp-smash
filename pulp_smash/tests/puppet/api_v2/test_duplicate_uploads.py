@@ -14,8 +14,6 @@ The second upload should silently fail for all Pulp releases in the 2.x series.
 .. _Pulp #1406: https://pulp.plan.io/issues/1406
 .. _Pulp Smash #81: https://github.com/PulpQE/pulp-smash/issues/81
 """
-from __future__ import unicode_literals
-
 from pulp_smash import api, utils
 from pulp_smash.constants import PUPPET_MODULE_URL, REPOSITORY_PATH
 from pulp_smash.tests.puppet.api_v2.utils import gen_repo

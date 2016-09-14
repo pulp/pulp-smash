@@ -4,10 +4,9 @@
 .. _consumer:
     https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/consumer/index.html
 """
-from __future__ import unicode_literals
+from urllib.parse import urljoin
 
 from pulp_smash import api, utils
-from pulp_smash.compat import urljoin
 from pulp_smash.constants import CONSUMER_PATH, REPOSITORY_PATH
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo, gen_distributor
 

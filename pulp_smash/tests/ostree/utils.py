@@ -1,7 +1,5 @@
 # coding=utf-8
 """Utilities for interacting with OS tree."""
-from __future__ import unicode_literals
-
 from pulp_smash import utils
 
 
