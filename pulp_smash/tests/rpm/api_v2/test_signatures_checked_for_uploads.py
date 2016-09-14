@@ -49,6 +49,8 @@ For more information, see `Pulp #1991`_ and `Pulp Smash #347`_.
 """
 from __future__ import unicode_literals
 
+from itertools import chain
+
 import unittest2
 from requests.exceptions import HTTPError
 
@@ -67,7 +69,8 @@ from pulp_smash.tests.rpm.utils import set_up_module
 
 
 _INVALID_KEY_ID = '01234567'
-_PACKAGES = None
+_SIGNED_PACKAGES = {}  # e.g. {'rpm': …, 'srpm': …}
+_UNSIGNED_PACKAGES = {}
 
 
 def setUpModule():  # pylint:disable=invalid-name
@@ -79,27 +82,27 @@ def setUpModule():  # pylint:disable=invalid-name
     * `Pulp #1991 <https://pulp.plan.io/issues/1991>`_ is untestable for the
       version of Pulp under test.
     """
-    if selectors.bug_is_untestable(1991, config.get_config().version):
+    cfg = config.get_config()
+    if selectors.bug_is_untestable(1991, cfg.version):
         raise unittest2.SkipTest('https://pulp.plan.io/issues/1991')
     set_up_module()
-    global _PACKAGES  # pylint:disable=global-statement
     try:
-        _PACKAGES = {
-            'signed rpm': utils.http_get(RPM_URL),
-            'signed srpm': utils.http_get(SRPM_URL),
-            'unsigned drpm': utils.http_get(DRPM_UNSIGNED_URL),
-            'unsigned rpm': utils.http_get(RPM_UNSIGNED_URL),
-            'unsigned srpm': utils.http_get(SRPM_UNSIGNED_URL),
-        }
+        _SIGNED_PACKAGES['rpm'] = utils.http_get(RPM_URL)
+        _SIGNED_PACKAGES['srpm'] = utils.http_get(SRPM_URL)
+        _UNSIGNED_PACKAGES['rpm'] = utils.http_get(RPM_UNSIGNED_URL)
+        _UNSIGNED_PACKAGES['srpm'] = utils.http_get(SRPM_UNSIGNED_URL)
+        if selectors.bug_is_testable(1806, cfg.version):
+            _UNSIGNED_PACKAGES['drpm'] = utils.http_get(DRPM_UNSIGNED_URL)
     except:
-        _PACKAGES = None
+        _SIGNED_PACKAGES.clear()
+        _UNSIGNED_PACKAGES.clear()
         raise
 
 
 def tearDownModule():  # pylint:disable=invalid-name
     """Delete the cached set of packages to be uploaded to repos."""
-    global _PACKAGES  # pylint:disable=global-statement
-    _PACKAGES = None
+    _SIGNED_PACKAGES.clear()
+    _UNSIGNED_PACKAGES.clear()
 
 
 def _create_repository(cfg, importer_config):
@@ -141,12 +144,7 @@ class RequireValidKeyTestCase(utils.BaseAPITestCase):
 
         Verify that each import succeeds.
         """
-        for key, package in _PACKAGES.items():
-            if key.startswith('unsigned'):
-                continue
-            if (key.endswith('drpm') and
-                    selectors.bug_is_untestable(1806, self.cfg.version)):
-                continue
+        for key, package in _SIGNED_PACKAGES.items():
             with self.subTest(key=key):
                 utils.upload_import_unit(
                     self.cfg,
@@ -160,9 +158,7 @@ class RequireValidKeyTestCase(utils.BaseAPITestCase):
 
         Verify that each import fails.
         """
-        for key, package in _PACKAGES.items():
-            if key.startswith('signed'):
-                continue
+        for key, package in _UNSIGNED_PACKAGES.items():
             with self.subTest(key=key):
                 with self.assertRaises(exceptions.TaskReportError):
                     utils.upload_import_unit(
@@ -198,10 +194,9 @@ class RequireInvalidKeyTestCase(utils.BaseAPITestCase):
 
         Verify that each import fails.
         """
-        for key, package in _PACKAGES.items():
-            if (key.endswith('drpm') and
-                    selectors.bug_is_untestable(1806, self.cfg.version)):
-                continue
+        for key, package in chain(
+                _SIGNED_PACKAGES.items(),
+                _UNSIGNED_PACKAGES.items()):
             with self.subTest(key=key):
                 with self.assertRaises(exceptions.TaskReportError):
                     utils.upload_import_unit(
@@ -237,12 +232,7 @@ class RequireAnyKeyTestCase(utils.BaseAPITestCase):
 
         Verify that each import succeeds.
         """
-        for key, package in _PACKAGES.items():
-            if (key.endswith('drpm') and
-                    selectors.bug_is_untestable(1806, self.cfg.version)):
-                continue
-            if key.startswith('unsigned'):
-                continue
+        for key, package in _SIGNED_PACKAGES.items():
             with self.subTest(key=key):
                 utils.upload_import_unit(
                     self.cfg,
@@ -256,9 +246,7 @@ class RequireAnyKeyTestCase(utils.BaseAPITestCase):
 
         Verify that each import fails.
         """
-        for key, package in _PACKAGES.items():
-            if key.startswith('signed'):
-                continue
+        for key, package in _UNSIGNED_PACKAGES.items():
             with self.subTest(key=key):
                 with self.assertRaises(exceptions.TaskReportError):
                     utils.upload_import_unit(
@@ -294,12 +282,7 @@ class AllowInvalidKeyTestCase(utils.BaseAPITestCase):
 
         Verify that each import fails.
         """
-        for key, package in _PACKAGES.items():
-            if key.startswith('unsigned'):
-                continue
-            if (key.endswith('drpm') and
-                    selectors.bug_is_untestable(1806, self.cfg.version)):
-                continue
+        for key, package in _SIGNED_PACKAGES.items():
             with self.subTest(key=key):
                 with self.assertRaises(exceptions.TaskReportError):
                     utils.upload_import_unit(
@@ -314,12 +297,7 @@ class AllowInvalidKeyTestCase(utils.BaseAPITestCase):
 
         Verify that each import succeeds.
         """
-        for key, package in _PACKAGES.items():
-            if key.startswith('signed'):
-                continue
-            if (key.endswith('drpm') and
-                    selectors.bug_is_untestable(1806, self.cfg.version)):
-                continue
+        for key, package in _UNSIGNED_PACKAGES.items():
             with self.subTest(key=key):
                 utils.upload_import_unit(
                     self.cfg,
@@ -354,10 +332,9 @@ class AllowValidKeyTestCase(utils.BaseAPITestCase):
 
         Verify that each import succeeds.
         """
-        for key, package in _PACKAGES.items():
-            if (key.endswith('drpm') and
-                    selectors.bug_is_untestable(1806, self.cfg.version)):
-                continue
+        for key, package in chain(
+                _SIGNED_PACKAGES.items(),
+                _UNSIGNED_PACKAGES.items()):
             with self.subTest(key=key):
                 utils.upload_import_unit(
                     self.cfg,
@@ -392,10 +369,9 @@ class AllowAnyKeyTestCase(utils.BaseAPITestCase):
 
         Verify that each import succeeds.
         """
-        for key, package in _PACKAGES.items():
-            if (key.endswith('drpm') and
-                    selectors.bug_is_untestable(1806, self.cfg.version)):
-                continue
+        for key, package in chain(
+                _SIGNED_PACKAGES.items(),
+                _UNSIGNED_PACKAGES.items()):
             with self.subTest(key=key):
                 utils.upload_import_unit(
                     self.cfg,
