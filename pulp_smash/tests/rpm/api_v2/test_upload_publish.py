@@ -22,7 +22,7 @@ from pulp_smash.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,
     DRPM,
-    DRPM_URL,
+    DRPM_UNSIGNED_URL,
     REPOSITORY_PATH,
     RPM,
     RPM_FEED_URL,
@@ -177,7 +177,7 @@ class UploadDrpmTestCase(utils.BaseAPITestCase):
         client = api.Client(cls.cfg)
         repo = client.post(REPOSITORY_PATH, gen_repo()).json()
         cls.resources.add(repo['_href'])
-        drpm = utils.http_get(DRPM_URL)
+        drpm = utils.http_get(DRPM_UNSIGNED_URL)
         upload_import_unit(cls.cfg, drpm, 'drpm', repo['_href'])
         cls.repo_units = client.post(
             urljoin(repo['_href'], 'search/units/'),

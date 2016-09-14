@@ -7,7 +7,7 @@ import os
 import unittest2
 
 from pulp_smash import cli, config, selectors, utils
-from pulp_smash.constants import DRPM, DRPM_URL
+from pulp_smash.constants import DRPM, DRPM_UNSIGNED_URL
 from pulp_smash.tests.rpm.utils import set_up_module
 
 
@@ -55,7 +55,9 @@ class UploadDrpmTestCase(unittest2.TestCase):
         temp_dir = client.run('mktemp --directory'.split()).stdout.strip()
         self.addCleanup(client.run, 'rm -rf {}'.format(temp_dir).split())
         drpm_file = os.path.join(temp_dir, os.path.split(DRPM)[-1])
-        client.run('curl -o {} {}'.format(drpm_file, DRPM_URL).split())
+        client.run(
+            'curl -o {} {}'.format(drpm_file, DRPM_UNSIGNED_URL).split()
+        )
 
         # Upload the DRPM into the repository. Don't use subTest, as if this
         # test fails, the following one is invalid anyway.

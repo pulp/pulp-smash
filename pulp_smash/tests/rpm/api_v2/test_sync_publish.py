@@ -19,7 +19,7 @@ from packaging.version import Version
 from pulp_smash import api, selectors, utils
 from pulp_smash.compat import urljoin
 from pulp_smash.constants import (
-    DRPM_FEED_URL,
+    DRPM_UNSIGNED_FEED_URL,
     REPOSITORY_PATH,
     RPM_FEED_COUNT,
     RPM_FEED_URL,
@@ -113,7 +113,7 @@ class SyncDrpmRepoTestCase(SyncRepoBaseTestCase):
     @staticmethod
     def get_feed_url():
         """Return an DRPM repository feed URL."""
-        return DRPM_FEED_URL
+        return DRPM_UNSIGNED_FEED_URL
 
 
 class SyncSrpmRepoTestCase(SyncRepoBaseTestCase):
