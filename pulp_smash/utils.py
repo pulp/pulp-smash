@@ -4,10 +4,11 @@
 This module may make use of :mod:`pulp_smash.api` and :mod:`pulp_smash.cli`,
 but the reverse should not be done.
 """
+import hashlib
 import io
 import unittest
 import uuid
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 
@@ -19,6 +20,9 @@ from pulp_smash.constants import (
     PULP_SERVICES,
     REPOSITORY_PATH,
 )
+
+# A mapping between URLs and SHA 256 checksums. Used by get_sha256_checksum().
+_CHECKSUM_CACHE = {}
 
 
 def uuid4():
@@ -452,3 +456,23 @@ def sync_repo(server_config, href):
     :returns: The server's response.
     """
     return api.Client(server_config).post(urljoin(href, 'actions/sync/'))
+
+
+def get_sha256_checksum(url):
+    """Return the sha256 checksum of the file at the given URL.
+
+    When a URL is encountered for the first time, do the following:
+
+    1. Download the file and calculate its sha256 checksum.
+    2. Cache the URL-checksum pair.
+    3. Return the checksum.
+
+    On subsequent calls, return a cached checksum.
+    """
+    # URLs are normalized before checking the cache and possibly downloading
+    # files. Otherwise, unnecessary downloads and cache entries may be made.
+    url = urlparse(url).geturl()
+    if url not in _CHECKSUM_CACHE:
+        checksum = hashlib.sha256(http_get(url)).hexdigest()
+        _CHECKSUM_CACHE[url] = checksum
+    return _CHECKSUM_CACHE[url]

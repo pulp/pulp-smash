@@ -230,3 +230,31 @@ class PulpAdminLoginTestCase(unittest.TestCase):
             cfg = config.ServerConfig('http://example.com', auth=['u', 'p'])
             response = utils.pulp_admin_login(cfg)
             self.assertIs(response, client.return_value.run.return_value)
+
+
+class GetSha256ChecksumTestCase(unittest.TestCase):
+    """Test :func:`pulp_smash.utils.get_sha256_checksum`."""
+
+    def test_all(self):
+        """Call the function three times, with two URLs.
+
+        Call the function with the first URL, the second URL and the first URL
+        again. Verify that:
+
+        * No download is attempted during the third call.
+        * The first and second calls return different checksums.
+        * The first and third calls return identical checksums.
+        """
+        urls_blobs = (
+            ('http://example.com', b'abc'),
+            ('http://example.org', b'123'),
+            ('HTTP://example.com', b'abc'),
+        )
+        checksums = []
+        with mock.patch.object(utils, 'http_get') as http_get:
+            for url, blob in urls_blobs:
+                http_get.return_value = blob
+                checksums.append(utils.get_sha256_checksum(url))
+        self.assertEqual(http_get.call_count, 2)
+        self.assertNotEqual(checksums[0], checksums[1])
+        self.assertEqual(checksums[0], checksums[2])

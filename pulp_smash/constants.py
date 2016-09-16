@@ -289,11 +289,6 @@ RPM_FEED_COUNT = 32
 RPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm/')
 """The URL to an RPM repository. See :data:`RPM_URL`."""
 
-RPM_SHA256_CHECKSUM = (
-    '4fe8d0e21ee6d56d420c396a02aeaeb59feb00b625811b6a2b4d8f0c1aad80ca'
-)
-"""The sha256 checksum of :data:`pulp_smash.constants.RPM`."""
-
 RPM_UNSIGNED_FEED_COUNT = 32
 """The number of packages available at :data:`RPM_UNSIGNED_FEED_URL`."""
 

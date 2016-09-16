@@ -25,7 +25,7 @@ from pulp_smash.constants import (
     REPOSITORY_PATH,
     RPM,
     RPM_FEED_URL,
-    RPM_SHA256_CHECKSUM,
+    RPM_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
     DisableSELinuxMixin,
@@ -455,8 +455,8 @@ class ExportDistributorTestCase(ExportDirMixin, utils.BaseAPITestCase):
     def test_publish_to_dir(self):
         """Publish the repository to a directory on the Pulp server.
 
-        Verify that :data:`pulp_smash.constants.RPM` is present and has a
-        checksum of :data:`pulp_smash.constants.RPM_SHA256_CHECKSUM`.
+        gerify that :data:`pulp_smash.constants.RPM` is present and has a
+        correct checksum.
 
         This test is skipped if selinux is installed and enabled on the target
         system an `Pulp issue 616 <https://pulp.plan.io/issues/616>`_ is open.
@@ -465,9 +465,10 @@ class ExportDistributorTestCase(ExportDirMixin, utils.BaseAPITestCase):
             self.repo['_href'],
             self.distributor['id'],
         )
-        checksum = cli.Client(self.cfg).run(('sha256sum', os.path.join(
+        actual = cli.Client(self.cfg).run(('sha256sum', os.path.join(
             export_dir,
             self.distributor['config']['relative_url'],
             RPM,
         ))).stdout.strip().split()[0]
-        self.assertEqual(checksum, RPM_SHA256_CHECKSUM)
+        expect = utils.get_sha256_checksum(RPM_URL)
+        self.assertEqual(actual, expect)

@@ -17,7 +17,7 @@ from pulp_smash.constants import (
     RPM,
     RPM_ABS_PATH,
     RPM_FEED_URL,
-    RPM_SHA256_CHECKSUM,
+    RPM_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module
@@ -120,8 +120,9 @@ class BackgroundTestCase(utils.BaseAPITestCase):
 
     def test_rpm_checksum(self):
         """Assert the checksum of the downloaded RPM matches the metadata."""
-        checksum = hashlib.sha256(self.rpm.content).hexdigest()
-        self.assertEqual(RPM_SHA256_CHECKSUM, checksum)
+        actual = hashlib.sha256(self.rpm.content).hexdigest()
+        expect = utils.get_sha256_checksum(RPM_URL)
+        self.assertEqual(actual, expect)
 
     def test_spawned_download_task(self):
         """Assert that a download task was spawned as a result of the sync."""
@@ -193,8 +194,9 @@ class OnDemandTestCase(utils.BaseAPITestCase):
 
     def test_rpm_checksum(self):
         """Assert the checksum of the downloaded RPM matches the metadata."""
-        checksum = hashlib.sha256(self.rpm.content).hexdigest()
-        self.assertEqual(RPM_SHA256_CHECKSUM, checksum)
+        actual = hashlib.sha256(self.rpm.content).hexdigest()
+        expect = utils.get_sha256_checksum(RPM_URL)
+        self.assertEqual(actual, expect)
 
     def test_rpm_cache_lookup_header(self):
         """Assert the first request resulted in a cache miss from Squid."""
@@ -209,8 +211,9 @@ class OnDemandTestCase(utils.BaseAPITestCase):
 
     def test_same_rpm_checksum(self):
         """Assert the checksum of the second RPM matches the metadata."""
-        checksum = hashlib.sha256(self.same_rpm.content).hexdigest()
-        self.assertEqual(RPM_SHA256_CHECKSUM, checksum)
+        actual = hashlib.sha256(self.same_rpm.content).hexdigest()
+        expect = utils.get_sha256_checksum(RPM_URL)
+        self.assertEqual(actual, expect)
 
     def test_same_rpm_cache_header(self):
         """Assert the second request resulted in a cache hit from Squid."""
