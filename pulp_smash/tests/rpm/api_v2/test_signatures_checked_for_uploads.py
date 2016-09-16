@@ -55,6 +55,7 @@ from requests.exceptions import HTTPError
 from pulp_smash import api, config, exceptions, selectors, utils
 from pulp_smash.constants import (
     DRPM_UNSIGNED_URL,
+    DRPM_URL,
     PULP_FIXTURES_KEY_ID,
     REPOSITORY_PATH,
     RPM_UNSIGNED_URL,
@@ -90,6 +91,7 @@ def setUpModule():  # pylint:disable=invalid-name
         _UNSIGNED_PACKAGES['rpm'] = utils.http_get(RPM_UNSIGNED_URL)
         _UNSIGNED_PACKAGES['srpm'] = utils.http_get(SRPM_UNSIGNED_URL)
         if selectors.bug_is_testable(1806, cfg.version):
+            _SIGNED_PACKAGES['drpm'] = utils.http_get(DRPM_URL)
             _UNSIGNED_PACKAGES['drpm'] = utils.http_get(DRPM_UNSIGNED_URL)
     except:
         _SIGNED_PACKAGES.clear()

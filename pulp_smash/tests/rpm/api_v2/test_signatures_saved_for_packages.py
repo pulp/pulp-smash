@@ -21,8 +21,10 @@ from urllib.parse import urljoin, urlparse
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
+    DRPM_FEED_URL,
     DRPM_UNSIGNED_FEED_URL,
     DRPM_UNSIGNED_URL,
+    DRPM_URL,
     ORPHANS_PATH,
     PULP_FIXTURES_KEY_ID,
     REPOSITORY_PATH,
@@ -122,6 +124,14 @@ class UploadPackageTestCase(_BaseTestCase):
 
         return repo_href
 
+    def test_signed_drpm(self):
+        """Import a signed DRPM into Pulp. Verify its signature."""
+        if selectors.bug_is_untestable(1806, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/1806')
+        repo_href = self._create_repo_import_unit(DRPM_URL)
+        unit = self._find_unit(repo_href, DRPM_URL)
+        self._verify_pkg_key(unit, PULP_FIXTURES_KEY_ID)
+
     def test_signed_rpm(self):
         """Import a signed RPM into Pulp. Verify its signature."""
         repo_href = self._create_repo_import_unit(RPM_URL)
@@ -170,6 +180,12 @@ class SyncPackageTestCase(_BaseTestCase):
         self.addCleanup(self.client.delete, repo_href)
         utils.sync_repo(self.cfg, repo_href)
         return repo_href
+
+    def test_signed_drpm(self):
+        """Assert signature is stored for signed drpm during sync."""
+        repo_href = self._create_sync_repo(DRPM_FEED_URL)
+        unit = self._find_unit(repo_href, DRPM_URL)
+        self._verify_pkg_key(unit, PULP_FIXTURES_KEY_ID)
 
     def test_signed_rpm(self):
         """Assert signature is stored for signed rpm during sync."""

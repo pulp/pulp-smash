@@ -23,6 +23,8 @@ import unittest
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
+    DRPM_FEED_COUNT,
+    DRPM_FEED_URL,
     DRPM_UNSIGNED_FEED_COUNT,
     DRPM_UNSIGNED_FEED_URL,
     ORPHANS_PATH,
@@ -107,6 +109,18 @@ class RequireValidKeyTestCase(_BaseTestCase):
         })['content_unit_counts']
         self.assertEqual(cu_counts['rpm'], RPM_FEED_COUNT, cu_counts)
 
+    def test_signed_drpm(self):
+        """Sync signed DRPMs into the repository.
+
+        Assert packages are synced in.
+        """
+        cu_counts = self.create_sync_repo({
+            'allowed_keys': [PULP_FIXTURES_KEY_ID],
+            'feed': DRPM_FEED_URL,
+            'require_signature': True,
+        })['content_unit_counts']
+        self.assertEqual(cu_counts['drpm'], DRPM_FEED_COUNT, cu_counts)
+
     def test_signed_srpm(self):
         """Sync signed SRPMs into the repository.
 
@@ -152,13 +166,11 @@ class RequireInvalidKeyTestCase(_BaseTestCase):
     def test_packages(self):
         """Sync signed and unsigned RPMs, DRPMs and SRPMs into repositories.
 
-        No signed DRPMs are synced in due to `Pulp Fixtures #25
-        <https://github.com/PulpQE/pulp-fixtures/issues/25>`_.
-
         Assert no packages are synced in.
         """
         variants = (
             (RPM_FEED_URL, 'rpm'),
+            (DRPM_FEED_URL, 'drpm'),
             (SRPM_FEED_URL, 'srpm'),
             (RPM_UNSIGNED_FEED_URL, 'rpm'),
             (DRPM_UNSIGNED_FEED_URL, 'drpm'),
@@ -195,6 +207,18 @@ class RequireAnyKeyTestCase(_BaseTestCase):
             'require_signature': True,
         })['content_unit_counts']
         self.assertEqual(cu_counts['rpm'], RPM_FEED_COUNT, cu_counts)
+
+    def test_signed_drpm(self):
+        """Sync signed DRPMs into the repository.
+
+        Assert packages are synced in.
+        """
+        cu_counts = self.create_sync_repo({
+            'allowed_keys': [],
+            'feed': DRPM_FEED_URL,
+            'require_signature': True,
+        })['content_unit_counts']
+        self.assertEqual(cu_counts['drpm'], DRPM_FEED_COUNT, cu_counts)
 
     def test_signed_srpm(self):
         """Sync signed SRPMs into the repository.
@@ -239,15 +263,13 @@ class AllowInvalidKeyTestCase(_BaseTestCase):
     """
 
     def test_signed_packages(self):
-        """Import signed RPMs and SRPMs into repositories.
-
-        No signed DRPMs are synced in due to `Pulp Fixtures #25
-        <https://github.com/PulpQE/pulp-fixtures/issues/25>`_.
+        """Import signed RPMs, DRPMs and SRPMs into repositories.
 
         Assert no packages are synced.
         """
         variants = (
             (RPM_FEED_URL, 'rpm'),
+            (DRPM_FEED_URL, 'drpm'),
             (SRPM_FEED_URL, 'srpm'),
         )
         for feed, type_id in variants:
@@ -329,6 +351,18 @@ class AllowValidKeyTestCase(_BaseTestCase):
         })['content_unit_counts']
         self.assertEqual(cu_counts['rpm'], RPM_FEED_COUNT, cu_counts)
 
+    def test_signed_drpm(self):
+        """Sync signed DRPMs into the repository.
+
+        Assert packages are synced in.
+        """
+        cu_counts = self.create_sync_repo({
+            'allowed_keys': [PULP_FIXTURES_KEY_ID],
+            'feed': DRPM_FEED_URL,
+            'require_signature': False,
+        })['content_unit_counts']
+        self.assertEqual(cu_counts['drpm'], DRPM_FEED_COUNT, cu_counts)
+
     def test_signed_srpm(self):
         """Sync signed SRPMs into the repository.
 
@@ -407,6 +441,18 @@ class AllowAnyKeyTestCase(_BaseTestCase):
             'require_signature': False,
         })['content_unit_counts']
         self.assertEqual(cu_counts['rpm'], RPM_FEED_COUNT, cu_counts)
+
+    def test_signed_drpm(self):
+        """Sync signed DRPMs into the repository.
+
+        Assert packages are synced in.
+        """
+        cu_counts = self.create_sync_repo({
+            'allowed_keys': [],
+            'feed': DRPM_FEED_URL,
+            'require_signature': False,
+        })['content_unit_counts']
+        self.assertEqual(cu_counts['drpm'], DRPM_FEED_COUNT, cu_counts)
 
     def test_signed_srpm(self):
         """Sync signed SRPMs into the repository.

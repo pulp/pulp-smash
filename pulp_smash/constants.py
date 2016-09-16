@@ -70,14 +70,30 @@ DOCKER_V2_FEED_URL = 'https://registry-1.docker.io'
 This URL can be used as the "feed" property of a Pulp Docker registry.
 """
 
+DRPM = 'drpms/test-alpha-1.1-1_1.1-2.noarch.drpm'
+"""The path to a DRPM file in one of the DRPM repositories.
+
+This path may be joined with :data:`DRPM_FEED_URL` or
+:data:`DRPM_UNSIGNED_FEED_URL`.
+"""
+
+DRPM_FEED_COUNT = 4
+"""The number of packages available at :data:`DRPM_FEED_URL`."""
+
+DRPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'drpm/')
+"""The URL to a DRPM repository."""
+
+DRPM_URL = urljoin(DRPM_FEED_URL, DRPM)
+"""The URL to a DRPM file.
+
+Built from :data:`DRPM_FEED_URL` and :data:`DRPM`.
+"""
+
 DRPM_UNSIGNED_FEED_COUNT = 4
 """The number of packages available at :data:`DRPM_UNSIGNED_FEED_URL`."""
 
 DRPM_UNSIGNED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'drpm-unsigned/')
 """The URL to an unsigned DRPM repository."""
-
-DRPM = 'drpms/test-alpha-1.1-1_1.1-2.noarch.drpm'
-"""The name of a DRPM file, relative to :data:`DRPM_UNSIGNED_FEED_URL`."""
 
 DRPM_UNSIGNED_URL = urljoin(DRPM_UNSIGNED_FEED_URL, DRPM)
 """The URL to a unsigned DRPM file.
