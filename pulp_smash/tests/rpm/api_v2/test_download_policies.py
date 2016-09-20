@@ -12,13 +12,7 @@ from urllib.parse import urljoin
 from packaging.version import Version
 
 from pulp_smash import api, cli, config, selectors, utils
-from pulp_smash.constants import (
-    REPOSITORY_PATH,
-    RPM,
-    RPM_ABS_PATH,
-    RPM_FEED_URL,
-    RPM_URL,
-)
+from pulp_smash.constants import REPOSITORY_PATH, RPM, RPM_FEED_URL, RPM_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module
 
@@ -260,13 +254,14 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
         cls.repo_post_download = api_client.get(repo['_href'], params=params)
 
         # Corrupt an RPM. The file is there, but the checksum isn't right.
+        rpm_abs_path = cls.get_rpm_abs_path()
         cli_client = cli.Client(cls.cfg)
         sudo = '' if utils.is_root(cls.cfg) else 'sudo '
-        checksum_cmd = (sudo + 'sha256sum ' + RPM_ABS_PATH).split()
+        checksum_cmd = (sudo + 'sha256sum ' + rpm_abs_path).split()
         cls.sha_pre_corruption = cli_client.run(checksum_cmd).stdout.strip()
-        cli_client.run((sudo + 'rm ' + RPM_ABS_PATH).split())
-        cli_client.run((sudo + 'touch ' + RPM_ABS_PATH).split())
-        cli_client.run((sudo + 'chown apache:apache ' + RPM_ABS_PATH).split())
+        cli_client.run((sudo + 'rm ' + rpm_abs_path).split())
+        cli_client.run((sudo + 'touch ' + rpm_abs_path).split())
+        cli_client.run((sudo + 'chown apache:apache ' + rpm_abs_path).split())
         cls.sha_post_corruption = cli_client.run(checksum_cmd).stdout.strip()
 
         # Trigger repository downloads that don't and do checksum files, resp.
@@ -274,6 +269,14 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
         cls.unverified_file_sha = cli_client.run(checksum_cmd).stdout.strip()
         api_client.post(download_path, {'verify_all_units': True})
         cls.verified_file_sha = cli_client.run(checksum_cmd).stdout.strip()
+
+    @classmethod
+    def get_rpm_abs_path(cls):
+        """Return the absolute path to :data:`pulp_smash.constants.RPM`."""
+        return cli.Client(cls.cfg).run(
+            'find /var/lib/pulp/content/units/rpm/ -type f -name'
+            .split() + [RPM]
+        ).stdout.strip()
 
     def test_units_before_download(self):
         """Assert no content units were downloaded besides metadata units."""

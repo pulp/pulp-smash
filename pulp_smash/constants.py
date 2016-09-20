@@ -287,12 +287,6 @@ The erratum ID is defined by :data:`pulp_smash.constants.RPM_ERRATUM_ID`.
 RPM = 'bear-4.1-1.noarch.rpm'
 """The name of an RPM file. See :data:`pulp_smash.constants.RPM_URL`."""
 
-RPM_ABS_PATH = (
-    '/var/lib/pulp/content/units/rpm/'
-    '62/7c493152b5de3cfccb681fb98b0f56089425db3030328767c0cc031b2235b3/' + RPM
-)
-"""The absolute path to :data:`pulp_smash.constants.RPM` in the filesystem."""
-
 RPM_ERRATUM_URL = (
     'https://repos.fedorapeople.org'
     '/repos/pulp/pulp/fixtures/rpm-erratum/erratum.json'
