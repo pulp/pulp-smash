@@ -69,6 +69,8 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         4. Download an RPM from the repository.
         """
         super(BackgroundTestCase, cls).setUpClass()
+        if selectors.bug_is_untestable(2272, cls.cfg.version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2272')
         if (selectors.bug_is_untestable(1905, cls.cfg.version) and
                 _os_is_rhel6(cls.cfg)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1905')
@@ -232,6 +234,8 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
         7. Trigger a repository download, with unit verification.
         """
         super(FixFileCorruptionTestCase, cls).setUpClass()
+        if selectors.bug_is_untestable(2272, cls.cfg.version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2272')
         if (selectors.bug_is_untestable(1905, cls.cfg.version) and
                 _os_is_rhel6(cls.cfg)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1905')
