@@ -302,17 +302,35 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
         )
 
     def test_corruption_occurred(self):
-        """Assert the checksum after corrupting an RPM isn't the same.
+        """Assert corrupting a unit changes its checksum.
 
         This is to ensure we actually corrupted the RPM and validates further
         testing.
         """
         self.assertNotEqual(self.sha_pre_corruption, self.sha_post_corruption)
 
-    def test_unverified_file_unchanged(self):
-        """Assert a download without verify_all_units doesn't verify files."""
+    def test_verify_all_units_false(self):
+        """Verify Pulp's behaviour when ``verify_all_units`` is false.
+
+        Assert that the checksum of the corrupted unit is unchanged, indicating
+        that Pulp did not verify (or re-download) the checksum of the corrupted
+        unit.
+        """
         self.assertEqual(self.sha_post_corruption, self.unverified_file_sha)
 
-    def test_verified_file_changed(self):
-        """Assert a download task with verify_all_units fixes corruption."""
+    def test_verify_all_units_true(self):
+        """Verify Pulp's behaviour when ``verify_all_units`` is true.
+
+        Assert that the checksum of the corrupted unit is changed, indicating
+        that Pulp did verify the checksum of the corrupted unit, and
+        subsequently re-downloaded the unit.
+        """
+        self.assertNotEqual(self.unverified_file_sha, self.verified_file_sha)
+
+    def test_start_end_checksums(self):
+        """Verify Pulp's behaviour when ``verify_all_units`` is true.
+
+        Assert that the pre-corruption checksum of the unit is the same as the
+        post-redownload checksum of the unit.
+        """
         self.assertEqual(self.sha_pre_corruption, self.verified_file_sha)
