@@ -24,6 +24,8 @@ from pulp_smash.constants import (
     RPM,
     RPM_FEED_URL,
     RPM_URL,
+    SRPM,
+    SRPM_UNSIGNED_URL,
 )
 from pulp_smash.tests.rpm.utils import gen_erratum
 from pulp_smash.tests.rpm.api_v2.utils import (
@@ -194,6 +196,50 @@ class UploadDrpmTestCase(utils.BaseAPITestCase):
         self.assertEqual(
             self.repo_units.json()[0]['metadata']['filename'],
             DRPM,
+        )
+
+
+class UploadSrpmTestCase(utils.BaseAPITestCase):
+    """Test whether one can upload a SRPM into a repository.
+
+    This test case targets `Pulp Smash #402
+    <https://github.com/PulpQE/pulp-smash/issues/402>`_
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Import a SRPM into a repository and search it for content units.
+
+        Specifically, this method does the following:
+
+        1. Create a yum repository.
+        2. Upload a SRPM into the repository.
+        3. Search for all content units in the repository.
+        """
+        super(UploadSrpmTestCase, cls).setUpClass()
+        client = api.Client(cls.cfg)
+        repo = client.post(REPOSITORY_PATH, gen_repo()).json()
+        cls.resources.add(repo['_href'])
+        srpm = utils.http_get(SRPM_UNSIGNED_URL)
+        upload_import_unit(cls.cfg, srpm, 'srpm', repo['_href'])
+        cls.repo_units = client.post(
+            urljoin(repo['_href'], 'search/units/'),
+            {'criteria': {}},
+        )
+
+    def test_status_code_repo_units(self):
+        """Verify the HTTP status code for repo units response."""
+        self.assertEqual(self.repo_units.status_code, 200)
+
+    def test_srpm_uploaded_successfully(self):
+        """Test if SRPM has been uploaded successfully."""
+        self.assertEqual(len(self.repo_units.json()), 1)
+
+    def test_srpm_file_name_is_correct(self):
+        """Test if SRPM extracted correct metadata for creating filename."""
+        self.assertEqual(
+            self.repo_units.json()[0]['metadata']['filename'],
+            SRPM,
         )
 
 
