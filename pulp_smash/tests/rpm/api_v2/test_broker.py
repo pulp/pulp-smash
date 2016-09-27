@@ -45,6 +45,8 @@ class BrokerTestCase(unittest.TestCase):
     def setUp(self):
         """Provide a server config and Pulp services to stop and start."""
         self.cfg = config.get_config()
+        if selectors.bug_is_untestable(2277, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2277')
         self.broker = utils.get_broker(self.cfg)
         self.services = tuple((
             cli.Service(self.cfg, service) for service in PULP_SERVICES

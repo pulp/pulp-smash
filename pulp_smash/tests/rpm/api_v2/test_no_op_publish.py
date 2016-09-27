@@ -30,7 +30,7 @@ from urllib.parse import urljoin
 
 from packaging.version import Version
 
-from pulp_smash import api, config, exceptions, utils
+from pulp_smash import api, config, exceptions, selectors, utils
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module
@@ -53,6 +53,8 @@ def setUpModule():  # pylint:disable=invalid-name
     cfg = config.get_config()
     if cfg.version < Version('2.9'):
         raise unittest.SkipTest('This module requires Pulp 2.9 or greater.')
+    if selectors.bug_is_untestable(2277, cfg.version):
+        raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
 
     # Create and sync a repository. If this set-up procedure grows, consider
     # implementing a stack of tear-down actions

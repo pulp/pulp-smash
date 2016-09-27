@@ -9,6 +9,7 @@ feature. For more information, see `Pulp issue #1976`_.
 .. _Pulp issue #1976: https://pulp.plan.io/issues/1976
 """
 import os
+import unittest
 from urllib.parse import urljoin
 
 from pulp_smash import api, selectors, utils
@@ -94,6 +95,8 @@ class PackagesDirectoryTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create a repository with a feed and sync it."""
         super(PackagesDirectoryTestCase, cls).setUpClass()
+        if selectors.bug_is_untestable(2277, cls.cfg.version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = RPM_FEED_URL

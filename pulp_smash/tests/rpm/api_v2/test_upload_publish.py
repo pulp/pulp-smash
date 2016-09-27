@@ -403,6 +403,8 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
 
     def test_unit_integrity(self):
         """Download and verify an RPM from each Pulp distributor."""
+        if selectors.bug_is_untestable(2277, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2277')
         for response in self.responses['distribute']:
             distributor = response.json()
             with self.subTest(distributor=distributor):
@@ -430,6 +432,8 @@ class UploadErratumTestCase(utils.BaseAPITestCase):
         4. Fetch the repository's ``updateinfo.xml`` file.
         """
         super(UploadErratumTestCase, cls).setUpClass()
+        if selectors.bug_is_untestable(2277, cls.cfg.version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
         cls.erratum = gen_erratum()
 
         # Create an RPM repository with a feed and distributor.

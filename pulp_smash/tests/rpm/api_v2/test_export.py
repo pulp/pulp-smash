@@ -17,7 +17,7 @@ from xml.dom import minidom
 from dateutil.parser import parse
 from packaging.version import Version
 
-from pulp_smash import api, cli, selectors, utils
+from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
     REPOSITORY_EXPORT_DISTRIBUTOR,
     REPOSITORY_GROUP_EXPORT_DISTRIBUTOR,
@@ -33,7 +33,18 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     gen_repo,
     gen_repo_group,
 )
-from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.rpm.utils import set_up_module
+
+
+def setUpModule():  # pylint:disable=invalid-name
+    """Possibly skip the tests in this module.
+
+    Skip this module of tests if Pulp suffers from `issue 2277
+    <https://pulp.plan.io/issues/2277>`_.
+    """
+    set_up_module()
+    if selectors.bug_is_untestable(2277, config.get_config().version):
+        raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
 
 
 def _create_distributor(

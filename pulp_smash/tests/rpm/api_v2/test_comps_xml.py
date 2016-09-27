@@ -6,12 +6,13 @@ containing metadata are present. This module houses test cases which verify the
 ``comps.xml`` file. For a sample ``comps.xml`` file, search through
 :data:`pulp_smash.constants.RPM_FEED_URL`.
 """
+import unittest
 from urllib.parse import urljoin
 from xml.etree import ElementTree
 
 from packaging.version import Version
 
-from pulp_smash import api, selectors, utils
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
     CONTENT_UPLOAD_PATH,
     REPOSITORY_PATH,
@@ -22,7 +23,18 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     gen_repo,
     get_repomd_xml,
 )
-from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.rpm.utils import set_up_module
+
+
+def setUpModule():  # pylint:disable=invalid-name
+    """Possibly skip the tests in this module.
+
+    Skip this module of tests if Pulp suffers from `issue 2277
+    <https://pulp.plan.io/issues/2277>`_.
+    """
+    set_up_module()
+    if selectors.bug_is_untestable(2277, config.get_config().version):
+        raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
 
 
 def _gen_realistic_group():

@@ -265,6 +265,8 @@ class CopyAndPublishTwoVersionsRepoTestCase(CopyBaseTestCase):
     def setUpClass(cls):
         """Find a RPM with more than one version on repo1."""
         super(CopyAndPublishTwoVersionsRepoTestCase, cls).setUpClass()
+        if selectors.bug_is_untestable(2277, cls.cfg.version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
         cls.client = cli.Client(cls.cfg)
         cls.sudo = '' if is_root(cls.cfg) else 'sudo '
         # Retrieve all modules with multiple versions in the repo1.

@@ -3,9 +3,10 @@
 
 .. _repomd.xml: http://createrepo.baseurl.org/
 """
+import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, utils
+from pulp_smash import api, selectors, utils
 from pulp_smash.constants import REPOSITORY_PATH, RPM_NAMESPACES
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
@@ -29,6 +30,8 @@ class RepoMDTestCase(utils.BaseAPITestCase):
         2. Fetch the ``repomd.xml`` file from the distributor, and parse it.
         """
         super(RepoMDTestCase, cls).setUpClass()
+        if selectors.bug_is_untestable(2277, cls.cfg.version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
 
         # Create a repository. Add a yum distributor and publish it.
         client = api.Client(cls.cfg, api.json_handler)

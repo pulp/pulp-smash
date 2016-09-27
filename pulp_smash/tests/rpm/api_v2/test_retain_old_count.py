@@ -14,9 +14,10 @@ repository created with valid feed and `retain_old_count`_ option set.
 .. _retain_old_count:
     https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/yum-plugins.html
 """
+import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, utils
+from pulp_smash import api, selectors, utils
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -41,6 +42,8 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
         4. Get information on both repositories.
         """
         super(RetainOldCountTestCase, cls).setUpClass()
+        if selectors.bug_is_untestable(2277, cls.cfg.version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
         client = api.Client(cls.cfg)
         cls.responses = {}
         hrefs = []  # repository hrefs
