@@ -41,10 +41,7 @@ gracefully handle those changes.
 
 For more information, see `Pulp #1991`_ and `Pulp Smash #347`_.
 
-..NOTE:: No signed DRPMs are used due to `Pulp Fixtures #25`_.
-
 .. _Pulp #1991: https://pulp.plan.io/issues/1991
-.. _Pulp Fixtures #25: https://github.com/PulpQE/pulp-fixtures/issues/25
 .. _Pulp Smash #347: https://github.com/PulpQE/pulp-smash/issues/347
 """
 import unittest
