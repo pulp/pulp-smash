@@ -107,6 +107,9 @@ class SyncPublishV2TestCase(_SuccessMixin, _BaseTestCase):
         if (cls.cfg.version >= Version('2.9') and
                 selectors.bug_is_untestable(1909, cls.cfg.version)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1909')
+        if (cls.cfg.version >= Version('2.10') and
+                selectors.bug_is_untestable(2287, cls.cfg.version)):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2287')
         docker_utils.repo_create(
             cls.cfg,
             feed=DOCKER_V2_FEED_URL,
