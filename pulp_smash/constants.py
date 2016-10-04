@@ -334,6 +334,15 @@ metadata/rpm
     Used by ``repodata/repomd.xml``.
 """
 
+RPM_MIRRORLIST_BAD = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-mirrorlist-bad')
+"""The URL to a mirrorlist file containing only invalid entries."""
+
+RPM_MIRRORLIST_GOOD = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-mirrorlist-good')
+"""The URL to a mirrorlist file containing only valid entries."""
+
+RPM_MIRRORLIST_MIXED = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-mirrorlist-mixed')
+"""The URL to a mirrorlist file containing invalid and valid entries."""
+
 SRPM = 'test-srpm02-1.0-1.src.rpm'
 """The name of an SRPM file at :data:`pulp_smash.constants.SRPM_FEED_URL`."""
 
