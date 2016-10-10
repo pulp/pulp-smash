@@ -234,20 +234,40 @@ class CopyAllTagsTestCase(_BaseTestCase, _CopyMixin):
 
     def test_positive_copy_output(self):
         """Assert that the list of tags in the copy output are correct."""
-        units_search = docker_utils.repo_search(
+        # Sample output:
+        #
+        #     Copied:
+        #       docker_blob: 20
+        #       docker_tag: 43
+        #       docker_manifest: 43
+        #
+        copy_count = self.copy.stdout.splitlines()
+        copy_count = [line for line in copy_count if 'docker_tag:' in line]
+        self.assertEqual(len(copy_count), 1, self.copy.stdout)
+        copy_count = int(copy_count[0].split('docker_tag:')[1].strip())
+
+        # Sample output: (Notice "Manifest Digest," not "Digest.")
+        #
+        #     Created:      2016-10-10T20:45:06Z
+        #     Metadata:
+        #       Manifest Digest:    sha256:98a0bd48d22ff96ca23bfda2fe1cf72034e…
+        #                           274aca0f9c51c
+        #       Name:               latest
+        #       Pulp User Metadata:
+        #       Repo Id:            6d49614e-621a-4a7c-ae0b-ae3885463227
+        #     Repo Id:      6d49614e-621a-4a7c-ae0b-ae3885463227
+        #     Unit Id:      f0e4abc1-e63f-4e24-a249-8e5b91446787
+        #     Unit Type Id: docker_tag
+        #     Updated:      2016-10-10T20:45:06Z
+        #
+        search_count = docker_utils.repo_search(
             self.cfg,
-            fields='name',
             repo_id=self.repo_ids[0],
             unit_type='tag',
         ).stdout
-        unit_ids_search = set(re.findall(_DIGEST_RE, units_search))
+        search_count = len(re.findall(_UNIT_ID_RE, search_count))
 
-        # The tag digests are printed after "docker_tag:".
-        unit_ids_copy = self.copy.stdout.split('docker_tag:')[1]
-        unit_ids_copy = re.findall(r'(?: {2})(\w*:\w*)', unit_ids_copy)
-        unit_ids_copy = _truncate_ids(unit_ids_copy)
-
-        self.assertEqual(unit_ids_search, unit_ids_copy)
+        self.assertEqual(copy_count, search_count)
 
     def test_positive_units_copied(self):
         """Assert that all units were copied."""
