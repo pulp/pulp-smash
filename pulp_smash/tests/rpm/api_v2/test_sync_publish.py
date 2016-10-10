@@ -104,6 +104,20 @@ class SyncRpmRepoTestCase(SyncRepoBaseTestCase):
         repo = api.Client(self.cfg).get(self.repo_href).json()
         self.assertEqual(repo['content_unit_counts'], content_unit_counts)
 
+    def test_no_change_in_second_sync(self):
+        """Verify that syncing a second time has no changes.
+
+        If the repository have not changed then Pulp must state that anything
+        was changed when doing a second sync.
+        """
+        report = utils.sync_repo(self.cfg, self.repo_href)
+        tasks = tuple(api.poll_spawned_tasks(self.cfg, report.json()))
+        with self.subTest(comment='spawned tasks'):
+            self.assertEqual(len(tasks), 1)
+        for count_type in ('added_count', 'removed_count', 'updated_count'):
+            with self.subTest(comment=count_type):
+                self.assertEqual(tasks[0]['result'][count_type], 0)
+
 
 class SyncDrpmRepoTestCase(SyncRepoBaseTestCase):
     """Test one can create and sync an RPM repository with an DRPM feed."""
