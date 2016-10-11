@@ -9,4 +9,5 @@ def gen_repo():
         'id': utils.uuid4(),
         'importer_config': {},
         'importer_type_id': 'python_importer',
+        'notes': {'_repo-type': 'PYTHON'},
     }
