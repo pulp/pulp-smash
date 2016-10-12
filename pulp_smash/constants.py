@@ -225,7 +225,7 @@ to Pulp.
     http://projects.puppetlabs.com/projects/module-site/wiki/Server-api
 """
 
-PYTHON_PULP_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'python/')
+PYTHON_PULP_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'python-pulp/')
 """The URL to a Pulp Python repository."""
 
 PYTHON_EGG_URL = urljoin(
