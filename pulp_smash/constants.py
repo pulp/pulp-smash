@@ -225,14 +225,22 @@ to Pulp.
     http://projects.puppetlabs.com/projects/module-site/wiki/Server-api
 """
 
-PYTHON_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'python/')
-"""The URL to a Python repository."""
+PYTHON_PULP_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'python/')
+"""The URL to a Pulp Python repository."""
 
 PYTHON_EGG_URL = urljoin(
-    PYTHON_FEED_URL,
+    PYTHON_PULP_FEED_URL,
     'packages/source/s/shelf-reader/shelf-reader-0.1.tar.gz'
 )
-"""The URL to a Python egg at :data:`PYTHON_FEED_URL`."""
+"""The URL to a Python egg at :data:`PYTHON_PULP_FEED_URL`."""
+
+PYTHON_PYPI_FEED_URL = 'https://pypi.python.org'
+"""The URL to the PyPI Python repository.
+
+.. NOTE:: This should be changed after `Pulp Fixtures #40`_ is fixed.
+
+.. _Pulp Fixtures #40: https://github.com/PulpQE/pulp-fixtures/issues/40
+"""
 
 REPOSITORY_EXPORT_DISTRIBUTOR = 'export_distributor'
 """A ``distributor_type_id`` to export a repository.
