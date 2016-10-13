@@ -234,13 +234,8 @@ PYTHON_EGG_URL = urljoin(
 )
 """The URL to a Python egg at :data:`PYTHON_PULP_FEED_URL`."""
 
-PYTHON_PYPI_FEED_URL = 'https://pypi.python.org'
-"""The URL to the PyPI Python repository.
-
-.. NOTE:: This should be changed after `Pulp Fixtures #40`_ is fixed.
-
-.. _Pulp Fixtures #40: https://github.com/PulpQE/pulp-fixtures/issues/40
-"""
+PYTHON_PYPI_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'python-pypi/')
+"""The URL to the PyPI Python repository."""
 
 REPOSITORY_EXPORT_DISTRIBUTOR = 'export_distributor'
 """A ``distributor_type_id`` to export a repository.
