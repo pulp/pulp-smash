@@ -52,7 +52,7 @@ class UtilsMixin(object):
         This test targets `Pulp #1883 <https://pulp.plan.io/issues/1883>`_.
         """
         if selectors.bug_is_untestable(1883, cfg.version):
-            return
+            self.skipTest('https://pulp.plan.io/issues/1883')
         units = api.Client(cfg).post(
             urljoin(repo_href, 'search/units/'),
             {'criteria': {}},
@@ -88,8 +88,10 @@ class PulpToPulpSyncTestCase(UtilsMixin, unittest.TestCase):
             'package_names': 'shelf-reader',
         })
         call_report = utils.sync_repo(cfg, repo_href)
-        self.verify_sync(cfg, call_report)
-        self.verify_package_types(cfg, repo_href)
+        with self.subTest():
+            self.verify_sync(cfg, call_report)
+        with self.subTest():
+            self.verify_package_types(cfg, repo_href)
 
 
 class PypiToPulpSyncTestCase(UtilsMixin, unittest.TestCase):
@@ -117,5 +119,7 @@ class PypiToPulpSyncTestCase(UtilsMixin, unittest.TestCase):
             'package_names': 'shelf-reader',
         })
         call_report = utils.sync_repo(cfg, repo_href)
-        self.verify_sync(cfg, call_report)
-        self.verify_package_types(cfg, repo_href)
+        with self.subTest():
+            self.verify_sync(cfg, call_report)
+        with self.subTest():
+            self.verify_package_types(cfg, repo_href)
