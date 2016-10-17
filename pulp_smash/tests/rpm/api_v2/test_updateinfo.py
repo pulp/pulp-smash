@@ -4,6 +4,8 @@ import unittest
 from urllib.parse import urljoin
 from xml.etree import ElementTree
 
+from packaging.version import Version
+
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
     REPOSITORY_PATH,
@@ -28,7 +30,10 @@ def setUpModule():  # pylint:disable=invalid-name
     <https://pulp.plan.io/issues/2277>`_.
     """
     set_up_module()
-    if selectors.bug_is_untestable(2277, config.get_config().version):
+    cfg = config.get_config()
+    if (cfg.version >= Version('2.10') and
+            cfg.version < Version('2.11') and
+            selectors.bug_is_untestable(2277, cfg.version)):
         raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
 
 
