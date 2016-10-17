@@ -10,6 +10,7 @@ from pulp_smash.constants import (
     RPM_ERRATUM_ID,
     RPM_ERRATUM_RPM_NAME,
     RPM_FEED_URL,
+    RPM_PKGLISTS_UPDATEINFO_FEED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
@@ -330,3 +331,68 @@ class ErratumPkgListCountTestCase(utils.BaseAPITestCase):
             self.assertEqual(len(name.getchildren()), 0)
         with self.subTest(comment='name have 1 as text'):
             self.assertEqual(name.text, '1')
+
+
+class PkglistsTestCase(unittest.TestCase):
+    """Sync a repository whose updateinfo file has multiple pkglist sections.
+
+    This test case targets `Pulp #2227 <https://pulp.plan.io/issues/2227>`_.
+    """
+
+    def test_all(self):
+        """Sync a repo whose updateinfo file has multiple pkglist sections.
+
+        Do the following:
+
+        1. Create and sync a repository with an importer and distributor.
+           Ensure the importer's feed is set to
+           :data:`pulp_smash.constants.RPM_PKGLISTS_UPDATEINFO_FEED_URL`.
+        2. Publish the repository, and fetch and parse its updateinfo file.
+        3. Verify the updateinfo contains the correct number of ``<pkglists>``
+           sections, with the correct contents in each.
+        """
+        cfg = config.get_config()
+        if selectors.bug_is_untestable(2227, cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2277')
+
+        # Create and sync a repository.
+        client = api.Client(cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_PKGLISTS_UPDATEINFO_FEED_URL
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        utils.sync_repo(cfg, repo['_href'])
+
+        # Publish the repository, and fetch and parse its updateinfo file.
+        repo = client.get(repo['_href'], params={'details': True})
+        self.assertEqual(len(repo['distributors']), 1, repo['distributors'])
+        distributor = repo['distributors'][0]
+        client.post(
+            urljoin(repo['_href'], 'actions/publish/'),
+            {'id': distributor['id']},
+        )
+        root_element = get_repomd_xml(
+            cfg,
+            urljoin('/pulp/repos/', distributor['config']['relative_url']),
+            'updateinfo'
+        )
+
+        # Verify the contents of the updateinfo file.
+        debug = ElementTree.tostring(root_element)
+        pkglists = root_element.find('update').findall('pkglist')
+        self.assertEqual(len(pkglists), 3, debug)
+
+        collections = [pkglist.find('collection') for pkglist in pkglists]
+        names = {collection.find('name').text for collection in collections}
+        self.assertEqual(names, {'1', '2', '3'}, debug)
+
+        packages = {
+            collection.find('package').find('filename').text
+            for collection in collections
+        }
+        self.assertEqual(packages, {
+            'penguin-0.9.1-1.noarch.rpm',
+            'shark-0.1-1.noarch.rpm',
+            'walrus-5.21-1.noarch.rpm',
+        }, debug)

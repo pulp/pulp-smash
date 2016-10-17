@@ -302,6 +302,12 @@ RPM_FEED_COUNT = 32
 RPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm/')
 """The URL to an RPM repository. See :data:`RPM_URL`."""
 
+RPM_PKGLISTS_UPDATEINFO_FEED_URL = (
+    'https://repos.fedorapeople.org/pulp/pulp/fixtures/'
+    'rpm-pkglists-updateinfo/'
+)
+"""A repository whose updateinfo file has multiple ``<pkglist>`` sections."""
+
 RPM_UNSIGNED_FEED_COUNT = 32
 """The number of packages available at :data:`RPM_UNSIGNED_FEED_URL`."""
 
