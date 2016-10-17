@@ -600,9 +600,9 @@ class DeleteTestCase(
 
         # Publish with the RPM rsync distributor, and verify that no RPMs are
         # in the target directory.
-        if selectors.bug_is_untestable(2337, cfg.version):
+        if selectors.bug_is_untestable(2221, cfg.version):
             # We could also `return` here, but a skip is more visible.
-            self.skipTest('https://pulp.plan.io/issues/2337')
+            self.skipTest('https://pulp.plan.io/issues/2221')
         api_client.post(urljoin(repo_href, 'actions/publish/'), {
             'id': distribs['rpm_rsync_distributor']['id'],
             'override_config': {'delete': True},
