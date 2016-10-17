@@ -279,6 +279,7 @@ class UpdateRpmTestCase(UtilsMixin, unittest.TestCase):
             gpgcheck=0,
             metadata_expire=0,  # force metadata to load every time
             repositoryid=repo_id,
+            sslverify='yes' if cfg.verify else 'no',
         )
         self.addCleanup(
             client.run,
