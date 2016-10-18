@@ -116,26 +116,25 @@ def _get_rpm_names_versions(server_config, repo_id):
     :param pulp_smash.config.ServerConfig server_config: Information about the
         Pulp server being targeted.
     :param repo_id: A RPM repository ID.
-    :returns: The name and versions of each package in the repository. For
-        example: ``{'walrus': ['5.21', '0.71']}``.
+    :returns: The name and versions of each package in the repository, with the
+        versions sorted in ascending order. For example: ``{'walrus': ['0.71',
+        '5.21']}``.
     """
     keyword = 'Filename:'
     completed_proc = cli.Client(server_config).run(
         'pulp-admin rpm repo content rpm --repo-id {}'.format(repo_id).split()
     )
-    filenames = [
-        line.lstrip(keyword).strip()
-        for line in completed_proc.stdout.splitlines()
-        if keyword in line
-    ]
-    assert len(filenames) > 0
     rpms = {}
-    for filename in filenames:
-        # Example of a filename string: 'walrus-0.71-1.noarch.rpm'.
-        filename_parts = filename.split('-')[:-1]
+    for line in completed_proc.stdout.splitlines():
+        if keyword not in line:
+            continue
+        # e.g. 'Filename: my-walrus-0.71-1.noarch.rpm ' → ['my-walrus', '0.71']
+        filename_parts = line.lstrip(keyword).strip().split('-')[:-1]
         name = '-'.join(filename_parts[:-1])
         version = filename_parts[-1]
         rpms.setdefault(name, []).append(version)
+    for rpm in rpms:
+        rpms[rpm] = sorted(rpms[rpm], key=Version)
     return rpms
 
 
@@ -195,7 +194,6 @@ class CopyRecursiveTestCase(UtilsMixin, unittest.TestCase):
 
         # Verify the version of the "walrus" unit
         src_rpms = _get_rpm_names_versions(cfg, _REPO_ID)
-        src_rpms['walrus'].sort(key=lambda ver: Version(ver))  # noqa pylint:disable=unnecessary-lambda
         self.assertEqual(src_rpms['walrus'][-1], dst_rpms['walrus'][0])
 
 
@@ -264,9 +262,8 @@ class UpdateRpmTestCase(UtilsMixin, unittest.TestCase):
         repo_id = self.create_repo(cfg)
 
         # Pick an RPM with two versions.
-        rpms = _get_rpm_names_versions(cfg, _REPO_ID)
         rpm_name = 'walrus'
-        rpm_versions = rpms[rpm_name]
+        rpm_versions = _get_rpm_names_versions(cfg, _REPO_ID)[rpm_name]
 
         # Copy the older RPM to the second repository, and publish it.
         self._copy_and_publish(cfg, rpm_name, rpm_versions[0], repo_id)
