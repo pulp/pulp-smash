@@ -20,20 +20,17 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     get_repomd_xml,
     get_unit_unassociate_criteria,
 )
-from pulp_smash.tests.rpm.utils import set_up_module
+from pulp_smash.tests.rpm.utils import check_issue_2277, set_up_module
 
 
 def setUpModule():  # pylint:disable=invalid-name
     """Possibly skip the tests in this module.
 
-    Skip this module of tests if Pulp suffers from `issue 2277
-    <https://pulp.plan.io/issues/2277>`_.
+    Skip tests if `Pulp #2277 <https://pulp.plan.io/issues/2277>`_ affects us.
     """
     set_up_module()
     cfg = config.get_config()
-    if (cfg.version >= Version('2.10') and
-            cfg.version < Version('2.11') and
-            selectors.bug_is_untestable(2277, cfg.version)):
+    if cfg.version < Version('2.11') and check_issue_2277(cfg):
         raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
 
 

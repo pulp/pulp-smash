@@ -29,6 +29,7 @@ from pulp_smash.constants import (
 )
 from pulp_smash.exceptions import TaskReportError
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
+from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -113,9 +114,7 @@ class UtilsMixin(object):
 
         .. _issue #2277: https://pulp.plan.io/issues/2277
         """
-        if (cfg.version >= Version('2.10') and
-                cfg.version < Version('2.11') and
-                selectors.bug_is_untestable(2277, cfg.version)):
+        if cfg.version < Version('2.11') and check_issue_2277(cfg):
             self.skipTest('https://pulp.plan.io/issues/2277')
 
     def check_issue_2321(self, cfg):

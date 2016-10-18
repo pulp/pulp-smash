@@ -3,6 +3,7 @@
 import json
 
 import requests
+from packaging.version import Version
 
 from pulp_smash import config, selectors, utils
 from pulp_smash.constants import RPM_ERRATUM_URL
@@ -33,3 +34,16 @@ def gen_erratum():
         for package in erratum['pkglist'][0]['packages']:
             package['sum'] = package['sum'][:2]
     return erratum
+
+
+def check_issue_2277(cfg):
+    """Return true if `Pulp #2277`_ affects the targeted Pulp system.
+
+    :param pulp_smash.config.ServerConfig cfg: The Pulp system under test.
+
+    .. _Pulp #2277: https://pulp.plan.io/issues/2277
+    """
+    if (cfg.version >= Version('2.10') and
+            selectors.bug_is_untestable(2277, cfg.version)):
+        return True
+    return False

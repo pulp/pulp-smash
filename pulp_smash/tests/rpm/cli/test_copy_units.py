@@ -10,7 +10,7 @@ from packaging.version import Version
 
 from pulp_smash import cli, config, constants, selectors, utils
 from pulp_smash.tests.rpm.cli.utils import count_langpacks
-from pulp_smash.tests.rpm.utils import set_up_module
+from pulp_smash.tests.rpm.utils import check_issue_2277, set_up_module
 from pulp_smash.utils import is_root
 
 _REPO_ID = utils.uuid4()
@@ -255,7 +255,7 @@ class UpdateRpmTestCase(UtilsMixin, unittest.TestCase):
     def test_all(self):
         """Update an RPM in a repository and on a host."""
         cfg = config.get_config()
-        if selectors.bug_is_untestable(2277, cfg.version):
+        if check_issue_2277(cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
         client = cli.Client(cfg)
         sudo = '' if is_root(cfg) else 'sudo '

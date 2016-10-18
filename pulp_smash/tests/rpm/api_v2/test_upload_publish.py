@@ -33,6 +33,7 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     gen_repo,
     get_repomd_xml,
 )
+from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -403,7 +404,7 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
 
     def test_unit_integrity(self):
         """Download and verify an RPM from each Pulp distributor."""
-        if selectors.bug_is_untestable(2277, self.cfg.version):
+        if check_issue_2277(self.cfg):
             self.skipTest('https://pulp.plan.io/issues/2277')
         for response in self.responses['distribute']:
             distributor = response.json()
@@ -432,7 +433,7 @@ class UploadErratumTestCase(utils.BaseAPITestCase):
         4. Fetch the repository's ``updateinfo.xml`` file.
         """
         super(UploadErratumTestCase, cls).setUpClass()
-        if selectors.bug_is_untestable(2277, cls.cfg.version):
+        if check_issue_2277(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
         cls.erratum = gen_erratum()
 

@@ -19,6 +19,7 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     gen_repo,
     xml_handler,
 )
+from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -95,7 +96,7 @@ class PackagesDirectoryTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create a repository with a feed and sync it."""
         super(PackagesDirectoryTestCase, cls).setUpClass()
-        if selectors.bug_is_untestable(2277, cls.cfg.version):
+        if check_issue_2277(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()

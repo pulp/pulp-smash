@@ -20,13 +20,14 @@ import random
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, selectors, utils
+from pulp_smash import api, utils
 from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
     get_unit_unassociate_criteria,
 )
+from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _PUBLISH_DIR = 'pulp/repos/'
@@ -58,7 +59,7 @@ class RemoveMissingTestCase(utils.BaseAPITestCase):
         6. Get content of both repositories.
         """
         super(RemoveMissingTestCase, cls).setUpClass()
-        if selectors.bug_is_untestable(2277, cls.cfg.version):
+        if check_issue_2277(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
         cls.responses = {}
         hrefs = []  # repository hrefs

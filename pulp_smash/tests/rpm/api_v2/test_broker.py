@@ -36,6 +36,7 @@ from pulp_smash.constants import (
     RPM_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
+from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -45,7 +46,7 @@ class BrokerTestCase(unittest.TestCase):
     def setUp(self):
         """Provide a server config and Pulp services to stop and start."""
         self.cfg = config.get_config()
-        if selectors.bug_is_untestable(2277, self.cfg.version):
+        if check_issue_2277(self.cfg):
             self.skipTest('https://pulp.plan.io/issues/2277')
         self.broker = utils.get_broker(self.cfg)
         self.services = tuple((
