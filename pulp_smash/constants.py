@@ -80,8 +80,8 @@ This path may be joined with :data:`DRPM_FEED_URL` or
 DRPM_FEED_COUNT = 4
 """The number of packages available at :data:`DRPM_FEED_URL`."""
 
-DRPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'drpm/')
-"""The URL to a DRPM repository."""
+DRPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'drpm-signed/')
+"""The URL to a signed DRPM repository."""
 
 DRPM_URL = urljoin(DRPM_FEED_URL, DRPM)
 """The URL to a DRPM file.
@@ -299,8 +299,8 @@ RPM_ERRATUM_URL = (
 RPM_FEED_COUNT = 32
 """The number of packages available at :data:`RPM_FEED_URL`."""
 
-RPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm/')
-"""The URL to an RPM repository. See :data:`RPM_URL`."""
+RPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-signed/')
+"""The URL to a signed RPM repository. See :data:`RPM_URL`."""
 
 RPM_PKGLISTS_UPDATEINFO_FEED_URL = (
     'https://repos.fedorapeople.org/pulp/pulp/fixtures/'
@@ -358,8 +358,8 @@ SRPM = 'test-srpm02-1.0-1.src.rpm'
 SRPM_FEED_COUNT = 3
 """The number of packages available at :data:`SRPM_FEED_URL`."""
 
-SRPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'srpm/')
-"""The URL to an SRPM repository."""
+SRPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'srpm-signed/')
+"""The URL to a signed SRPM repository."""
 
 SRPM_UNSIGNED_FEED_COUNT = 3
 """The number of packages available at :data:`SRPM_UNSIGNED_FEED_COUNT`."""
