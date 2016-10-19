@@ -31,6 +31,13 @@ CALL_REPORT_KEYS = frozenset(('error', 'result', 'spawned_tasks'))
     http://docs.pulpproject.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
 """
 
+CONSUMER_PATH = '/pulp/api/v2/consumers/'
+"""See: `Consumer APIs`_.
+
+.. _Consumer APIs:
+    https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/consumer/index.html
+"""
+
 CONTENT_SOURCES_PATH = '/etc/pulp/content/sources/conf.d'
 """See: `Content Sources`_.
 
@@ -73,20 +80,20 @@ This URL can be used as the "feed" property of a Pulp Docker registry.
 DRPM = 'drpms/test-alpha-1.1-1_1.1-2.noarch.drpm'
 """The path to a DRPM file in one of the DRPM repositories.
 
-This path may be joined with :data:`DRPM_FEED_URL` or
+This path may be joined with :data:`DRPM_SIGNED_FEED_URL` or
 :data:`DRPM_UNSIGNED_FEED_URL`.
 """
 
-DRPM_FEED_COUNT = 4
-"""The number of packages available at :data:`DRPM_FEED_URL`."""
+DRPM_SIGNED_FEED_COUNT = 4
+"""The number of packages available at :data:`DRPM_SIGNED_FEED_URL`."""
 
-DRPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'drpm-signed/')
+DRPM_SIGNED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'drpm-signed/')
 """The URL to a signed DRPM repository."""
 
-DRPM_URL = urljoin(DRPM_FEED_URL, DRPM)
+DRPM_SIGNED_URL = urljoin(DRPM_SIGNED_FEED_URL, DRPM)
 """The URL to a DRPM file.
 
-Built from :data:`DRPM_FEED_URL` and :data:`DRPM`.
+Built from :data:`DRPM_SIGNED_FEED_URL` and :data:`DRPM`.
 """
 
 DRPM_UNSIGNED_FEED_COUNT = 4
@@ -146,17 +153,17 @@ ORPHANS_PATH = 'pulp/api/v2/content/orphans/'
     http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/orphan.html
 """
 
-OSTREE_FEED = (
-    'https://repos.fedorapeople.org/pulp/pulp/demo_repos/test-ostree-small'
-)
-"""The URL to a URL of OSTree branches. See OSTree `Importer Configuration`_.
+OSTREE_BRANCH = 'fedora-atomic/f21/x86_64/updates/docker-host'
+"""A branch in :data:`OSTREE_FEED`. See OSTree `Importer Configuration`_.
 
 .. _Importer Configuration:
     http://docs.pulpproject.org/plugins/pulp_ostree/tech-reference/importer.html
 """
 
-OSTREE_BRANCH = 'fedora-atomic/f21/x86_64/updates/docker-host'
-"""A branch in :data:`OSTREE_FEED`. See OSTree `Importer Configuration`_.
+OSTREE_FEED = (
+    'https://repos.fedorapeople.org/pulp/pulp/demo_repos/test-ostree-small'
+)
+"""The URL to a URL of OSTree branches. See OSTree `Importer Configuration`_.
 
 .. _Importer Configuration:
     http://docs.pulpproject.org/plugins/pulp_ostree/tech-reference/importer.html
@@ -251,13 +258,6 @@ See: `Export Distributors
 <https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/export-distributor.html>`_.
 """
 
-REPOSITORY_PATH = '/pulp/api/v2/repositories/'
-"""See: `Repository APIs`_.
-
-.. _Repository APIs:
-    https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/index.html
-"""
-
 REPOSITORY_GROUP_PATH = '/pulp/api/v2/repo_groups/'
 """See: `Repository Group APIs`_
 
@@ -265,20 +265,22 @@ REPOSITORY_GROUP_PATH = '/pulp/api/v2/repo_groups/'
     http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/groups/index.html
 """
 
+REPOSITORY_PATH = '/pulp/api/v2/repositories/'
+"""See: `Repository APIs`_.
 
-CONSUMER_PATH = '/pulp/api/v2/consumers/'
-"""See: `Consumer APIs`_.
-
-.. _Consumer APIs:
-    https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/consumer/index.html
+.. _Repository APIs:
+    https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/index.html
 """
+
+RPM = 'bear-4.1-1.noarch.rpm'
+"""The name of an RPM file. See :data:`pulp_smash.constants.RPM_SIGNED_URL`."""
 
 RPM_ERRATUM_ID = 'RHEA-2012:0058'
 """The ID of an erratum.
 
 The package contained on this erratum is defined by
 :data:`pulp_smash.constants.RPM_ERRATUM_RPM_NAME` and the erratum is present on
-repository which feed is :data:`pulp_smash.constants.RPM_FEED_URL`.
+repository which feed is :data:`pulp_smash.constants.RPM_SIGNED_FEED_URL`.
 """
 
 RPM_ERRATUM_RPM_NAME = 'gorilla'
@@ -287,41 +289,20 @@ RPM_ERRATUM_RPM_NAME = 'gorilla'
 The erratum ID is defined by :data:`pulp_smash.constants.RPM_ERRATUM_ID`.
 """
 
-RPM = 'bear-4.1-1.noarch.rpm'
-"""The name of an RPM file. See :data:`pulp_smash.constants.RPM_URL`."""
-
 RPM_ERRATUM_URL = (
     'https://repos.fedorapeople.org'
     '/repos/pulp/pulp/fixtures/rpm-erratum/erratum.json'
 )
 """The URL to an JSON erratum file for an RPM repository."""
 
-RPM_FEED_COUNT = 32
-"""The number of packages available at :data:`RPM_FEED_URL`."""
+RPM_MIRRORLIST_BAD = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-mirrorlist-bad')
+"""The URL to a mirrorlist file containing only invalid entries."""
 
-RPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-signed/')
-"""The URL to a signed RPM repository. See :data:`RPM_URL`."""
+RPM_MIRRORLIST_GOOD = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-mirrorlist-good')
+"""The URL to a mirrorlist file containing only valid entries."""
 
-RPM_PKGLISTS_UPDATEINFO_FEED_URL = (
-    'https://repos.fedorapeople.org/pulp/pulp/fixtures/'
-    'rpm-pkglists-updateinfo/'
-)
-"""A repository whose updateinfo file has multiple ``<pkglist>`` sections."""
-
-RPM_UNSIGNED_FEED_COUNT = 32
-"""The number of packages available at :data:`RPM_UNSIGNED_FEED_URL`."""
-
-RPM_UNSIGNED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-unsigned/')
-"""The URL to an unsigned RPM repository. See :data:`RPM_URL`."""
-
-RPM_UNSIGNED_URL = urljoin(RPM_UNSIGNED_FEED_URL, RPM)
-"""The URL to an unsigned RPM file.
-
-Built from :data:`RPM_UNSIGNED_FEED_URL` and :data:`RPM`.
-"""
-
-RPM_URL = urljoin(RPM_FEED_URL, RPM)
-"""The URL to an RPM file. Built from :data:`RPM_FEED_URL` and :data:`RPM`."""
+RPM_MIRRORLIST_MIXED = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-mirrorlist-mixed')
+"""The URL to a mirrorlist file containing invalid and valid entries."""
 
 RPM_NAMESPACES = {
     'metadata/common': 'http://linux.duke.edu/metadata/common',
@@ -343,23 +324,50 @@ metadata/rpm
     Used by ``repodata/repomd.xml``.
 """
 
-RPM_MIRRORLIST_BAD = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-mirrorlist-bad')
-"""The URL to a mirrorlist file containing only invalid entries."""
+RPM_PKGLISTS_UPDATEINFO_FEED_URL = (
+    'https://repos.fedorapeople.org/pulp/pulp/fixtures/'
+    'rpm-pkglists-updateinfo/'
+)
+"""A repository whose updateinfo file has multiple ``<pkglist>`` sections."""
 
-RPM_MIRRORLIST_GOOD = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-mirrorlist-good')
-"""The URL to a mirrorlist file containing only valid entries."""
+RPM_SIGNED_FEED_COUNT = 32
+"""The number of packages available at :data:`RPM_SIGNED_FEED_URL`."""
 
-RPM_MIRRORLIST_MIXED = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-mirrorlist-mixed')
-"""The URL to a mirrorlist file containing invalid and valid entries."""
+RPM_SIGNED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-signed/')
+"""The URL to a signed RPM repository. See :data:`RPM_SIGNED_URL`."""
+
+RPM_SIGNED_URL = urljoin(RPM_SIGNED_FEED_URL, RPM)
+"""The URL to an RPM file.
+
+Built from :data:`RPM_SIGNED_FEED_URL` and :data:`RPM`.
+"""
+
+RPM_UNSIGNED_FEED_COUNT = 32
+"""The number of packages available at :data:`RPM_UNSIGNED_FEED_URL`."""
+
+RPM_UNSIGNED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-unsigned/')
+"""The URL to an unsigned RPM repository. See :data:`RPM_SIGNED_URL`."""
+
+RPM_UNSIGNED_URL = urljoin(RPM_UNSIGNED_FEED_URL, RPM)
+"""The URL to an unsigned RPM file.
+
+Built from :data:`RPM_UNSIGNED_FEED_URL` and :data:`RPM`.
+"""
 
 SRPM = 'test-srpm02-1.0-1.src.rpm'
-"""The name of an SRPM file at :data:`pulp_smash.constants.SRPM_FEED_URL`."""
+"""An SRPM file at :data:`pulp_smash.constants.SRPM_SIGNED_FEED_URL`."""
 
-SRPM_FEED_COUNT = 3
-"""The number of packages available at :data:`SRPM_FEED_URL`."""
+SRPM_SIGNED_FEED_COUNT = 3
+"""The number of packages available at :data:`SRPM_SIGNED_FEED_URL`."""
 
-SRPM_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'srpm-signed/')
+SRPM_SIGNED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'srpm-signed/')
 """The URL to a signed SRPM repository."""
+
+SRPM_SIGNED_URL = urljoin(SRPM_SIGNED_FEED_URL, SRPM)
+"""The URL to an SRPM file.
+
+Built from :data:`SRPM_SIGNED_FEED_URL` and :data:`SRPM`.
+"""
 
 SRPM_UNSIGNED_FEED_COUNT = 3
 """The number of packages available at :data:`SRPM_UNSIGNED_FEED_COUNT`."""
@@ -371,12 +379,6 @@ SRPM_UNSIGNED_URL = urljoin(SRPM_UNSIGNED_FEED_URL, SRPM)
 """The URL to an unsigned SRPM file.
 
 Built from :data:`SRPM_UNSIGNED_FEED_URL` and :data:`SRPM`.
-"""
-
-SRPM_URL = urljoin(SRPM_FEED_URL, SRPM)
-"""The URL to an SRPM file.
-
-Built from :data:`SRPM_FEED_URL` and :data:`SRPM`.
 """
 
 USER_PATH = '/pulp/api/v2/users/'

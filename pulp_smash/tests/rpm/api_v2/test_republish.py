@@ -15,7 +15,7 @@ import unittest
 from urllib.parse import urljoin
 
 from pulp_smash import api, utils
-from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
+from pulp_smash.constants import REPOSITORY_PATH, RPM_SIGNED_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -45,7 +45,7 @@ class RepublishTestCase(utils.BaseAPITestCase):
         # Create and sync a repository.
         client = api.Client(cls.cfg)
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo_href = client.post(REPOSITORY_PATH, body).json()['_href']
         cls.resources.add(repo_href)  # mark for deletion
         cls.responses['sync'] = utils.sync_repo(cls.cfg, repo_href)

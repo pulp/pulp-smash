@@ -32,8 +32,8 @@ from pulp_smash.constants import (
     PULP_SERVICES,
     REPOSITORY_PATH,
     RPM,
-    RPM_FEED_URL,
-    RPM_URL,
+    RPM_SIGNED_FEED_URL,
+    RPM_SIGNED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import check_issue_2277
@@ -108,7 +108,7 @@ class BrokerTestCase(unittest.TestCase):
         """Execute step three of the test plan."""
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(api.Client(self.cfg).delete, repo['_href'])
         utils.sync_repo(self.cfg, repo['_href'])
@@ -126,5 +126,5 @@ class BrokerTestCase(unittest.TestCase):
         pulp_rpm = client.get(url).content
 
         # Does this RPM match the original RPM?
-        rpm = utils.http_get(RPM_URL)
+        rpm = utils.http_get(RPM_SIGNED_URL)
         self.assertEqual(rpm, pulp_rpm)

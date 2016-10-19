@@ -7,7 +7,7 @@ import uuid
 from packaging.version import Version
 
 from pulp_smash import cli, config, utils
-from pulp_smash.constants import RPM_FEED_URL
+from pulp_smash.constants import RPM_SIGNED_FEED_URL
 
 
 class UploadPackageEnvTestCase(unittest.TestCase):
@@ -37,7 +37,7 @@ class UploadPackageEnvTestCase(unittest.TestCase):
         cls.client = cli.Client(cls.cfg)
         cls.client.run(
             'pulp-admin rpm repo create --repo-id {} --feed {}'
-            .format(cls.repo_id, RPM_FEED_URL).split()
+            .format(cls.repo_id, RPM_SIGNED_FEED_URL).split()
         )
         try:
             cls.client.run(

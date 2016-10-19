@@ -12,7 +12,12 @@ from urllib.parse import urljoin
 from packaging.version import Version
 
 from pulp_smash import api, cli, config, selectors, utils
-from pulp_smash.constants import REPOSITORY_PATH, RPM, RPM_FEED_URL, RPM_URL
+from pulp_smash.constants import (
+    REPOSITORY_PATH,
+    RPM,
+    RPM_SIGNED_FEED_URL,
+    RPM_SIGNED_URL,
+)
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module
 
@@ -48,7 +53,7 @@ def _create_repo(server_config, download_policy):
     """
     body = gen_repo()
     body['importer_config']['download_policy'] = download_policy
-    body['importer_config']['feed'] = RPM_FEED_URL
+    body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
     distributor = gen_distributor()
     distributor['auto_publish'] = True
     distributor['distributor_config']['relative_url'] = body['id']
@@ -117,7 +122,7 @@ class BackgroundTestCase(utils.BaseAPITestCase):
     def test_rpm_checksum(self):
         """Assert the checksum of the downloaded RPM matches the metadata."""
         actual = hashlib.sha256(self.rpm.content).hexdigest()
-        expect = utils.get_sha256_checksum(RPM_URL)
+        expect = utils.get_sha256_checksum(RPM_SIGNED_URL)
         self.assertEqual(actual, expect)
 
     def test_spawned_download_task(self):
@@ -191,7 +196,7 @@ class OnDemandTestCase(utils.BaseAPITestCase):
     def test_rpm_checksum(self):
         """Assert the checksum of the downloaded RPM matches the metadata."""
         actual = hashlib.sha256(self.rpm.content).hexdigest()
-        expect = utils.get_sha256_checksum(RPM_URL)
+        expect = utils.get_sha256_checksum(RPM_SIGNED_URL)
         self.assertEqual(actual, expect)
 
     def test_rpm_cache_lookup_header(self):
@@ -208,7 +213,7 @@ class OnDemandTestCase(utils.BaseAPITestCase):
     def test_same_rpm_checksum(self):
         """Assert the checksum of the second RPM matches the metadata."""
         actual = hashlib.sha256(self.same_rpm.content).hexdigest()
-        expect = utils.get_sha256_checksum(RPM_URL)
+        expect = utils.get_sha256_checksum(RPM_SIGNED_URL)
         self.assertEqual(actual, expect)
 
     def test_same_rpm_cache_header(self):

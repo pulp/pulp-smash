@@ -4,7 +4,7 @@ import random
 import unittest
 
 from pulp_smash import cli, config, selectors, utils
-from pulp_smash.constants import RPM_FEED_URL
+from pulp_smash.constants import RPM_SIGNED_FEED_URL
 from pulp_smash.tests.rpm.utils import set_up_module
 from pulp_smash.utils import is_root
 
@@ -69,7 +69,7 @@ class RemovedContentTestCase(unittest.TestCase):
         cls.repo_id = utils.uuid4()
         cli.Client(cls.cfg).run(
             'pulp-admin rpm repo create --repo-id {} --feed {}'
-            .format(cls.repo_id, RPM_FEED_URL).split()
+            .format(cls.repo_id, RPM_SIGNED_FEED_URL).split()
         )
         sync_repo(cls.cfg, cls.repo_id)
         cls.rpm_name = random.choice(get_rpm_names(cls.cfg, cls.repo_id))
@@ -136,7 +136,7 @@ class ForceSyncTestCase(unittest.TestCase):
         repo_id = utils.uuid4()
         client.run(
             'pulp-admin rpm repo create --repo-id {} --feed {}'
-            .format(repo_id, RPM_FEED_URL).split()
+            .format(repo_id, RPM_SIGNED_FEED_URL).split()
         )
         self.addCleanup(
             client.run,

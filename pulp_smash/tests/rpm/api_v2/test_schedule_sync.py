@@ -13,7 +13,7 @@ from urllib.parse import urljoin
 from packaging.version import Version
 
 from pulp_smash import api, utils
-from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
+from pulp_smash.constants import REPOSITORY_PATH, RPM_SIGNED_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
@@ -48,7 +48,7 @@ class CreateRepoMixin(object):  # pylint:disable=too-few-public-methods
         ``cls.cfg``, and a set, ``cls.resources``.
         """
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         href = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()['_href']
         cls.resources.add(href)
         return (href, body['importer_type_id'])

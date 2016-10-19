@@ -11,8 +11,8 @@ from pulp_smash.constants import (
     REPOSITORY_PATH,
     RPM_ERRATUM_ID,
     RPM_ERRATUM_RPM_NAME,
-    RPM_FEED_URL,
     RPM_PKGLISTS_UPDATEINFO_FEED_URL,
+    RPM_SIGNED_FEED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
@@ -278,7 +278,7 @@ class ErratumPkgListCountTestCase(utils.BaseAPITestCase):
         # Create a repository, sync it, and add a yum distributor.
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
         utils.sync_repo(cls.cfg, repo['_href'])

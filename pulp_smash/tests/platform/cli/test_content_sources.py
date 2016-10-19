@@ -6,7 +6,7 @@ from io import StringIO
 
 from packaging.version import Version
 from pulp_smash import cli, config
-from pulp_smash.constants import CONTENT_SOURCES_PATH, RPM_FEED_URL
+from pulp_smash.constants import CONTENT_SOURCES_PATH, RPM_SIGNED_FEED_URL
 from pulp_smash.utils import is_root, pulp_admin_login, uuid4
 
 
@@ -97,7 +97,7 @@ class RefreshAndDeleteContentSourcesTestCase(unittest.TestCase):
             cls.content_source_id,
             enabled='1',
             type='yum',
-            base_url=RPM_FEED_URL,
+            base_url=RPM_SIGNED_FEED_URL,
         )
         sudo = '' if is_root(cls.cfg) else 'sudo '
         cls.responses = [

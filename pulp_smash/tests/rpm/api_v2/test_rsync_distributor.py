@@ -28,8 +28,8 @@ from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
     ORPHANS_PATH,
     REPOSITORY_PATH,
-    RPM_FEED_COUNT,
-    RPM_FEED_URL,
+    RPM_SIGNED_FEED_COUNT,
+    RPM_SIGNED_FEED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
     DisableSELinuxMixin,
@@ -197,7 +197,7 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
         """
         api_client = api.Client(cfg, api.json_handler)
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         body['distributors'] = [gen_distributor()]
         body['distributors'].append({
             'distributor_id': utils.uuid4(),
@@ -237,8 +237,8 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
 
         Verify that path ``{root}/{remote_units_path}/rpm`` exists in the
         target system's filesystem, and that
-        :data:`pulp_smash.constants.RPM_FEED_COUNT` RPMs are present in this
-        directory.
+        :data:`pulp_smash.constants.RPM_SIGNED_FEED_COUNT` RPMs are present in
+        this directory.
 
         :param pulp_smash.config.ServerConfig cfg: Information about the system
             onto which files have been published.
@@ -262,7 +262,7 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
             path = os.path.join(path, segment)
         cmd = sudo + ('find', path, '-name', '*.rpm')
         files = cli_client.run(cmd).stdout.strip().split('\n')
-        self.assertEqual(len(files), RPM_FEED_COUNT, files)
+        self.assertEqual(len(files), RPM_SIGNED_FEED_COUNT, files)
 
 
 class PublishBeforeYumDistTestCase(
@@ -447,7 +447,7 @@ class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest.TestCase):
             raise self.skipTest('https://pulp.plan.io/issues/2191')
         api_client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         body['distributors'] = [gen_distributor()]
         body['distributors'].append({
             'distributor_id': utils.uuid4(),

@@ -31,7 +31,7 @@ from urllib.parse import urljoin
 from packaging.version import Version
 
 from pulp_smash import api, config, exceptions, utils
-from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
+from pulp_smash.constants import REPOSITORY_PATH, RPM_SIGNED_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module
@@ -61,7 +61,7 @@ def setUpModule():  # pylint:disable=invalid-name
     # implementing a stack of tear-down actions
     client = api.Client(cfg, api.json_handler)
     body = gen_repo()
-    body['importer_config']['feed'] = RPM_FEED_URL
+    body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
     global _REPO  # pylint:disable=global-statement
     _REPO = client.post(REPOSITORY_PATH, body)
     try:

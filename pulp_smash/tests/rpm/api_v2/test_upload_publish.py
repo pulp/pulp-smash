@@ -22,8 +22,8 @@ from pulp_smash.constants import (
     DRPM_UNSIGNED_URL,
     REPOSITORY_PATH,
     RPM,
-    RPM_FEED_URL,
-    RPM_URL,
+    RPM_SIGNED_FEED_URL,
+    RPM_SIGNED_URL,
     SRPM,
     SRPM_UNSIGNED_URL,
 )
@@ -269,7 +269,7 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
         for repo in repos:
             cls.resources.add(repo['_href'])
         client.response_handler = api.safe_handler
-        cls.rpm = utils.http_get(RPM_URL)
+        cls.rpm = utils.http_get(RPM_SIGNED_URL)
 
         # Begin an upload request, upload an RPM, move the RPM into a
         # repository, and end the upload request.
@@ -440,7 +440,7 @@ class UploadErratumTestCase(utils.BaseAPITestCase):
         # Create an RPM repository with a feed and distributor.
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])

@@ -23,19 +23,19 @@ import unittest
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
-    DRPM_FEED_COUNT,
-    DRPM_FEED_URL,
+    DRPM_SIGNED_FEED_COUNT,
+    DRPM_SIGNED_FEED_URL,
     DRPM_UNSIGNED_FEED_COUNT,
     DRPM_UNSIGNED_FEED_URL,
     ORPHANS_PATH,
     PULP_FIXTURES_KEY_ID,
     REPOSITORY_PATH,
-    RPM_FEED_COUNT,
-    RPM_FEED_URL,
+    RPM_SIGNED_FEED_COUNT,
+    RPM_SIGNED_FEED_URL,
     RPM_UNSIGNED_FEED_COUNT,
     RPM_UNSIGNED_FEED_URL,
-    SRPM_FEED_COUNT,
-    SRPM_FEED_URL,
+    SRPM_SIGNED_FEED_COUNT,
+    SRPM_SIGNED_FEED_URL,
     SRPM_UNSIGNED_FEED_COUNT,
     SRPM_UNSIGNED_FEED_URL,
 )
@@ -104,10 +104,10 @@ class RequireValidKeyTestCase(_BaseTestCase):
         """
         cu_counts = self.create_sync_repo({
             'allowed_keys': [PULP_FIXTURES_KEY_ID],
-            'feed': RPM_FEED_URL,
+            'feed': RPM_SIGNED_FEED_URL,
             'require_signature': True,
         })['content_unit_counts']
-        self.assertEqual(cu_counts['rpm'], RPM_FEED_COUNT, cu_counts)
+        self.assertEqual(cu_counts['rpm'], RPM_SIGNED_FEED_COUNT, cu_counts)
 
     def test_signed_drpm(self):
         """Sync signed DRPMs into the repository.
@@ -116,10 +116,10 @@ class RequireValidKeyTestCase(_BaseTestCase):
         """
         cu_counts = self.create_sync_repo({
             'allowed_keys': [PULP_FIXTURES_KEY_ID],
-            'feed': DRPM_FEED_URL,
+            'feed': DRPM_SIGNED_FEED_URL,
             'require_signature': True,
         })['content_unit_counts']
-        self.assertEqual(cu_counts['drpm'], DRPM_FEED_COUNT, cu_counts)
+        self.assertEqual(cu_counts['drpm'], DRPM_SIGNED_FEED_COUNT, cu_counts)
 
     def test_signed_srpm(self):
         """Sync signed SRPMs into the repository.
@@ -128,10 +128,10 @@ class RequireValidKeyTestCase(_BaseTestCase):
         """
         cu_counts = self.create_sync_repo({
             'allowed_keys': [PULP_FIXTURES_KEY_ID],
-            'feed': SRPM_FEED_URL,
+            'feed': SRPM_SIGNED_FEED_URL,
             'require_signature': True,
         })['content_unit_counts']
-        self.assertEqual(cu_counts['srpm'], SRPM_FEED_COUNT, cu_counts)
+        self.assertEqual(cu_counts['srpm'], SRPM_SIGNED_FEED_COUNT, cu_counts)
 
     def test_unsigned_packages(self):
         """Sync unsigned RPMs, DRPMs and SRPMS into repositories.
@@ -169,9 +169,9 @@ class RequireInvalidKeyTestCase(_BaseTestCase):
         Assert no packages are synced in.
         """
         variants = (
-            (RPM_FEED_URL, 'rpm'),
-            (DRPM_FEED_URL, 'drpm'),
-            (SRPM_FEED_URL, 'srpm'),
+            (RPM_SIGNED_FEED_URL, 'rpm'),
+            (DRPM_SIGNED_FEED_URL, 'drpm'),
+            (SRPM_SIGNED_FEED_URL, 'srpm'),
             (RPM_UNSIGNED_FEED_URL, 'rpm'),
             (DRPM_UNSIGNED_FEED_URL, 'drpm'),
             (SRPM_UNSIGNED_FEED_URL, 'srpm'),
@@ -203,10 +203,10 @@ class RequireAnyKeyTestCase(_BaseTestCase):
         """
         cu_counts = self.create_sync_repo({
             'allowed_keys': [],
-            'feed': RPM_FEED_URL,
+            'feed': RPM_SIGNED_FEED_URL,
             'require_signature': True,
         })['content_unit_counts']
-        self.assertEqual(cu_counts['rpm'], RPM_FEED_COUNT, cu_counts)
+        self.assertEqual(cu_counts['rpm'], RPM_SIGNED_FEED_COUNT, cu_counts)
 
     def test_signed_drpm(self):
         """Sync signed DRPMs into the repository.
@@ -215,10 +215,10 @@ class RequireAnyKeyTestCase(_BaseTestCase):
         """
         cu_counts = self.create_sync_repo({
             'allowed_keys': [],
-            'feed': DRPM_FEED_URL,
+            'feed': DRPM_SIGNED_FEED_URL,
             'require_signature': True,
         })['content_unit_counts']
-        self.assertEqual(cu_counts['drpm'], DRPM_FEED_COUNT, cu_counts)
+        self.assertEqual(cu_counts['drpm'], DRPM_SIGNED_FEED_COUNT, cu_counts)
 
     def test_signed_srpm(self):
         """Sync signed SRPMs into the repository.
@@ -227,10 +227,10 @@ class RequireAnyKeyTestCase(_BaseTestCase):
         """
         cu_counts = self.create_sync_repo({
             'allowed_keys': [],
-            'feed': SRPM_FEED_URL,
+            'feed': SRPM_SIGNED_FEED_URL,
             'require_signature': True,
         })['content_unit_counts']
-        self.assertEqual(cu_counts['srpm'], SRPM_FEED_COUNT, cu_counts)
+        self.assertEqual(cu_counts['srpm'], SRPM_SIGNED_FEED_COUNT, cu_counts)
 
     def test_unsigned_packages(self):
         """Sync unsigned RPMs, DRPMs and SRPMS into repositories.
@@ -268,9 +268,9 @@ class AllowInvalidKeyTestCase(_BaseTestCase):
         Assert no packages are synced.
         """
         variants = (
-            (RPM_FEED_URL, 'rpm'),
-            (DRPM_FEED_URL, 'drpm'),
-            (SRPM_FEED_URL, 'srpm'),
+            (RPM_SIGNED_FEED_URL, 'rpm'),
+            (DRPM_SIGNED_FEED_URL, 'drpm'),
+            (SRPM_SIGNED_FEED_URL, 'srpm'),
         )
         for feed, type_id in variants:
             with self.subTest(type_id=type_id):
@@ -346,10 +346,10 @@ class AllowValidKeyTestCase(_BaseTestCase):
         """
         cu_counts = self.create_sync_repo({
             'allowed_keys': [PULP_FIXTURES_KEY_ID],
-            'feed': RPM_FEED_URL,
+            'feed': RPM_SIGNED_FEED_URL,
             'require_signature': False,
         })['content_unit_counts']
-        self.assertEqual(cu_counts['rpm'], RPM_FEED_COUNT, cu_counts)
+        self.assertEqual(cu_counts['rpm'], RPM_SIGNED_FEED_COUNT, cu_counts)
 
     def test_signed_drpm(self):
         """Sync signed DRPMs into the repository.
@@ -358,10 +358,10 @@ class AllowValidKeyTestCase(_BaseTestCase):
         """
         cu_counts = self.create_sync_repo({
             'allowed_keys': [PULP_FIXTURES_KEY_ID],
-            'feed': DRPM_FEED_URL,
+            'feed': DRPM_SIGNED_FEED_URL,
             'require_signature': False,
         })['content_unit_counts']
-        self.assertEqual(cu_counts['drpm'], DRPM_FEED_COUNT, cu_counts)
+        self.assertEqual(cu_counts['drpm'], DRPM_SIGNED_FEED_COUNT, cu_counts)
 
     def test_signed_srpm(self):
         """Sync signed SRPMs into the repository.
@@ -370,10 +370,10 @@ class AllowValidKeyTestCase(_BaseTestCase):
         """
         cu_counts = self.create_sync_repo({
             'allowed_keys': [PULP_FIXTURES_KEY_ID],
-            'feed': SRPM_FEED_URL,
+            'feed': SRPM_SIGNED_FEED_URL,
             'require_signature': False,
         })['content_unit_counts']
-        self.assertEqual(cu_counts['srpm'], SRPM_FEED_COUNT, cu_counts)
+        self.assertEqual(cu_counts['srpm'], SRPM_SIGNED_FEED_COUNT, cu_counts)
 
     def test_unsigned_rpms(self):
         """Import unsigned RPMs into a repository.
@@ -437,10 +437,10 @@ class AllowAnyKeyTestCase(_BaseTestCase):
         """
         cu_counts = self.create_sync_repo({
             'allowed_keys': [],
-            'feed': RPM_FEED_URL,
+            'feed': RPM_SIGNED_FEED_URL,
             'require_signature': False,
         })['content_unit_counts']
-        self.assertEqual(cu_counts['rpm'], RPM_FEED_COUNT, cu_counts)
+        self.assertEqual(cu_counts['rpm'], RPM_SIGNED_FEED_COUNT, cu_counts)
 
     def test_signed_drpm(self):
         """Sync signed DRPMs into the repository.
@@ -449,10 +449,10 @@ class AllowAnyKeyTestCase(_BaseTestCase):
         """
         cu_counts = self.create_sync_repo({
             'allowed_keys': [],
-            'feed': DRPM_FEED_URL,
+            'feed': DRPM_SIGNED_FEED_URL,
             'require_signature': False,
         })['content_unit_counts']
-        self.assertEqual(cu_counts['drpm'], DRPM_FEED_COUNT, cu_counts)
+        self.assertEqual(cu_counts['drpm'], DRPM_SIGNED_FEED_COUNT, cu_counts)
 
     def test_signed_srpm(self):
         """Sync signed SRPMs into the repository.
@@ -461,10 +461,10 @@ class AllowAnyKeyTestCase(_BaseTestCase):
         """
         cu_counts = self.create_sync_repo({
             'allowed_keys': [],
-            'feed': SRPM_FEED_URL,
+            'feed': SRPM_SIGNED_FEED_URL,
             'require_signature': False,
         })['content_unit_counts']
-        self.assertEqual(cu_counts['srpm'], SRPM_FEED_COUNT, cu_counts)
+        self.assertEqual(cu_counts['srpm'], SRPM_SIGNED_FEED_COUNT, cu_counts)
 
     def test_unsigned_rpms(self):
         """Import unsigned RPMs into a repository.

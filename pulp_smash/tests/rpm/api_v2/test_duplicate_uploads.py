@@ -15,7 +15,7 @@ The second upload should silently fail for all Pulp releases in the 2.x series.
 .. _Pulp Smash #81: https://github.com/PulpQE/pulp-smash/issues/81
 """
 from pulp_smash import api, utils
-from pulp_smash.constants import REPOSITORY_PATH, RPM_URL
+from pulp_smash.constants import REPOSITORY_PATH, RPM_SIGNED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
@@ -30,7 +30,7 @@ class DuplicateUploadsTestCase(
         """Create an RPM repository. Upload an RPM into it twice."""
         super(DuplicateUploadsTestCase, cls).setUpClass()
         utils.reset_pulp(cls.cfg)
-        unit = utils.http_get(RPM_URL)
+        unit = utils.http_get(RPM_SIGNED_URL)
         unit_type_id = 'rpm'
         client = api.Client(cls.cfg, api.json_handler)
         repo_href = client.post(REPOSITORY_PATH, gen_repo())['_href']

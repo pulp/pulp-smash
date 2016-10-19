@@ -13,7 +13,11 @@ import unittest
 from urllib.parse import urljoin
 
 from pulp_smash import api, selectors, utils
-from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL, RPM_NAMESPACES
+from pulp_smash.constants import (
+    REPOSITORY_PATH,
+    RPM_NAMESPACES,
+    RPM_SIGNED_FEED_URL,
+)
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -100,7 +104,7 @@ class PackagesDirectoryTestCase(utils.BaseAPITestCase):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         cls.repo_href = client.post(REPOSITORY_PATH, body)['_href']
         cls.resources.add(cls.repo_href)
         utils.sync_repo(cls.cfg, cls.repo_href)

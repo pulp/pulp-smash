@@ -15,7 +15,11 @@ from urllib.parse import urljoin
 from packaging.version import Version
 
 from pulp_smash import api, utils
-from pulp_smash.constants import ORPHANS_PATH, REPOSITORY_PATH, RPM_FEED_URL
+from pulp_smash.constants import (
+    ORPHANS_PATH,
+    REPOSITORY_PATH,
+    RPM_SIGNED_FEED_URL,
+)
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
@@ -53,7 +57,7 @@ class OrphansTestCase(utils.BaseAPITestCase):
         # Create orphans.
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         try:
             utils.sync_repo(cls.cfg, repo['_href'])

@@ -51,14 +51,14 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, exceptions, selectors, utils
 from pulp_smash.constants import (
+    DRPM_SIGNED_URL,
     DRPM_UNSIGNED_URL,
-    DRPM_URL,
     PULP_FIXTURES_KEY_ID,
     REPOSITORY_PATH,
+    RPM_SIGNED_URL,
     RPM_UNSIGNED_URL,
-    RPM_URL,
+    SRPM_SIGNED_URL,
     SRPM_UNSIGNED_URL,
-    SRPM_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module
@@ -83,12 +83,12 @@ def setUpModule():  # pylint:disable=invalid-name
         raise unittest.SkipTest('https://pulp.plan.io/issues/1991')
     set_up_module()
     try:
-        _SIGNED_PACKAGES['rpm'] = utils.http_get(RPM_URL)
-        _SIGNED_PACKAGES['srpm'] = utils.http_get(SRPM_URL)
+        _SIGNED_PACKAGES['rpm'] = utils.http_get(RPM_SIGNED_URL)
+        _SIGNED_PACKAGES['srpm'] = utils.http_get(SRPM_SIGNED_URL)
         _UNSIGNED_PACKAGES['rpm'] = utils.http_get(RPM_UNSIGNED_URL)
         _UNSIGNED_PACKAGES['srpm'] = utils.http_get(SRPM_UNSIGNED_URL)
         if selectors.bug_is_testable(1806, cfg.version):
-            _SIGNED_PACKAGES['drpm'] = utils.http_get(DRPM_URL)
+            _SIGNED_PACKAGES['drpm'] = utils.http_get(DRPM_SIGNED_URL)
             _UNSIGNED_PACKAGES['drpm'] = utils.http_get(DRPM_UNSIGNED_URL)
     except:
         _SIGNED_PACKAGES.clear()

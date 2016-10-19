@@ -4,7 +4,7 @@
 Each RPM repository has a ``repodata`` directory, in which various XML files
 containing metadata are present. This module houses test cases which verify the
 ``comps.xml`` file. For a sample ``comps.xml`` file, search through
-:data:`pulp_smash.constants.RPM_FEED_URL`.
+:data:`pulp_smash.constants.RPM_SIGNED_FEED_URL`.
 """
 import unittest
 from urllib.parse import urljoin
@@ -16,7 +16,7 @@ from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
     CONTENT_UPLOAD_PATH,
     REPOSITORY_PATH,
-    RPM_FEED_URL,
+    RPM_SIGNED_FEED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
@@ -132,7 +132,7 @@ class SyncRepoTestCase(utils.BaseAPITestCase):
 
         # Create a repo.
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])

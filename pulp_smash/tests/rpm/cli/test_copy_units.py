@@ -32,7 +32,7 @@ def setUpModule():  # pylint:disable=invalid-name
     utils.pulp_admin_login(cfg)
     client.run(
         'pulp-admin rpm repo create --repo-id {} --feed {}'
-        .format(_REPO_ID, constants.RPM_FEED_URL).split()
+        .format(_REPO_ID, constants.RPM_SIGNED_FEED_URL).split()
     )
 
     # If setUpModule() fails, tearDownModule() isn't run. In addition, we can't

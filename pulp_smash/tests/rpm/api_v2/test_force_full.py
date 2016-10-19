@@ -14,7 +14,7 @@ from urllib.parse import urljoin
 from packaging.version import Version
 
 from pulp_smash import api, selectors, utils
-from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
+from pulp_smash.constants import REPOSITORY_PATH, RPM_SIGNED_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
@@ -32,7 +32,7 @@ class ForceFullTestCase(utils.BaseAPITestCase):
         super(ForceFullTestCase, cls).setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])

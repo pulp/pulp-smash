@@ -19,9 +19,9 @@ from pulp_smash import api, selectors, utils
 from pulp_smash.constants import (
     DRPM_UNSIGNED_FEED_URL,
     REPOSITORY_PATH,
-    RPM_FEED_COUNT,
-    RPM_FEED_URL,
-    SRPM_FEED_URL,
+    RPM_SIGNED_FEED_COUNT,
+    RPM_SIGNED_FEED_URL,
+    SRPM_SIGNED_FEED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -83,7 +83,7 @@ class SyncRpmRepoTestCase(SyncRepoBaseTestCase):
     @staticmethod
     def get_feed_url():
         """Return an RPM repository feed URL."""
-        return RPM_FEED_URL
+        return RPM_SIGNED_FEED_URL
 
     # This is specific to the RPM repo. Leave in this test case.
     def test_unit_count_on_repo(self):
@@ -94,7 +94,7 @@ class SyncRpmRepoTestCase(SyncRepoBaseTestCase):
         Expected values are currently hard-coded into this test.
         """
         content_unit_counts = {
-            'rpm': RPM_FEED_COUNT,
+            'rpm': RPM_SIGNED_FEED_COUNT,
             'erratum': 4,
             'package_group': 2,
             'package_category': 1,
@@ -134,7 +134,7 @@ class SyncSrpmRepoTestCase(SyncRepoBaseTestCase):
     @staticmethod
     def get_feed_url():
         """Return an SRPM repository feed URL."""
-        return SRPM_FEED_URL
+        return SRPM_SIGNED_FEED_URL
 
 
 class SyncInvalidFeedTestCase(utils.BaseAPITestCase):

@@ -24,8 +24,8 @@ from pulp_smash.constants import (
     REPOSITORY_GROUP_PATH,
     REPOSITORY_PATH,
     RPM,
-    RPM_FEED_URL,
-    RPM_URL,
+    RPM_SIGNED_FEED_URL,
+    RPM_SIGNED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
     DisableSELinuxMixin,
@@ -183,7 +183,7 @@ class BaseExportChecksumTypeTestCase(ExportDirMixin, utils.BaseAPITestCase):
         if cls.cfg.version < Version('2.9'):
             raise unittest.SkipTest('This test requires Pulp 2.9 or newer')
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         cls.repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
         cls.resources.add(cls.repo['_href'])
         utils.sync_repo(cls.cfg, cls.repo['_href'])
@@ -418,7 +418,7 @@ class ExportDistributorTestCase(ExportDirMixin, utils.BaseAPITestCase):
         """
         super(ExportDistributorTestCase, cls).setUpClass()
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         cls.repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
         cls.resources.add(cls.repo['_href'])
         utils.sync_repo(cls.cfg, cls.repo['_href'])
@@ -481,5 +481,5 @@ class ExportDistributorTestCase(ExportDirMixin, utils.BaseAPITestCase):
             self.distributor['config']['relative_url'],
             RPM,
         ))).stdout.strip().split()[0]
-        expect = utils.get_sha256_checksum(RPM_URL)
+        expect = utils.get_sha256_checksum(RPM_SIGNED_URL)
         self.assertEqual(actual, expect)

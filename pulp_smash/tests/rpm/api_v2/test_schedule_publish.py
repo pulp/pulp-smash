@@ -12,7 +12,7 @@ import time
 from urllib.parse import urljoin
 
 from pulp_smash import api, utils
-from pulp_smash.constants import REPOSITORY_PATH, RPM_FEED_URL
+from pulp_smash.constants import REPOSITORY_PATH, RPM_SIGNED_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo, gen_distributor
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
@@ -35,7 +35,7 @@ class CreateSuccessTestCase(utils.BaseAPITestCase):
 
         # Create a repo with a valid feed and sync it
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body).json()
         cls.resources.add(repo['_href'])
         utils.sync_repo(cls.cfg, repo['_href'])
@@ -88,7 +88,7 @@ class CreateFailureTestCase(utils.BaseAPITestCase):
 
         # Create a repo with a valid feed and sync it
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body).json()
         cls.resources.add(repo['_href'])
         utils.sync_repo(cls.cfg, repo['_href'])
@@ -159,7 +159,7 @@ class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
 
         # Create a repo with a valid feed and sync it
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
         utils.sync_repo(cls.cfg, repo['_href'])
@@ -267,7 +267,7 @@ class ScheduledPublishTestCase(utils.BaseAPITestCase):
 
         # Create a repo with a valid feed and sync it
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_FEED_URL
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
         utils.sync_repo(cls.cfg, repo['_href'])
