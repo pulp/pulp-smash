@@ -135,6 +135,15 @@ class UtilsMixin(object):
                 selectors.bug_is_untestable(2326, cfg.version)):
             self.skipTest('https://pulp.plan.io/issues/2326')
 
+    def check_issue_2363(self, cfg):
+        """Skip the current test method if Pulp `issue #2363`_ affects us.
+
+        .. _issue #2363: https://pulp.plan.io/issues/2363
+        """
+        if (cfg.version >= Version('2.11') and
+                selectors.bug_is_untestable(2363, cfg.version)):
+            self.skipTest('https://pulp.plan.io/issues/2363')
+
 
 class GoodMirrorlistTestCase(UtilsMixin, unittest.TestCase):
     """Create a repository that references a "good" mirrorlist file.
@@ -227,6 +236,7 @@ class BadMirrorlistTestCase(UtilsMixin, unittest.TestCase):
     def test_all(self):
         """Execute the test case business logic."""
         cfg = config.get_config()
+        self.check_issue_2363(cfg)
         repo_href = self.create_repo(cfg, RPM_MIRRORLIST_BAD)
         with self.assertRaises(TaskReportError):
             utils.sync_repo(cfg, repo_href)
@@ -238,6 +248,7 @@ class BadRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
     def test_all(self):
         """Execute the test case business logic."""
         cfg = config.get_config()
+        self.check_issue_2363(cfg)
         repo_href = self.create_repo(cfg, RPM_MIRRORLIST_BAD, _gen_rel_url())
         with self.assertRaises(TaskReportError):
             utils.sync_repo(cfg, repo_href)
