@@ -14,9 +14,42 @@ repository with just an RPM rsync distributor; and one cannot publish a
 repository with the RPM rsync distributor without first publishing with a yum
 distributor.
 
-For more information on the RPM rsync distributor, see `Pulp #1759`_.
+For more information on the RPM rsync distributor, see `Pulp #1759
+<https://pulp.plan.io/issues/1759>`_. As a quick reference, consider a
+repository with the following abbreviated distributor definitions::
 
-.. _Pulp #1759: https://pulp.plan.io/issues/1759
+    [
+        {
+            'distributor_type_id': 'rpm_rsync_distributor',
+            'config': {
+                'remote': {'host': '192.168.100.32', 'root': '/home/myuser'},
+                'remote_units_path': 'foo/bar/biz'  # default: 'content/units'
+            }
+        },
+        {
+            'distributor_type_id': 'yum_distributor',
+            'config': {'relative_url': 'rel-url/'}
+        }
+    ]
+
+Following a publish with the yum and rpm rsync distributors, respectively,
+files will be laid out as follows::
+
+    /home/myuser
+    ├── foo
+    │   └── bar
+    │       └── biz
+    │           └── rpm
+    │               ├── 06
+    │               │   └── …
+    │               │       └── dog-4.23-1.noarch.rpm
+    │               ├── 09
+    │               │   └── …
+    │               ┆       └── crow-0.8-1.noarch.rpm
+    └── rel-url
+        ├── bear-4.1-1.noarch.rpm -> ../foo/bar/biz/rpm/a9/…/bear-4.1-1.noarch…
+        ├── camel-0.1-1.noarch.rpm -> ../foo/bar/biz/rpm/92/…/camel-0.1-1.noar…
+        ┆
 """
 import os
 import unittest
@@ -232,8 +265,8 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
         self.assertEqual(len(tasks), 1, tasks)
         self.assertEqual(tasks[0]['result']['result'], 'skipped', tasks[0])
 
-    def verify_files_in_dir(self, cfg, distributor_cfg):
-        """Verify the RPM rsync distributor has placed RPMs in the given path.
+    def verify_remote_units_path(self, cfg, distributor_cfg):
+        """Verify the RPM rsync distributor has placed RPMs as appropriate.
 
         Verify that path ``{root}/{remote_units_path}/rpm`` exists in the
         target system's filesystem, and that
@@ -365,7 +398,7 @@ class ForceFullTestCase(
             api_client.post(urljoin(repo_href, 'actions/publish/'), {
                 'id': distribs[type_id]['id']
             })
-        self.verify_files_in_dir(cfg, distribs['rpm_rsync_distributor'])
+        self.verify_remote_units_path(cfg, distribs['rpm_rsync_distributor'])
 
         # Remove all files from the target directory, and publish again. Verify
         # that the RPM rsync distributor didn't place any files.
@@ -387,7 +420,7 @@ class ForceFullTestCase(
             'id': distribs['rpm_rsync_distributor']['id'],
             'override_config': {'force_full': True},
         })
-        self.verify_files_in_dir(cfg, distribs['rpm_rsync_distributor'])
+        self.verify_remote_units_path(cfg, distribs['rpm_rsync_distributor'])
 
 
 class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest.TestCase):
@@ -537,7 +570,7 @@ class RemoteUnitsPathTestCase(
                 'config': {'remote_units_path': paths[1]},
             })
         distribs['rpm_rsync_distributor']['remote_units_path'] = paths[1]
-        self.verify_files_in_dir(cfg, distribs['rpm_rsync_distributor'])
+        self.verify_remote_units_path(cfg, distribs['rpm_rsync_distributor'])
 
 
 class DeleteTestCase(
@@ -587,7 +620,7 @@ class DeleteTestCase(
             api_client.post(urljoin(repo_href, 'actions/publish/'), {
                 'id': distribs[type_id]['id']
             })
-        self.verify_files_in_dir(cfg, distribs['rpm_rsync_distributor'])
+        self.verify_remote_units_path(cfg, distribs['rpm_rsync_distributor'])
 
         # Disassociate all units from the repo, publish the repo, and verify.
         api_client.post(urljoin(repo_href, 'actions/unassociate/'), {
@@ -600,14 +633,11 @@ class DeleteTestCase(
 
         # Publish with the RPM rsync distributor, and verify that no RPMs are
         # in the target directory.
-        if selectors.bug_is_untestable(2221, cfg.version):
-            # We could also `return` here, but a skip is more visible.
-            self.skipTest('https://pulp.plan.io/issues/2221')
         api_client.post(urljoin(repo_href, 'actions/publish/'), {
             'id': distribs['rpm_rsync_distributor']['id'],
             'override_config': {'delete': True},
         })
-        self._verify_files_not_in_dir(cfg, distribs['rpm_rsync_distributor'])
+        self._verify_files_not_in_dir(cfg, **distribs)
 
     def _verify_units_not_in_repo(self, cfg, repo_href):
         """Verify no content units are in the specified repository."""
@@ -616,14 +646,19 @@ class DeleteTestCase(
             with self.subTest(key=key):
                 self.assertEqual(val, 0)
 
-    def _verify_files_not_in_dir(self, cfg, distributor_cfg):
-        """Verify no RPMs are in the distributor's ``remote_units_path``."""
+    def _verify_files_not_in_dir(
+            self,
+            cfg,
+            *,
+            yum_distributor,
+            rpm_rsync_distributor):
+        """Verify no RPMs are in the distributor's ``relative_url`` dir."""
         path = os.path.join(
-            distributor_cfg['config']['remote']['root'],
-            distributor_cfg['config'].get('remote_units_path', 'content/units')
+            rpm_rsync_distributor['config']['remote']['root'],
+            yum_distributor['config']['relative_url'],
         )
         cmd = ['find', path, '-name', '*.rpm']
         if not utils.is_root(cfg):
             cmd.insert(0, 'sudo')
         files = cli.Client(cfg).run(cmd).stdout.strip().split('\n')
-        self.assertEqual(len(files), 0, files)
+        self.assertEqual(files, [''])  # strange, but correct
