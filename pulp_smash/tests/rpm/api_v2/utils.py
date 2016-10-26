@@ -105,7 +105,7 @@ def get_unit_unassociate_criteria(unit_name):
     units from a repository`_.
 
     ..  _unassociate content units from a repository:
-        http://pulp.readthedocs.io/en/latest/dev-guide/integration/rest-api/content/associate.html#unassociating-content-units-from-a-repository
+        http://docs.pulpproject.org/dev-guide/integration/rest-api/content/associate.html#unassociating-content-units-from-a-repository
 
     :param unit_name: The name of the unit that will be unassociated from the
         repository.

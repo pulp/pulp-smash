@@ -79,7 +79,7 @@ class RefreshAndDeleteContentSourcesTestCase(unittest.TestCase):
     .. _Pulp #1692:  https://pulp.plan.io/issues/1692
     .. _Pulp Smash #141: https://github.com/PulpQE/pulp-smash/issues/141
     .. _content sources:
-        http://pulp.readthedocs.io/en/latest/user-guide/content-sources.html
+        https://docs.pulpproject.org/user-guide/content-sources.html
     """
 
     @classmethod

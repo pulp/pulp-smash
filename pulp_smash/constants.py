@@ -42,7 +42,7 @@ CONTENT_SOURCES_PATH = '/etc/pulp/content/sources/conf.d'
 """See: `Content Sources`_.
 
 .. _Content Sources:
-    http://pulp.readthedocs.io/en/latest/user-guide/content-sources.html
+    https://docs.pulpproject.org/user-guide/content-sources.html
 """
 
 CONTENT_UNITS_PATH = '/pulp/api/v2/content/units/'
