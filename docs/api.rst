@@ -99,6 +99,7 @@ developers, not a gospel.
     api/pulp_smash.tests.rpm.cli.test_copy_units
     api/pulp_smash.tests.rpm.cli.test_environments
     api/pulp_smash.tests.rpm.cli.test_langpacks
+    api/pulp_smash.tests.rpm.cli.test_process_recycling
     api/pulp_smash.tests.rpm.cli.test_search
     api/pulp_smash.tests.rpm.cli.test_sync
     api/pulp_smash.tests.rpm.cli.test_upload
