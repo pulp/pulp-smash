@@ -5,7 +5,7 @@ import json
 import requests
 from packaging.version import Version
 
-from pulp_smash import config, selectors, utils
+from pulp_smash import cli, config, selectors, utils
 from pulp_smash.constants import RPM_ERRATUM_URL
 
 
@@ -47,3 +47,19 @@ def check_issue_2277(cfg):
             selectors.bug_is_untestable(2277, cfg.version)):
         return True
     return False
+
+
+def os_is_rhel6(cfg):
+    """Return ``True`` if the server runs RHEL 6, or ``False`` otherwise.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about the system
+        being targeted.
+    :returns: True or false.
+    """
+    response = cli.Client(cfg, cli.echo_handler).run((
+        'grep',
+        '-i',
+        'red hat enterprise linux server release 6',
+        '/etc/redhat-release',
+    ))
+    return response.returncode == 0

@@ -19,18 +19,7 @@ from pulp_smash.constants import (
     RPM_SIGNED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
-from pulp_smash.tests.rpm.utils import set_up_module
-
-
-def _os_is_rhel6(server_config):
-    """Return ``True`` if the server runs RHEL 6, or ``False`` otherwise."""
-    response = cli.Client(server_config, cli.echo_handler).run((
-        'grep',
-        '-i',
-        'red hat enterprise linux server release 6',
-        '/etc/redhat-release',
-    ))
-    return response.returncode == 0
+from pulp_smash.tests.rpm.utils import os_is_rhel6, set_up_module
 
 
 def setUpModule():  # pylint:disable=invalid-name
@@ -39,6 +28,8 @@ def setUpModule():  # pylint:disable=invalid-name
     cfg = config.get_config()
     if cfg.version < Version('2.8'):
         raise unittest.SkipTest('This module requires Pulp 2.8 or greater.')
+    if selectors.bug_is_untestable(2387, cfg.version) and os_is_rhel6(cfg):
+        raise unittest.SkipTest('https://pulp.plan.io/issues/2387')
     if selectors.bug_is_untestable(2272, cfg.version):
         raise unittest.SkipTest('https://pulp.plan.io/issues/2272')
     if selectors.bug_is_untestable(2144, cfg.version):
@@ -77,7 +68,7 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         """
         super(BackgroundTestCase, cls).setUpClass()
         if (selectors.bug_is_untestable(1905, cls.cfg.version) and
-                _os_is_rhel6(cls.cfg)):
+                os_is_rhel6(cls.cfg)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1905')
 
         # Required to ensure content is actually downloaded.
@@ -240,7 +231,7 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
         """
         super(FixFileCorruptionTestCase, cls).setUpClass()
         if (selectors.bug_is_untestable(1905, cls.cfg.version) and
-                _os_is_rhel6(cls.cfg)):
+                os_is_rhel6(cls.cfg)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1905')
 
         # Ensure Pulp is empty of units otherwise we might just associate pre-
