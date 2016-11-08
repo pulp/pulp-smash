@@ -56,6 +56,17 @@ def _create_repo(server_config, download_policy):
     return api.Client(server_config).post(REPOSITORY_PATH, body).json()
 
 
+def _download_rpm(cfg, repo_id, rpm_name):
+    """Download a RPM named ``rpm_name`` from a repository.
+
+    Return a reponse object from a GET request at
+    ``/pulp/repos/<repo_id>/<rpm_name>``.
+    """
+    path = urljoin('/pulp/repos/', repo_id + '/')
+    path = urljoin(path, rpm_name)
+    return api.Client(cfg).get(path)
+
+
 class BackgroundTestCase(utils.BaseAPITestCase):
     """Ensure the "background" download policy works."""
 
@@ -91,9 +102,7 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         cls.tasks = tuple(api.poll_spawned_tasks(cls.cfg, report))
 
         # Download an RPM.
-        path = urljoin('/pulp/repos/', repo['id'] + '/')
-        path = urljoin(path, RPM)
-        cls.rpm = client.get(path)
+        cls.rpm = _download_rpm(cls.cfg, repo['id'], RPM)
 
     def test_repo_local_units(self):
         """Assert that all content is downloaded for the repository."""
@@ -163,10 +172,8 @@ class OnDemandTestCase(utils.BaseAPITestCase):
         cls.repo = client.get(repo['_href'], params={'details': True}).json()
 
         # Download the same RPM twice.
-        path = urljoin('/pulp/repos/', repo['id'] + '/')
-        path = urljoin(path, RPM)
-        cls.rpm = client.get(path)
-        cls.same_rpm = client.get(path)
+        cls.rpm = _download_rpm(cls.cfg, repo['id'], RPM)
+        cls.same_rpm = _download_rpm(cls.cfg, repo['id'], RPM)
 
     def test_local_units(self):
         """Assert no content units were downloaded besides metadata."""
@@ -336,3 +343,173 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
         post-redownload checksum of the unit.
         """
         self.assertEqual(self.sha_pre_corruption, self.verified_file_sha)
+
+
+class SwitchPoliciesTestCase(utils.BaseAPITestCase):
+    """Ensure that repo's download policy can be updated and works.
+
+    Each test exercises a different download policy permutation by doing the
+    following:
+
+    1. Create a repository configuring to one download policy
+    2. Read the repository and check if the download policy was properly
+       set.
+    3. Update the repository to a different download policy.
+    4. Read the repository and check if the download policy was updated.
+    5. Sync the repository
+    6. Assert that the final download policy was used and works properly.
+    """
+
+    def setUp(self):
+        """Make sure Pulp and Squid are reset."""
+        # Required to ensure content is actually downloaded.
+        utils.reset_squid(self.cfg)
+        utils.reset_pulp(self.cfg)
+
+    def repository_setup(self, first, second):
+        """Setup a repository for download policy switch test.
+
+        Create a repository using the first download policy, assert it was set,
+        update to the second download policy, assert it was set, then sync the
+        repository and finally poll the spawned tasks.
+
+        Return a tuple with the repository and tasks.
+        """
+        client = api.Client(self.cfg)
+        # Create repo with the first download policy
+        repo = _create_repo(self.cfg, first)
+        self.addCleanup(client.delete, repo['_href'])
+        repo = client.get(
+            repo['_href'], params={'details': True}).json()
+        self.assertEqual(
+            repo['importers'][0]['config']['download_policy'], first)
+        # Update the importer to the second download policy
+        client.put(repo['importers'][0]['_href'], {
+            'importer_config': {'download_policy': second},
+        })
+        repo = client.get(
+            repo['_href'], params={'details': True}).json()
+        self.assertEqual(
+            repo['importers'][0]['config']['download_policy'], second)
+        report = utils.sync_repo(self.cfg, repo['_href']).json()
+        tasks = tuple(api.poll_spawned_tasks(self.cfg, report))
+        return repo, tasks
+
+    def _assert_background_immediate(self, repo):
+        """Common assertions for background and immediate download policies."""
+        # Download an RPM.
+        rpm = _download_rpm(self.cfg, repo['id'], RPM)
+
+        # Assert that all content is downloaded for the repository.
+        self.assertEqual(
+            repo['locally_stored_units'],
+            sum(repo['content_unit_counts'].values()),
+            repo['content_unit_counts'],
+        )
+
+        # Assert that the request was serviced directly by Pulp.
+        # HTTP 302 responses should have a "Location" header.
+        history_headers = [response.headers for response in rpm.history]
+        self.assertEqual(0, len(rpm.history), history_headers)
+
+        # Assert the checksum of the downloaded RPM matches the metadata.
+        actual = hashlib.sha256(rpm.content).hexdigest()
+        expect = utils.get_sha256_checksum(RPM_SIGNED_URL)
+        self.assertEqual(actual, expect)
+
+    def assert_background(self, repo, tasks):
+        """Assert that background download policy is properly working."""
+        self._assert_background_immediate(repo)
+
+        # Assert that a download task was spawned as a result of the sync.
+        expected_tags = {
+            'pulp:repository:' + repo['id'],
+            'pulp:action:download',
+        }
+
+        tasks = [t for t in tasks if set(t['tags']) == expected_tags]
+        self.assertEqual(1, len(tasks))
+        self.assertEqual('finished', tasks[0]['state'])
+
+    def assert_immediate(self, repo, tasks):
+        """Assert that immediate download policy is properly working."""
+        self._assert_background_immediate(repo)
+
+        # Assert that a sync task was spawned.
+        expected_tags = {
+            'pulp:repository:' + repo['id'],
+            'pulp:action:sync',
+        }
+
+        tasks = [t for t in tasks if set(t['tags']) == expected_tags]
+        self.assertEqual(1, len(tasks))
+        self.assertEqual('finished', tasks[0]['state'])
+
+    def assert_on_demand(self, repo):
+        """Assert that on_demand download policy is properly working."""
+        # Assert no content units were downloaded besides metadata.
+        metadata_unit_count = sum([
+            count for name, count in repo['content_unit_counts'].items()
+            if name not in ('rpm', 'drpm', 'srpm')
+        ])
+        self.assertEqual(
+            repo['locally_stored_units'],
+            metadata_unit_count
+        )
+
+        # Assert there is at least one content unit in the repository.
+        total_units = sum(repo['content_unit_counts'].values())
+        self.assertEqual(repo['total_repository_units'], total_units)
+
+        # Download the same RPM twice.
+        rpm = _download_rpm(self.cfg, repo['id'], RPM)
+        same_rpm = _download_rpm(self.cfg, repo['id'], RPM)
+
+        # Assert the initial request received a 302 Redirect.
+        self.assertTrue(rpm.history[0].is_redirect)
+
+        # Assert the checksum of the downloaded RPM matches the metadata.
+        actual = hashlib.sha256(rpm.content).hexdigest()
+        expect = utils.get_sha256_checksum(RPM_SIGNED_URL)
+        self.assertEqual(actual, expect)
+
+        # Assert the first request resulted in a cache miss from Squid.
+        self.assertIn('MISS', rpm.headers['X-Cache-Lookup'])
+
+        # Assert the checksum of the second RPM matches the metadata.
+        actual = hashlib.sha256(same_rpm.content).hexdigest()
+        expect = utils.get_sha256_checksum(RPM_SIGNED_URL)
+        self.assertEqual(actual, expect)
+
+        # Assert the second request resulted in a cache hit from Squid."""
+        self.assertIn('HIT', same_rpm.headers['X-Cache-Lookup'])
+
+    def test_background_to_immediate(self):
+        """Check if switching from background to immediate works."""
+        repo, tasks = self.repository_setup('background', 'immediate')
+        self.assert_immediate(repo, tasks)
+
+    def test_background_to_on_demand(self):
+        """Check if switching from background to on_demand works."""
+        repo, _ = self.repository_setup('background', 'on_demand')
+        self.assert_on_demand(repo)
+
+    def test_immediate_to_background(self):
+        """Check if switching from immediate to background works."""
+        repo, tasks = self.repository_setup('immediate', 'background')
+        self.assert_background(repo, tasks)
+
+    def test_immediate_to_on_demand(self):
+        """Check if switching from immediate to on_demand works."""
+        repo, _ = self.repository_setup('immediate', 'on_demand')
+        self.assert_on_demand(repo)
+
+    def test_on_demand_to_background(self):
+        """Check if switching from on_demand to background works."""
+        repo, tasks = self.repository_setup('on_demand', 'background')
+        self.assert_background(repo, tasks)
+
+    def test_on_demand_to_immediate(self):
+        """Check if switching from on_demand to immediate works."""
+        repo, tasks = self.repository_setup('on_demand', 'immediate')
+        self.assert_immediate(repo, tasks)
