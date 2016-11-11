@@ -36,7 +36,7 @@ from pulp_smash.constants import (
     RPM_SIGNED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
-from pulp_smash.tests.rpm.utils import check_issue_2277
+from pulp_smash.tests.rpm.utils import check_issue_2277, check_issue_2387
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -48,6 +48,8 @@ class BrokerTestCase(unittest.TestCase):
         self.cfg = config.get_config()
         if check_issue_2277(self.cfg):
             self.skipTest('https://pulp.plan.io/issues/2277')
+        if check_issue_2387(self.cfg):
+            self.skipTest('https://pulp.plan.io/issues/2387')
         self.broker = utils.get_broker(self.cfg)
         self.services = tuple((
             cli.Service(self.cfg, service) for service in PULP_SERVICES

@@ -27,13 +27,16 @@ from pulp_smash.constants import (
     SRPM,
     SRPM_UNSIGNED_URL,
 )
-from pulp_smash.tests.rpm.utils import gen_erratum
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
     get_repomd_xml,
 )
-from pulp_smash.tests.rpm.utils import check_issue_2277, os_is_rhel6
+from pulp_smash.tests.rpm.utils import (
+    check_issue_2277,
+    check_issue_2387,
+    gen_erratum,
+)
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -260,8 +263,7 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
         4. Add a distributor to both repositories and publish them.
         """
         super(UploadRpmTestCase, cls).setUpClass()
-        if (selectors.bug_is_untestable(2387, cls.cfg.version) and
-                os_is_rhel6(cls.cfg)):
+        if check_issue_2387(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2387')
         utils.reset_pulp(cls.cfg)  # See: https://pulp.plan.io/issues/1406
         cls.responses = {}
@@ -436,8 +438,7 @@ class UploadErratumTestCase(utils.BaseAPITestCase):
         4. Fetch the repository's ``updateinfo.xml`` file.
         """
         super(UploadErratumTestCase, cls).setUpClass()
-        if (selectors.bug_is_untestable(2387, cls.cfg.version) and
-                os_is_rhel6(cls.cfg)):
+        if check_issue_2387(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2387')
         if check_issue_2277(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')

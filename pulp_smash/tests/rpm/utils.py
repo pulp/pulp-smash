@@ -49,6 +49,19 @@ def check_issue_2277(cfg):
     return False
 
 
+def check_issue_2387(cfg):
+    """Return true if `Pulp #2387`_ affects the targeted Pulp system.
+
+    :param pulp_smash.config.ServerConfig cfg: The Pulp system under test.
+
+    .. _Pulp #2387: https://pulp.plan.io/issues/2387
+    """
+    if (cfg.version >= Version('2.10') and os_is_rhel6(cfg) and
+            selectors.bug_is_untestable(2387, cfg.version)):
+        return True
+    return False
+
+
 def os_is_rhel6(cfg):
     """Return ``True`` if the server runs RHEL 6, or ``False`` otherwise.
 
