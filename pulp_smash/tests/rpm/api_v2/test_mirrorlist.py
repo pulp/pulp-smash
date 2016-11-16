@@ -20,6 +20,7 @@ from packaging.version import Version
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
+    ORPHANS_PATH,
     REPOSITORY_PATH,
     RPM,
     RPM_MIRRORLIST_BAD,
@@ -36,6 +37,11 @@ from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pyli
 def _gen_rel_url():
     """Generate a relative URL."""
     return utils.uuid4() + '/'
+
+
+def tearDownModule():  # pylint:disable=invalid-name
+    """Delete orphan content units."""
+    api.Client(config.get_config()).delete(ORPHANS_PATH)
 
 
 class UtilsMixin(object):

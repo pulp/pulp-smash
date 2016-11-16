@@ -31,14 +31,24 @@ from urllib.parse import urljoin
 from packaging.version import Version
 
 from pulp_smash import api, config, exceptions, utils
-from pulp_smash.constants import REPOSITORY_PATH, RPM_SIGNED_FEED_URL
+from pulp_smash.constants import (
+    ORPHANS_PATH,
+    REPOSITORY_PATH,
+    RPM_SIGNED_FEED_URL,
+)
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module
 
 
-_REPO = None
-"""A dict of information about the repository created by ``setUpModule``."""
+_REPO = {}
+"""Information about the repository created by ``setUpModule``."""
+
+_CLEANUP = []
+"""A LIFO stack of clean-up actions to execute.
+
+Each list element should be a tuple of ``(function, args, kwargs)``.
+"""
 
 
 def setUpModule():  # pylint:disable=invalid-name
@@ -57,24 +67,27 @@ def setUpModule():  # pylint:disable=invalid-name
     if check_issue_2277(cfg):
         raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
 
-    # Create and sync a repository. If this set-up procedure grows, consider
-    # implementing a stack of tear-down actions
+    # Create and sync a repository.
     client = api.Client(cfg, api.json_handler)
+    _CLEANUP.append((client.delete, [ORPHANS_PATH], {}))
     body = gen_repo()
     body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
-    global _REPO  # pylint:disable=global-statement
-    _REPO = client.post(REPOSITORY_PATH, body)
+    _REPO.clear()
+    _REPO.update(client.post(REPOSITORY_PATH, body))
+    _CLEANUP.append((client.delete, [_REPO['_href']], {}))
     try:
         utils.sync_repo(cfg, _REPO['_href'])
     except (exceptions.CallReportError, exceptions.TaskReportError,
             exceptions.TaskTimedOutError):
-        client.delete(_REPO['_href'])
+        tearDownModule()
         raise
 
 
 def tearDownModule():  # pylint:disable=invalid-name
     """Delete the repository created by :meth:`setUpModule`."""
-    api.Client(config.get_config()).delete(_REPO['_href'])
+    while _CLEANUP:
+        action = _CLEANUP.pop()
+        action[0](*action[1], **action[2])
 
 
 def get_repomd_xml_path(distributor_rel_url):
