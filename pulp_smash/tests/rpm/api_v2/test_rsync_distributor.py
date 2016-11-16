@@ -92,13 +92,17 @@ def setUpModule():  # pylint:disable=invalid-name
     .. _Pulp #1759: https://pulp.plan.io/issues/1759
     """
     set_up_module()
-    if selectors.bug_is_untestable(1759, config.get_config().version):
+    cfg = config.get_config()
+    if selectors.bug_is_untestable(1759, cfg.version):
         raise unittest.SkipTest('https://pulp.plan.io/issues/1759')
+    _set_pulp_manage_rsync(cfg, True)
 
 
 def tearDownModule():  # pylint:disable=invalid-name
     """Delete orphan content units."""
-    api.Client(config.get_config()).delete(ORPHANS_PATH)
+    cfg = config.get_config()
+    api.Client(cfg).delete(ORPHANS_PATH)
+    _set_pulp_manage_rsync(cfg, False)
 
 
 def _make_user(cfg):
@@ -152,6 +156,27 @@ def _get_dists_by_type_id(cfg, repo_href):
     """
     dists = api.Client(cfg).get(urljoin(repo_href, 'distributors/')).json()
     return {dist['distributor_type_id']: dist for dist in dists}
+
+
+def _set_pulp_manage_rsync(cfg, boolean):
+    """Modify the ``pulp_manage_rsync`` SELinux policy.
+
+    For more information on this SELinux policy, see `ISO rsync Distributor →
+    Configuration
+    <http://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/iso-rsync-distributor.html#configuration>`_.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about the system
+        being modified.
+    :param state: Either ``True`` or ``False``, indicating whether the SELinux
+        policy should be turned on or off.
+    :rtype: pulp_smash.cli.CompletedProcess
+    """
+    cmd = (
+        'semanage boolean --modify --{} pulp_manage_rsync'
+        .format('on' if boolean else 'off')).split()
+    if not utils.is_root(cfg):
+        cmd.insert(0, 'sudo')
+    return cli.Client(cfg).run(cmd)
 
 
 class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
