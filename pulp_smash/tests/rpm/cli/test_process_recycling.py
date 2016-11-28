@@ -73,16 +73,19 @@ class MaxTasksPerChildTestCase(unittest.TestCase):
         cfg = config.get_config()
         if selectors.bug_is_untestable(2172, cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2172')
-        set_opt = (
+        set_opt = [
             'sed', '-i', '-e',
             's/.*PULP_MAX_TASKS_PER_CHILD=[0-9]*$/PULP_MAX_TASKS_PER_CHILD=2/',
             '/etc/default/pulp_workers'
-        )
-        reset_opt = (
+        ]
+        reset_opt = [
             'sed', '-i', '-e',
             's/^PULP_MAX_TASKS_PER_CHILD=2$/# PULP_MAX_TASKS_PER_CHILD=2/',
             '/etc/default/pulp_workers'
-        )
+        ]
+        if not utils.is_root(cfg):
+            for cmd in (set_opt, reset_opt):
+                cmd.insert(0, 'sudo')
 
         # Step 1
         for proc in get_pulp_worker_procs(cfg):
