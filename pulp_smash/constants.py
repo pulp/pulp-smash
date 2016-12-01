@@ -275,6 +275,9 @@ REPOSITORY_PATH = '/pulp/api/v2/repositories/'
 RPM = 'bear-4.1-1.noarch.rpm'
 """The name of an RPM file. See :data:`pulp_smash.constants.RPM_SIGNED_URL`."""
 
+RPM_ALT_LAYOUT_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-alt-layout/')
+"""The URL to a signed RPM repository. See :data:`RPM_SIGNED_URL`."""
+
 RPM_ERRATUM_ID = 'RHEA-2012:0058'
 """The ID of an erratum.
 
