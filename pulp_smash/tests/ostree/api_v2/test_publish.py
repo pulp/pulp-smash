@@ -1,7 +1,6 @@
 # coding=utf-8
 """Tests that publish OSTree repositories."""
 import unittest
-from urllib.parse import urljoin
 
 from pulp_smash import api, config, utils
 from pulp_smash.constants import OSTREE_BRANCH, OSTREE_FEED, REPOSITORY_PATH
@@ -41,9 +40,7 @@ class PublishTestCase(unittest.TestCase):
             self.assertIsNone(repo['distributors'][0]['last_publish'])
 
         # Publish the repository.
-        client.post(urljoin(repo['_href'], 'actions/publish/'), {
-            'id': repo['distributors'][0]['id'],
-        })
+        utils.publish_repo(cfg, repo)
         repo = client.get(repo['_href'], params={'details': True})
         with self.subTest(comment='verify last_publish after publish'):
             self.assertIsNotNone(repo['distributors'][0]['last_publish'])

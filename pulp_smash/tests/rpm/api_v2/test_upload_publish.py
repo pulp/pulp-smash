@@ -458,12 +458,11 @@ class UploadErratumTestCase(utils.BaseAPITestCase):
         repo = client.get(repo['_href'], params={'details': True})
 
         # Publish the repository, and fetch and parse updateinfo.xml
-        distributor = repo['distributors'][0]
-        client.post(
-            urljoin(repo['_href'], 'actions/publish/'),
-            {'id': distributor['id']},
+        utils.publish_repo(cls.cfg, repo)
+        path = urljoin(
+            '/pulp/repos/',
+            repo['distributors'][0]['config']['relative_url']
         )
-        path = urljoin('/pulp/repos/', distributor['config']['relative_url'])
         cls.updateinfo = get_repomd_xml(cls.cfg, path, 'updateinfo')
 
     def test_updateinfo_root_tag(self):

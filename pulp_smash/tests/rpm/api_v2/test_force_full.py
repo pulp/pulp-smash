@@ -9,8 +9,6 @@ publication steps, even steps that normally would be skipped.
 
 This module tests Pulp's handling of "full" publishes.
 """
-from urllib.parse import urljoin
-
 from packaging.version import Version
 
 from pulp_smash import api, selectors, utils
@@ -39,19 +37,6 @@ class ForceFullTestCase(utils.BaseAPITestCase):
         utils.sync_repo(cls.cfg, repo['_href'])
         cls.repo = client.get(repo['_href'], params={'details': True})
 
-    def publish_repo(self, force_full=None):
-        """Publish the repository.
-
-        :param override_config: A boolean value. If ``None``, no ``force_full``
-            flag is passed in the request.
-        :returns: A call report.
-        """
-        path = urljoin(self.repo['_href'], 'actions/publish/')
-        body = {'id': self.repo['distributors'][0]['id']}
-        if force_full is not None:
-            body['override_config'] = {'force_full': force_full}
-        return api.Client(self.cfg).post(path, body).json()
-
     def get_step(self, steps, step_type):
         """Return the task step with the given ``step_type``.
 
@@ -73,7 +58,10 @@ class ForceFullTestCase(utils.BaseAPITestCase):
 
         A full publish should occur.
         """
-        call_report = self.publish_repo(force_full=False)
+        call_report = utils.publish_repo(self.cfg, self.repo, {
+            'id': self.repo['distributors'][0]['id'],
+            'override_config': {'force_full': False}
+        }).json()
         last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
         task_steps = last_task['result']['details']
         step = self.get_step(task_steps, 'rpms')
@@ -89,7 +77,7 @@ class ForceFullTestCase(utils.BaseAPITestCase):
         if (self.cfg.version >= Version('2.9') and
                 selectors.bug_is_untestable(1966, self.cfg.version)):
             self.skipTest('https://pulp.plan.io/issues/1966')
-        call_report = self.publish_repo()
+        call_report = utils.publish_repo(self.cfg, self.repo).json()
         last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
         task_steps = last_task['result']['details']
         step = self.get_step(task_steps, 'rpms')
@@ -109,7 +97,10 @@ class ForceFullTestCase(utils.BaseAPITestCase):
                 'This test requires Pulp 2.9. See: '
                 'https://pulp.plan.io/issues/1938'
             )
-        call_report = self.publish_repo(force_full=True)
+        call_report = utils.publish_repo(self.cfg, self.repo, {
+            'id': self.repo['distributors'][0]['id'],
+            'override_config': {'force_full': True}
+        }).json()
         last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
         task_steps = last_task['result']['details']
         step = self.get_step(task_steps, 'rpms')

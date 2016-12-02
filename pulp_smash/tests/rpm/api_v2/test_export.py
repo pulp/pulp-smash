@@ -156,7 +156,7 @@ class ExportDirMixin(DisableSELinuxMixin):
         :returns: The path to the export directory.
         """
         export_dir = self.create_export_dir()
-        api.Client(self.cfg).post(urljoin(entity_href, 'actions/publish/'), {
+        utils.publish_repo(self.cfg, repo={'_href': entity_href}, json={
             'id': distributor_id,
             'override_config': {'export_dir': export_dir},
         })
@@ -450,13 +450,11 @@ class ExportDistributorTestCase(ExportDirMixin, utils.BaseAPITestCase):
         from both locations, and assert that the fetch was successful.
         """
         # Publish the repository, and re-read the distributor.
-        client = api.Client(self.cfg, api.json_handler)
-        path = urljoin(self.repo['_href'], 'actions/publish/')
-        client.post(path, {'id': self.distributor['id']})
-        distributor = client.get(self.distributor['_href'])
+        utils.publish_repo(self.cfg, self.repo, {'id': self.distributor['id']})
+        client = api.Client(self.cfg)
+        distributor = client.get(self.distributor['_href']).json()
 
         # Fetch the ISO file via HTTP and HTTPS.
-        client.response_handler = api.safe_handler
         url = _get_iso_url(self.cfg, self.repo, 'repos', distributor)
         for scheme in ('http', 'https'):
             url = urlunparse((scheme,) + urlparse(url)[1:])

@@ -476,3 +476,29 @@ def get_sha256_checksum(url):
         checksum = hashlib.sha256(http_get(url)).hexdigest()
         _CHECKSUM_CACHE[url] = checksum
     return _CHECKSUM_CACHE[url]
+
+
+def publish_repo(cfg, repo, json=None):
+    """Publish a repository.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about the Pulp host.
+    :param repo: A dict of detailed information about the repository to be
+        published.
+    :param json: Data to be encoded as JSON and sent as the request body.
+        Defaults to ``{'id': repo['distributors'][0]['id']}``.
+    :raises: ``ValueError`` when ``json`` is not passed, and ``repo`` does not
+        have exactly one distributor.
+    :returns: The server's reponse. Call ``.json()`` on the response to get a
+        call report.
+    """
+    if json is None:
+        if 'distributors' not in repo or len(repo['distributors']) != 1:
+            raise ValueError(
+                'No request body was passed, and the given repository does '
+                'not have exactly one distributor. Repository: {}'.format(repo)
+            )
+        json = {'id': repo['distributors'][0]['id']}
+    return api.Client(cfg).post(
+        urljoin(repo['_href'], 'actions/publish/'),
+        json
+    )

@@ -251,7 +251,7 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
         :param dist_cfg_updates: A dict to be merged into the RPM rsync
             distributor's ``distributor_config`` dict. At a minimum, this
             argument should have a value of ``{'remote': {…}}``.
-        :returns: The repository's href, as a string.
+        :returns: A detailed dict of information about the repo.
         """
         api_client = api.Client(cfg, api.json_handler)
         body = gen_repo()
@@ -265,9 +265,9 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
             }
         })
         body['distributors'][1]['distributor_config'].update(dist_cfg_updates)
-        repo_href = api_client.post(REPOSITORY_PATH, body)['_href']
-        self.addCleanup(api_client.delete, repo_href)
-        return repo_href
+        repo = api_client.post(REPOSITORY_PATH, body)
+        self.addCleanup(api_client.delete, repo['_href'])
+        return api_client.get(repo['_href'], params={'details': True})
 
     def verify_publish_is_skip(self, cfg, call_report):
         """Find the 'publish' task and verify it has a result of 'skipped'.
@@ -345,7 +345,7 @@ class PublishBeforeYumDistTestCase(
         # Create a user and a repository.
         ssh_user, priv_key = self.make_user(cfg)
         ssh_identity_file = self.write_private_key(cfg, priv_key)
-        repo_href = self.make_repo(cfg, {'remote': {
+        repo = self.make_repo(cfg, {'remote': {
             'host': urlparse(cfg.base_url).netloc,
             'root': '/home/' + ssh_user,
             'ssh_identity_file': ssh_identity_file,
@@ -353,9 +353,10 @@ class PublishBeforeYumDistTestCase(
         }})
 
         # Publish with the rsync distributor.
-        distribs = _get_dists_by_type_id(cfg, repo_href)
-        self.verify_publish_is_skip(cfg, api.Client(cfg).post(
-            urljoin(repo_href, 'actions/publish/'),
+        distribs = _get_dists_by_type_id(cfg, repo['_href'])
+        self.verify_publish_is_skip(cfg, utils.publish_repo(
+            cfg,
+            repo,
             {'id': distribs['rpm_rsync_distributor']['id']}
         ).json())
 
@@ -400,37 +401,35 @@ class ForceFullTestCase(
     def test_all(self):
         """Use the ``force_full`` RPM rsync distributor option."""
         cfg = config.get_config()
-        api_client = api.Client(cfg)
         cli_client = cli.Client(cfg)
         sudo = '' if utils.is_root(cfg) else 'sudo '
 
         # Create a user and repo with an importer and distribs. Sync the repo.
         ssh_user, priv_key = self.make_user(cfg)
         ssh_identity_file = self.write_private_key(cfg, priv_key)
-        repo_href = self.make_repo(cfg, {'remote': {
+        repo = self.make_repo(cfg, {'remote': {
             'host': urlparse(cfg.base_url).netloc,
             'root': '/home/' + ssh_user,
             'ssh_identity_file': ssh_identity_file,
             'ssh_user': ssh_user,
         }})
-        utils.sync_repo(cfg, repo_href)
+        utils.sync_repo(cfg, repo['_href'])
 
         # Publish the repo with the yum and rsync distributors, respectively.
         # Verify that the RPM rsync distributor has placed files.
-        distribs = _get_dists_by_type_id(cfg, repo_href)
+        distribs = _get_dists_by_type_id(cfg, repo['_href'])
         self.maybe_disable_selinux(cfg, 2199)
         for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
-            api_client.post(urljoin(repo_href, 'actions/publish/'), {
-                'id': distribs[type_id]['id']
-            })
+            utils.publish_repo(cfg, repo, {'id': distribs[type_id]['id']})
         self.verify_remote_units_path(cfg, distribs['rpm_rsync_distributor'])
 
         # Remove all files from the target directory, and publish again. Verify
         # that the RPM rsync distributor didn't place any files.
         cmd = sudo + 'rm -rf /home/{}/content'.format(ssh_user)
         cli_client.run(cmd.split())
-        self.verify_publish_is_skip(cfg, api_client.post(
-            urljoin(repo_href, 'actions/publish/'),
+        self.verify_publish_is_skip(cfg, utils.publish_repo(
+            cfg,
+            repo,
             {'id': distribs['rpm_rsync_distributor']['id']}
         ).json())
         cmd = sudo + 'ls -1 /home/{}'.format(ssh_user)
@@ -441,7 +440,7 @@ class ForceFullTestCase(
         # rsync distributor placed files.
         if selectors.bug_is_untestable(2202, cfg.version):
             return
-        api_client.post(urljoin(repo_href, 'actions/publish/'), {
+        utils.publish_repo(cfg, repo, {
             'id': distribs['rpm_rsync_distributor']['id'],
             'override_config': {'force_full': True},
         })
@@ -517,9 +516,9 @@ class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest.TestCase):
         })
         try:
             with self.assertRaises(HTTPError, msg=body):
-                repo_href = api_client.post(REPOSITORY_PATH, body)['_href']
+                repo = api_client.post(REPOSITORY_PATH, body)
         except AssertionError as err:
-            self.addCleanup(api_client.delete, repo_href)
+            self.addCleanup(api_client.delete, repo['_href'])
             raise err
 
     def test_root(self):
@@ -562,7 +561,6 @@ class RemoteUnitsPathTestCase(
     def test_all(self):
         """Exercise the ``remote_units_path`` option."""
         cfg = config.get_config()
-        api_client = api.Client(cfg)
         # We already know Pulp can deal with 2-segment paths, due to the
         # default remote_units_path of 'content/units'.
         paths = (
@@ -573,7 +571,7 @@ class RemoteUnitsPathTestCase(
         # Create a user and repo with an importer and distribs. Sync the repo.
         ssh_user, priv_key = self.make_user(cfg)
         ssh_identity_file = self.write_private_key(cfg, priv_key)
-        repo_href = self.make_repo(cfg, {
+        repo = self.make_repo(cfg, {
             'remote': {
                 'host': urlparse(cfg.base_url).netloc,
                 'root': '/home/' + ssh_user,
@@ -582,15 +580,15 @@ class RemoteUnitsPathTestCase(
             },
             'remote_units_path': paths[0],
         })
-        distribs = _get_dists_by_type_id(cfg, repo_href)
-        utils.sync_repo(cfg, repo_href)
+        distribs = _get_dists_by_type_id(cfg, repo['_href'])
+        utils.sync_repo(cfg, repo['_href'])
 
         # Publish the repo with the yum and rpm rsync distributors,
         # respectively. Verify that files have been correctly placed.
-        distribs = _get_dists_by_type_id(cfg, repo_href)
+        distribs = _get_dists_by_type_id(cfg, repo['_href'])
         self.maybe_disable_selinux(cfg, 2199)
         for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
-            api_client.post(urljoin(repo_href, 'actions/publish/'), {
+            utils.publish_repo(cfg, repo, {
                 'id': distribs[type_id]['id'],
                 'config': {'remote_units_path': paths[1]},
             })
@@ -629,36 +627,36 @@ class DeleteTestCase(
         # Create a user and repo with an importer and distribs. Sync the repo.
         ssh_user, priv_key = self.make_user(cfg)
         ssh_identity_file = self.write_private_key(cfg, priv_key)
-        repo_href = self.make_repo(cfg, {'remote': {
+        repo = self.make_repo(cfg, {'remote': {
             'host': urlparse(cfg.base_url).netloc,
             'root': '/home/' + ssh_user,
             'ssh_identity_file': ssh_identity_file,
             'ssh_user': ssh_user,
         }})
-        utils.sync_repo(cfg, repo_href)
+        utils.sync_repo(cfg, repo['_href'])
 
         # Publish the repo with the yum and rsync distributors, respectively.
         # Verify that the RPM rsync distributor has placed files.
-        distribs = _get_dists_by_type_id(cfg, repo_href)
+        distribs = _get_dists_by_type_id(cfg, repo['_href'])
         self.maybe_disable_selinux(cfg, 2199)
         for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
-            api_client.post(urljoin(repo_href, 'actions/publish/'), {
-                'id': distribs[type_id]['id']
-            })
+            utils.publish_repo(cfg, repo, {'id': distribs[type_id]['id']})
         self.verify_remote_units_path(cfg, distribs['rpm_rsync_distributor'])
 
         # Disassociate all units from the repo, publish the repo, and verify.
-        api_client.post(urljoin(repo_href, 'actions/unassociate/'), {
+        api_client.post(urljoin(repo['_href'], 'actions/unassociate/'), {
             'criteria': {}
         })
-        api_client.post(urljoin(repo_href, 'actions/publish/'), {
-            'id': distribs['yum_distributor']['id']
-        })
-        self._verify_units_not_in_repo(cfg, repo_href)
+        utils.publish_repo(
+            cfg,
+            repo,
+            {'id': distribs['yum_distributor']['id']}
+        )
+        self._verify_units_not_in_repo(cfg, repo['_href'])
 
         # Publish with the RPM rsync distributor, and verify that no RPMs are
         # in the target directory.
-        api_client.post(urljoin(repo_href, 'actions/publish/'), {
+        api_client.post(urljoin(repo['_href'], 'actions/publish/'), {
             'id': distribs['rpm_rsync_distributor']['id'],
             'override_config': {'delete': True},
         })

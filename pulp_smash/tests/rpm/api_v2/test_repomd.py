@@ -31,30 +31,28 @@ class RepoMDTestCase(utils.BaseAPITestCase):
 
         Do the following:
 
-        1. Create an RPM repository, add a YUM distributor, and publish the
-           repository.
+        1. Create an RPM repository with a YUM distributor and publish it.
         2. Fetch the ``repomd.xml`` file from the distributor, and parse it.
         """
         super(RepoMDTestCase, cls).setUpClass()
         if check_issue_2277(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
 
-        # Create a repository. Add a yum distributor and publish it.
+        # Create a repository with a yum distributor and publish it.
         client = api.Client(cls.cfg, api.json_handler)
-        repo = client.post(REPOSITORY_PATH, gen_repo())
+        body = gen_repo()
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(REPOSITORY_PATH, body)
+        repo = client.get(repo['_href'], params={'details': True})
         cls.resources.add(repo['_href'])
-        distributor = client.post(
-            urljoin(repo['_href'], 'distributors/'),
-            gen_distributor(),
-        )
-        client.post(
-            urljoin(repo['_href'], 'actions/publish/'),
-            {'id': distributor['id']},
-        )
+        utils.publish_repo(cls.cfg, repo)
 
         # Fetch and parse repomd.xml
         client.response_handler = xml_handler
-        path = urljoin('/pulp/repos/', distributor['config']['relative_url'])
+        path = urljoin(
+            '/pulp/repos/',
+            repo['distributors'][0]['config']['relative_url'],
+        )
         path = urljoin(path, 'repodata/repomd.xml')
         cls.root_element = client.get(path)
 
@@ -116,7 +114,7 @@ class FastForwardIntegrityTestCase(unittest.TestCase):
         new_phrase = utils.uuid4()
 
         # Publish the repository, and verify its […]-primary.xml file.
-        self._publish_repo(cfg, repo)
+        utils.publish_repo(cfg, repo)
         primary_xml = self._read_primary_xml(cfg, repo)
         self.assertIn(old_phrase, primary_xml)
         self.assertNotIn(new_phrase, primary_xml)
@@ -129,7 +127,7 @@ class FastForwardIntegrityTestCase(unittest.TestCase):
                 'type_ids': ['rpm'],
             }
         })
-        self._publish_repo(cfg, repo)
+        utils.publish_repo(cfg, repo)
         primary_xml = self._read_primary_xml(cfg, repo)
         self.assertIn(old_phrase, primary_xml)
         self.assertNotIn(new_phrase, primary_xml)
@@ -138,7 +136,7 @@ class FastForwardIntegrityTestCase(unittest.TestCase):
         # Fast-forward publish described here: https://pulp.plan.io/issues/2113
         self._create_dummy_primary_xml(cfg, repo, old_phrase, new_phrase)
         utils.sync_repo(cfg, repo['_href'])
-        self._publish_repo(cfg, repo)
+        utils.publish_repo(cfg, repo)
         primary_xml = self._read_primary_xml(cfg, repo)
         self.assertIn(old_phrase, primary_xml)
         self.assertNotIn(new_phrase, primary_xml)
@@ -204,14 +202,6 @@ class FastForwardIntegrityTestCase(unittest.TestCase):
         utils.sync_repo(cfg, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
         return client.get(repo['_href'], params={'details': True})
-
-    @staticmethod
-    def _publish_repo(cfg, repo):
-        """Publish a repository."""
-        api.Client(cfg).post(
-            urljoin(repo['_href'], 'actions/publish/'),
-            {'id': repo['distributors'][0]['id']},
-        )
 
     @staticmethod
     def _get_primary_xml_path(cfg, repo):

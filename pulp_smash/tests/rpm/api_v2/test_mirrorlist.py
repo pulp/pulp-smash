@@ -14,7 +14,6 @@ both valid and invalid references, and a "bad" file contains only invalid
 references.
 """
 import unittest
-from urllib.parse import urljoin
 
 from packaging.version import Version
 
@@ -29,7 +28,11 @@ from pulp_smash.constants import (
     RPM_UNSIGNED_URL,
 )
 from pulp_smash.exceptions import TaskReportError
-from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
+from pulp_smash.tests.rpm.api_v2.utils import (
+    gen_distributor,
+    gen_repo,
+    get_unit,
+)
 from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
@@ -61,7 +64,7 @@ class UtilsMixin(object):
         :param feed: A value for the yum importer's ``feed`` option.
         :param relative_url: A value for the yum distributor's ``relative_url``
             option. If ``None``, this option is not passed to Pulp.
-        :returns: The repository's href.
+        :returns: A detailed dict of information about the repository.
         """
         body = gen_repo()
         body['importer_config']['feed'] = feed
@@ -70,50 +73,9 @@ class UtilsMixin(object):
             distributor['distributor_config']['relative_url'] = relative_url
         body['distributors'] = [distributor]
         client = api.Client(cfg, api.json_handler)
-        repo_href = client.post(REPOSITORY_PATH, body)['_href']
-        self.addCleanup(client.delete, repo_href)
-        return repo_href
-
-    @staticmethod
-    def publish_repo(cfg, repo_href):
-        """Publish a repository.
-
-        The given repository should have only one distributor.
-
-        :param pulp_smash.config.ServerConfig cfg: The Pulp server on which the
-            repository is hosted.
-        :param repo_href: The href of the repository to publish.
-        :returns: The decoded body of the server's reponse. (A call report.)
-        """
-        client = api.Client(cfg, api.json_handler)
-        repo = client.get(repo_href, params={'details': True})
-        assert len(repo['distributors']) == 1
-        return client.post(urljoin(repo_href, 'actions/publish/'), {
-            'id': repo['distributors'][0]['id'],
-        })
-
-    @staticmethod
-    def get_unit(cfg, repo_href, unit_name):
-        """Download an RPM from a published repository.
-
-        The given repository should have only one distributor.
-
-        :param pulp_smash.config.ServerConfig cfg: The Pulp server on which the
-            repository is hosted.
-        :param repo_href: The href of the published repository.
-        :param unit_name: The name of the content unit in the published
-            repository.
-        :returns: A binary blob.
-        """
-        client = api.Client(cfg)
-        repo = client.get(repo_href, params={'details': True}).json()
-        assert len(repo['distributors']) == 1
-        path = urljoin(
-            '/pulp/repos/',
-            repo['distributors'][0]['config']['relative_url'],
-        )
-        path = urljoin(path, unit_name)
-        return client.get(path).content
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        return client.get(repo['_href'], params={'details': True})
 
     def check_issue_2277(self, cfg):
         """Skip the current test method if Pulp `issue #2277`_ affects us.
@@ -167,10 +129,10 @@ class GoodMirrorlistTestCase(UtilsMixin, unittest.TestCase):
         cfg = config.get_config()
         self.check_issue_2277(cfg)
         self.check_issue_2326(cfg)
-        repo_href = self.create_repo(cfg, RPM_MIRRORLIST_GOOD)
-        utils.sync_repo(cfg, repo_href)
-        self.publish_repo(cfg, repo_href)
-        actual_rpm = self.get_unit(cfg, repo_href, RPM)
+        repo = self.create_repo(cfg, RPM_MIRRORLIST_GOOD)
+        utils.sync_repo(cfg, repo['_href'])
+        utils.publish_repo(cfg, repo)
+        actual_rpm = get_unit(cfg, repo, RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
         self.assertEqual(actual_rpm, target_rpm)
 
@@ -183,10 +145,10 @@ class GoodRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
         cfg = config.get_config()
         self.check_issue_2277(cfg)
         self.check_issue_2326(cfg)
-        repo_href = self.create_repo(cfg, RPM_MIRRORLIST_GOOD, _gen_rel_url())
-        utils.sync_repo(cfg, repo_href)
-        self.publish_repo(cfg, repo_href)
-        actual_rpm = self.get_unit(cfg, repo_href, RPM)
+        repo = self.create_repo(cfg, RPM_MIRRORLIST_GOOD, _gen_rel_url())
+        utils.sync_repo(cfg, repo['_href'])
+        utils.publish_repo(cfg, repo)
+        actual_rpm = get_unit(cfg, repo, RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
         self.assertEqual(actual_rpm, target_rpm)
 
@@ -205,10 +167,10 @@ class MixedMirrorlistTestCase(UtilsMixin, unittest.TestCase):
         cfg = config.get_config()
         self.check_issue_2277(cfg)
         self.check_issue_2321(cfg)
-        repo_href = self.create_repo(cfg, RPM_MIRRORLIST_MIXED)
-        utils.sync_repo(cfg, repo_href)
-        self.publish_repo(cfg, repo_href)
-        actual_rpm = self.get_unit(cfg, repo_href, RPM)
+        repo = self.create_repo(cfg, RPM_MIRRORLIST_MIXED)
+        utils.sync_repo(cfg, repo['_href'])
+        utils.publish_repo(cfg, repo)
+        actual_rpm = get_unit(cfg, repo, RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
         self.assertEqual(actual_rpm, target_rpm)
 
@@ -221,10 +183,10 @@ class MixedRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
         cfg = config.get_config()
         self.check_issue_2277(cfg)
         self.check_issue_2321(cfg)
-        repo_href = self.create_repo(cfg, RPM_MIRRORLIST_MIXED, _gen_rel_url())
-        utils.sync_repo(cfg, repo_href)
-        self.publish_repo(cfg, repo_href)
-        actual_rpm = self.get_unit(cfg, repo_href, RPM)
+        repo = self.create_repo(cfg, RPM_MIRRORLIST_MIXED, _gen_rel_url())
+        utils.sync_repo(cfg, repo['_href'])
+        utils.publish_repo(cfg, repo)
+        actual_rpm = get_unit(cfg, repo, RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
         self.assertEqual(actual_rpm, target_rpm)
 
@@ -243,9 +205,9 @@ class BadMirrorlistTestCase(UtilsMixin, unittest.TestCase):
         """Execute the test case business logic."""
         cfg = config.get_config()
         self.check_issue_2363(cfg)
-        repo_href = self.create_repo(cfg, RPM_MIRRORLIST_BAD)
+        repo = self.create_repo(cfg, RPM_MIRRORLIST_BAD)
         with self.assertRaises(TaskReportError):
-            utils.sync_repo(cfg, repo_href)
+            utils.sync_repo(cfg, repo['_href'])
 
 
 class BadRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
@@ -255,6 +217,6 @@ class BadRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
         """Execute the test case business logic."""
         cfg = config.get_config()
         self.check_issue_2363(cfg)
-        repo_href = self.create_repo(cfg, RPM_MIRRORLIST_BAD, _gen_rel_url())
+        repo = self.create_repo(cfg, RPM_MIRRORLIST_BAD, _gen_rel_url())
         with self.assertRaises(TaskReportError):
-            utils.sync_repo(cfg, repo_href)
+            utils.sync_repo(cfg, repo['_href'])

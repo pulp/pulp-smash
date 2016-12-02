@@ -39,34 +39,33 @@ class RepoviewTestCase(unittest.TestCase):
             self.skipTest('https://pulp.plan.io/issues/189')
 
         # Create a repo, and add content
-        client = api.Client(cfg, api.json_handler)
+        client = api.Client(cfg)
         body = gen_repo()
         body['distributors'] = [gen_distributor()]
-        repo_href = client.post(constants.REPOSITORY_PATH, body)['_href']
-        self.addCleanup(client.delete, repo_href)
+        repo = client.post(constants.REPOSITORY_PATH, body).json()
+        self.addCleanup(client.delete, repo['_href'])
         rpm = utils.http_get(constants.RPM_UNSIGNED_URL)
-        utils.upload_import_unit(cfg, rpm, 'rpm', repo_href)
+        utils.upload_import_unit(cfg, rpm, 'rpm', repo['_href'])
 
-        # Gather some facts about the repo distributor
-        dist = client.get(urljoin(repo_href, 'distributors/'))[0]
-        dist_url = urljoin('/pulp/repos/', dist['config']['relative_url'])
+        # Get info about the repo distributor
+        repo = client.get(repo['_href'], params={'details': True}).json()
+        pub_path = urljoin(
+            '/pulp/repos/',
+            repo['distributors'][0]['config']['relative_url']
+        )
 
         # Publish the repo
-        client.response_handler = api.safe_handler
-        client.post(urljoin(repo_href, 'actions/publish/'), {'id': dist['id']})
-        response = client.get(dist_url)
+        utils.publish_repo(cfg, repo)
+        response = client.get(pub_path)
         with self.subTest(comment='first publish'):
             self.assertEqual(len(response.history), 0, response.history)
 
         # Publish the repo a second time
-        client.post(
-            urljoin(repo_href, 'actions/publish/'),
-            {'id': dist['id'], 'override_config': {
-                'generate_sqlite': True,
-                'repoview': True,
-            }},
-        )
-        response = client.get(dist_url)
+        utils.publish_repo(cfg, repo, {
+            'id': repo['distributors'][0]['id'],
+            'override_config': {'generate_sqlite': True, 'repoview': True},
+        })
+        response = client.get(pub_path)
         with self.subTest(comment='second publish'):
             self.assertEqual(len(response.history), 1, response.history)
             self.assertEqual(
@@ -77,7 +76,7 @@ class RepoviewTestCase(unittest.TestCase):
         # Publish the repo a third time
         if selectors.bug_is_untestable(2349, cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2349')
-        client.post(urljoin(repo_href, 'actions/publish/'), {'id': dist['id']})
-        response = client.get(dist_url)
+        utils.publish_repo(cfg, repo)
+        response = client.get(pub_path)
         with self.subTest(comment='third publish'):
             self.assertEqual(len(response.history), 0, response.history)

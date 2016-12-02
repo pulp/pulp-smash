@@ -113,11 +113,10 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
 
         More specifically, do the following:
 
-        1. Create an RPM repository.
-        2. Add a YUM distributor.
-        3. Generate a pair of errata. Upload them to Pulp and import them into
+        1. Create an RPM repository with a distributor.
+        2. Generate a pair of errata. Upload them to Pulp and import them into
            the repository.
-        4. Publish the repository. Fetch the ``updateinfo.xml`` file from the
+        3. Publish the repository. Fetch the ``updateinfo.xml`` file from the
            distributor (via ``repomd.xml``), and parse it.
         """
         super(UpdateInfoTestCase, cls).setUpClass()
@@ -129,12 +128,11 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
 
         # Create a repository and add a yum distributor.
         client = api.Client(cls.cfg, api.json_handler)
-        repo = client.post(REPOSITORY_PATH, gen_repo())
+        body = gen_repo()
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(REPOSITORY_PATH, body)
+        repo = client.get(repo['_href'], params={'details': True})
         cls.resources.add(repo['_href'])
-        distributor = client.post(
-            urljoin(repo['_href'], 'distributors/'),
-            gen_distributor(),
-        )
 
         # Import errata into our repository. Publish the repository.
         for key, erratum in cls.errata.items():
@@ -144,15 +142,15 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
                 repo['_href'],
             )
             cls.tasks[key] = tuple(api.poll_spawned_tasks(cls.cfg, report))
-        client.post(
-            urljoin(repo['_href'], 'actions/publish/'),
-            {'id': distributor['id']},
-        )
+        utils.publish_repo(cls.cfg, repo)
 
         # Fetch and parse updateinfo.xml (or updateinfo.xml.gz), via repomd.xml
         cls.root_element = get_repomd_xml(
             cls.cfg,
-            urljoin('/pulp/repos/', distributor['config']['relative_url']),
+            urljoin(
+                '/pulp/repos/',
+                repo['distributors'][0]['config']['relative_url'],
+            ),
             'updateinfo'
         )
 
@@ -266,26 +264,25 @@ class ErratumPkgListCountTestCase(utils.BaseAPITestCase):
 
         More specifically, do the following:
 
-        1. Create an RPM repository.
-        2. Add a YUM distributor.
-        3. Sync the created repository.
-        4. Remove the ``gorilla`` package
-        5. Publish the repository. Fetch the ``updateinfo.xml`` file from the
+        1. Create an RPM repository with a distributor.
+        2. Sync the created repository.
+        3. Remove the ``gorilla`` package
+        4. Publish the repository. Fetch the ``updateinfo.xml`` file from the
            distributor (via ``repomd.xml``), and parse it.
         """
         super(ErratumPkgListCountTestCase, cls).setUpClass()
 
-        # Create a repository, sync it, and add a yum distributor.
+        # Create a repository.
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
+        body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
+        repo = client.get(repo['_href'], params={'details': True})
         cls.resources.add(repo['_href'])
+
+        # Sync the repo.
         utils.sync_repo(cls.cfg, repo['_href'])
-        distributor = client.post(
-            urljoin(repo['_href'], 'distributors/'),
-            gen_distributor(),
-        )
 
         # Remove the gorilla package unit
         client.post(
@@ -294,15 +291,15 @@ class ErratumPkgListCountTestCase(utils.BaseAPITestCase):
         )
 
         # Publish the repository
-        client.post(
-            urljoin(repo['_href'], 'actions/publish/'),
-            {'id': distributor['id']},
-        )
+        utils.publish_repo(cls.cfg, repo)
 
         # Fetch and parse updateinfo.xml (or updateinfo.xml.gz), via repomd.xml
         root_element = get_repomd_xml(
             cls.cfg,
-            urljoin('/pulp/repos/', distributor['config']['relative_url']),
+            urljoin(
+                '/pulp/repos/',
+                repo['distributors'][0]['config']['relative_url'],
+            ),
             'updateinfo'
         )
 
@@ -363,20 +360,19 @@ class PkglistsTestCase(unittest.TestCase):
         body['importer_config']['feed'] = RPM_PKGLISTS_UPDATEINFO_FEED_URL
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
+        repo = client.get(repo['_href'], params={'details': True})
         self.addCleanup(client.delete, repo['_href'])
         utils.sync_repo(cfg, repo['_href'])
 
         # Publish the repository, and fetch and parse its updateinfo file.
-        repo = client.get(repo['_href'], params={'details': True})
         self.assertEqual(len(repo['distributors']), 1, repo['distributors'])
-        distributor = repo['distributors'][0]
-        client.post(
-            urljoin(repo['_href'], 'actions/publish/'),
-            {'id': distributor['id']},
-        )
+        utils.publish_repo(cfg, repo)
         root_element = get_repomd_xml(
             cfg,
-            urljoin('/pulp/repos/', distributor['config']['relative_url']),
+            urljoin(
+                '/pulp/repos/',
+                repo['distributors'][0]['config']['relative_url']
+            ),
             'updateinfo'
         )
 

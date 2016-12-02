@@ -132,26 +132,25 @@ class RemoveAndRepublishTestCase(utils.BaseAPITestCase):
 
         Specifically, do the following:
 
-        1. Create a repository with a feed and sync it.
-        2. Add a distributor to the repository and publish the repository.
-        3. Select a content unit at random. Remove it from the repository, and
-           re-publish the repository.
+        1. Create a repository with a feed and distributor.
+        2. Sync and publish the repository.
+        3. Select a content unit at random. Remove it from the repository.
+        4. Publish the repository.
         """
         super(RemoveAndRepublishTestCase, cls).setUpClass()
 
-        # Create and sync a repository.
+        # Create a repository with a feed and distributor.
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
+        body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
+        repo = client.get(repo['_href'], params={'details': True})
         cls.resources.add(repo['_href'])  # mark for deletion
-        utils.sync_repo(cls.cfg, repo['_href'])
 
-        # Add a distributor and publish the repository to it.
-        path = urljoin(repo['_href'], 'distributors/')
-        distributor = client.post(path, gen_distributor())
-        path = urljoin(repo['_href'], 'actions/publish/')
-        client.post(path, {'id': distributor['id']})
+        # Sync and publish the repository.
+        utils.sync_repo(cls.cfg, repo['_href'])
+        utils.publish_repo(cls.cfg, repo)
 
         # List RPM content units in the repository. Pick one and remove it.
         # NOTE: There are two versions of the "walrus" RPM, and this works even
@@ -163,8 +162,7 @@ class RemoveAndRepublishTestCase(utils.BaseAPITestCase):
         # Re-publish the repository. sleep() for test_compare_timestamps.
         # Re-read the repository so the test methods have fresh data.
         time.sleep(2)
-        path = urljoin(repo['_href'], 'actions/publish/')
-        client.post(path, {'id': distributor['id']})
+        utils.publish_repo(cls.cfg, repo)
         cls.repo = client.get(repo['_href'], params={'details': True})
 
     def test_get_removed_unit(self):

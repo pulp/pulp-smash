@@ -175,10 +175,9 @@ class PubTwiceTestCase(BaseTestCase, NoOpPublishMixin):
         client = api.Client(cls.cfg)
         distributor = cls.repo['distributors'][0]
         for _ in range(2):
-            cls.call_reports.append(client.post(
-                urljoin(cls.repo['_href'], 'actions/publish/'),
-                {'id': distributor['id']}
-            ).json())
+            cls.call_reports.append(
+                utils.publish_repo(cls.cfg, cls.repo).json()
+            )
             cls.repomd_xmls.append(client.get(
                 get_repomd_xml_path(distributor['config']['relative_url'])
             ))
@@ -194,13 +193,10 @@ class PubTwiceWithOverrideTestCase(BaseTestCase, NoOpPublishMixin):
         client = api.Client(cls.cfg)
         relative_url = utils.uuid4() + '/'
         for _ in range(2):
-            cls.call_reports.append(client.post(
-                urljoin(cls.repo['_href'], 'actions/publish/'),
-                {
-                    'id': cls.repo['distributors'][0]['id'],
-                    'override_config': {'relative_url': relative_url},
-                },
-            ).json())
+            cls.call_reports.append(utils.publish_repo(cls.cfg, cls.repo, {
+                'id': cls.repo['distributors'][0]['id'],
+                'override_config': {'relative_url': relative_url},
+            }).json())
             cls.repomd_xmls.append(client.get(
                 get_repomd_xml_path(relative_url)
             ))
@@ -214,20 +210,20 @@ class ChangeRepoTestCase(BaseTestCase):
         """Publish a repository, change it, and publish it again."""
         super(ChangeRepoTestCase, cls).setUpClass()
         client = api.Client(cls.cfg)
-        publish_args = (
-            urljoin(cls.repo['_href'], 'actions/publish/'),
-            {'id': cls.repo['distributors'][0]['id']},
-        )
         relative_url = cls.repo['distributors'][0]['config']['relative_url']
 
         # Publish, remove a unit, and publish again
-        cls.call_reports.append(client.post(*publish_args).json())
+        cls.call_reports.append(
+            utils.publish_repo(cls.cfg, cls.repo).json()
+        )
         cls.repomd_xmls.append(client.get(get_repomd_xml_path(relative_url)))
         client.post(
             urljoin(cls.repo['_href'], 'actions/unassociate/'),
             {'criteria': {'type_ids': ['rpm'], 'limit': 1}}
         )
-        cls.call_reports.append(client.post(*publish_args).json())
+        cls.call_reports.append(
+            utils.publish_repo(cls.cfg, cls.repo).json()
+        )
         cls.repomd_xmls.append(client.get(get_repomd_xml_path(relative_url)))
 
     def test_second_publish_tasks(self):

@@ -105,9 +105,10 @@ class PackagesDirectoryTestCase(utils.BaseAPITestCase):
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
-        cls.repo_href = client.post(REPOSITORY_PATH, body)['_href']
-        cls.resources.add(cls.repo_href)
-        utils.sync_repo(cls.cfg, cls.repo_href)
+        cls.repo = client.post(REPOSITORY_PATH, body)
+        cls.repo = client.get(cls.repo['_href'], params={'details': True})
+        cls.resources.add(cls.repo['_href'])
+        utils.sync_repo(cls.cfg, cls.repo['_href'])
 
     def test_default_behaviour(self):
         """Do not use the ``packages_directory`` option.
@@ -118,14 +119,11 @@ class PackagesDirectoryTestCase(utils.BaseAPITestCase):
         ``repodata`` directory, and it may be changed by setting the
         distributor's ``relative_url``.)
         """
-        client = api.Client(self.cfg, api.json_handler)
-        distributor = client.post(
-            urljoin(self.repo_href, 'distributors/'),
+        distributor = api.Client(self.cfg).post(
+            urljoin(self.repo['_href'], 'distributors/'),
             gen_distributor(),
-        )
-        client.post(urljoin(self.repo_href, 'actions/publish/'), {
-            'id': distributor['id']
-        })
+        ).json()
+        utils.publish_repo(self.cfg, self.repo, {'id': distributor['id']})
         primary_xml = get_parse_repodata_primary_xml(self.cfg, distributor)
         package_hrefs = get_package_hrefs(primary_xml)
         self.assertGreater(len(package_hrefs), 0)
@@ -142,17 +140,14 @@ class PackagesDirectoryTestCase(utils.BaseAPITestCase):
         """
         if selectors.bug_is_untestable(1976, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1976')
-        client = api.Client(self.cfg, api.json_handler)
         body = gen_distributor()
         packages_dir = utils.uuid4()
         body['distributor_config']['packages_directory'] = packages_dir
-        distributor = client.post(
-            urljoin(self.repo_href, 'distributors/'),
+        distributor = api.Client(self.cfg).post(
+            urljoin(self.repo['_href'], 'distributors/'),
             body
-        )
-        client.post(urljoin(self.repo_href, 'actions/publish/'), {
-            'id': distributor['id'],
-        })
+        ).json()
+        utils.publish_repo(self.cfg, self.repo, {'id': distributor['id']})
         primary_xml = get_parse_repodata_primary_xml(self.cfg, distributor)
         package_hrefs = get_package_hrefs(primary_xml)
         self.assertGreater(len(package_hrefs), 0)
@@ -170,13 +165,12 @@ class PackagesDirectoryTestCase(utils.BaseAPITestCase):
         """
         if selectors.bug_is_untestable(1976, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1976')
-        client = api.Client(self.cfg, api.json_handler)
-        distributor = client.post(
-            urljoin(self.repo_href, 'distributors/'),
+        distributor = api.Client(self.cfg).post(
+            urljoin(self.repo['_href'], 'distributors/'),
             gen_distributor(),
-        )
+        ).json()
         packages_dir = utils.uuid4()
-        client.post(urljoin(self.repo_href, 'actions/publish/'), {
+        utils.publish_repo(self.cfg, self.repo, {
             'id': distributor['id'],
             'override_config': {'packages_directory': packages_dir},
         })
