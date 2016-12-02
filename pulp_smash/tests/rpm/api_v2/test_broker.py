@@ -25,7 +25,6 @@ Both scenarios are executed by
 """
 import time
 import unittest
-from urllib.parse import urljoin
 
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
@@ -35,7 +34,12 @@ from pulp_smash.constants import (
     RPM_SIGNED_FEED_URL,
     RPM_SIGNED_URL,
 )
-from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
+from pulp_smash.tests.rpm.api_v2.utils import (
+    gen_distributor,
+    gen_repo,
+    get_unit,
+    publish_repo,
+)
 from pulp_smash.tests.rpm.utils import check_issue_2277, check_issue_2387
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
@@ -111,21 +115,13 @@ class BrokerTestCase(unittest.TestCase):
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
+        body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
-        self.addCleanup(api.Client(self.cfg).delete, repo['_href'])
+        self.addCleanup(client.delete, repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
         utils.sync_repo(self.cfg, repo['_href'])
-        distributor = client.post(
-            urljoin(repo['_href'], 'distributors/'),
-            gen_distributor(),
-        )
-        client.post(
-            urljoin(repo['_href'], 'actions/publish/'),
-            {'id': distributor['id']},
-        )
-        client.response_handler = api.safe_handler
-        url = urljoin('/pulp/repos/', distributor['config']['relative_url'])
-        url = urljoin(url, RPM)
-        pulp_rpm = client.get(url).content
+        publish_repo(self.cfg, repo)
+        pulp_rpm = get_unit(self.cfg, repo, RPM).content
 
         # Does this RPM match the original RPM?
         rpm = utils.http_get(RPM_SIGNED_URL)
