@@ -206,3 +206,55 @@ class DisableSELinuxMixin(object):  # pylint:disable=too-few-public-methods
         client.run(cmd)
         cmd = (sudo + 'setenforce 1').split()
         self.addCleanup(client.run, cmd)
+
+
+def publish_repo(cfg, repo, distributor=None):
+    """Publish a repository.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about the Pulp host.
+    :param repo: A dict of detailed information about the repository to be
+        published.
+    :param distributor: The distributor to use when publishing. If not passed,
+        the distributor in the ``repo`` dict is used.
+    :raises: ``ValueError`` when ``distributor`` is not passed, and ``repo``
+        does not have exactly one distributor.
+    :returns: The decoded body of the server's reponse. (A call report.)
+    """
+    if distributor is None:
+        if len(repo['distributors']) != 1:
+            raise ValueError(
+                'No distributor was passed, and the given repository does not '
+                'have exactly one distributor. Repository distributors: {}'
+                .format(repo['distributors'])
+            )
+        distributor = repo['distributors'][0]
+    return api.Client(cfg).post(
+        urljoin(repo['_href'], 'actions/publish/'),
+        {'id': distributor['id']},
+    )
+
+
+def get_unit(cfg, repo, unit_name, distributor=None):
+    """Download a file from a published repository.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about the Pulp host.
+    :param repo: A dict of detailed information about the repository.
+    :param unit_name: The name of the content unit in the published repository.
+    :param distributor: The distributor used when the content unit was
+        published. If not passed, the distributor in the ``repo`` dict is used.
+    :raises: ``ValueError`` when ``distributor`` is not passed, and ``repo``
+        does not have exactly one distributor.
+    :returns: The raw response. The fetched unit is available as
+        ``response.content``.
+    """
+    if distributor is None:
+        if len(repo['distributors']) != 1:
+            raise ValueError(
+                'No distributor was passed, and the given repository does not '
+                'have exactly one distributor. Repository distributors: {}'
+                .format(repo['distributors'])
+            )
+        distributor = repo['distributors'][0]
+    path = urljoin('/pulp/repos/', distributor['config']['relative_url'] + '/')
+    path = urljoin(path, unit_name)
+    return api.Client(cfg).get(path)

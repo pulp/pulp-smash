@@ -22,6 +22,7 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
     get_repomd_xml,
+    publish_repo,
 )
 from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module
@@ -136,15 +137,11 @@ class SyncRepoTestCase(utils.BaseAPITestCase):
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
 
         # Sync and publish the repo.
-        repo = client.get(repo['_href'], params={'details': True})
         utils.sync_repo(cls.cfg, repo['_href'])
-        client.post(
-            urljoin(repo['_href'], 'actions/publish/'),
-            {'id': repo['distributors'][0]['id']},
-        )
-        repo = client.get(repo['_href'], params={'details': True})
+        publish_repo(cls.cfg, repo)
 
         # Fetch and parse comps.xml.
         dist = repo['distributors'][0]
@@ -199,12 +196,11 @@ class UploadPackageGroupsTestCase(utils.BaseAPITestCase):
 
         # Create a repository and add a distributor to it.
         client = api.Client(cls.cfg, api.json_handler)
-        repo = client.post(REPOSITORY_PATH, gen_repo())
+        body = gen_repo()
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
-        distributor = client.post(
-            urljoin(repo['_href'], 'distributors/'),
-            gen_distributor(),
-        )
+        repo = client.get(repo['_href'], params={'details': True})
 
         # Generate several package groups, import them into the repository, and
         # publish the repository.
@@ -216,15 +212,15 @@ class UploadPackageGroupsTestCase(utils.BaseAPITestCase):
         for key, package_group in cls.package_groups.items():
             report = _upload_import_package_group(cls.cfg, repo, package_group)
             cls.tasks[key] = tuple(api.poll_spawned_tasks(cls.cfg, report))
-        client.post(
-            urljoin(repo['_href'], 'actions/publish/'),
-            {'id': distributor['id']},
-        )
+        publish_repo(cls.cfg, repo)
 
         # Fetch the generated repodata of type 'group' (a.k.a. 'comps')
         cls.root_element = get_repomd_xml(
             cls.cfg,
-            urljoin('/pulp/repos/', distributor['config']['relative_url']),
+            urljoin(
+                '/pulp/repos/',
+                repo['distributors'][0]['config']['relative_url'],
+            ),
             'group'
         )
 
