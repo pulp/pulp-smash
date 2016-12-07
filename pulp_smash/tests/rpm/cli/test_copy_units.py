@@ -256,6 +256,7 @@ class UpdateRpmTestCase(UtilsMixin, unittest.TestCase):
         if check_issue_2277(cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
         client = cli.Client(cfg)
+        pkg_mgr = cli.PackageManager(cfg)
         sudo = '' if is_root(cfg) else 'sudo '
 
         # Create the second repository.
@@ -282,18 +283,15 @@ class UpdateRpmTestCase(UtilsMixin, unittest.TestCase):
             client.run,
             '{}rm {}'.format(sudo, repo_path).split()
         )
-        client.run('{}yum install -y {}'.format(sudo, rpm_name).split())
-        self.addCleanup(
-            client.run,
-            '{}yum remove -y {}'.format(sudo, rpm_name).split()
-        )
+        pkg_mgr.install(rpm_name)
+        self.addCleanup(pkg_mgr.uninstall, rpm_name)
         client.run(['rpm', '-q', rpm_name])
 
         # Copy the newer RPM to the second repository, and publish it.
         self._copy_and_publish(cfg, rpm_name, rpm_versions[1], repo_id)
 
         # Update the installed RPM on the host.
-        proc = client.run('{}yum -y update {}'.format(sudo, rpm_name).split())
+        proc = pkg_mgr.upgrade(rpm_name)
         self.assertNotIn('Nothing to do.', proc.stdout)
 
     def _copy_and_publish(self, cfg, rpm_name, rpm_version, repo_id):

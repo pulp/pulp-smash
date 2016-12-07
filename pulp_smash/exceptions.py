@@ -53,6 +53,13 @@ class NoKnownBrokerError(Exception):
     """
 
 
+class NoKnownPackageManagerError(Exception):
+    """We cannot determine the package manager used by a system.
+
+    A "package manager" is a tool such as ``yum`` or ``dnf``.
+    """
+
+
 class NoKnownServiceManagerError(Exception):
     """We cannot determine the service manager used by a system.
 

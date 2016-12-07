@@ -98,7 +98,7 @@ class BaseAPITestCase(unittest.TestCase):
 
 
 class IsRootTestCase(unittest.TestCase):
-    """Test :func:`pulp_smash.utils.is_root`."""
+    """Test ``pulp_smash.utils.is_root``."""
 
     def test_true(self):
         """Assert the method returns ``True`` when root."""
