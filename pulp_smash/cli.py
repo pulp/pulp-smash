@@ -49,6 +49,18 @@ def _get_hostname(urlstring):
         return parts.hostname
 
 
+def _is_root(cfg):
+    """Tell if we are root on the target system.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about the target
+        system.
+    :returns: Either ``True`` or ``False``.
+    """
+    if Client(cfg).run(('id', '-u')).stdout.strip() == '0':
+        return True
+    return False
+
+
 def echo_handler(completed_proc):
     """Immediately return ``completed_proc``."""
     return completed_proc
@@ -243,7 +255,7 @@ class Service(object):
 
         # Set `self._command_builder`.
         service_manager = self._get_service_manager(server_config)
-        prefix = self._get_prefix(server_config)
+        prefix = () if _is_root(server_config) else ('sudo',)
         if service_manager == 'systemd':
             self._command_builder = lambda verb: prefix + (
                 'systemctl', verb, service
@@ -253,14 +265,6 @@ class Service(object):
                 'service', service, verb
             )
         assert self._command_builder is not None
-
-    @staticmethod
-    def _get_prefix(server_config):
-        """Determine whether to prefix commands with "sudo"."""
-        if Client(server_config).run(('id', '-u')).stdout.strip() == '0':
-            return ()
-        else:
-            return ('sudo',)
 
     @staticmethod
     def _get_service_manager(server_config):

@@ -13,6 +13,7 @@ from urllib.parse import urljoin, urlparse
 import requests
 
 from pulp_smash import api, cli, config, exceptions
+from pulp_smash.cli import _is_root as is_root  # for backward compatibility
 from pulp_smash.constants import (
     CONTENT_UPLOAD_PATH,
     ORPHANS_PATH,
@@ -430,18 +431,6 @@ def get_unit_type_ids(server_config):
     """
     unit_types = api.Client(server_config).get(PLUGIN_TYPES_PATH).json()
     return {unit_type['id'] for unit_type in unit_types}
-
-
-def is_root(server_config):
-    """Tell if we are root on the target system.
-
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
-    :returns: Either ``True`` or ``False``.
-    """
-    if cli.Client(server_config).run(('id', '-u')).stdout.strip() == '0':
-        return True
-    return False
 
 
 def sync_repo(server_config, href):

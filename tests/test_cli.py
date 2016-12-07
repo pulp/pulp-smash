@@ -141,7 +141,7 @@ class ServiceTestCase(unittest.TestCase):
         Give each object a different service manager (systemd, sysv, etc).
         """
         cls.services = []
-        with mock.patch.object(cli.Service, '_get_prefix', return_value=()):
+        with mock.patch.object(cli, '_is_root', return_value=True):
             with mock.patch.object(cli, 'Client'):
                 for service_manager in ('systemd', 'sysv'):
                     with mock.patch.object(
