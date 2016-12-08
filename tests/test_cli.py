@@ -1,13 +1,12 @@
 # coding=utf-8
 """Unit tests for :mod:`pulp_smash.cli`."""
 import socket
-import subprocess
 import unittest
 from unittest import mock
 
 from plumbum.machines.local import LocalMachine
 
-from pulp_smash import cli, config, utils
+from pulp_smash import cli, config, exceptions, utils
 
 
 class GetHostnameTestCase(unittest.TestCase):
@@ -95,7 +94,7 @@ class CompletedProcessTestCase(unittest.TestCase):
         """Call ``check_returncode`` when ``returncode`` is not zero."""
         self.kwargs['returncode'] = 1
         completed_proc = cli.CompletedProcess(**self.kwargs)
-        with self.assertRaises(subprocess.CalledProcessError):
+        with self.assertRaises(exceptions.CalledProcessError):
             completed_proc.check_returncode()
 
     def test_can_eval(self):

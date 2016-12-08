@@ -30,6 +30,28 @@ class CallReportError(Exception):
     """
 
 
+class CalledProcessError(Exception):
+    """Indicates a CLI process has a non-zero return code.
+
+    See :meth:`pulp_smash.cli.CompletedProcess` for more information.
+    """
+
+    def __init__(self, args, returncode, stdout, stderr):
+        """An exceptionally simple constructor.
+
+        Pass all arguments to ``super()``.
+        """
+        super().__init__(args, returncode, stdout, stderr)
+
+    def __str__(self):
+        """Provide a human-friendly string representation of this exception."""
+        return (
+            'Command {} returned non-zero exit status {}.\n\n'
+            'stdout: {}\n\n'
+            'stderr: {}'
+        ).format(*self.args)
+
+
 class ConfigFileNotFoundError(Exception):
     """We cannot find the requested Pulp Smash configuration file.
 

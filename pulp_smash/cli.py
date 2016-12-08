@@ -1,8 +1,6 @@
 # coding=utf-8
 """A client for working with Pulp systems via their CLI."""
 import socket
-import subprocess
-from sys import version_info
 from urllib.parse import urlparse
 
 import plumbum
@@ -85,17 +83,22 @@ class CompletedProcess(object):
     # pylint:disable=too-few-public-methods
     """A process that has finished running.
 
-    This class mimics the ``subprocess.CompletedProcess`` class available in
-    Python 3.5 and above. It has minor differences, such as requiring all
-    constructor arguments. An instance of this class is returned by
-    :meth:`pulp_smash.cli.Client.run`.
+    This class is similar to the ``subprocess.CompletedProcess`` class
+    available in Python 3.5 and above. Significant differences include the
+    following:
+
+    * All constructor arguments are required.
+    * :meth:`check_returncode` returns a custom exception, not
+      ``subprocess.CalledProcessError``.
 
     All constructor arguments are stored as instance attributes.
 
-    :param args: The list or str args passed to run().
-    :param returncode: The exit code of the process, negative for signals.
-    :param stdout: The standard output.
-    :param stderr: The standard error.
+    :param args: A string or a sequence. The arguments passed to
+        :meth:`pulp_smash.cli.Client.run`.
+    :param returncode: The integer exit code of the executed process. Negative
+        for signals.
+    :param stdout: The standard output of the executed process.
+    :param stderr: The standard error of the executed process.
     """
 
     def __init__(self, args, returncode, stdout, stderr):
@@ -116,13 +119,39 @@ class CompletedProcess(object):
         return '{}({})'.format(type(self).__name__, str_kwargs)
 
     def check_returncode(self):
-        """Raise ``subprocess.CalledProcessError`` if exit code is non-zero."""
-        if self.returncode:
-            if version_info < (3, 5):  # pragma: no cover
-                args = [self.returncode, self.args, self.stdout]
-            else:  # pragma: no cover
-                args = [self.returncode, self.args, self.stdout, self.stderr]
-            raise subprocess.CalledProcessError(*args)
+        """Raise an exception if ``returncode`` is non-zero.
+
+        Raise :class:`pulp_smash.exceptions.CalledProcessError` if
+        ``returncode`` is non-zero.
+
+        Why not raise ``subprocess.CalledProcessError``? Because stdout and
+        stderr are not included when str() is called on a CalledProcessError
+        object. A typical message is::
+
+            "Command '('ls', 'foo')' returned non-zero exit status 2"
+
+        This information is valuable. One could still make
+        ``subprocess.CalledProcessError`` work by overloading ``args``:
+
+        >>> if isinstance(args, (str, bytes)):
+        ...     custom_args = (args, stdout, stderr)
+        ... else:
+        ...     custom_args = tuple(args) + (stdout, stderr)
+        >>> subprocess.CalledProcessError(args, returncode)
+
+        But this seems like a hack.
+
+        In addition, it's generally good for an application to raise expected
+        exceptions from its own namespace, so as to better abstract away
+        dependencies.
+        """
+        if self.returncode != 0:
+            raise exceptions.CalledProcessError(
+                self.args,
+                self.returncode,
+                self.stdout,
+                self.stderr,
+            )
 
 
 class Client(object):  # pylint:disable=too-few-public-methods
