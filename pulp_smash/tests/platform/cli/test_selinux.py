@@ -1,9 +1,10 @@
 # coding=utf-8
 """Tests to verify that Pulp has proper SELinux permissions."""
+import re
 import unittest
 from collections import namedtuple
 
-from pulp_smash import cli, config, utils
+from pulp_smash import cli, config, selectors, utils
 
 
 CELERY_LABEL = ':system_r:celery_t:s0'
@@ -92,3 +93,90 @@ class ProcessLabelsTestCase(unittest.TestCase):
         # [arguments]`. If this simple approach fails, a more robust approach
         # is to use a regex that searches for 'celery[:space:]+beat'.
         self._do_test(CELERY_LABEL, 'celery beat')
+
+
+class FileLabelsTestCase(unittest.TestCase):
+    """Test that files have correct SELinux labels.
+
+    This test case targets `Pulp Smash #442
+    <https://github.com/PulpQE/pulp-smash/issues/442>`_.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create a CLI client."""
+        cls.client = cli.Client(config.get_config())
+        cls.file_matcher = re.compile(r'^# file: (\S+)')
+        cls.label_matcher = re.compile(r'^security\.selinux="([\w:]+)"$')
+
+    def _do_test(self, file_, label, recursive=False):
+        """Assert that certain files have a label of ``label``.
+
+        Get the SELinux label of the given ``file_``, or all files rooted at
+        ``file_` if ``recursive`` is true. For each SELinux label, strip off
+        the leading "user" portion of the label, and assert that the result — a
+        string in the form :role:type:level — has the given ``label``.
+        """
+        # Typical output:
+        #
+        #     # getfattr --name=security.selinux /etc/passwd
+        #     getfattr: Removing leading '/' from absolute path names
+        #     # file: etc/passwd
+        #     security.selinux="system_u:object_r:passwd_file_t:s0"
+        #
+        cmd = ['getfattr', '--name=security.selinux', file_]
+        if recursive:
+            cmd.insert(1, '--recursive')
+        lines = self.client.run(cmd).stdout.splitlines()
+        matches = 0
+        getfattr_file = None  # tracks file currently under consideration
+        for line in lines:
+
+            match = self.file_matcher.match(line)
+            if match is not None:
+                getfattr_file = match.groups(1)
+                continue
+
+            match = self.label_matcher.match(line)
+            if match is not None:
+                matches += 1
+                # Strip "user" prefix from label. For example:
+                # user:role:type:level → :role:type:level
+                file_label = match.group(1)
+                file_label = file_label[file_label.find(':'):]
+                self.assertEqual(file_label, label, getfattr_file)
+
+        self.assertGreater(matches, 0, lines)
+
+    def test_pulp_celery_fc(self):
+        """Test files listed in ``pulp-celery.fc``."""
+        with self.subTest():
+            self._do_test('/usr/bin/celery', ':object_r:celery_exec_t:s0')
+        with self.subTest():
+            self._do_test(
+                '/var/cache/pulp',
+                ':object_r:pulp_var_cache_t:s0',
+                True,
+            )
+        with self.subTest():
+            self._do_test('/var/run/pulp', ':object_r:pulp_var_run_t:s0', True)
+
+    def test_pulp_server_fc(self):
+        """Test files listed in ``pulp-server.fc``."""
+        files_labels = [
+            ('/etc/pki/pulp', ':object_r:pulp_cert_t:s0'),
+            ('/etc/pulp', ':object_r:httpd_sys_content_t:s0'),
+            ('/usr/share/pulp/wsgi', ':object_r:httpd_sys_content_t:s0'),
+            ('/var/log/pulp', ':object_r:httpd_sys_rw_content_t:s0'),
+        ]
+        if selectors.bug_is_testable(2508, config.get_config().version):
+            files_labels.append(
+                ('/var/lib/pulp', ':object_r:httpd_sys_rw_content_t:s0')
+            )
+        for file_, label in files_labels:
+            with self.subTest((file_, label)):
+                self._do_test(file_, label, True)
+
+    def test_pulp_streamer_fc(self):
+        """Test files listed in ``pulp-streamer.fc``."""
+        self._do_test('/usr/bin/pulp_streamer', ':object_r:streamer_exec_t:s0')
