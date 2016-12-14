@@ -57,7 +57,7 @@ from urllib.parse import urljoin, urlparse
 
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, cli, config, selectors, utils
+from pulp_smash import api, cli, config, exceptions, selectors, utils
 from pulp_smash.constants import (
     ORPHANS_PATH,
     REPOSITORY_PATH,
@@ -161,22 +161,31 @@ def _get_dists_by_type_id(cfg, repo_href):
 def _set_pulp_manage_rsync(cfg, boolean):
     """Modify the ``pulp_manage_rsync`` SELinux policy.
 
-    For more information on this SELinux policy, see `ISO rsync Distributor →
-    Configuration
+    If the ``semanage`` executable is not available, return. Do this to deal
+    with the possibility that SELinux is not installed on the system under
+    test.
+
+    For more information on the ``pulp_manage_rsync`` SELinux policy, see `ISO
+    rsync Distributor → Configuration
     <http://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/iso-rsync-distributor.html#configuration>`_.
 
     :param pulp_smash.config.ServerConfig cfg: Information about the system
         being modified.
-    :param state: Either ``True`` or ``False``, indicating whether the SELinux
-        policy should be turned on or off.
+    :param state: Either ``True`` or ``False``, indicating whether the
+        ``pulp_manage_rsync`` SELinux policy should be turned on or off.
     :rtype: pulp_smash.cli.CompletedProcess
     """
-    cmd = (
-        'semanage boolean --modify --{} pulp_manage_rsync'
-        .format('on' if boolean else 'off')).split()
-    if not utils.is_root(cfg):
-        cmd.insert(0, 'sudo')
-    return cli.Client(cfg).run(cmd)
+    policy = 'pulp_manage_rsync'
+    client = cli.Client(cfg)
+    try:
+        client.run(('which', 'semanage'))
+    except exceptions.CalledProcessError:
+        return
+    cmd = [] if utils.is_root(cfg) else ['sudo']
+    cmd.extend(['semanage', 'boolean', '--modify'])
+    cmd.append('--on' if boolean else '--off')
+    cmd.append(policy)
+    return client.run(cmd)
 
 
 class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
