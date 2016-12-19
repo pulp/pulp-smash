@@ -36,7 +36,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
     ],
-    packages=find_packages(),
+    packages=find_packages(include=['pulp_smash', 'pulp_smash.*']),
     install_requires=[
         'packaging',
         'plumbum',
