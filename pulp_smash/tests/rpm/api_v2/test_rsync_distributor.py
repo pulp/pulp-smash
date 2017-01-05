@@ -52,6 +52,7 @@ files will be laid out as follows::
         ┆
 """
 import os
+import time
 import unittest
 from urllib.parse import urljoin, urlparse
 
@@ -204,15 +205,52 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
             being targeted.
         :returns: A ``(username, private_key)`` tuple.
         """
-        sudo = '' if utils.is_root(cfg) else 'sudo '
         creator = _make_user(cfg)
         username = next(creator)
-        self.addCleanup(
-            cli.Client(cfg).run,
-            (sudo + 'userdel --remove {}').format(username).split()
-        )
+        self.addCleanup(self.delete_user, cfg, username)
         private_key = next(creator)
         return (username, private_key)
+
+    @staticmethod
+    def delete_user(cfg, username):
+        """Delete a user.
+
+        The Pulp rsync distributor has a habit of leaving (idle?) SSH sessions
+        open even after publishing a repository. When executed, this function
+        will:
+
+        1. Poll the process list until all processes belonging to ``username``
+           have died, or raise a ``unittest.SkipTest`` exception if the time
+           limit is exceeded.
+        2. Delete ``username``.
+        """
+        sudo = () if utils.is_root(cfg) else ('sudo',)
+        client = cli.Client(cfg)
+
+        # values are arbitrary
+        iter_time = 2  # seconds
+        iter_limit = 15  # unitless
+
+        # Wait for user's processes to die.
+        cmd = sudo + ('ps', '-wwo', 'args', '--user', username, '--no-headers')
+        i = 0
+        while i <= iter_limit:
+            try:
+                user_processes = client.run(cmd).stdout.splitlines()
+            except exceptions.CalledProcessError:
+                break
+            i += 1
+            time.sleep(iter_time)
+        else:
+            raise unittest.SkipTest(
+                'User still has processes running after {}+ seconds. Aborting '
+                'test. User processes: {}'
+                .format(iter_time * iter_limit, user_processes)
+            )
+
+        # Delete user.
+        cmd = sudo + ('userdel', '--remove', username)
+        client.run(cmd)
 
     def write_private_key(self, cfg, private_key):
         """Write the given private key to a file on disk.
