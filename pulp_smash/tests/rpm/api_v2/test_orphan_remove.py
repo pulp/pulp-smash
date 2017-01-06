@@ -1,11 +1,12 @@
 # coding=utf-8
 """Test Pulp's handling of `orphaned content units`_.
 
-This module integrates tightly with `Pulp Fixtures`_. `Pulp Smash #134`_
-describes specific tests that should be in this module.
+This module integrates tightly with `Pulp Fixtures`_. `Pulp Smash #134`_ and
+`Pulp Smash #459` describe specific tests that should be in this module.
 
 .. _Pulp Fixtures: https://github.com/PulpQE/pulp-fixtures
 .. _Pulp Smash #134: https://github.com/PulpQE/pulp-smash/issues/134
+.. _Pulp Smash #459: https://github.com/PulpQE/pulp-smash/issues/459
 .. _orphaned content units:
     http://docs.pulpproject.org/en/latest/user-guide/admin-client/orphan.html
 """
@@ -124,10 +125,15 @@ class OrphansTestCase(unittest.TestCase):
     @selectors.skip_if(bool, 'orphans_available', False)
     def test_03_delete_by_content_type(self):
         """Delete orphans by their content type."""
-        client = api.Client(config.get_config(), api.json_handler)
+        cfg = config.get_config()
+        client = api.Client(cfg, api.json_handler)
         orphans_pre = client.get(ORPHANS_PATH)
-        client.delete(urljoin(ORPHANS_PATH, 'erratum/'))
+        call_report = client.delete(urljoin(ORPHANS_PATH, 'erratum/'))
         orphans_post = client.get(ORPHANS_PATH)
+        with self.subTest(comment='verify "result" field'):
+            task = tuple(api.poll_spawned_tasks(cfg, call_report))[-1]
+            self.assertIsInstance(task['result'], int)
+            self.assertGreater(task['result'], 0)
         with self.subTest(comment='verify total count'):
             self.assertEqual(
                 _count_orphans(orphans_pre) - orphans_pre['erratum']['count'],
@@ -139,9 +145,15 @@ class OrphansTestCase(unittest.TestCase):
 
     def test_04_delete_all(self):
         """Delete all orphans."""
-        client = api.Client(config.get_config(), api.json_handler)
-        client.delete(ORPHANS_PATH)
-        orphans = client.get(ORPHANS_PATH)
+        cfg = config.get_config()
+        call_report = api.Client(cfg).delete(ORPHANS_PATH).json()
+        task = tuple(api.poll_spawned_tasks(cfg, call_report))[-1]
+        self.assertIsInstance(task['result'], dict)
+        self.assertGreater(sum(task['result'].values()), 0)
+
+    def test_05_no_orphans_exist(self):
+        """Assert no orphans exist."""
+        orphans = api.Client(config.get_config()).get(ORPHANS_PATH).json()
         self.assertEqual(_count_orphans(orphans), 0, orphans)
 
     def check_one_orphan_deleted(self, orphans_pre, orphans_post, orphan):
