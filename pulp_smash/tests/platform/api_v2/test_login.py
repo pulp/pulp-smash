@@ -80,92 +80,72 @@
 # [4] https://docs.python.org/3/library/unittest.html#load-tests-protocol
 # [5] https://www.python.org/dev/peps/pep-0008/#imports
 # [6] https://docs.python.org/3/library/__future__.html
-from pulp_smash import api, selectors, utils
+import unittest
+
+from pulp_smash import api, config, selectors
 from pulp_smash.constants import ERROR_KEYS, LOGIN_KEYS, LOGIN_PATH
 
 
-class LoginSuccessTestCase(utils.BaseAPITestCase):
-    """Tests for successfully logging in."""
+class LoginTestCase(unittest.TestCase):
+    """Tests for logging in."""
 
-    # This test case has the following inheritance tree:
-    #
-    #     unittest.TestCase
-    #     └── pulp_smash.utils.BaseAPITestCase
-    #         └── pulp_smash.[…].LoginSuccessTestCase
-    #
     # The `TestCase` class provides a lot of functionality, and it's a Good
-    # Idea to read the unittest documentation. [1] What you need to know is
-    # that, when a test runner executes a `TestCase` class:
+    # Idea to read the unittest documentation. [1] Right now, you just need to
+    # know that, when a test runner executes a `TestCase` class:
     #
-    # 1. `setUpClass` runs once.
-    # 2. The `test*` methods run in alphabetic order. `setUp` and `tearDown`
-    #    run before and after every `test*` method.
-    # 3. `tearDownClass` runs once.
-    #
-    # The `BaseAPITestCase` adds only a little bit to this formula:
-    #
-    # 1. When `setUpClass` runs, a `ServerConfig` object and an empty set are
-    #    instantiated. They are saved as class variables named `cfg` and
-    #    `resources`, respectively.
-    # 2. When `tearDownClass` runs, an HTTP DELETE call is made for each URL
-    #    that has been added to `resources`. Other clean-up actions may also
-    #    execute.
-    #
-    # This garbage collection scheme is simple. However, it's also fragile, and
-    # stray resources may be left behind. For this and other reasons, Pulp
-    # Smash shouldn't be run against valuable Pulp systems.
+    # * The `test*` methods run in alphabetic order.
+    # * A failure in one `test*` method doesn't affect any other `test*`
+    #   method.
     #
     # [1] https://docs.python.org/3/library/unittest.html
 
-    @classmethod
-    def setUpClass(cls):
-        """Successfully log in to the server."""
-        # The `cls` object tells the new `Client` object where the Pulp server
-        # is, what the authentication credentials are, and so on.
+    def test_success(self):
+        """Successfully log in to the server.
+
+        Assert that:
+
+        * The response has an HTTP 200 status code.
+        * The response body is valid JSON and has correct keys.
+        """
+        # The object returned by `config.get_config()` tells the new `Client`
+        # object where the Pulp server is, what the authentication credentials
+        # are, and so on.
         #
         # There are several assertions that can be made about the login API
         # call. Rather than logging in logging in once for every test, we log
         # in just once, and make multiple assertions about that log in.
-        super(LoginSuccessTestCase, cls).setUpClass()
-        cls.response = api.Client(cls.cfg).post(LOGIN_PATH)
+        response = api.Client(config.get_config()).post(LOGIN_PATH)
+        with self.subTest(comment='check response status code'):
+            self.assertEqual(response.status_code, 200)
+        with self.subTest(comment='check response body'):
+            self.assertEqual(frozenset(response.json().keys()), LOGIN_KEYS)
 
-    def test_status_code(self):
-        """Assert that the response has an HTTP 200 status code."""
-        self.assertEqual(self.response.status_code, 200)
+    def test_failure(self):
+        """Unsuccessfully log in to the server.
 
-    def test_body(self):
-        """Assert that the response is valid JSON and has correct keys."""
-        self.assertEqual(frozenset(self.response.json().keys()), LOGIN_KEYS)
+        Assert that:
 
-
-class LoginFailureTestCase(utils.BaseAPITestCase):
-    """Tests for unsuccessfully logging in."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Unsuccessfully log in to the server."""
-        # `Client` objects munge every response they receive. By default, it
-        # acts safely, and does things like raising an exception if the
-        # response has an HTTP 4XX or 5XX status code. We don't want that to
-        # happen in this test case. So, we pass the `Client` object a different
+        * The response has an HTTP 401 status code.
+        * The response body is valid JSON and has correct keys.
+        """
+        # By default, `Client` objects munge every response they receive. They
+        # act cautiously, and do things like raise an exception if the response
+        # has an HTTP 4XX or 5XX status code. We don't want that to happen in
+        # this test case. So, we pass the `Client` object a non-default
         # function with which to munge responses. In addition, we override the
         # default authentication handling for just this one API call.
         #
         # The API and CLI clients are interesting and capable classes. Read
         # about them.
-        super(LoginFailureTestCase, cls).setUpClass()
-        client = api.Client(cls.cfg, api.echo_handler)
-        cls.response = client.post(LOGIN_PATH, auth=('', ''))
-
-    def test_status_code(self):
-        """Assert that the response has an HTTP 401 status code."""
-        self.assertEqual(self.response.status_code, 401)
-
-    def test_body(self):
-        """Assert that the response is valid JSON and has correct keys."""
+        cfg = config.get_config()
+        response = (
+            api.Client(cfg, api.echo_handler).post(LOGIN_PATH, auth=('', ''))
+        )
+        with self.subTest(comment='check response status code'):
+            self.assertEqual(response.status_code, 401)
         # The `version` attribute should correspond to the version of the Pulp
         # server under test. This block of code says "if bug 1412 is not fixed
         # in Pulp version X, then skip this test."
-        if selectors.bug_is_untestable(1412, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/1412')
-        self.assertEqual(frozenset(self.response.json().keys()), ERROR_KEYS)
+        if selectors.bug_is_testable(1412, cfg.version):
+            with self.subTest(comment='check response body'):
+                self.assertEqual(frozenset(response.json().keys()), ERROR_KEYS)
