@@ -217,3 +217,45 @@ def require(version_string):
             return test_method(self, *args, **kwargs)
         return new_test_method
     return plain_decorator
+
+
+def skip_if(func, var_name, result):
+    """A decorator for optionally skipping a unittest test method.
+
+    This decorator checks to see if ``func(getattr(self, var_name))`` equals
+    ``result``. If so, a ``unittest.SkipTest`` exception is raised. Otherwise,
+    nothing happens, and the decorated test method continues as normal. Here's
+    an example:
+
+    >>> import unittest
+    >>> from pulp_smash.selectors import skip_if
+    >>> class MyTestCase(unittest.TestCase):
+    ...
+    ...     @classmethod
+    ...     def setUpClass(cls):
+    ...         cls.my_var = False
+    ...
+    ...     @skip_if(bool, 'my_var', False)
+    ...     def test_01_skips(self):
+    ...         pass
+    ...
+    ...     def test_02_runs(self):
+    ...         type(self).my_var = True
+    ...
+    ...     @skip_if(bool, 'my_var', False)
+    ...     def test_03_runs(self):
+    ...         pass
+
+    :param var_name: A valid variable name.
+    """
+    def plain_decorator(test_method):
+        """An argument-less decorator. Accepts the function being wrapped."""
+        @wraps(test_method)
+        def new_test_method(self, *args, **kwargs):
+            """An expanded (unittest test) method."""
+            var_value = getattr(self, var_name)
+            if func(var_value) == result:
+                self.skipTest('{}({}) != {}'.format(func, var_value, result))
+            return test_method(self, *args, **kwargs)
+        return new_test_method
+    return plain_decorator
