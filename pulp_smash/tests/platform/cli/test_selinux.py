@@ -125,6 +125,8 @@ class FileLabelsTestCase(unittest.TestCase):
         #     security.selinux="system_u:object_r:passwd_file_t:s0"
         #
         cmd = ['getfattr', '--name=security.selinux', file_]
+        if not utils.is_root(config.get_config()):
+            cmd.insert(0, 'sudo')
         if recursive:
             cmd.insert(1, '--recursive')
         lines = self.client.run(cmd).stdout.splitlines()
