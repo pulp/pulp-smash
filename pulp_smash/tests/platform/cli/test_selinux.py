@@ -41,9 +41,8 @@ class ProcessLabelsTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Get all of the processes running on the target Pulp system."""
         cfg = config.get_config()
-        cmd = ['ps', '-A', '-w', '-w', '-o', ','.join(PS_FIELDS)]
-        if not utils.is_root(cfg):
-            cmd.insert(0, 'sudo')
+        cmd = [] if utils.is_root(config.get_config()) else ['sudo']
+        cmd.extend(('ps', '-A', '-w', '-w', '-o', ','.join(PS_FIELDS)))
         cls.procs = [
             Process(*line.split(maxsplit=1))
             for line in cli.Client(cfg).run(cmd).stdout.splitlines()
@@ -124,11 +123,11 @@ class FileLabelsTestCase(unittest.TestCase):
         #     # file: etc/passwd
         #     security.selinux="system_u:object_r:passwd_file_t:s0"
         #
-        cmd = ['getfattr', '--name=security.selinux', file_]
-        if not utils.is_root(config.get_config()):
-            cmd.insert(0, 'sudo')
+        cmd = [] if utils.is_root(config.get_config()) else ['sudo']
+        cmd.extend(('getfattr', '--name=security.selinux'))
         if recursive:
-            cmd.insert(1, '--recursive')
+            cmd.append('--recursive')
+        cmd.append(file_)
         lines = self.client.run(cmd).stdout.splitlines()
         matches = 0
         getfattr_file = None  # tracks file currently under consideration
