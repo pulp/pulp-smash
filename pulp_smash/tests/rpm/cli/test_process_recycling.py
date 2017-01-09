@@ -22,11 +22,9 @@ def restart_pulp(cfg):
     :param pulp_smash.config.ServerConfig cfg: Information about the Pulp
         server being targeted.
     """
-    services = tuple((cli.Service(cfg, service) for service in PULP_SERVICES))
-    for service in services:
-        service.stop()
-    for service in services:
-        service.start()
+    svc_mgr = cli.ServiceManager(cfg)
+    svc_mgr.stop(PULP_SERVICES)
+    svc_mgr.start(PULP_SERVICES)
 
 
 def get_pulp_worker_procs(cfg):

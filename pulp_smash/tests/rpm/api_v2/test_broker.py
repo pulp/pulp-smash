@@ -53,10 +53,8 @@ class BrokerTestCase(unittest.TestCase):
             self.skipTest('https://pulp.plan.io/issues/2277')
         if check_issue_2387(self.cfg):
             self.skipTest('https://pulp.plan.io/issues/2387')
-        self.broker = utils.get_broker(self.cfg)
-        self.services = tuple((
-            cli.Service(self.cfg, service) for service in PULP_SERVICES
-        ))
+        self.broker = (utils.get_broker(self.cfg),)
+        self.svc_mgr = cli.ServiceManager(self.cfg)
 
     def tearDown(self):
         """Ensure Pulp services and AMQP broker are running.
@@ -65,11 +63,9 @@ class BrokerTestCase(unittest.TestCase):
         slow, but see `when broker reconnect test fails, all following tests
         fail <https://github.com/PulpQE/pulp-smash/issues/91>`_.
         """
-        services = self.services + (self.broker,)
-        for service in services:
-            service.stop()
-        for service in services:
-            service.start()
+        services = PULP_SERVICES.union(self.broker)
+        self.svc_mgr.stop(services)
+        self.svc_mgr.start(services)
 
     def test_broker_connect(self):
         """Test Pulp's support for initially connecting to a broker.
@@ -82,12 +78,10 @@ class BrokerTestCase(unittest.TestCase):
            distributor, publish it, and download an RPM.
         """
         # Step 1 and 2.
-        for service in self.services + (self.broker,):
-            service.stop()
-        for service in self.services:
-            service.start()
+        self.svc_mgr.stop(PULP_SERVICES.union(self.broker))
+        self.svc_mgr.start(PULP_SERVICES)
         time.sleep(15)  # Let services try to connect to the dead broker.
-        self.broker.start()
+        self.svc_mgr.start(self.broker)
         self.health_check()  # Step 3.
 
     def test_broker_reconnect(self):
@@ -104,9 +98,9 @@ class BrokerTestCase(unittest.TestCase):
             self.skipTest('https://pulp.plan.io/issues/1635')
         # We assume that the broker and other services are already running. As
         # a result, we skip step 1 and go straight to step 2.
-        self.broker.stop()
+        self.svc_mgr.stop(self.broker)
         time.sleep(30)
-        self.broker.start()
+        self.svc_mgr.start(self.broker)
         self.health_check()  # Step 3.
 
     def health_check(self):

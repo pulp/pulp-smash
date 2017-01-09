@@ -24,17 +24,14 @@ class GetBrokerTestCase(unittest.TestCase):
 
         Assert that:
 
-        * ``get_broker(…)`` returns ``Service(…)``.
+        * ``get_broker(…)`` returns a string.
         * The ``server_config`` argument is passed to the service object.
         * The "qpidd" broker is the preferred broker.
         """
-        server_config = mock.Mock()
         with mock.patch.object(cli, 'Client') as client:
             client.return_value.run.return_value.returncode = 0
-            with mock.patch.object(cli, 'Service') as service:
-                broker = utils.get_broker(server_config)
-        self.assertEqual(service.return_value, broker)
-        self.assertEqual(service.call_args[0], (server_config, 'qpidd'))
+            broker = utils.get_broker(server_config=mock.Mock())
+        self.assertEqual(broker, 'qpidd')
 
     def test_failure(self):
         """Fail to generate a broker service management object.

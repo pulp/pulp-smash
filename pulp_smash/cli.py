@@ -242,63 +242,42 @@ class Client(object):  # pylint:disable=too-few-public-methods
         return self.response_handler(completed_process)
 
 
-class Service(object):
-    """A service on a system.
+class ServiceManager(object):
+    """A service manager on a system.
 
-    Each instance of this class represents a single service running on a single
-    system. An example may help to clarify this idea:
+    Each instance of this class represents the service manager on a system. An
+    example may help to clarify this idea:
 
-    >>> from pulp_smash import cli, config
-    >>> service = cli.Service(config.get_config(), 'httpd')
-    >>> completed_process = service.stop()
-    >>> completed_process = service.start()
+    from pulp_smash import cli, config
+    >>> svc_mgr = cli.ServiceManager(config.get_config())
+    >>> completed_process = svc_manager.stop(['httpd'])
+    >>> completed_process = svc_manager.start(['httpd'])
 
-    In the example above, the ``service`` object represents the "httpd" service
+    In the example above, the ``svc_mgr`` object represents the service manager
     on the host referenced by :func:`pulp_smash.config.get_config`.
 
-    Upon instantiation, a :class:`Service` object talks to its target
-    system and uses simple heuristics to determine which type of service
-    manager is used (SysV or systemd). As a result, it's possible to manage
-    services on significantly different systems with exactly the same commands:
+    Upon instantiation, a :class:`ServiceManager` object talks to its target
+    system and uses simple heuristics to determine which service manager is
+    available. As a result, it's possible to manage services on heterogeneous
+    systems with homogeneous commands.
 
-    >>> from pulp_smash import cli
-    >>> from pulp_smash.config import ServerConfig
-    >>> configs = ServerConfig().read('old'), ServerConfig().read('new')
-    >>> services = (cli.Service(config, 'httpd') for config in configs)
-    >>> [service.start().args for service in services]
-    ('service', 'httpd', 'start')
-    ('systemctl', 'start', 'httpd')
+    Upon instantiation, a :class:`ServiceManager` object also talks to its
+    target system and determines whether it is running as root. If not root,
+    all commands are prefixed with "sudo". Please ensure that Pulp Smash can
+    either execute commands as root or can successfully execute ``sudo``. You
+    may need to edit your ``~/.ssh/config`` file.
 
-    Upon instantiation, a :class:`Service` object also talks to its target
-    system and determines whether it is running as root. If not root, all
-    commands are prefixed with "sudo". Please ensure that Pulp Smash can either
-    execute commands as root or can successfully execute ``sudo``. You may need
-    to edit your ``~/.ssh/config`` file.
-
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        target system.
-    :param service: A string identifying the service. For example: ``'httpd'``.
+    :param pulp_smash.config.ServerConfig cfg: Information about the target
+        system.
     :raises pulp_smash.exceptions.NoKnownServiceManagerError: If unable to find
         any service manager on the target system.
     """
 
-    def __init__(self, server_config, service):
+    def __init__(self, cfg):
         """Initialize a new object."""
-        self._client = Client(server_config)
-        self._command_builder = None
-
-        # Set `self._command_builder`.
-        service_manager = self._get_service_manager(server_config)
-        prefix = () if _is_root(server_config) else ('sudo',)
-        if service_manager == 'systemd':
-            self._command_builder = lambda verb: prefix + (
-                'systemctl', verb, service
-            )
-        elif service_manager == 'sysv':
-            self._command_builder = lambda verb: prefix + (
-                'service', service, verb
-            )
-        assert self._command_builder is not None
+        self._client = Client(cfg)
+        self._sudo = () if _is_root(cfg) else ('sudo',)
+        self._svc_mgr = self._get_service_manager(cfg)
 
     @staticmethod
     def _get_service_manager(server_config):
@@ -329,19 +308,57 @@ class Service(object):
             .format(hostname, {manager for _, manager in commands_managers})
         )
 
-    def start(self):
-        """Start this service.
+    def start(self, services):
+        """Start the given services.
 
-        :rtype: pulp_smash.cli.CompletedProcess
+        :param services: An iterable of service names.
+        :return: An iterable of :class:`pulp_smash.cli.CompletedProcess`
+            objects.
         """
-        return self._client.run(self._command_builder('start'))
+        if self._svc_mgr == 'sysv':
+            return self._start_sysv(services)
+        elif self._svc_mgr == 'systemd':
+            return self._start_systemd(services)
+        else:
+            raise NotImplementedError(
+                'Service manager not supported: {}'.format(self._svc_mgr)
+            )
 
-    def stop(self):
-        """Stop this service.
+    def _start_sysv(self, services):
+        return tuple((
+            self._client.run(self._sudo + ('service', service, 'start'))
+            for service in services
+        ))
 
-        :rtype: pulp_smash.cli.CompletedProcess
+    def _start_systemd(self, services):
+        cmd = self._sudo + ('systemctl', 'start') + tuple(services)
+        return (self._client.run(cmd),)
+
+    def stop(self, services):
+        """Stop the given services.
+
+        :param services: An iterable of service names.
+        :return: An iterable of :class:`pulp_smash.cli.CompletedProcess`
+            objects.
         """
-        return self._client.run(self._command_builder('stop'))
+        if self._svc_mgr == 'sysv':
+            return self._stop_sysv(services)
+        elif self._svc_mgr == 'systemd':
+            return self._stop_systemd(services)
+        else:
+            raise NotImplementedError(
+                'Service manager not supported: {}'.format(self._svc_mgr)
+            )
+
+    def _stop_sysv(self, services):
+        return tuple((
+            self._client.run(self._sudo + ('service', service, 'stop'))
+            for service in services
+        ))
+
+    def _stop_systemd(self, services):
+        cmd = self._sudo + ('systemctl', 'stop') + tuple(services)
+        return (self._client.run(cmd),)
 
 
 class PackageManager(object):
