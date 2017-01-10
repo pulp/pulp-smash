@@ -10,28 +10,231 @@ This module assumes that the tests in
 """
 import random
 import time
+import unittest
 from urllib.parse import urljoin
 
 from dateutil.parser import parse
 
-from pulp_smash import api, utils
-from pulp_smash.constants import REPOSITORY_PATH, RPM_SIGNED_FEED_URL
+from pulp_smash import api, config, selectors, utils
+from pulp_smash.constants import (
+    ORPHANS_PATH,
+    REPOSITORY_PATH,
+    RPM,
+    RPM_UNSIGNED_FEED_URL,
+    RPM_UNSIGNED_URL,
+)
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
-_RPM_ID_FIELD = 'checksum'
-# RPM units do not have an ``id`` metadata field. This is problematic when
-# trying to select a specific RPM content unit, as the remaining metadata
-# fields may be non-unique. For example, two different RPM content units may
-# both have a name of "walrus" — they just provide different versions. This
-# constant attempts to name a substitute for an ID.
+
+class RemoveUnitsTestCase(unittest.TestCase):
+    """Remove units of various types from a synced RPM repository.
+
+    At a high level, this test case does the following:
+
+    1. Create and sync an RPM repository.
+    2. For each of several different types of content, remove a content unit of
+       that type from the repository.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create and sync a repository."""
+        cls.cfg = config.get_config()
+        client = api.Client(cls.cfg)
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
+        cls.repo = client.post(REPOSITORY_PATH, body).json()
+        try:
+            utils.sync_repo(cls.cfg, cls.repo['_href'])
+            cls.initial_units = _search_units(cls.cfg, cls.repo['_href'])
+        except:
+            cls.tearDownClass()
+            raise
+        cls.removed_units = []  # Units removed from the repository.
+
+    @classmethod
+    def tearDownClass(cls):
+        """Remove the created repository and any orphans."""
+        client = api.Client(cls.cfg)
+        client.delete(cls.repo['_href'])
+        client.delete(ORPHANS_PATH)
+
+    def test_01_remove_units(self):
+        """Remove several types of content units from the repository.
+
+        Each removal is wrapped in a subTest. See :meth:`do_remove_unit`.
+        """
+        type_ids = ['erratum', 'package_category', 'package_group', 'rpm']
+        random.shuffle(type_ids)
+        for type_id in type_ids:
+            with self.subTest(type_id=type_id):
+                self.do_remove_unit(type_id)
+
+    def test_02_remaining_units(self):
+        """Assert the correct units are still in the repository.
+
+        The repository should have all the units that were originally synced
+        into the repository, minus those that have been removed.
+        """
+        removed_ids = {_get_unit_id(unit) for unit in self.removed_units}
+        remaining_ids = {
+            _get_unit_id(unit)
+            for unit in _search_units(self.cfg, self.repo['_href'])
+        }
+        self.assertEqual(removed_ids & remaining_ids, set())
+
+    def do_remove_unit(self, type_id):
+        """Remove a content unit from the repository.
+
+        Do the following:
+
+        1. Note the repository's ``last_unit_removed`` field.
+        2. Sleep for at least one second.
+        3. Remove a unit of type ``type_id`` from the repository.
+        4. Note the repository's ``last_unit_removed`` field.
+
+        When the first unit is removed, assert that ``last_unit_removed``
+        changes from null to a non-null value. When each subsequent unit is
+        removed, assert that ``last_unit_removed`` increments.
+        """
+        lur_before = self.get_repo_last_unit_removed()
+        time.sleep(1)  # ensure last_unit_removed increments
+        unit = random.choice(_get_units_by_type(self.initial_units, type_id))
+        self.removed_units.append(unit)
+        _remove_unit(self.cfg, self.repo['_href'], unit)
+        lur_after = self.get_repo_last_unit_removed()
+        if len(self.removed_units) <= 1:
+            self.assertIsNone(lur_before)
+            self.assertIsNotNone(lur_after)
+        else:
+            self.assertGreater(parse(lur_after), parse(lur_before))
+
+    def get_repo_last_unit_removed(self):
+        """Get the repository's ``last_unit_removed`` attribute."""
+        return (
+            api
+            .Client(self.cfg)
+            .get(self.repo['_href'])
+            .json()['last_unit_removed'])
+
+
+class RepublishTestCase(utils.BaseAPITestCase):
+    """Repeatedly publish a repository, with different content each time.
+
+    Specifically, do the following:
+
+    1. Create a repository.
+    2. Add a content unit to the repository. Publish the repository.
+    3. Unassociate the content unit and repository. Publish the repository.
+
+    Verify that:
+
+    * The ``last_unit_added``, ``last_unit_removed`` and ``last_publish``
+      timestamps are correct.
+    * The content unit in question is only available when associated with the
+      repository.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create a repository."""
+        cls.cfg = config.get_config()
+        client = api.Client(cls.cfg)
+        body = gen_repo()
+        body['distributors'] = [gen_distributor()]
+        cls.repo_href = client.post(REPOSITORY_PATH, body).json()['_href']
+
+    @classmethod
+    def tearDownClass(cls):
+        """Remove the created repository and any orphans."""
+        client = api.Client(cls.cfg)
+        client.delete(cls.repo_href)
+        client.delete(ORPHANS_PATH)
+
+    def test_01_add_unit(self):
+        """Add a content unit to the repository. Publish the repository."""
+        repo_before = self.get_repo()
+        rpm = utils.http_get(RPM_UNSIGNED_URL)
+        utils.upload_import_unit(self.cfg, rpm, 'rpm', self.repo_href)
+        utils.publish_repo(self.cfg, repo_before)
+        repo_after = self.get_repo()
+        with self.subTest(comment='last_unit_added'):
+            if selectors.bug_is_untestable(1847, self.cfg.version):
+                self.skipTest('https://pulp.plan.io/issues/1847')
+            pre = repo_before['last_unit_added']
+            post = repo_after['last_unit_added']
+            self.assertIsNone(pre)
+            self.assertIsNotNone(post)
+        with self.subTest(comment='last_unit_removed'):
+            pre = repo_before['last_unit_removed']
+            post = repo_after['last_unit_removed']
+            self.assertIsNone(pre)
+            self.assertIsNone(post)
+        with self.subTest(comment='last_publish'):
+            pre = repo_before['distributors'][0]['last_publish']
+            post = repo_after['distributors'][0]['last_publish']
+            self.assertIsNone(pre)
+            self.assertIsNotNone(post)
+
+    def test_02_find_unit(self):
+        """Search for the content unit. Assert it is available."""
+        units = _search_units(self.cfg, self.repo_href, ('rpm',))
+        self.assertEqual(len(units), 1, units)
+        self.assertEqual(units[0]['metadata']['filename'], RPM)
+
+    def test_03_unassociate_unit(self):
+        """Unassociate the unit from the repository. Publish the repository."""
+        repo_before = self.get_repo()
+        units = _search_units(self.cfg, self.repo_href)
+        self.assertEqual(len(units), 1, units)
+        _remove_unit(self.cfg, self.repo_href, units[0])
+        time.sleep(1)  # ensure last_publish increments
+        utils.publish_repo(self.cfg, repo_before)
+        repo_after = self.get_repo()
+        with self.subTest(comment='last_unit_added'):
+            if selectors.bug_is_untestable(1847, self.cfg.version):
+                self.skipTest('https://pulp.plan.io/issues/1847')
+            pre = parse(repo_before['last_unit_added'])
+            post = parse(repo_after['last_unit_added'])
+            self.assertEqual(pre, post)
+        with self.subTest(comment='last_unit_removed'):
+            pre = repo_before['last_unit_removed']
+            post = repo_after['last_unit_removed']
+            self.assertIsNone(pre)
+            self.assertIsNotNone(post)
+        with self.subTest(comment='last_publish'):
+            pre = parse(repo_before['distributors'][0]['last_publish'])
+            post = parse(repo_after['distributors'][0]['last_publish'])
+            self.assertGreater(post, pre)
+
+    def test_04_find_unit(self):
+        """Search for the content unit. Assert it isn't available."""
+        units = _search_units(self.cfg, self.repo_href, ('rpm',))
+        self.assertEqual(len(units), 0, units)
+
+    def get_repo(self):
+        """Get detailed information about the repository."""
+        return (
+            api
+            .Client(self.cfg)
+            .get(self.repo_href, params={'details': True})
+            .json())
 
 
 def _get_unit_id(unit):
-    """Return the unit's _RPM_ID_FIELD if an RPM. Otherwise, return ID."""
-    if unit['unit_type_id'] == 'rpm':
-        return unit['metadata'][_RPM_ID_FIELD]
-    return unit['metadata']['id']
+    """Return a unique identifier for the unit, depending on its type.
+
+    It can be hard to uniquely identify a content unit. For example, whereas
+    "erratum" content units have an "id" field, "rpm" content units do not.
+    Based on the content type of the given content unit, this function returns
+    — hopefully — the name and value of a unique identifier.
+    """
+    if unit['unit_type_id'] in ('package_langpacks', 'rpm'):
+        key = '_id'
+    else:
+        key = 'id'
+    return (key, unit['metadata'][key])
 
 
 def _get_units_by_type(units, type_id):
@@ -39,149 +242,26 @@ def _get_units_by_type(units, type_id):
     return [unit for unit in units if unit['unit_type_id'] == type_id]
 
 
-def _remove_unit(server_config, repo_href, unit):
+def _remove_unit(cfg, repo_href, unit):
     """Remove unit ``unit`` from the repository at ``repo_href``.
 
     Return the JSON-decoded response body.
     """
     path = urljoin(repo_href, 'actions/unassociate/')
-    type_id = unit['unit_type_id']  # e.g. 'rpm'
-    key = _RPM_ID_FIELD if type_id == 'rpm' else 'id'
+    key, value = _get_unit_id(unit)
     body = {'criteria': {
-        'filters': {'unit': {key: unit['metadata'][key]}},
-        'type_ids': [type_id],
+        'filters': {'unit': {key: value}},
+        'type_ids': [unit['unit_type_id']],
     }}
-    return api.Client(server_config).post(path, body).json()
+    return api.Client(cfg).post(path, body).json()
 
 
-def _search_units(server_config, repo_href, type_ids):
-    """Find units of types ``type_ids`` in the repository at ``repo_href``.
+def _search_units(cfg, repo_href, type_ids=()):
+    """Find units in repository ``repo_href``.
 
     Return the JSON-decoded response body.
     """
-    return api.Client(server_config).post(
+    return api.Client(cfg).post(
         urljoin(repo_href, 'search/units/'),
         {'criteria': {'type_ids': type_ids}},
     ).json()
-
-
-class RemoveUnitsTestCase(utils.BaseAPITestCase):
-    """Remove units of various types from a synced RPM repository."""
-
-    TYPE_IDS = [
-        'erratum',
-        'package_category',
-        'package_group',
-        'rpm',
-    ]
-    """IDs of unit types that can be removed from an RPM repository."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Create an RPM repository, sync it, and remove some units from it.
-
-        After creating and syncing an RPM repository, we walk through the unit
-        type IDs listed in
-        :data:`pulp_smash.tests.rpm.api_v2.test_unassociate.RemoveUnitsTestCase.TYPE_IDS`
-        and remove on unit of each kind from the repository. We verify Pulp's
-        behaviour by recording repository contents pre and post removal.
-        """
-        super(RemoveUnitsTestCase, cls).setUpClass()
-        client = api.Client(cls.cfg, api.json_handler)
-        body = gen_repo()
-        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
-        repo = client.post(REPOSITORY_PATH, body)
-        cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo['_href'])
-
-        # Remove one unit of each type.
-        cls.units_before = _search_units(cls.cfg, repo['_href'], cls.TYPE_IDS)
-        cls.units_removed = []
-        for type_id in cls.TYPE_IDS:
-            unit = random.choice(_get_units_by_type(cls.units_before, type_id))
-            cls.units_removed.append(unit)
-            _remove_unit(cls.cfg, repo['_href'], unit)
-        cls.units_after = _search_units(cls.cfg, repo['_href'], cls.TYPE_IDS)
-
-    def test_units_not_in_search(self):
-        """Assert the removed units do not appear in search results."""
-        ids_removed = {_get_unit_id(unit) for unit in self.units_removed}
-        ids_after = {_get_unit_id(unit) for unit in self.units_after}
-        self.assertEqual(ids_removed & ids_after, set())  # s1.isdisjoint(s2)
-
-    def test_one_removal_per_unit_type(self):
-        """Assert, for each unit type, that one unit has been removed."""
-        for type_id in self.TYPE_IDS:
-            with self.subTest(type_id=type_id):
-                before = _get_units_by_type(self.units_before, type_id)
-                after = _get_units_by_type(self.units_after, type_id)
-                self.assertEqual(len(before) - 1, len(after))
-
-
-class RemoveAndRepublishTestCase(utils.BaseAPITestCase):
-    """Publish a repository, remove a unit, and publish it again.
-
-    The removed unit should be inaccessible after the repository is published a
-    second time. In addition, repository and distributor timestamps should be
-    updated accordingly.
-    """
-
-    @classmethod
-    def setUpClass(cls):
-        """Publish a repository, remove a unit, and publish it again.
-
-        Specifically, do the following:
-
-        1. Create a repository with a feed and distributor.
-        2. Sync and publish the repository.
-        3. Select a content unit at random. Remove it from the repository.
-        4. Publish the repository.
-        """
-        super(RemoveAndRepublishTestCase, cls).setUpClass()
-
-        # Create a repository with a feed and distributor.
-        client = api.Client(cls.cfg, api.json_handler)
-        body = gen_repo()
-        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
-        body['distributors'] = [gen_distributor()]
-        repo = client.post(REPOSITORY_PATH, body)
-        repo = client.get(repo['_href'], params={'details': True})
-        cls.resources.add(repo['_href'])  # mark for deletion
-
-        # Sync and publish the repository.
-        utils.sync_repo(cls.cfg, repo['_href'])
-        utils.publish_repo(cls.cfg, repo)
-
-        # List RPM content units in the repository. Pick one and remove it.
-        # NOTE: There are two versions of the "walrus" RPM, and this works even
-        # when that name is picked.
-        unit = random.choice(_search_units(cls.cfg, repo['_href'], ('rpm',)))
-        cls.unit_id = _get_unit_id(unit)
-        _remove_unit(cls.cfg, repo['_href'], unit)
-
-        # Re-publish the repository. sleep() for test_compare_timestamps.
-        # Re-read the repository so the test methods have fresh data.
-        time.sleep(2)
-        utils.publish_repo(cls.cfg, repo)
-        cls.repo = client.get(repo['_href'], params={'details': True})
-
-    def test_get_removed_unit(self):
-        """Verify the removed unit cannot be fetched."""
-        units = _search_units(self.cfg, self.repo['_href'], ('rpm',))
-        unit_ids = {_get_unit_id(unit) for unit in units}
-        self.assertNotIn(self.unit_id, unit_ids)
-
-    def test_compare_timestamps(self):
-        """Verify the repository and distributor timestamps are corrects.
-
-        Specifically, the repository's ``last_unit_removed`` time should be
-        before the distributor's ``last_publish`` time. Times returned by Pulp
-        are accurate to the nearest second, and it is possible that the process
-        of publishing a repository could take less than one second. To ensure
-        the times differ, :meth:`setUpClass` waits one second between the
-        removal and second publication.
-        """
-        last_unit_removed = parse(self.repo['last_unit_removed'])
-        self.assertEqual(len(self.repo['distributors']), 1)
-        last_publish = parse(self.repo['distributors'][0]['last_publish'])
-        self.assertLess(last_unit_removed, last_publish)
