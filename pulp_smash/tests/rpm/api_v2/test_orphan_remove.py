@@ -131,6 +131,8 @@ class OrphansTestCase(unittest.TestCase):
         call_report = client.delete(urljoin(ORPHANS_PATH, 'erratum/'))
         orphans_post = client.get(ORPHANS_PATH)
         with self.subTest(comment='verify "result" field'):
+            if selectors.bug_is_untestable(1268, cfg.version):
+                self.skipTest('https://pulp.plan.io/issues/1268')
             task = tuple(api.poll_spawned_tasks(cfg, call_report))[-1]
             self.assertIsInstance(task['result'], int)
             self.assertGreater(task['result'], 0)
@@ -147,6 +149,8 @@ class OrphansTestCase(unittest.TestCase):
         """Delete all orphans."""
         cfg = config.get_config()
         call_report = api.Client(cfg).delete(ORPHANS_PATH).json()
+        if selectors.bug_is_untestable(1268, cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/1268')
         task = tuple(api.poll_spawned_tasks(cfg, call_report))[-1]
         self.assertIsInstance(task['result'], dict)
         self.assertGreater(sum(task['result'].values()), 0)
