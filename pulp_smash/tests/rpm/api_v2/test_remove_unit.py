@@ -1,17 +1,5 @@
 # coding=utf-8
-"""Test the functionality in RPM repos when `remove_missing`_ is set to True.
-
-Following steps are executed in order to test correct functionality
-of repository created with valid feed and remove_missing option set.
-
-1. Create repository foo with valid feed, run sync, add distributor to it and
-   publish over http and https.
-2. Create second repository bar, with feed pointing to first repository, set
-   ``remove_missing=True`` and run sync on them.
-3. Assert that repositories contain same set of units.
-4. Remove random unit from repository foo and publish.
-5. Sync bar repository.
-6. Assert that both repositories contain same units.
+"""Tests for the `remove_missing`_ repository option.
 
 .. _remove_missing:
     https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/yum-plugins.html
@@ -20,12 +8,16 @@ import random
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, utils
-from pulp_smash.constants import REPOSITORY_PATH, RPM_SIGNED_FEED_URL
+from pulp_smash import api, config, utils
+from pulp_smash.constants import (
+    ORPHANS_PATH,
+    REPOSITORY_PATH,
+    RPM_SIGNED_FEED_URL,
+)
 from pulp_smash.tests.rpm.api_v2.utils import (
+    find_units,
     gen_distributor,
     gen_repo,
-    get_unit_unassociate_criteria,
 )
 from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -33,149 +25,175 @@ from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pyli
 _PUBLISH_DIR = 'pulp/repos/'
 
 
+class RemoveMissingTestCase(unittest.TestCase):
+    """Test the `remove_missing`_ repository option.
+
+    The test procedure is as follows:
+
+    1. Create a repository, populate it with content, and publish it.
+    2. Create several more repositories whose "feed" attribute references the
+       repository created in the previous step. Sync each of these child
+       repositories.
+    3. Remove a content unit from the parent repository and re-publish it.
+    4. Re-sync each of the child repositories.
+
+    The child repositories are designed to test the following issues:
+
+    * `Pulp #1621 <https://pulp.plan.io/issues/1621>`_
+    * `Pulp #2503 <https://pulp.plan.io/issues/2503>`_
+
+    .. _remove_missing:
+        https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/yum-plugins.html
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Initialize class-wide variables."""
+        cls.cfg = config.get_config()
+        cls.repos = {}  # Each inner dict has info about a repository.
+        if check_issue_2277(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
+
+    @classmethod
+    def tearDownClass(cls):
+        """Delete all resources named by ``resources``."""
+        client = api.Client(cls.cfg)
+        for repo in cls.repos.values():
+            client.delete(repo['_href'])
+        client.delete(ORPHANS_PATH)
+
+    def test_01_create_root_repo(self):
+        """Create, sync and publish a repository.
+
+        The repositories created in later steps sync from this one.
+        """
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
+        body['distributors'] = [gen_distributor()]
+        self.repos['root'] = client.post(REPOSITORY_PATH, body)
+        self.repos['root'] = _get_details(self.cfg, self.repos['root'])
+        utils.sync_repo(self.cfg, self.repos['root']['_href'])
+        utils.publish_repo(self.cfg, self.repos['root'])
+
+    def test_02_create_immediate_child(self):
+        """Create a child repository with the "immediate" download policy.
+
+        Sync the child repository, and verify it has the same contents as the
+        root repository.
+        """
+        # We disable SSL validation for a practical reason: each HTTPS feed
+        # must have a certificate to work, which is burdensome to do here.
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = urljoin(
+            self.cfg.base_url,
+            _PUBLISH_DIR +
+            self.repos['root']['distributors'][0]['config']['relative_url'],
+        )
+        body['importer_config']['remove_missing'] = True
+        body['importer_config']['ssl_validation'] = False
+        self.repos['immediate'] = client.post(REPOSITORY_PATH, body)
+        self.repos['immediate'] = (
+            _get_details(self.cfg, self.repos['immediate'])
+        )
+        utils.sync_repo(self.cfg, self.repos['immediate']['_href'])
+
+        # Verify the two repositories have the same contents.
+        root_ids = _get_rpm_ids(_get_rpms(self.cfg, self.repos['root']))
+        immediate_ids = _get_rpm_ids(
+            _get_rpms(self.cfg, self.repos['immediate'])
+        )
+        self.assertEqual(root_ids, immediate_ids)
+
+    def test_02_create_on_demand_child(self):
+        """Create a child repository with the "on_demand" download policy.
+
+        Also, let the repository's "remove_missing" option be true. Then, sync
+        the child repository, and verify it has the same contents as the root
+        repository.
+        """
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = urljoin(
+            self.cfg.base_url,
+            _PUBLISH_DIR +
+            self.repos['root']['distributors'][0]['config']['relative_url'],
+        )
+        body['importer_config']['download_policy'] = 'on_demand'
+        body['importer_config']['remove_missing'] = True
+        body['importer_config']['ssl_validation'] = False
+        self.repos['on demand'] = client.post(REPOSITORY_PATH, body)
+        self.repos['on demand'] = (
+            _get_details(self.cfg, self.repos['on demand'])
+        )
+        utils.sync_repo(self.cfg, self.repos['on demand']['_href'])
+
+        # Verify the two repositories have the same contents.
+        root_ids = _get_rpm_ids(_get_rpms(self.cfg, self.repos['root']))
+        on_demand_ids = _get_rpm_ids(
+            _get_rpms(self.cfg, self.repos['on demand'])
+        )
+        self.assertEqual(root_ids, on_demand_ids)
+
+    def test_03_update_root_repo(self):
+        """Remove a content unit from the root repository and republish it."""
+        unit = random.choice(_get_rpms(self.cfg, self.repos['root']))
+        criteria = {
+            'filters': {'unit': {'name': unit['metadata']['name']}},
+            'type_ids': [unit['unit_type_id']],
+        }
+        api.Client(self.cfg).post(
+            urljoin(self.repos['root']['_href'], 'actions/unassociate/'),
+            {'criteria': criteria}
+        ).json()
+        utils.publish_repo(self.cfg, self.repos['root'])
+
+        # Verify the removed unit cannot be found via a search.
+        units = find_units(self.cfg, self.repos['root'], criteria)
+        self.assertEqual(len(units), 0, units)
+
+    def test_04_sync_immediate_child(self):
+        """Sync the "immediate" repository.
+
+        Verify it has the same contents as the root repository.
+        """
+        utils.sync_repo(self.cfg, self.repos['immediate']['_href'])
+        root_ids = _get_rpm_ids(_get_rpms(self.cfg, self.repos['root']))
+        immediate_ids = _get_rpm_ids(
+            _get_rpms(self.cfg, self.repos['immediate'])
+        )
+        self.assertEqual(root_ids, immediate_ids)
+
+    def test_04_sync_on_demand_child(self):
+        """Sync the "on demand" repository.
+
+        Verify it has the same contents as the root repository.
+        """
+        utils.sync_repo(self.cfg, self.repos['on demand']['_href'])
+        root_ids = _get_rpm_ids(_get_rpms(self.cfg, self.repos['root']))
+        on_demand_ids = _get_rpm_ids(
+            _get_rpms(self.cfg, self.repos['on demand'])
+        )
+        self.assertEqual(root_ids, on_demand_ids)
+
+
+def _get_rpms(cfg, repo):
+    """Return RPM content units in the given repository."""
+    return api.Client(cfg).post(
+        urljoin(repo['_href'], 'search/units/'),
+        {'criteria': {'type_ids': ('rpm',)}},
+    ).json()
+
+
 def _get_rpm_ids(search_body):
-    """Get RPM unit IDs from search results. Return a set."""
+    """Get RPM unit IDs from repository search results. Return as a set."""
     return {
         unit['unit_id'] for unit in search_body
         if unit['unit_type_id'] == 'rpm'
     }
 
 
-class RemoveMissingTestCase(utils.BaseAPITestCase):
-    """Test functionality of --remove-missing option enabled."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Create two repositories, first is feed of second one.
-
-        Provides server config and set of iterable to delete. Following steps
-        are executed:
-
-        1. Create repository foo with feed, sync and publish it.
-        2. Create repository bar with foo as a feed and run sync.
-        3. Get content of both repositories.
-        4. Remove random unit from repository foo and publish foo.
-        5. Sync repository bar.
-        6. Get content of both repositories.
-        """
-        super(RemoveMissingTestCase, cls).setUpClass()
-        if check_issue_2277(cls.cfg):
-            raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
-        cls.responses = {}
-        hrefs = []  # repository hrefs
-
-        # Create and sync a repository.
-        client = api.Client(cls.cfg)
-        body = gen_repo()
-        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
-        hrefs.append(client.post(REPOSITORY_PATH, body).json()['_href'])
-        cls.resources.add(hrefs[0])  # mark for deletion
-        cls.responses['first sync'] = utils.sync_repo(cls.cfg, hrefs[0])
-
-        # Add a distributor and publish it.
-        cls.responses['distribute'] = client.post(
-            urljoin(hrefs[0], 'distributors/'),
-            gen_distributor(),
-        )
-        cls.responses['first publish'] = client.post(
-            urljoin(hrefs[0], 'actions/publish/'),
-            {'id': cls.responses['distribute'].json()['id']},
-        )
-
-        # Create and sync a second repository. We disable SSL validation for a
-        # practical reason: each HTTPS feed must have a certificate to work,
-        # which is burdensome to do here.
-        body = gen_repo()
-        body['importer_config']['feed'] = urljoin(
-            cls.cfg.base_url,
-            _PUBLISH_DIR +
-            cls.responses['distribute'].json()['config']['relative_url'],
-        )
-        body['importer_config']['remove_missing'] = True  # see docstring
-        body['importer_config']['ssl_validation'] = False
-        hrefs.append(client.post(REPOSITORY_PATH, body).json()['_href'])
-        cls.resources.add(hrefs[1])  # mark for deletion
-        cls.responses['second sync'] = utils.sync_repo(cls.cfg, hrefs[1])
-
-        # Get contents of both repositories
-        for i, href in enumerate(hrefs):
-            cls.responses['repo {} units, pre'.format(i)] = client.post(
-                urljoin(href, 'search/units/'),
-                {'criteria': {}},
-            )
-
-        # Get random unit from first repository to remove
-        cls.removed_unit = random.choice([
-            unit['metadata']['name']
-            for unit in cls.responses['repo 0 units, pre'].json()
-            if unit['unit_type_id'] == 'rpm'
-        ])
-
-        # Remove unit from first repo and publish again
-        cls.responses['remove unit'] = client.post(
-            urljoin(hrefs[0], 'actions/unassociate/'),
-            {
-                'criteria': get_unit_unassociate_criteria(cls.removed_unit),
-            },
-        )
-
-        # Publish the first repo again, and sync the second repo again.
-        cls.responses['second publish'] = client.post(
-            urljoin(hrefs[0], 'actions/publish/'),
-            {'id': cls.responses['distribute'].json()['id']},
-        )
-        cls.responses['third sync'] = utils.sync_repo(cls.cfg, hrefs[1])
-
-        # Search for units in both repositories again
-        for i, href in enumerate(hrefs):
-            cls.responses['repo {} units, post'.format(i)] = client.post(
-                urljoin(href, 'search/units/'),
-                {'criteria': {}},
-            )
-
-    def test_status_code(self):
-        """Verify the HTTP status code of each server response."""
-        for step, code in (
-                ('first sync', 202),
-                ('second sync', 202),
-                ('third sync', 202),
-                ('first publish', 202),
-                ('second publish', 202),
-                ('repo 0 units, pre', 200),
-                ('repo 1 units, pre', 200),
-                ('repo 0 units, post', 200),
-                ('repo 1 units, post', 200),
-                ('distribute', 201),
-                ('remove unit', 202),
-        ):
-            with self.subTest(step=step):
-                self.assertEqual(self.responses[step].status_code, code)
-
-    def test_units_before_removal(self):
-        """Assert the repositories have the same units before the removal.
-
-        Package category and package group differ, so we count only RPM units.
-        """
-        self.assertEqual(
-            _get_rpm_ids(self.responses['repo 0 units, pre'].json()),
-            _get_rpm_ids(self.responses['repo 1 units, pre'].json()),
-        )
-
-    def test_units_after_removal(self):
-        """Assert the repositories have the same units after the removal.
-
-        Package category and package group differ, so we count only RPM units.
-        """
-        self.assertEqual(
-            _get_rpm_ids(self.responses['repo 0 units, post'].json()),
-            _get_rpm_ids(self.responses['repo 1 units, post'].json()),
-        )
-
-    def test_unit_removed(self):
-        """Test that correct unit from first repository has been removed."""
-        body = self.responses['repo 0 units, post'].json()
-        units_names = set(
-            unit['metadata']['name'] for unit in body
-            if unit['unit_type_id'] == 'rpm'
-        )
-        self.assertNotIn(self.removed_unit, units_names)
+def _get_details(cfg, repo):
+    """Get detailed information about the given repository."""
+    return api.Client(cfg).get(repo['_href'], params={'details': True}).json()
