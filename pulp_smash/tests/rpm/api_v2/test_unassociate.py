@@ -23,7 +23,11 @@ from pulp_smash.constants import (
     RPM_UNSIGNED_FEED_URL,
     RPM_UNSIGNED_URL,
 )
-from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
+from pulp_smash.tests.rpm.api_v2.utils import (
+    find_units,
+    gen_distributor,
+    gen_repo,
+)
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -47,7 +51,7 @@ class RemoveUnitsTestCase(unittest.TestCase):
         cls.repo = client.post(REPOSITORY_PATH, body).json()
         try:
             utils.sync_repo(cls.cfg, cls.repo['_href'])
-            cls.initial_units = _search_units(cls.cfg, cls.repo['_href'])
+            cls.initial_units = find_units(cls.cfg, cls.repo)
         except:
             cls.tearDownClass()
             raise
@@ -79,8 +83,7 @@ class RemoveUnitsTestCase(unittest.TestCase):
         """
         removed_ids = {_get_unit_id(unit) for unit in self.removed_units}
         remaining_ids = {
-            _get_unit_id(unit)
-            for unit in _search_units(self.cfg, self.repo['_href'])
+            _get_unit_id(unit) for unit in find_units(self.cfg, self.repo)
         }
         self.assertEqual(removed_ids & remaining_ids, set())
 
@@ -179,14 +182,18 @@ class RepublishTestCase(utils.BaseAPITestCase):
 
     def test_02_find_unit(self):
         """Search for the content unit. Assert it is available."""
-        units = _search_units(self.cfg, self.repo_href, ('rpm',))
+        units = find_units(
+            self.cfg,
+            repo={'_href': self.repo_href},
+            criteria={'type_ids': ('rpm',)}
+        )
         self.assertEqual(len(units), 1, units)
         self.assertEqual(units[0]['metadata']['filename'], RPM)
 
     def test_03_unassociate_unit(self):
         """Unassociate the unit from the repository. Publish the repository."""
         repo_before = self.get_repo()
-        units = _search_units(self.cfg, self.repo_href)
+        units = find_units(self.cfg, {'_href': self.repo_href})
         self.assertEqual(len(units), 1, units)
         _remove_unit(self.cfg, self.repo_href, units[0])
         time.sleep(1)  # ensure last_publish increments
@@ -210,7 +217,11 @@ class RepublishTestCase(utils.BaseAPITestCase):
 
     def test_04_find_unit(self):
         """Search for the content unit. Assert it isn't available."""
-        units = _search_units(self.cfg, self.repo_href, ('rpm',))
+        units = find_units(
+            self.cfg,
+            repo={'_href': self.repo_href},
+            criteria={'type_ids': ('rpm',)}
+        )
         self.assertEqual(len(units), 0, units)
 
     def get_repo(self):
@@ -254,14 +265,3 @@ def _remove_unit(cfg, repo_href, unit):
         'type_ids': [unit['unit_type_id']],
     }}
     return api.Client(cfg).post(path, body).json()
-
-
-def _search_units(cfg, repo_href, type_ids=()):
-    """Find units in repository ``repo_href``.
-
-    Return the JSON-decoded response body.
-    """
-    return api.Client(cfg).post(
-        urljoin(repo_href, 'search/units/'),
-        {'criteria': {'type_ids': type_ids}},
-    ).json()

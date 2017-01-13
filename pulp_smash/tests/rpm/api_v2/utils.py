@@ -232,3 +232,20 @@ def get_unit(cfg, repo, unit_name, distributor=None):
     path = urljoin('/pulp/repos/', distributor['config']['relative_url'] + '/')
     path = urljoin(path, unit_name)
     return api.Client(cfg).get(path)
+
+
+def find_units(cfg, repo, criteria=None):
+    """Find units in repository ``repo_href``.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about the Pulp host.
+    :param repo: A dict of detailed information about the repository.
+    :param criteria: A dict of criteria to pass in the search body. Defaults to
+        an empty dict.
+    :return: The JSON-decoded response body.
+    """
+    if criteria is None:
+        criteria = {}
+    return api.Client(cfg).post(
+        urljoin(repo['_href'], 'search/units/'),
+        {'criteria': criteria},
+    ).json()
