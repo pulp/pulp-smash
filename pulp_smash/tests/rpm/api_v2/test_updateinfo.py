@@ -5,19 +5,25 @@ from urllib.parse import urljoin
 from xml.etree import ElementTree
 
 from packaging.version import Version
+from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
+    ORPHANS_PATH,
     REPOSITORY_PATH,
+    RPM,
     RPM_ERRATUM_ID,
     RPM_ERRATUM_RPM_NAME,
     RPM_PKGLISTS_UPDATEINFO_FEED_URL,
     RPM_SIGNED_FEED_URL,
+    RPM_UNSIGNED_FEED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
+    find_units,
     gen_distributor,
     gen_repo,
     get_repomd_xml,
+    get_repomd_xml_href,
     get_unit_unassociate_criteria,
 )
 from pulp_smash.tests.rpm.utils import check_issue_2277, set_up_module
@@ -394,3 +400,95 @@ class PkglistsTestCase(unittest.TestCase):
             'shark-0.1-1.noarch.rpm',
             'walrus-5.21-1.noarch.rpm',
         }, debug)
+
+
+class CleanUpTestCase(unittest.TestCase):
+    """Test whether old ``updateinfo.xml`` files are cleaned up.
+
+    Do the following:
+
+    1. Create, populate and publish a repository. Verify that an
+       ``updateinfo.xml`` file is present and can be downloaded.
+    2. Add an additional content unit to the repository, and publish it again.
+       Verify that the ``updateinfo.xml`` file created by the first publish is
+       no longer available, and that a new ``updateinfo.xml`` file is
+       available.
+
+    This procedure targets `Pulp #2096 <https://pulp.plan.io/issues/2096>`_.
+    Note that the second publish must be an incremental publish.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create and sync a repository."""
+        cls.cfg = config.get_config()
+        client = api.Client(cls.cfg, api.json_handler)
+        body = gen_repo()
+        body['distributors'] = [gen_distributor()]
+        body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
+        cls.repo = client.post(REPOSITORY_PATH, body)
+        try:
+            cls.repo = client.get(cls.repo['_href'], params={'details': True})
+        except:
+            cls.tearDownClass()
+            raise
+        cls.updateinfo_xml_hrefs = []
+
+    @classmethod
+    def tearDownClass(cls):
+        """Remove the created repository and any orphans."""
+        client = api.Client(cls.cfg)
+        client.delete(cls.repo['_href'])
+        client.delete(ORPHANS_PATH)
+
+    def test_01_first_publish(self):
+        """Populate and publish the repository."""
+        utils.sync_repo(self.cfg, self.repo['_href'])
+        client = api.Client(self.cfg)
+        client.post(urljoin(self.repo['_href'], 'actions/unassociate/'), {
+            'criteria': {
+                'filters': {'unit': {'filename': RPM}},
+                'type_ids': ('rpm',),
+            }
+        })
+        utils.publish_repo(self.cfg, self.repo)
+        self.updateinfo_xml_hrefs.append(self.get_updateinfo_xml_href())
+
+        with self.subTest(comment='check number of RPMs in repo'):
+            units = find_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
+            self.assertEqual(len(units), 31)
+        with self.subTest(comment='check updateinfo.xml is available'):
+            client.get(self.updateinfo_xml_hrefs[0])
+
+    def test_02_second_publish(self):
+        """Add an additional content unit and publish the repository again."""
+        utils.sync_repo(self.cfg, self.repo['_href'])
+        utils.publish_repo(self.cfg, self.repo)
+        self.updateinfo_xml_hrefs.append(self.get_updateinfo_xml_href())
+
+        client = api.Client(self.cfg)
+        with self.subTest(comment='check number of RPMs in repo'):
+            units = find_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
+            self.assertEqual(len(units), 32)
+        with self.subTest(comment='check updateinfo.xml has a new path'):
+            # pylint:disable=no-value-for-parameter
+            self.assertNotEqual(*self.updateinfo_xml_hrefs)
+        with self.subTest(comment='check old updateinfo.xml is unavailable'):
+            with self.assertRaises(HTTPError):
+                client.get(self.updateinfo_xml_hrefs[0])
+        with self.subTest(comment='check new updateinfo.xml is available'):
+            client.get(self.updateinfo_xml_hrefs[1])
+
+    def get_updateinfo_xml_href(self):
+        """Return the path to the ``updateinfo.xml`` file."""
+        # Get repomd.xml.
+        rel_url = urljoin(
+            '/pulp/repos/',
+            self.repo['distributors'][0]['config']['relative_url'],
+        )
+        repomd_xml = api.Client(self.cfg).get(
+            urljoin(rel_url, 'repodata/repomd.xml')
+        ).text
+
+        # Get updateinfo.xml.
+        return urljoin(rel_url, get_repomd_xml_href(repomd_xml, 'updateinfo'))
