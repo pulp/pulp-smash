@@ -5,6 +5,8 @@ import io
 from urllib.parse import urljoin
 from xml.etree import ElementTree
 
+from packaging.version import Version
+
 from pulp_smash import api, cli, selectors, utils
 from pulp_smash.constants import RPM_NAMESPACES
 
@@ -229,7 +231,12 @@ def get_unit(cfg, repo, unit_name, distributor=None):
                 .format(repo['distributors'])
             )
         distributor = repo['distributors'][0]
-    path = urljoin('/pulp/repos/', distributor['config']['relative_url'] + '/')
+    path = urljoin('/pulp/repos/', distributor['config']['relative_url'])
+    if not path.endswith('/'):
+        path += '/'
+    if cfg.version >= Version('2.12'):
+        path = urljoin(path, 'Packages/')
+        path = urljoin(path, unit_name[0] + '/')  # first letter
     path = urljoin(path, unit_name)
     return api.Client(cfg).get(path)
 
