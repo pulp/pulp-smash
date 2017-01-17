@@ -15,6 +15,7 @@ from packaging.version import Version
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
     CONTENT_UPLOAD_PATH,
+    ORPHANS_PATH,
     REPOSITORY_PATH,
     RPM_SIGNED_FEED_URL,
 )
@@ -441,3 +442,51 @@ class UploadPackageGroupsTestCase(utils.BaseAPITestCase):
             with self.subTest(name=name):
                 conditional_package = conditional_packages_by_name[name]
                 self.assertEqual(conditional_package.get('requires'), requires)
+
+
+class UploadTwiceTestCase(unittest.TestCase):
+    """Upload a package group twice.
+
+    The first upload should create a new package group, and the second should
+    update the existing package group. See: `Pulp #2514
+    <https://pulp.plan.io/issues/2514>`_.
+    """
+
+    def test_all(self):
+        """Upload a package group to a repository twice."""
+        cfg = config.get_config()
+        client = api.Client(cfg, api.json_handler)
+        self.addCleanup(client.delete, ORPHANS_PATH)
+
+        # Create a repository.
+        body = gen_repo()
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+
+        # Give the repository a package group, and publish the repository.
+        package_group = {'id': utils.uuid4(), 'name': utils.uuid4()}
+        _upload_import_package_group(cfg, repo, package_group)
+        repo = client.get(repo['_href'], params={'details': True})
+        utils.publish_repo(cfg, repo)
+
+        # Update the repository's package group, and re-publish the repository.
+        package_group['name'] = utils.uuid4()
+        _upload_import_package_group(cfg, repo, package_group)
+        utils.publish_repo(cfg, repo)
+
+        # Fetch the generated repodata of type 'group' (a.k.a. 'comps'). Verify
+        # the package group portion.
+        root_element = get_repomd_xml(
+            cfg,
+            urljoin(
+                '/pulp/repos/',
+                repo['distributors'][0]['config']['relative_url'],
+            ),
+            'group'
+        )
+        groups = root_element.findall('group')
+        self.assertEqual(len(groups), 1, ElementTree.tostring(root_element))
+        for key, value in package_group.items():
+            with self.subTest(key=key):
+                self.assertEqual(groups[0].find(key).text, value)
