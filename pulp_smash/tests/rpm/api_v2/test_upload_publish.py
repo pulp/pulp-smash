@@ -10,27 +10,27 @@ Content`_ and `Publication`_.
     http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/upload.html
 """
 import unittest
-from itertools import product
 from urllib.parse import urljoin
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.utils import upload_import_unit
 from pulp_smash.constants import (
-    CALL_REPORT_KEYS,
-    CONTENT_UPLOAD_PATH,
     DRPM,
     DRPM_UNSIGNED_URL,
+    ORPHANS_PATH,
     REPOSITORY_PATH,
     RPM,
-    RPM_SIGNED_FEED_URL,
-    RPM_SIGNED_URL,
+    RPM_UNSIGNED_FEED_URL,
+    RPM_UNSIGNED_URL,
     SRPM,
     SRPM_UNSIGNED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
+    find_units,
     gen_distributor,
     gen_repo,
     get_repomd_xml,
+    get_unit,
 )
 from pulp_smash.tests.rpm.utils import (
     check_issue_2277,
@@ -248,179 +248,123 @@ class UploadSrpmTestCase(utils.BaseAPITestCase):
 
 
 class UploadRpmTestCase(utils.BaseAPITestCase):
-    """Test whether one can upload, associate and publish RPMs."""
+    """Test whether one can upload, associate and publish RPMs.
+
+    The test procedure is as follows:
+
+    1. Create a pair of repositories.
+    2. Upload an RPM to the first repository, and publish it.
+    3. Copy the RPM to the second repository, and publish it.
+    """
 
     @classmethod
     def setUpClass(cls):
-        """Upload an RPM to a repo, copy it to another, publish and download.
-
-        Do the following:
-
-        1. Create two RPM repositories, both without feeds.
-        2. Upload an RPM to the first repository.
-        3. Associate the first repository with the second, causing the RPM to
-           be copied.
-        4. Add a distributor to both repositories and publish them.
-        """
-        super(UploadRpmTestCase, cls).setUpClass()
-        if check_issue_2387(cls.cfg):
-            raise unittest.SkipTest('https://pulp.plan.io/issues/2387')
-        utils.reset_pulp(cls.cfg)  # See: https://pulp.plan.io/issues/1406
-        cls.responses = {}
-
-        # Download an RPM and create two repositories.
+        """Create a pair of RPM repositories."""
+        cls.rpm = utils.http_get(RPM_UNSIGNED_URL)
+        cls.cfg = config.get_config()
         client = api.Client(cls.cfg, api.json_handler)
-        repos = [client.post(REPOSITORY_PATH, gen_repo()) for _ in range(2)]
-        for repo in repos:
-            cls.resources.add(repo['_href'])
-        client.response_handler = api.safe_handler
-        cls.rpm = utils.http_get(RPM_SIGNED_URL)
+        cls.repos = []
+        try:
+            for _ in range(2):
+                body = gen_repo()
+                body['distributors'] = [gen_distributor()]
+                repo = client.post(REPOSITORY_PATH, body)
+                cls.repos.append(repo)
+                # Info about repo distributors is needed when publishing.
+                repo = client.get(repo['_href'], params={'details': True})
+                cls.repos[-1] = repo
+        except:
+            cls.tearDownClass()
+            raise
 
-        # Begin an upload request, upload an RPM, move the RPM into a
-        # repository, and end the upload request.
-        cls.responses['malloc'] = client.post(CONTENT_UPLOAD_PATH)
-        cls.responses['upload'] = client.put(
-            urljoin(cls.responses['malloc'].json()['_href'], '0/'),
-            data=cls.rpm,
-        )
-        cls.responses['import'] = client.post(
-            urljoin(repos[0]['_href'], 'actions/import_upload/'),
-            {
-                'unit_key': {},
-                'unit_type_id': 'rpm',
-                'upload_id': cls.responses['malloc'].json()['upload_id'],
-            },
-        )
-        cls.responses['free'] = client.delete(
-            cls.responses['malloc'].json()['_href'],
-        )
+    @classmethod
+    def tearDownClass(cls):
+        """Clean up resources created during the test."""
+        client = api.Client(cls.cfg)
+        for repo in cls.repos:
+            client.delete(repo['_href'])
+        client.delete(ORPHANS_PATH)
 
-        # Copy content from the first repository to the second.
-        cls.responses['copy'] = client.post(
-            urljoin(repos[1]['_href'], 'actions/associate/'),
-            {'source_repo_id': repos[0]['id']}
-        )
+    def test_01_upload_publish(self):
+        """Upload an RPM to the first repository, and publish it.
 
-        # Add a distributor to and publish both repositories.
-        cls.responses['distribute'] = []
-        cls.responses['publish'] = []
-        for repo in repos:
-            cls.responses['distribute'].append(client.post(
-                urljoin(repo['_href'], 'distributors/'),
-                gen_distributor(),
-            ))
-            cls.responses['publish'].append(client.post(
-                urljoin(repo['_href'], 'actions/publish/'),
-                {'id': cls.responses['distribute'][-1].json()['id']},
-            ))
-
-        # Search for all units in each of the two repositories.
-        body = {'criteria': {}}
-        cls.responses['repo units'] = [
-            client.post(urljoin(repo['_href'], 'search/units/'), body)
-            for repo in repos
-        ]
-
-    def test_status_code(self):
-        """Verify the HTTP status code of each server response."""
-        for step, code in (
-                ('malloc', 201),
-                ('upload', 200),
-                ('import', 202),
-                ('free', 200),
-                ('copy', 202),
-        ):
-            with self.subTest(step=step):
-                self.assertEqual(self.responses[step].status_code, code)
-        for step, code in (
-                ('distribute', 201),
-                ('publish', 202),
-                ('repo units', 200),
-        ):
-            with self.subTest(step=step):
-                for response in self.responses[step]:
-                    self.assertEqual(response.status_code, code)
-
-    def test_malloc(self):
-        """Verify the response body for `creating an upload request`_.
-
-        .. _creating an upload request:
-           http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/upload.html#creating-an-upload-request
+        Execute :meth:`verify_repo_search` and :meth:`verify_repo_download`.
         """
-        keys = set(self.responses['malloc'].json().keys())
-        self.assertLessEqual({'_href', 'upload_id'}, keys)
+        repo = self.repos[0]
+        utils.upload_import_unit(self.cfg, self.rpm, 'rpm', repo['_href'])
+        utils.publish_repo(self.cfg, repo)
+        with self.subTest():
+            self.verify_repo_search(repo)
+        with self.subTest():
+            self.verify_repo_download(repo)
 
-    def test_upload(self):
-        """Verify the response body for `uploading bits`_.
+    def test_02_copy_publish(self):
+        """Copy and RPM from the first repo to the second, and publish it.
 
-        .. _uploading bits:
-           http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/upload.html#upload-bits
+        Execute :meth:`verify_repo_search` and :meth:`verify_repo_download`.
         """
-        self.assertIsNone(self.responses['upload'].json())
+        api.Client(self.cfg).post(
+            urljoin(self.repos[1]['_href'], 'actions/associate/'),
+            {'source_repo_id': self.repos[0]['id']}
+        )
+        utils.publish_repo(self.cfg, self.repos[1])
+        with self.subTest():
+            self.verify_repo_search(self.repos[1])
+        with self.subTest():
+            self.verify_repo_download(self.repos[1])
 
-    def test_call_report_keys(self):
-        """Verify each call report has a sane structure.
-
-        * `Import into a Repository
-          <http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/upload.html#import-into-a-repository>`_
-        * `Copying Units Between Repositories
-          <http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/associate.html#copying-units-between-repositories>`_
-        """
-        for step in {'import', 'copy'}:
-            with self.subTest(step=step):
-                keys = frozenset(self.responses[step].json().keys())
-                self.assertLessEqual(CALL_REPORT_KEYS, keys)
-
-    def test_call_report_errors(self):
-        """Verify each call report is error-free."""
-        for step, key in product({'import', 'copy'}, {'error', 'result'}):
-            with self.subTest((step, key)):
-                self.assertIsNone(self.responses[step].json()[key])
-
-    def test_free(self):
-        """Verify the response body for ending an upload.
-
-        `Delete an Upload Request
-        <http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/content/upload.html#delete-an-upload-request>`_
-        """
-        self.assertIsNone(self.responses['free'].json())
-
-    def test_publish_keys(self):
-        """Verify publishing a repository generates a call report."""
-        for i, response in enumerate(self.responses['publish']):
-            with self.subTest(i=i):
-                keys = frozenset(response.json().keys())
-                self.assertLessEqual(CALL_REPORT_KEYS, keys)
-
-    def test_publish_errors(self):
-        """Verify publishing a call report doesn't generate any errors."""
-        for i, response in enumerate(self.responses['publish']):
-            for key in {'error', 'result'}:
-                with self.subTest((i, key)):
-                    self.assertIsNone(response.json()[key])
-
-    def test_repo_units_consistency(self):
-        """Verify the two repositories have the same content units."""
-        bodies = [resp.json() for resp in self.responses['repo units']]
+    def test_03_compare_repos(self):
+        """Verify the two repositories contain the same content unit."""
+        repo_0_units = find_units(self.cfg, self.repos[0])
+        repo_1_units = find_units(self.cfg, self.repos[1])
         self.assertEqual(
-            set(unit['unit_id'] for unit in bodies[0]),  # This test is fragile
-            set(unit['unit_id'] for unit in bodies[1]),  # due to hard-coded
-        )  # indices. But the data is complex, and this makes things simpler.
+            repo_0_units[0]['unit_id'],
+            repo_1_units[0]['unit_id'],
+        )
 
-    def test_unit_integrity(self):
-        """Download and verify an RPM from each Pulp distributor."""
-        if check_issue_2277(self.cfg):
-            self.skipTest('https://pulp.plan.io/issues/2277')
-        for response in self.responses['distribute']:
-            distributor = response.json()
-            with self.subTest(distributor=distributor):
-                url = urljoin(
-                    '/pulp/repos/',
-                    response.json()['config']['relative_url']
-                )
-                url = urljoin(url, RPM)
-                rpm = api.Client(self.cfg).get(url).content
-                self.assertEqual(rpm, self.rpm)
+    def verify_repo_search(self, repo):
+        """Search for units in the given ``repo``.
+
+        Verify that only one content unit is in ``repo``, and that several of
+        its metadata attributes are correct. This test targets `Pulp #2365
+        <https://pulp.plan.io/issues/2365>`_.
+        """
+        units = find_units(self.cfg, repo)
+        self.assertEqual(len(units), 1)
+
+        # filename and derived attributes
+        with self.subTest():
+            self.assertEqual(units[0]['metadata']['filename'], RPM)
+        with self.subTest():
+            self.assertEqual(units[0]['metadata']['epoch'], '0')
+        with self.subTest():
+            self.assertEqual(units[0]['metadata']['name'], 'bear')
+        with self.subTest():
+            self.assertEqual(units[0]['metadata']['version'], '4.1')
+        with self.subTest():
+            self.assertEqual(units[0]['metadata']['release'], '1')
+
+        # other attributes
+        with self.subTest():
+            self.assertEqual(units[0]['metadata']['license'], 'GPLv2')
+        with self.subTest():
+            self.assertEqual(
+                units[0]['metadata']['description'],
+                'A dummy package of bear',
+            )
+        with self.subTest():
+            self.assertEqual(
+                units[0]['metadata']['files'],
+                {'dir': [], 'file': ['/tmp/bear.txt']},
+            )
+
+    def verify_repo_download(self, repo):
+        """Download :data:`pulp_smash.constants.RPM` from the given ``repo``.
+
+        Verify that it is exactly equal to the one uploaded earlier.
+        """
+        repo_rpm = get_unit(self.cfg, repo, RPM).content
+        self.assertEqual(self.rpm, repo_rpm)
 
 
 class UploadErratumTestCase(utils.BaseAPITestCase):
@@ -447,7 +391,7 @@ class UploadErratumTestCase(utils.BaseAPITestCase):
         # Create an RPM repository with a feed and distributor.
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
+        body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
