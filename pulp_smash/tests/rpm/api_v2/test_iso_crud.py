@@ -1,12 +1,19 @@
 # coding=utf-8
 """Test CRUD for ISO RPM repositories."""
+import csv
+import json
 from unittest import SkipTest
 from urllib.parse import urljoin, urlparse
 
+import requests
 from packaging.version import Version
 
-from pulp_smash import api, selectors, utils
-from pulp_smash.constants import REPOSITORY_PATH
+from pulp_smash import api, exceptions, selectors, utils
+from pulp_smash.constants import (
+    FILE_FEED_URL,
+    FILE_MIXED_FEED_URL,
+    REPOSITORY_PATH
+)
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -36,6 +43,20 @@ def _customize_template(template, repository_id):
     template = template.copy()
     template['_href'] = template['_href'].format(repository_id)
     return template
+
+
+def _gen_iso_repo(feed_url):
+    """Generate a request body for creating a iso repository.
+
+    :param feed_url: The feed URL where the repository will pull the
+        contents
+    """
+    return {
+        'distributors': [_DISTRIBUTOR],
+        'id': utils.uuid4(),
+        'importer_config': {'feed': feed_url},
+        'importer_type_id': 'iso_importer',
+    }
 
 
 class CreateTestCase(utils.BaseAPITestCase):
@@ -269,3 +290,75 @@ class AddImporterDistributorTestCase(utils.BaseAPITestCase):
         for i, attrs in enumerate((self.post_imp, self.post_dist)):
             with self.subTest(i=i):
                 self.assertEqual(len(attrs), 1, attrs)
+
+
+class PulpManifestTestCase(utils.BaseAPITestCase):
+    """Ensure ISO repo properly handles PULP_MANIFEST information."""
+
+    @staticmethod
+    def parse_pulp_manifest(feed_url):
+        """Parse PULP_MANIFEST information from ``feed_url``/PULP_MANIFEST.
+
+        :param feed_url: The URL for the file feed. It will be joined with
+            /PULP_MANIFEST in order to find the PULP_MANIFEST file.
+        :return: A list of dicts mapping each PULP_MANIFEST row. The dict
+            contains the keys name, checksum and size which represent the
+            PULP_MANIFEST data.
+        """
+        pulp_manifest_url = urljoin(feed_url, 'PULP_MANIFEST')
+        reader = csv.DictReader(
+            requests.get(pulp_manifest_url).text.splitlines(),
+            ('name', 'checksum', 'size'),
+        )
+        return list(reader)
+
+    def test_valid_file_feed(self):
+        """Create and sync a ISO repo from a file feed.
+
+        Assert that the number of units synced is the same as PULP_MANIFEST
+        lists.
+        """
+        pulp_manifest_count = len(self.parse_pulp_manifest(FILE_FEED_URL))
+        client = api.Client(self.cfg, api.json_handler)
+        repo = client.post(REPOSITORY_PATH, _gen_iso_repo(FILE_FEED_URL))
+        self.addCleanup(client.delete, repo['_href'])
+        utils.sync_repo(self.cfg, repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
+        self.assertEqual(repo['total_repository_units'], pulp_manifest_count)
+        self.assertEqual(
+            repo['content_unit_counts']['iso'], pulp_manifest_count)
+
+    def test_invalid_file_feed(self):
+        """Create and sync a ISO repo from an invalid file feed.
+
+        Assert that the sync fails with the information that some units were
+        not available.
+        """
+        if self.cfg.version < Version('2.11'):
+            self.skipTest(
+                'Pulp reports 404 for ISO repos only on 2.11 or greater.')
+        pulp_manifest = self.parse_pulp_manifest(FILE_MIXED_FEED_URL)
+        missing = [
+            row['name'] for row in pulp_manifest
+            if row['name'].startswith('missing')
+        ]
+        client = api.Client(self.cfg, api.json_handler)
+        repo = client.post(REPOSITORY_PATH, _gen_iso_repo(FILE_MIXED_FEED_URL))
+        self.addCleanup(client.delete, repo['_href'])
+        with self.assertRaises(exceptions.TaskReportError) as context:
+            utils.sync_repo(self.cfg, repo['_href'])
+        task = context.exception.task
+        self.assertIsNotNone(task['error'])
+        # Description is a string generated after a Python's list of dicts
+        # object. Adjust the string so we can parse it as JSON instead of using
+        # eval. Having this as a Python object helps inspecting the message
+        description = json.loads(
+            task['error']['description']
+            .replace('u\'', '\'')
+            .replace('\'', '"')
+        )
+        for info in description:
+            with self.subTest(name=info['name']):
+                self.assertEqual(info['error']['response_code'], 404)
+                self.assertEqual(info['error']['response_msg'], 'Not Found')
+                self.assertIn(info['name'], missing)

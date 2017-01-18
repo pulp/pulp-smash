@@ -108,6 +108,12 @@ DRPM_UNSIGNED_URL = urljoin(DRPM_UNSIGNED_FEED_URL, DRPM)
 Built from :data:`DRPM_UNSIGNED_FEED_URL` and :data:`DRPM`.
 """
 
+FILE_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'file/')
+"""The URL to a file repository."""
+
+FILE_MIXED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'file-mixed/')
+"""The URL to a file repository containing invalid and valid entries."""
+
 ERROR_KEYS = frozenset((
     '_href',
     'error',
