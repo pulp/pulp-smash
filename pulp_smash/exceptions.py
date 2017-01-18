@@ -101,6 +101,11 @@ class TaskReportError(Exception):
         http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/tasks.html
     """
 
+    def __init__(self, msg, task, *args, **kwargs):
+        """Require that a task object is defined."""
+        super().__init__(msg, task, *args, **kwargs)
+        self.task = task
+
 
 class TaskTimedOutError(Exception):
     """We timed out while polling a task and waiting for it to complete.

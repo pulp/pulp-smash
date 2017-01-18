@@ -71,7 +71,7 @@ def _check_tasks(tasks):
             if task[field] is not None:
                 msg = 'Task report {} contains a {}: {}\nFull task report: {}'
                 msg = msg.format(task['_href'], field, task[field], task)
-                raise exceptions.TaskReportError(msg)
+                raise exceptions.TaskReportError(msg, task)
 
 
 def _handle_202(server_config, response):
