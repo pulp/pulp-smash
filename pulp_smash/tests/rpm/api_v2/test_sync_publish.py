@@ -15,10 +15,16 @@ from urllib.parse import urljoin
 
 from packaging.version import Version
 
-from pulp_smash import api, selectors, utils
+from pulp_smash import api, config, exceptions, selectors, utils
 from pulp_smash.constants import (
     DRPM_UNSIGNED_FEED_URL,
+    ORPHANS_PATH,
     REPOSITORY_PATH,
+    RPM_INCOMPLETE_FILELISTS_FEED_URL,
+    RPM_INCOMPLETE_OTHER_FEED_URL,
+    RPM_MISSING_FILELISTS_FEED_URL,
+    RPM_MISSING_OTHER_FEED_URL,
+    RPM_MISSING_PRIMARY_FEED_URL,
     RPM_SIGNED_FEED_COUNT,
     RPM_SIGNED_FEED_URL,
     SRPM_SIGNED_FEED_URL,
@@ -182,3 +188,55 @@ class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
     def test_number_tasks(self):
         """Assert that only one task was spawned."""
         self.assertEqual(len(self.tasks), 1)
+
+
+class SyncInvalidMetadataTestCase(unittest.TestCase):
+    """Sync various repositories with invalid metadata.
+
+    When a repository with invalid metadata is encountered, Pulp should
+    gracefully fail. This test case targets `Pulp #1287
+    <https://pulp.plan.io/issues/1287>`_.
+    """
+
+    @classmethod
+    def tearDownClass(cls):
+        """Delete orphan content units."""
+        api.Client(config.get_config()).delete(ORPHANS_PATH)
+
+    def test_incomplete_filelists(self):
+        """Sync a repository with an incomplete ``filelists.xml`` file."""
+        self.do_test(RPM_INCOMPLETE_FILELISTS_FEED_URL)
+
+    def test_incomplete_other(self):
+        """Sync a repository with an incomplete ``other.xml`` file."""
+        self.do_test(RPM_INCOMPLETE_OTHER_FEED_URL)
+
+    def test_missing_filelists(self):
+        """Sync a repository that's missing its ``filelists.xml`` file."""
+        self.do_test(RPM_MISSING_FILELISTS_FEED_URL)
+
+    def test_missing_other(self):
+        """Sync a repository that's missing its ``other.xml`` file."""
+        self.do_test(RPM_MISSING_OTHER_FEED_URL)
+
+    def test_missing_primary(self):
+        """Sync a repository that's missing its ``primary.xml`` file."""
+        self.do_test(RPM_MISSING_PRIMARY_FEED_URL)
+
+    def do_test(self, feed_url):
+        """Implement the logic described by each of the ``test*`` methods."""
+        cfg = config.get_config()
+        client = api.Client(cfg)
+        body = gen_repo()
+        body['importer_config']['feed'] = feed_url
+        repo = client.post(REPOSITORY_PATH, body).json()
+        self.addCleanup(client.delete, repo['_href'])
+
+        with self.assertRaises(exceptions.TaskReportError) as context:
+            utils.sync_repo(cfg, repo['_href'])
+        task = context.exception.task
+        self.assertEqual(
+            'NOT_STARTED',
+            task['progress_report']['yum_importer']['content']['state'],
+            task,
+        )

@@ -284,6 +284,18 @@ RPM = 'bear-4.1-1.noarch.rpm'
 RPM_ALT_LAYOUT_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-alt-layout/')
 """The URL to a signed RPM repository. See :data:`RPM_SIGNED_URL`."""
 
+RPM_INCOMPLETE_FILELISTS_FEED_URL = urljoin(
+    PULP_FIXTURES_BASE_URL,
+    'rpm-incomplete-filelists/',
+)
+"""The URL to a repository with an incomplete ``filelists.xml`` file."""
+
+RPM_INCOMPLETE_OTHER_FEED_URL = urljoin(
+    PULP_FIXTURES_BASE_URL,
+    'rpm-incomplete-other/',
+)
+"""The URL to a repository with an incomplete ``other.xml`` file."""
+
 RPM_ERRATUM_ID = 'RHEA-2012:0058'
 """The ID of an erratum.
 
@@ -312,6 +324,24 @@ RPM_MIRRORLIST_GOOD = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-mirrorlist-good')
 
 RPM_MIRRORLIST_MIXED = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-mirrorlist-mixed')
 """The URL to a mirrorlist file containing invalid and valid entries."""
+
+RPM_MISSING_FILELISTS_FEED_URL = urljoin(
+    PULP_FIXTURES_BASE_URL,
+    'rpm-missing-filelists/',
+)
+"""A repository that's missing its ``filelists.xml`` file."""
+
+RPM_MISSING_OTHER_FEED_URL = urljoin(
+    PULP_FIXTURES_BASE_URL,
+    'rpm-missing-other/',
+)
+"""A repository that's missing its ``other.xml`` file."""
+
+RPM_MISSING_PRIMARY_FEED_URL = urljoin(
+    PULP_FIXTURES_BASE_URL,
+    'rpm-missing-primary/',
+)
+"""A repository that's missing its ``primary.xml`` file."""
 
 RPM_NAMESPACES = {
     'metadata/common': 'http://linux.duke.edu/metadata/common',
