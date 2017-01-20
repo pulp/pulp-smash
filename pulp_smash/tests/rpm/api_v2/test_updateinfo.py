@@ -14,6 +14,7 @@ from pulp_smash.constants import (
     RPM,
     RPM_ERRATUM_ID,
     RPM_ERRATUM_RPM_NAME,
+    RPM_NAMESPACES,
     RPM_PKGLISTS_UPDATEINFO_FEED_URL,
     RPM_SIGNED_FEED_URL,
     RPM_UNSIGNED_FEED_URL,
@@ -22,8 +23,8 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     find_units,
     gen_distributor,
     gen_repo,
-    get_repomd_xml,
-    get_repomd_xml_href,
+    get_repodata,
+    get_repodata_repomd_xml,
 )
 from pulp_smash.tests.rpm.utils import check_issue_2277, set_up_module
 
@@ -150,13 +151,8 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
         utils.publish_repo(cls.cfg, repo)
 
         # Fetch and parse updateinfo.xml (or updateinfo.xml.gz), via repomd.xml
-        cls.root_element = get_repomd_xml(
-            cls.cfg,
-            urljoin(
-                '/pulp/repos/',
-                repo['distributors'][0]['config']['relative_url'],
-            ),
-            'updateinfo'
+        cls.root_element = (
+            get_repodata(cls.cfg, repo['distributors'][0], 'updateinfo')
         )
 
     def test_root(self):
@@ -299,13 +295,8 @@ class ErratumPkgListCountTestCase(utils.BaseAPITestCase):
         utils.publish_repo(cls.cfg, repo)
 
         # Fetch and parse updateinfo.xml (or updateinfo.xml.gz), via repomd.xml
-        root_element = get_repomd_xml(
-            cls.cfg,
-            urljoin(
-                '/pulp/repos/',
-                repo['distributors'][0]['config']['relative_url'],
-            ),
-            'updateinfo'
+        root_element = (
+            get_repodata(cls.cfg, repo['distributors'][0], 'updateinfo')
         )
 
         # Fetch the erratum and erratum pkglist for the gorilla package
@@ -372,14 +363,7 @@ class PkglistsTestCase(unittest.TestCase):
         # Publish the repository, and fetch and parse its updateinfo file.
         self.assertEqual(len(repo['distributors']), 1, repo['distributors'])
         utils.publish_repo(cfg, repo)
-        root_element = get_repomd_xml(
-            cfg,
-            urljoin(
-                '/pulp/repos/',
-                repo['distributors'][0]['config']['relative_url']
-            ),
-            'updateinfo'
-        )
+        root_element = get_repodata(cfg, repo['distributors'][0], 'updateinfo')
 
         # Verify the contents of the updateinfo file.
         debug = ElementTree.tostring(root_element)
@@ -480,14 +464,18 @@ class CleanUpTestCase(unittest.TestCase):
 
     def get_updateinfo_xml_href(self):
         """Return the path to the ``updateinfo.xml`` file."""
-        # Get repomd.xml.
-        rel_url = urljoin(
-            '/pulp/repos/',
-            self.repo['distributors'][0]['config']['relative_url'],
+        # Download and search through ``.../repodata/repomd.xml``.
+        distributor = self.repo['distributors'][0]
+        repomd_xml = get_repodata_repomd_xml(self.cfg, distributor)
+        xpath = (
+            "{{{namespace}}}data[@type='updateinfo']/{{{namespace}}}location"
+            .format(namespace=RPM_NAMESPACES['metadata/repo'])
         )
-        repomd_xml = api.Client(self.cfg).get(
-            urljoin(rel_url, 'repodata/repomd.xml')
-        ).text
+        location_elements = repomd_xml.findall(xpath)
 
-        # Get updateinfo.xml.
-        return urljoin(rel_url, get_repomd_xml_href(repomd_xml, 'updateinfo'))
+        # Build the URL to the updateinfo.xml file.
+        path = urljoin('/pulp/repos/', distributor['config']['relative_url'])
+        if not path.endswith('/'):
+            path += '/'
+        path = urljoin(path, location_elements[0].get('href'))
+        return path

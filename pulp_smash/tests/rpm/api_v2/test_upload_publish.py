@@ -29,7 +29,7 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     find_units,
     gen_distributor,
     gen_repo,
-    get_repomd_xml,
+    get_repodata,
     get_unit,
 )
 from pulp_smash.tests.rpm.utils import (
@@ -403,11 +403,9 @@ class UploadErratumTestCase(utils.BaseAPITestCase):
 
         # Publish the repository, and fetch and parse updateinfo.xml
         utils.publish_repo(cls.cfg, repo)
-        path = urljoin(
-            '/pulp/repos/',
-            repo['distributors'][0]['config']['relative_url']
+        cls.updateinfo = (
+            get_repodata(cls.cfg, repo['distributors'][0], 'updateinfo')
         )
-        cls.updateinfo = get_repomd_xml(cls.cfg, path, 'updateinfo')
 
     def test_updateinfo_root_tag(self):
         """Assert ``updateinfo.xml`` has a root element named ``updates``."""

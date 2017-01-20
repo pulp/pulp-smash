@@ -22,7 +22,7 @@ from pulp_smash.constants import (
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
-    get_repomd_xml,
+    get_repodata,
 )
 from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module
@@ -144,9 +144,9 @@ class SyncRepoTestCase(utils.BaseAPITestCase):
         utils.publish_repo(cls.cfg, repo)
 
         # Fetch and parse comps.xml.
-        dist = repo['distributors'][0]
-        dist_url = urljoin('/pulp/repos/', dist['config']['relative_url'])
-        cls.root_element = get_repomd_xml(cls.cfg, dist_url, 'group')
+        cls.root_element = (
+            get_repodata(cls.cfg, repo['distributors'][0], 'group')
+        )
         cls.xml_as_str = ElementTree.tostring(cls.root_element)
 
     def test_first_level_element(self):
@@ -215,13 +215,8 @@ class UploadPackageGroupsTestCase(utils.BaseAPITestCase):
         utils.publish_repo(cls.cfg, repo)
 
         # Fetch the generated repodata of type 'group' (a.k.a. 'comps')
-        cls.root_element = get_repomd_xml(
-            cls.cfg,
-            urljoin(
-                '/pulp/repos/',
-                repo['distributors'][0]['config']['relative_url'],
-            ),
-            'group'
+        cls.root_element = (
+            get_repodata(cls.cfg, repo['distributors'][0], 'group')
         )
 
     def test_root(self):
@@ -477,14 +472,7 @@ class UploadTwiceTestCase(unittest.TestCase):
 
         # Fetch the generated repodata of type 'group' (a.k.a. 'comps'). Verify
         # the package group portion.
-        root_element = get_repomd_xml(
-            cfg,
-            urljoin(
-                '/pulp/repos/',
-                repo['distributors'][0]['config']['relative_url'],
-            ),
-            'group'
-        )
+        root_element = get_repodata(cfg, repo['distributors'][0], 'group')
         groups = root_element.findall('group')
         self.assertEqual(len(groups), 1, ElementTree.tostring(root_element))
         for key, value in package_group.items():

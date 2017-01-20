@@ -42,62 +42,69 @@ def gen_distributor():
     }
 
 
-def get_repomd_xml_href(repomd_xml, repomd_type):
-    """Parse a ``repomd.xml`` string. Find and return a path.
+def get_repodata_repomd_xml(cfg, distributor, response_handler=None):
+    """Download the given repository's ``repodata/repomd.xml`` file.
 
-    Given a ``repomd.xml`` file as a string, use an XPath selector (with
-    namespace from :data:`pulp_smash.constants.RPM_NAMESPACES`) to find a path.
-    The XML should have this general form::
-
-        <data type="…"><location href="…" /></data>
-
-    Return the "href" attribute.
-
-    :param repomd_xml: A ``repomd.xml`` file, as a string.
-    :param repomd_type: A "type" attribute of a "data" element. For example:
-        "updateinfo".
-    :returns: A path.
-    :raises: ``ValueError`` if more than one "location" element is found.
+    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param distributor: A dict of information about a repository distributor.
+    :param response_handler: The callback function used by
+        :class:`pulp_smash.api.Client` after downloading the ``repomd.xml``
+        file. Defaults to :func:`xml_handler`. Use
+        :func:`pulp_smash.api.safe_handler` if you want the raw response.
+    :returns: Whatever is dictated by ``response_handler``.
     """
+    path = urljoin('/pulp/repos/', distributor['config']['relative_url'])
+    if not path.endswith('/'):
+        path += '/'
+    path = urljoin(path, 'repodata/repomd.xml')
+    if response_handler is None:
+        response_handler = xml_handler
+    return api.Client(cfg, response_handler).get(path)
+
+
+def get_repodata(
+        cfg,
+        distributor,
+        type_,
+        response_handler=None,
+        repomd_xml=None):
+    """Download a file of the given ``type_`` from a ``repodata/`` directory.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param distributor: A dict of information about a repository distributor.
+    :param type_: The type of file to fetch from a repository's ``repodata/``
+        directory. Valid values might be "updateinfo" or "group".
+    :param response_handler: The callback function used by
+        :class:`pulp_smash.api.Client` after downloading the ``repomd.xml``
+        file. Defaults to :func:`xml_handler`. Use
+        :func:`pulp_smash.api.safe_handler` if you want the raw response.
+    :param repomd_xml: A ``repomd.xml`` file as an ``ElementTree``. If not
+        given, :func:`get_repodata_repomd_xml` is consulted.
+    :returns: Whatever is dictated by ``response_handler``.
+    """
+    # Download and search through ``.../repodata/repomd.xml``.
+    if repomd_xml is None:
+        repomd_xml = get_repodata_repomd_xml(cfg, distributor)
     xpath = (
-        "{{{namespace}}}data[@type='{type}']/{{{namespace}}}location"
-        .format(namespace=RPM_NAMESPACES['metadata/repo'], type=repomd_type)
+        "{{{namespace}}}data[@type='{type_}']/{{{namespace}}}location"
+        .format(namespace=RPM_NAMESPACES['metadata/repo'], type_=type_)
     )
-    location_elements = ElementTree.fromstring(repomd_xml).findall(xpath)
+    location_elements = repomd_xml.findall(xpath)
     if len(location_elements) != 1:
         raise ValueError(
-            'The XML tree repomd_xml should only contain one matching '
+            'The given "repomd.xml" file should contain one matching '
             '"location" element, but {} were found with the XPath selector {}'
             .format(len(location_elements), xpath)
         )
-    return location_elements[0].get('href')
 
-
-def get_repomd_xml(server_config, repo_path, repomd_type):
-    """Retrieve XML of a particular type from a repo.
-
-    Given a URL, fetch, parse and return the repository XML of type
-    ``repomd_type``.
-
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
-    :param repo_path: The path to (or URL of) a repomd repository. This path
-        should not include any segments past the repository itself, such as a
-        path to a particular ``repodata`` directory.
-    :param repomd_type: The name of a type of repomd data, as found in the
-        top-level ``repomd.xml`` file of a repository. Valid values might be
-        "updateinfo" or "group".
-    :returns: An ``xml.etree.ElementTree.Element`` instance containing the
-        parsed repository metadata of the requested type.
-    """
-    # Fetch and parse repomd.xml
-    client = api.Client(server_config)
-    repomd_xml = client.get(urljoin(repo_path, 'repodata/repomd.xml')).text
-    repomd_xml_href = get_repomd_xml_href(repomd_xml, repomd_type)
-
-    # Fetch, parse and return updateinfo.xml or updateinfo.xml.gz
-    client.response_handler = xml_handler
-    return client.get(urljoin(repo_path, repomd_xml_href))
+    # Build the URL to the file of the requested `type_`.
+    path = urljoin('/pulp/repos/', distributor['config']['relative_url'])
+    if not path.endswith('/'):
+        path += '/'
+    path = urljoin(path, location_elements[0].get('href'))
+    if response_handler is None:
+        response_handler = xml_handler
+    return api.Client(cfg, response_handler).get(path)
 
 
 def xml_handler(_, response):
