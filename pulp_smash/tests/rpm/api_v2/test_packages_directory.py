@@ -12,6 +12,8 @@ import os
 import unittest
 from urllib.parse import urljoin
 
+from packaging.version import Version
+
 from pulp_smash import api, selectors, utils
 from pulp_smash.constants import (
     REPOSITORY_PATH,
@@ -129,7 +131,12 @@ class PackagesDirectoryTestCase(utils.BaseAPITestCase):
         self.assertGreater(len(package_hrefs), 0)
         for package_href in package_hrefs:
             with self.subTest(package_href=package_href):
-                self.assertEqual(os.path.dirname(package_href), '')
+                dirname = os.path.dirname(package_href)
+                if self.cfg.version < Version('2.12'):
+                    self.assertEqual(dirname, '')
+                else:
+                    # e.g. 'Packages/a'[:-1] == 'Packages/'
+                    self.assertEqual(dirname[:-1], 'Packages/')
 
     def test_distributor_config(self):
         """Use the ``packages_directory`` distributor option.

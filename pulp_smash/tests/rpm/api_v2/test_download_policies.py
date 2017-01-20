@@ -18,7 +18,11 @@ from pulp_smash.constants import (
     RPM_SIGNED_FEED_URL,
     RPM_SIGNED_URL,
 )
-from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
+from pulp_smash.tests.rpm.api_v2.utils import (
+    gen_distributor,
+    gen_repo,
+    get_unit,
+)
 from pulp_smash.tests.rpm.utils import (
     check_issue_2387,
     os_is_rhel6,
@@ -56,17 +60,6 @@ def _create_repo(server_config, download_policy):
     return api.Client(server_config).post(REPOSITORY_PATH, body).json()
 
 
-def _download_rpm(cfg, repo_id, rpm_name):
-    """Download a RPM named ``rpm_name`` from a repository.
-
-    Return a reponse object from a GET request at
-    ``/pulp/repos/<repo_id>/<rpm_name>``.
-    """
-    path = urljoin('/pulp/repos/', repo_id + '/')
-    path = urljoin(path, rpm_name)
-    return api.Client(cfg).get(path)
-
-
 class BackgroundTestCase(utils.BaseAPITestCase):
     """Ensure the "background" download policy works."""
 
@@ -102,7 +95,7 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         cls.tasks = tuple(api.poll_spawned_tasks(cls.cfg, report))
 
         # Download an RPM.
-        cls.rpm = _download_rpm(cls.cfg, repo['id'], RPM)
+        cls.rpm = get_unit(cls.cfg, cls.repo, RPM)
 
     def test_repo_local_units(self):
         """Assert that all content is downloaded for the repository."""
@@ -172,8 +165,8 @@ class OnDemandTestCase(utils.BaseAPITestCase):
         cls.repo = client.get(repo['_href'], params={'details': True}).json()
 
         # Download the same RPM twice.
-        cls.rpm = _download_rpm(cls.cfg, repo['id'], RPM)
-        cls.same_rpm = _download_rpm(cls.cfg, repo['id'], RPM)
+        cls.rpm = get_unit(cls.cfg, cls.repo, RPM)
+        cls.same_rpm = get_unit(cls.cfg, cls.repo, RPM)
 
     def test_local_units(self):
         """Assert no content units were downloaded besides metadata."""
@@ -398,7 +391,7 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
     def _assert_background_immediate(self, repo):
         """Common assertions for background and immediate download policies."""
         # Download an RPM.
-        rpm = _download_rpm(self.cfg, repo['id'], RPM)
+        rpm = get_unit(self.cfg, repo, RPM)
 
         # Assert that all content is downloaded for the repository.
         self.assertEqual(
@@ -462,8 +455,8 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
         self.assertEqual(repo['total_repository_units'], total_units)
 
         # Download the same RPM twice.
-        rpm = _download_rpm(self.cfg, repo['id'], RPM)
-        same_rpm = _download_rpm(self.cfg, repo['id'], RPM)
+        rpm = get_unit(self.cfg, repo, RPM)
+        same_rpm = get_unit(self.cfg, repo, RPM)
 
         # Assert the initial request received a 302 Redirect.
         self.assertTrue(rpm.history[0].is_redirect)
