@@ -120,18 +120,10 @@ Join the #pulp IRC channel on `freenode`_ if you have further questions.
 Labels
 ~~~~~~
 
-`Labels`_ are used to categorize issues and pull requests. The "Issue Type"
-labels may be applied to issues, and the "Status" labels may be applied to
-either issues or pull requests.
+Issues are categorized with `labels`_. Pull requests are categorized with
+GitHub's `pull request reviews`_ feature.
 
-============  ====================  ===============================
-Label Prefix  Applicable to Issues  Applicable to Pull Requests
-============  ====================  ===============================
-Issue Type:   ✓                     ✗
-Status:       ✓                     ✓
-============  ====================  ===============================
-
-The specific meaning of each label is as follows.
+The specific meaning of (issue) labels is as follows.
 
 Issue Type: Bug
     This label denotes an issue that describes a specific counter-productive
@@ -153,17 +145,6 @@ Issue Type: Test Case
     This label indicates that an issue is asking for a test case to be
     automated. (Issues with this label are a special type of plan.)
 
-Status: LGTM
-    This label denotes an issue or pull request that has been reviewed by a
-    `Pulp QE member`_ and is ready for further action.
-
-Status: Needs Review
-    This label denotes an issue or pull request that is awaiting review by a
-    `Pulp QE member`_.
-
-Status: Needs Work
-    This label denotes an issue or pull request that is awaiting improvements.
-
 .. [1] Portable software cannot make assumptions about its environment. It
     cannot reference ``/etc/pki/tls/certs/ca-bundle.crt``  or call ``yum``.
     Instead, it must use standardized mechanisms for interacting with its
@@ -178,7 +159,6 @@ Status: Needs Work
 
 .. _Command-Line Interface: https://docs.python.org/3/library/unittest.html#command-line-interface
 .. _GNU Make: https://www.gnu.org/software/make/
-.. _Labels: https://github.com/PulpQE/pulp-smash/labels
 .. _OpenSSH: http://www.openssh.com/
 .. _Pulp QE Member: https://github.com/orgs/PulpQE/people
 .. _Pulp Smash issues: https://github.com/PulpQE/pulp-smash/issues
@@ -186,4 +166,6 @@ Status: Needs Work
 .. _XDG Base Directory Specification: http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
 .. _freenode: https://freenode.net/
 .. _good commit messages: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
+.. _labels: https://github.com/PulpQE/pulp-smash/labels
+.. _pull request reviews: https://help.github.com/articles/about-pull-request-reviews/
 .. _rewrite history: https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History
