@@ -24,7 +24,6 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     gen_repo,
     get_repomd_xml,
     get_repomd_xml_href,
-    get_unit_unassociate_criteria,
 )
 from pulp_smash.tests.rpm.utils import check_issue_2277, set_up_module
 
@@ -293,7 +292,7 @@ class ErratumPkgListCountTestCase(utils.BaseAPITestCase):
         # Remove the gorilla package unit
         client.post(
             urljoin(repo['_href'], 'actions/unassociate/'),
-            {'criteria': get_unit_unassociate_criteria(RPM_ERRATUM_RPM_NAME)},
+            {'criteria': {'filters': {'unit': {'name': RPM_ERRATUM_RPM_NAME}}}}
         )
 
         # Publish the repository
