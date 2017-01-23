@@ -14,12 +14,14 @@ import unittest
 from urllib.parse import urljoin
 
 from dateutil.parser import parse
+from packaging.version import Version
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
     ORPHANS_PATH,
     REPOSITORY_PATH,
     RPM,
+    RPM_UNSIGNED_FEED_COUNT,
     RPM_UNSIGNED_FEED_URL,
     RPM_UNSIGNED_URL,
 )
@@ -265,3 +267,42 @@ def _remove_unit(cfg, repo_href, unit):
         'type_ids': [unit['unit_type_id']],
     }}
     return api.Client(cfg).post(path, body).json()
+
+
+class SelectiveAssociateTestCase(utils.BaseAPITestCase):
+    """Ensure Pulp only associate needed content.
+
+    Test steps:
+
+    1. Create and sync an RPM repository.
+    2. Unassociate some RPMs from the repository created on the previous step.
+    3. Sync the repository again and check if only the missing units were
+       associated.
+
+    See `Pulp #2457 <https://pulp.plan.io/issues/2457>`_
+    """
+
+    def test_all(self):
+        """Check if Pulp only associate missing repo content."""
+        if self.cfg.version < Version('2.11'):
+            self.skipTest(
+                'Selective association is available on Pulp 2.11+ see Pulp '
+                '#2457 for more information'
+            )
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        utils.sync_repo(self.cfg, repo['_href'])
+        rpm_units = _get_units_by_type(find_units(self.cfg, repo), 'rpm')
+        # Let's select up to 1/5 of the available units to remove
+        to_remove = random.sample(
+            rpm_units, random.randrange(int(RPM_UNSIGNED_FEED_COUNT / 4)))
+        for unit in to_remove:
+            _remove_unit(self.cfg, repo['_href'], unit)
+        report = client.post(urljoin(repo['_href'], 'actions/sync/'))
+        tasks = tuple(api.poll_spawned_tasks(self.cfg, report))
+        self.assertEqual(len(tasks), 1, tasks)
+        self.assertEqual(
+            tasks[0]['result']['added_count'], len(to_remove), to_remove)
