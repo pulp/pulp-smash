@@ -21,7 +21,9 @@ class SearchReposWithFiltersTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Create a repository."""
-        cls.client = cli.Client(config.get_config())
+        cfg = config.get_config()
+        utils.pulp_admin_login(cfg)
+        cls.client = cli.Client(cfg)
         cls.repo_id = utils.uuid4()
         cls.client.run(
             'pulp-admin rpm repo create --repo-id {}'
