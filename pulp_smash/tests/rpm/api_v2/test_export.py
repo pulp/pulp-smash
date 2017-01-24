@@ -474,10 +474,15 @@ class ExportDistributorTestCase(ExportDirMixin, utils.BaseAPITestCase):
             self.repo['_href'],
             self.distributor['id'],
         )
-        actual = cli.Client(self.cfg).run(('sha256sum', os.path.join(
+        path = os.path.join(
             export_dir,
             self.distributor['config']['relative_url'],
-            RPM,
-        ))).stdout.strip().split()[0]
+        )
+        if self.cfg.version >= Version('2.12'):
+            path = os.path.join(path, 'Packages', RPM[0], RPM)
+        else:
+            path = os.path.join(path, RPM)
+        actual = cli.Client(self.cfg).run(
+            ('sha256sum', path)).stdout.strip().split()[0]
         expect = utils.get_sha256_checksum(RPM_SIGNED_URL)
         self.assertEqual(actual, expect)
