@@ -14,7 +14,7 @@ from urllib.parse import urljoin
 
 from packaging.version import Version
 
-from pulp_smash import api, selectors, utils
+from pulp_smash import api, utils
 from pulp_smash.constants import (
     REPOSITORY_PATH,
     RPM_NAMESPACES,
@@ -137,53 +137,3 @@ class PackagesDirectoryTestCase(utils.BaseAPITestCase):
                 else:
                     # e.g. 'Packages/a'[:-1] == 'Packages/'
                     self.assertEqual(dirname[:-1], 'Packages/')
-
-    def test_distributor_config(self):
-        """Use the ``packages_directory`` distributor option.
-
-        Create a distributor with the ``packages_directory`` option set, and
-        use it to publish the repository. Verify packages end up in the
-        specified directory, relative to the published repository's root.
-        """
-        if selectors.bug_is_untestable(1976, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/1976')
-        body = gen_distributor()
-        packages_dir = utils.uuid4()
-        body['distributor_config']['packages_directory'] = packages_dir
-        distributor = api.Client(self.cfg).post(
-            urljoin(self.repo['_href'], 'distributors/'),
-            body
-        ).json()
-        utils.publish_repo(self.cfg, self.repo, {'id': distributor['id']})
-        primary_xml = get_parse_repodata_primary_xml(self.cfg, distributor)
-        package_hrefs = get_package_hrefs(primary_xml)
-        self.assertGreater(len(package_hrefs), 0)
-        for package_href in package_hrefs:
-            with self.subTest(package_href=package_href):
-                self.assertEqual(os.path.dirname(package_href), packages_dir)
-
-    def test_publish_override_config(self):
-        """Use the ``packages_directory`` publish override option.
-
-        Create a distributor with default options, and use it to publish the
-        repository. Specify the ``packages_directory`` option during the
-        publish as an override option. Verify packages end up in the specified
-        directory, relative to the published repository's root.
-        """
-        if selectors.bug_is_untestable(1976, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/1976')
-        distributor = api.Client(self.cfg).post(
-            urljoin(self.repo['_href'], 'distributors/'),
-            gen_distributor(),
-        ).json()
-        packages_dir = utils.uuid4()
-        utils.publish_repo(self.cfg, self.repo, {
-            'id': distributor['id'],
-            'override_config': {'packages_directory': packages_dir},
-        })
-        primary_xml = get_parse_repodata_primary_xml(self.cfg, distributor)
-        package_hrefs = get_package_hrefs(primary_xml)
-        self.assertGreater(len(package_hrefs), 0)
-        for package_href in package_hrefs:
-            with self.subTest(package_href=package_href):
-                self.assertEqual(os.path.dirname(package_href), packages_dir)
