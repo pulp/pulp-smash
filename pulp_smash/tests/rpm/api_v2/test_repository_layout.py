@@ -1,10 +1,15 @@
 # coding=utf-8
-"""Tests for the ``packages_directory`` distributor option.
+"""Tests for the published repository layout.
 
-One can configure a distributor with a ``packages_directory`` configuration
-option. This option controls whether RPMs are published in the same directory
-as the ``repodata`` directory, or somewhere else. This module tests this
-feature. For more information, see `Pulp issue #1976`_.
+Starting with Pulp 2.12, YUM distributor must publish repositories using the
+layout where the packages are published to into ``Packages/<first_letter>``
+where ``<first_letter>`` is the first letter of a given RPM package. For
+example, the ``bear.rpm`` package will be published into
+``Packages/b/bear.rpm``. For more information, see `Pulp issue #1976`_.
+
+Old versions of Pulp uses the old layout where all repository's packages were
+published on the root of the repository directory not inside the
+``Packages/<first_letter>`` subdirectory.
 
 .. _Pulp issue #1976: https://pulp.plan.io/issues/1976
 """
@@ -95,24 +100,10 @@ def get_file_hrefs(repomd_xml):
     return tuple((location.get('href') for location in locations))
 
 
-class PackagesDirectoryTestCase(utils.BaseAPITestCase):
-    """Test the distributor ``packages_directory`` option."""
+class RepositoryLayoutTestCase(utils.BaseAPITestCase):
+    """Test the YUM distributor publishing repository layout."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Create a repository with a feed and sync it."""
-        super(PackagesDirectoryTestCase, cls).setUpClass()
-        if check_issue_2277(cls.cfg):
-            raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
-        client = api.Client(cls.cfg, api.json_handler)
-        body = gen_repo()
-        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
-        cls.repo = client.post(REPOSITORY_PATH, body)
-        cls.repo = client.get(cls.repo['_href'], params={'details': True})
-        cls.resources.add(cls.repo['_href'])
-        utils.sync_repo(cls.cfg, cls.repo['_href'])
-
-    def test_default_behaviour(self):
+    def test_all(self):
         """Do not use the ``packages_directory`` option.
 
         Create a distributor with default options, and use it to publish the
@@ -121,11 +112,20 @@ class PackagesDirectoryTestCase(utils.BaseAPITestCase):
         ``repodata`` directory, and it may be changed by setting the
         distributor's ``relative_url``.)
         """
-        distributor = api.Client(self.cfg).post(
-            urljoin(self.repo['_href'], 'distributors/'),
+        if check_issue_2277(self.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
+        utils.sync_repo(self.cfg, repo['_href'])
+        distributor = client.post(
+            urljoin(repo['_href'], 'distributors/'),
             gen_distributor(),
-        ).json()
-        utils.publish_repo(self.cfg, self.repo, {'id': distributor['id']})
+        )
+        utils.publish_repo(self.cfg, repo, {'id': distributor['id']})
         primary_xml = get_parse_repodata_primary_xml(self.cfg, distributor)
         package_hrefs = get_package_hrefs(primary_xml)
         self.assertGreater(len(package_hrefs), 0)
