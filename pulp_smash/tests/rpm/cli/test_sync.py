@@ -4,52 +4,43 @@ import random
 import unittest
 
 from pulp_smash import cli, config, selectors, utils
-from pulp_smash.constants import RPM_SIGNED_FEED_URL
+from pulp_smash.constants import RPM_UNSIGNED_FEED_URL
 from pulp_smash.tests.rpm.utils import set_up_module
 from pulp_smash.utils import is_root
 
 
 def setUpModule():  # pylint:disable=invalid-name
-    """Execute ``pulp-admin login`` on the target Pulp system."""
+    """Execute ``pulp-admin login`` and reset Pulp.
+
+    For :class:`RemovedContentTestCase` to function correctly, we require that
+    all of the content units on Pulp's filesystem belong to the repository
+    created by that test case. Resetting Pulp guarantees that this is so.
+    Ideally, all test cases would clean up after themselves so that no resets
+    are necessary.
+    """
+    cfg = config.get_config()
     set_up_module()
-    utils.pulp_admin_login(config.get_config())
+    utils.reset_pulp(cfg)
+    utils.pulp_admin_login(cfg)
 
 
-def get_rpm_names(server_config, repo_id):
-    """Get a list of names of all packages in a repository.
+class _BaseTestCase(unittest.TestCase):
+    """Delete all orphans after each test completes.
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
-    :param repo_id: A RPM repository ID.
-    :returns: The names of all modules in a repository, as an ``list``.
+    This requirement is so common that it should perhaps be moved to a
+    ``BaseCLITestCase``.
     """
-    keyword = 'Name:'
-    completed_proc = cli.Client(server_config).run(
-        'pulp-admin rpm repo content rpm --repo-id {}'.format(repo_id).split()
-    )
-    return [
-        line.split(keyword)[1].strip()
-        for line in completed_proc.stdout.splitlines() if keyword in line
-    ]
+
+    @classmethod
+    def tearDownClass(cls):
+        """Delete orphan content units."""
+        cli.Client(config.get_config()).run((
+            'pulp-admin', 'orphan', 'remove', '--all'
+        ))
 
 
-def sync_repo(server_config, repo_id, force_sync=False):
-    """Sync an RPM repository.
-
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
-    :param repo_id: A RPM repository ID.
-    :param repo_id: A boolean flag to denote if is a force-full sync.
-    :returns: A :class:`pulp_smash.cli.CompletedProcess`.
-    """
-    return cli.Client(server_config).run(
-        'pulp-admin rpm repo sync run --repo-id {0}{1}'
-        .format(repo_id, ' --force-full' if force_sync else '').split()
-    )
-
-
-class RemovedContentTestCase(unittest.TestCase):
-    """Test whether Pulp can sync content into a repo after it's been removed.
+class RemovedContentTestCase(_BaseTestCase):
+    """Test whether Pulp can re-sync content into a repository.
 
     This test case targets `Pulp #1775`_ and the corresponding Pulp Smash
     issue, `Pulp Smash #243`_.
@@ -62,46 +53,39 @@ class RemovedContentTestCase(unittest.TestCase):
     .. _Pulp Smash #243: https://github.com/PulpQE/pulp-smash/issues/243
     """
 
-    @classmethod
-    def setUpClass(cls):
-        """Create and sync a repository. Select a content unit from it."""
-        cls.cfg = config.get_config()
-        cls.repo_id = utils.uuid4()
-        cli.Client(cls.cfg).run(
-            'pulp-admin rpm repo create --repo-id {} --feed {}'
-            .format(cls.repo_id, RPM_SIGNED_FEED_URL).split()
-        )
-        sync_repo(cls.cfg, cls.repo_id)
-        cls.rpm_name = random.choice(get_rpm_names(cls.cfg, cls.repo_id))
+    def test_all(self):
+        """Test whether Pulp can re-sync content into a repository."""
+        cfg = config.get_config()
+        repo_id = utils.uuid4()
+        client = cli.Client(cfg)
+        client.run((
+            'pulp-admin', 'rpm', 'repo', 'create', '--repo-id', repo_id,
+            '--feed', RPM_UNSIGNED_FEED_URL,
+        ))
+        self.addCleanup(client.run, (
+            'pulp-admin', 'rpm', 'repo', 'delete', '--repo-id', repo_id,
+        ))
+        sync_repo(cfg, repo_id)
+        unit_name = random.choice(get_rpm_names(cfg, repo_id))
 
-    def test_01_remove_rpm(self):
-        """Remove the selected RPM from the repository. Verify it's absent."""
-        cli.Client(self.cfg).run(
-            'pulp-admin rpm repo remove rpm --repo-id {} --str-eq name={}'
-            .format(self.repo_id, self.rpm_name).split()
-        )
-        self.assertNotIn(self.rpm_name, get_rpm_names(self.cfg, self.repo_id))
+        # remove a content unit from the repository
+        client.run((
+            'pulp-admin', 'rpm', 'repo', 'remove', 'rpm', '--repo-id', repo_id,
+            '--str-eq', 'name={}'.format(unit_name),
+        ))
+        with self.subTest(comment='verify the rpm has been removed'):
+            self.assertNotIn(unit_name, get_rpm_names(cfg, repo_id))
 
-    def test_02_add_rpm(self):
-        """Sync the repository. Verify the selected RPM is present."""
-        completed_proc = sync_repo(self.cfg, self.repo_id)
-        with self.subTest():
-            self.assertIn(self.rpm_name, get_rpm_names(self.cfg, self.repo_id))
-        phrase = 'Invalid properties:'
+        # add a content unit to the repository
+        proc = sync_repo(cfg, repo_id)
         for stream in ('stdout', 'stderr'):
             with self.subTest(stream=stream):
-                self.assertNotIn(phrase, getattr(completed_proc, stream))
-
-    @classmethod
-    def tearDownClass(cls):
-        """Delete the repository and clean up orphans."""
-        cli.Client(cls.cfg).run(
-            'pulp-admin rpm repo delete --repo-id {}'
-            .format(cls.repo_id).split()
-        )
+                self.assertNotIn('Invalid properties:', getattr(proc, stream))
+        with self.subTest(comment='verify the rpm has been restored'):
+            self.assertIn(unit_name, get_rpm_names(cfg, repo_id))
 
 
-class ForceSyncTestCase(unittest.TestCase):
+class ForceSyncTestCase(_BaseTestCase):
     """Test whether one can force Pulp to perform a full sync.
 
     This test case targets `Pulp #1982`_ and `Pulp Smash #353`_. The test
@@ -118,14 +102,7 @@ class ForceSyncTestCase(unittest.TestCase):
     .. _Pulp Smash #353: https://github.com/PulpQE/pulp-smash/issues/353
     """
 
-    @staticmethod
-    def _list_rpms(cfg):
-        """Return a list of RPMs in ``/var/lib/pulp/content/units/rpm/``."""
-        return cli.Client(cfg).run(
-            'find /var/lib/pulp/content/units/rpm/ -name *.rpm'.split()
-        ).stdout.splitlines()
-
-    def test_force_sync(self):
+    def test_all(self):
         """Test whether one can force Pulp to perform a full sync."""
         cfg = config.get_config()
         if selectors.bug_is_untestable(1982, cfg.version):
@@ -134,31 +111,70 @@ class ForceSyncTestCase(unittest.TestCase):
         # Create and sync a repository.
         client = cli.Client(cfg)
         repo_id = utils.uuid4()
-        client.run(
-            'pulp-admin rpm repo create --repo-id {} --feed {}'
-            .format(repo_id, RPM_SIGNED_FEED_URL).split()
-        )
-        self.addCleanup(
-            client.run,
-            'pulp-admin rpm repo delete --repo-id {}'.format(repo_id).split()
-        )
+        client.run((
+            'pulp-admin', 'rpm', 'repo', 'create', '--repo-id', repo_id,
+            '--feed', RPM_UNSIGNED_FEED_URL,
+        ))
+        self.addCleanup(client.run, (
+            'pulp-admin', 'rpm', 'repo', 'delete', '--repo-id', repo_id,
+        ))
         sync_repo(cfg, repo_id)
 
-        # Delete a random RPM
+        # Delete a random RPM from the filesystem.
         rpms = self._list_rpms(cfg)
-        client.run('{} rm -rf {}'.format(
-            'sudo' if not is_root(cfg) else '',
-            random.choice(rpms),
-        ).split())
-        with self.subTest(comment='Verify the RPM was removed.'):
-            self.assertEqual(len(self._list_rpms(cfg)), len(rpms) - 1)
+        rpm = random.choice(rpms)
+        cmd = []
+        if not is_root(cfg):
+            cmd.append('sudo')
+        cmd.extend(('rm', '-rf', rpm))
+        client.run(cmd)
+        with self.subTest(comment='verify the rpm has been removed'):
+            self.assertEqual(len(self._list_rpms(cfg)), len(rpms) - 1, rpm)
 
-        # Sync the repository *without* force_sync.
+        # Sync the repository without --force-full.
         sync_repo(cfg, repo_id)
-        with self.subTest(comment='Verify the RPM has not been restored.'):
-            self.assertEqual(len(self._list_rpms(cfg)), len(rpms) - 1)
+        with self.subTest(comment='verify the rpm has not yet been restored'):
+            self.assertEqual(len(self._list_rpms(cfg)), len(rpms) - 1, rpm)
 
-        # Sync the repository again
+        # Sync the repository with --force-full.
         sync_repo(cfg, repo_id, force_sync=True)
-        with self.subTest(comment='Verify the RPM has been restored.'):
-            self.assertEqual(len(self._list_rpms(cfg)), len(rpms))
+        with self.subTest(comment='verify the rpm has been restored'):
+            self.assertEqual(len(self._list_rpms(cfg)), len(rpms), rpm)
+
+    @staticmethod
+    def _list_rpms(cfg):
+        """Return a list of RPMs in ``/var/lib/pulp/content/units/rpm/``."""
+        return cli.Client(cfg).run((
+            'find', '/var/lib/pulp/content/units/rpm/', '-name', '*.rpm'
+        )).stdout.splitlines()
+
+
+def get_rpm_names(cfg, repo_id):
+    """Get a list of names of all packages in a repository.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp server.
+    :param repo_id: A RPM repository ID.
+    :returns: The names of all modules in a repository, as an ``list``.
+    """
+    keyword = 'Name:'
+    proc = cli.Client(cfg).run((
+        'pulp-admin', 'rpm', 'repo', 'content', 'rpm', '--repo-id', repo_id
+    ))
+    return [
+        line.split(keyword)[1].strip() for line in proc.stdout.splitlines()
+        if keyword in line
+    ]
+
+
+def sync_repo(cfg, repo_id, force_sync=False):
+    """Sync an RPM repository.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp server.
+    :param repo_id: A RPM repository ID.
+    :param repo_id: A boolean flag to denote if is a force-full sync.
+    :returns: A :class:`pulp_smash.cli.CompletedProcess`.
+    """
+    cmd = ['pulp-admin', 'rpm', 'repo', 'sync', 'run', '--repo-id', repo_id]
+    if force_sync:
+        cmd.append('--force-full')
+    return cli.Client(cfg).run(cmd)
