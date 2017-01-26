@@ -363,7 +363,7 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
 
         Verify that it is exactly equal to the one uploaded earlier.
         """
-        repo_rpm = get_unit(self.cfg, repo, RPM).content
+        repo_rpm = get_unit(self.cfg, repo['distributors'][0], RPM).content
         self.assertEqual(self.rpm, repo_rpm)
 
 

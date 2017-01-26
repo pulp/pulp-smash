@@ -14,8 +14,6 @@ import random
 import unittest
 from urllib.parse import urljoin
 
-from requests.exceptions import HTTPError
-
 from pulp_smash import api, config, utils
 from pulp_smash.constants import REPOSITORY_PATH, RPM_SIGNED_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import (
@@ -62,7 +60,7 @@ class RepublishTestCase(unittest.TestCase):
         # Pick a random content unit and verify it's accessible.
         unit = random.choice(find_units(cfg, repo, {'type_ids': ('rpm',)}))
         filename = unit['metadata']['filename']
-        get_unit(cfg, repo, filename)
+        get_unit(cfg, repo['distributors'][0], filename)
 
         # Remove the content unit and verify it's inaccessible.
         client.post(
@@ -70,5 +68,5 @@ class RepublishTestCase(unittest.TestCase):
             {'criteria': {'filters': {'unit': {'filename': filename}}}},
         )
         utils.publish_repo(cfg, repo)
-        with self.assertRaises(HTTPError):
-            get_unit(cfg, repo, filename)
+        with self.assertRaises(KeyError):
+            get_unit(cfg, repo['distributors'][0], filename)

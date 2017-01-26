@@ -95,7 +95,7 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         cls.tasks = tuple(api.poll_spawned_tasks(cls.cfg, report))
 
         # Download an RPM.
-        cls.rpm = get_unit(cls.cfg, cls.repo, RPM)
+        cls.rpm = get_unit(cls.cfg, cls.repo['distributors'][0], RPM)
 
     def test_repo_local_units(self):
         """Assert that all content is downloaded for the repository."""
@@ -165,8 +165,8 @@ class OnDemandTestCase(utils.BaseAPITestCase):
         cls.repo = client.get(repo['_href'], params={'details': True}).json()
 
         # Download the same RPM twice.
-        cls.rpm = get_unit(cls.cfg, cls.repo, RPM)
-        cls.same_rpm = get_unit(cls.cfg, cls.repo, RPM)
+        cls.rpm = get_unit(cls.cfg, cls.repo['distributors'][0], RPM)
+        cls.same_rpm = get_unit(cls.cfg, cls.repo['distributors'][0], RPM)
 
     def test_local_units(self):
         """Assert no content units were downloaded besides metadata."""
@@ -391,7 +391,7 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
     def _assert_background_immediate(self, repo):
         """Common assertions for background and immediate download policies."""
         # Download an RPM.
-        rpm = get_unit(self.cfg, repo, RPM)
+        rpm = get_unit(self.cfg, repo['distributors'][0], RPM)
 
         # Assert that all content is downloaded for the repository.
         self.assertEqual(
@@ -455,8 +455,8 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
         self.assertEqual(repo['total_repository_units'], total_units)
 
         # Download the same RPM twice.
-        rpm = get_unit(self.cfg, repo, RPM)
-        same_rpm = get_unit(self.cfg, repo, RPM)
+        rpm = get_unit(self.cfg, repo['distributors'][0], RPM)
+        same_rpm = get_unit(self.cfg, repo['distributors'][0], RPM)
 
         # Assert the initial request received a 302 Redirect.
         self.assertTrue(rpm.history[0].is_redirect)

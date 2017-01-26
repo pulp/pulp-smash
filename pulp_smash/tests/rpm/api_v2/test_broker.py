@@ -114,7 +114,7 @@ class BrokerTestCase(unittest.TestCase):
         repo = client.get(repo['_href'], params={'details': True})
         utils.sync_repo(self.cfg, repo['_href'])
         utils.publish_repo(self.cfg, repo)
-        pulp_rpm = get_unit(self.cfg, repo, RPM).content
+        pulp_rpm = get_unit(self.cfg, repo['distributors'][0], RPM).content
 
         # Does this RPM match the original RPM?
         rpm = utils.http_get(RPM_SIGNED_URL)

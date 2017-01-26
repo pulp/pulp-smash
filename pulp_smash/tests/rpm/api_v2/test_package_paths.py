@@ -84,7 +84,9 @@ class ReuseContentTestCase(unittest.TestCase):
         rpms = []
         for repo in repos:
             with self.subTest(repo=repo):
-                rpms.append(get_unit(cfg, repo, RPM).content)
+                rpms.append(
+                    get_unit(cfg, repo['distributors'][0], RPM).content
+                )
         self.assertEqual(len(rpms), len(repos))
         self.assertEqual(rpms[0], rpms[1], repos)
 

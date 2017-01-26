@@ -132,7 +132,7 @@ class GoodMirrorlistTestCase(UtilsMixin, unittest.TestCase):
         repo = self.create_repo(cfg, RPM_MIRRORLIST_GOOD)
         utils.sync_repo(cfg, repo['_href'])
         utils.publish_repo(cfg, repo)
-        actual_rpm = get_unit(cfg, repo, RPM).content
+        actual_rpm = get_unit(cfg, repo['distributors'][0], RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
         self.assertEqual(actual_rpm, target_rpm)
 
@@ -148,7 +148,7 @@ class GoodRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
         repo = self.create_repo(cfg, RPM_MIRRORLIST_GOOD, _gen_rel_url())
         utils.sync_repo(cfg, repo['_href'])
         utils.publish_repo(cfg, repo)
-        actual_rpm = get_unit(cfg, repo, RPM).content
+        actual_rpm = get_unit(cfg, repo['distributors'][0], RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
         self.assertEqual(actual_rpm, target_rpm)
 
@@ -170,7 +170,7 @@ class MixedMirrorlistTestCase(UtilsMixin, unittest.TestCase):
         repo = self.create_repo(cfg, RPM_MIRRORLIST_MIXED)
         utils.sync_repo(cfg, repo['_href'])
         utils.publish_repo(cfg, repo)
-        actual_rpm = get_unit(cfg, repo, RPM).content
+        actual_rpm = get_unit(cfg, repo['distributors'][0], RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
         self.assertEqual(actual_rpm, target_rpm)
 
@@ -186,7 +186,7 @@ class MixedRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
         repo = self.create_repo(cfg, RPM_MIRRORLIST_MIXED, _gen_rel_url())
         utils.sync_repo(cfg, repo['_href'])
         utils.publish_repo(cfg, repo)
-        actual_rpm = get_unit(cfg, repo, RPM).content
+        actual_rpm = get_unit(cfg, repo['distributors'][0], RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
         self.assertEqual(actual_rpm, target_rpm)
 

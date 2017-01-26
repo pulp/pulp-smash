@@ -2,10 +2,9 @@
 """Utility functions for RPM API tests."""
 import gzip
 import io
+from os.path import basename
 from urllib.parse import urljoin
 from xml.etree import ElementTree
-
-from packaging.version import Version
 
 from pulp_smash import api, cli, selectors, utils
 from pulp_smash.constants import RPM_NAMESPACES
@@ -186,34 +185,45 @@ class DisableSELinuxMixin(object):  # pylint:disable=too-few-public-methods
         self.addCleanup(client.run, cmd)
 
 
-def get_unit(cfg, repo, unit_name, distributor=None):
+def get_unit(cfg, distributor, unit_name, primary_xml=None):
     """Download a file from a published repository.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about the Pulp host.
-    :param repo: A dict of detailed information about the repository.
-    :param unit_name: The name of the content unit in the published repository.
-    :param distributor: The distributor used when the content unit was
-        published. If not passed, the distributor in the ``repo`` dict is used.
-    :raises: ``ValueError`` when ``distributor`` is not passed, and ``repo``
-        does not have exactly one distributor.
-    :returns: The raw response. The fetched unit is available as
-        ``response.content``.
+    A typical invocation is as follows:
+
+        >>> foo_rpm = get_unit(cfg, repo['distributors'][0], 'foo.rpm')
+
+    If multiple units are being fetched, efficiency can be improved by passing
+    in a parsed ``primary.xml`` file:
+
+        >>> distributor = repo['distributors'][0]
+        >>> primary_xml = get_repodata(cfg, distributor, 'primary')
+        >>> foo_rpm = get_unit(cfg, distributor, 'foo.rpm', primary_xml)
+        >>> bar_rpm = get_unit(cfg, distributor, 'bar.rpm', primary_xml)
+
+    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param distributor: A dict of information about a repository distributor.
+    :param unit_name: The name of a content unit to be fetched. For example:
+        "bear-4.1-1.noarch.rpm".
+    :param primary_xml: A ``primary.xml`` file as an ``ElementTree``. If not
+        given, :func:`get_repodata` is consulted.
+    :returns: A raw response. The unit is available as ``response.content``.
     """
-    if distributor is None:
-        if len(repo['distributors']) != 1:
-            raise ValueError(
-                'No distributor was passed, and the given repository does not '
-                'have exactly one distributor. Repository distributors: {}'
-                .format(repo['distributors'])
-            )
-        distributor = repo['distributors'][0]
+    if primary_xml is None:
+        primary_xml = get_repodata(cfg, distributor, 'primary')
+
+    # Create a dict in the form {foo.rpm: Packages/f/foo.rpm}
+    xpath = '{{{}}}package'.format(RPM_NAMESPACES['metadata/common'])
+    packages = primary_xml.findall(xpath)
+    xpath = '{{{}}}location'.format(RPM_NAMESPACES['metadata/common'])
+    hrefs = [package.find(xpath).get('href') for package in packages]
+    href_map = {basename(href): href for href in hrefs}
+    href = href_map[unit_name]
+
+    # Fetch the unit.
     path = urljoin('/pulp/repos/', distributor['config']['relative_url'])
     if not path.endswith('/'):
         path += '/'
-    if cfg.version >= Version('2.12'):
-        path = urljoin(path, 'Packages/')
-        path = urljoin(path, unit_name[0] + '/')  # first letter
-    path = urljoin(path, unit_name)
+    path = urljoin(path, href)
     return api.Client(cfg).get(path)
 
 
