@@ -29,7 +29,7 @@ make package-clean package
 
 # Sanity check Pulp Smash packages on Python 3
 venv="$(mktemp --directory)"
-virtualenv -p "python3" "${venv}"
+python3 -m venv "${venv}"
 set +u
 source "${venv}/bin/activate"
 set -u
@@ -38,7 +38,9 @@ for dist in dist/*; do
     python -m pulp_smash 1>/dev/null
     pip uninstall --quiet --yes pulp_smash
 done
+set +u
 deactivate
+set -u
 rm -rf "${venv}"
 
 # Get the changes from last release and commit
