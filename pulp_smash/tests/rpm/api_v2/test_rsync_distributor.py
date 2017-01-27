@@ -176,16 +176,18 @@ def _set_pulp_manage_rsync(cfg, boolean):
         ``pulp_manage_rsync`` SELinux policy should be turned on or off.
     :rtype: pulp_smash.cli.CompletedProcess
     """
-    policy = 'pulp_manage_rsync'
+    sudo = () if utils.is_root(cfg) else ('sudo',)
     client = cli.Client(cfg)
     try:
-        client.run(('which', 'semanage'))
+        # semanage is installed at /sbin/semanage on some distros, and requires
+        # root privileges to discover.
+        client.run(sudo + ('which', 'semanage'))
     except exceptions.CalledProcessError:
         return
-    cmd = [] if utils.is_root(cfg) else ['sudo']
-    cmd.extend(['semanage', 'boolean', '--modify'])
-    cmd.append('--on' if boolean else '--off')
-    cmd.append(policy)
+    cmd = sudo
+    cmd += ('semanage', 'boolean', '--modify')
+    cmd += ('--on',) if boolean else ('--off',)
+    cmd += ('pulp_manage_rsync',)
     return client.run(cmd)
 
 
