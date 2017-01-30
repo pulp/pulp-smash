@@ -44,6 +44,29 @@ class CrudWithFeedTestCase(CrudTestCase):
         return body
 
 
+class FeedURLUnquoteTestCase(utils.BaseAPITestCase):
+    """Check that feed URLs are unquoted.
+
+    See https://pulp.plan.io/issues/2520.
+    """
+
+    def test_all(self):
+        """Ensure Pulp unquote feed URLs."""
+        if self.cfg.version < version.Version('2.11'):
+            self.skipTest('Feed URL unquoting is available on Pulp 2.11+')
+        client = api.Client(self.cfg, api.json_handler)
+        body = CrudTestCase.create_body()
+        body['importer_config'] = {
+            'feed': 'http://usern%40me:password@example.com/repo',
+        }
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
+        importer_config = repo['importers'][0]['config']
+        self.assertEqual(importer_config['basic_auth_username'], 'usern@me')
+        self.assertEqual(importer_config['feed'], 'http://example.com/repo')
+
+
 class RepositoryGroupCrudTestCase(utils.BaseAPITestCase):
     """CRUD a minimal RPM repositories' groups.
 
