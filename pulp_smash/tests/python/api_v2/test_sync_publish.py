@@ -1,36 +1,80 @@
 # coding=utf-8
 """Test the sync and publish API endpoints for Python repositories."""
+import inspect
 import unittest
-from urllib.parse import urljoin
-
-from packaging.version import Version
+from os.path import basename
+from urllib.parse import urljoin, urlparse
 
 from pulp_smash import api, config, constants, selectors, utils
-from pulp_smash.tests.python.api_v2.utils import gen_repo
+from pulp_smash.tests.python.api_v2.utils import (
+    gen_distributor,
+    gen_repo,
+    upload_import_unit,
+)
 from pulp_smash.tests.python.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
-class UtilsMixin(object):
-    """Methods for use by the test cases in this module.
+class BaseTestCase(unittest.TestCase):
+    """A base class for the test cases in this module.
 
-    Classes inheriting from this mixin must also inherit from
-    ``unittest.TestCase``.
+    Test cases derived from this class (should) do the following:
+
+    1. Create and populate a Python repository. The procedure for populating
+       the repository varies in each child class.
+    2. Create a second Python repository, and sync it from the first.
+
+    In each step, the ``verify_*`` methods are used if appropriate.
     """
 
-    def create_repo(self, cfg, importer_config):
-        """Create a Python repository with the given importer config.
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables."""
+        cls.cfg = config.get_config()
+        cls.repos = []
+        if inspect.getmro(cls)[0] == BaseTestCase:
+            raise unittest.SkipTest('Abstract base class.')
 
-        Schedule it for deletion. Return its href.
+    @classmethod
+    def tearDownClass(cls):
+        """Delete fixtures and orphans."""
+        client = api.Client(cls.cfg)
+        for repo in cls.repos:
+            client.delete(repo['_href'])
+        client.delete(constants.ORPHANS_PATH)
+
+    def test_01_first_repo(self):
+        """Create, populate and publish a Python repository.
+
+        Subclasses must override this method.
         """
-        client = api.Client(cfg, api.json_handler)
+        raise NotImplementedError
+
+    def test_02_second_repo(self):
+        """Create a second Python repository, and sync it from the first.
+
+        See:
+
+        * `Pulp #140 <https://pulp.plan.io/issues/140>`_
+        * `Pulp Smash #493 <https://github.com/PulpQE/pulp-smash/issues/493>`_
+        """
+        if selectors.bug_is_untestable(140, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/140')
+        client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
-        body['importer_config'] = importer_config
-        repo_href = client.post(constants.REPOSITORY_PATH, body)['_href']
-        self.addCleanup(client.delete, repo_href)
-        return repo_href
+        body['importer_config'] = {
+            'feed': get_repo_path(self.cfg, self.repos[0]),
+            'package_names': 'shelf-reader',
+        }
+        repo = client.post(constants.REPOSITORY_PATH, body)
+        self.repos.append(repo)
+        call_report = utils.sync_repo(self.cfg, repo['_href'])
+        with self.subTest(comment='verify the sync succeeded'):
+            self.verify_sync(self.cfg, call_report)
+        with self.subTest(comment='verify content units are present'):
+            self.verify_package_types(self.cfg, repo)
 
     def verify_sync(self, cfg, call_report):
-        """Verify the call to sync the Python repository succeeded.
+        """Verify the call to sync a Python repository succeeded.
 
         Assert that:
 
@@ -46,80 +90,94 @@ class UtilsMixin(object):
                     error_details = step['error_details']
                     self.assertEqual(error_details, [], task)
 
-    def verify_package_types(self, cfg, repo_href):
+    def verify_package_types(self, cfg, repo):
         """Assert sdist and bdist_wheel shelf-reader packages were synced.
 
         This test targets `Pulp #1883 <https://pulp.plan.io/issues/1883>`_.
         """
-        if selectors.bug_is_untestable(1883, cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/1883')
         units = api.Client(cfg).post(
-            urljoin(repo_href, 'search/units/'),
+            urljoin(repo['_href'], 'search/units/'),
             {'criteria': {}},
         ).json()
         unit_types = {unit['metadata']['packagetype'] for unit in units}
         self.assertEqual(unit_types, {'sdist', 'bdist_wheel'})
 
 
-class PulpToPulpSyncTestCase(UtilsMixin, unittest.TestCase):
-    """Test whether Pulp can sync from a Pulp Python repository.
+class SyncTestCase(BaseTestCase):
+    """Test whether content can be synced into a Python repository."""
 
-    As of pulp_python 2.0, the Python repositories published by Pulp may be
-    consumed by other Pulp systems. pulp_python 2.0 is likely to be included in
-    Pulp 2.11. This test case will do the following when executed:
+    def test_01_first_repo(self):
+        """Create, sync content into and publish a Python repository.
 
-    1. Create a Python repository, and set its feed to a Python repository
-       created by another Pulp system.
-    2. Sync the repository.
+        See:
 
-    For more information, see:
-
-    * `Pulp #1882 <https://pulp.plan.io/issues/1882>`_
-    * `Pulp Smash #416 <https://github.com/PulpQE/pulp-smash/issues/416>`_
-    """
-
-    def test_all(self):
-        """Test whether Pulp can sync from a Pulp Python repository."""
-        cfg = config.get_config()
-        if cfg.version < Version('2.11'):
-            self.skipTest('https://pulp.plan.io/issues/1882')
-        repo_href = self.create_repo(cfg, {
-            'feed': constants.PYTHON_PULP_FEED_URL,
-            'package_names': 'shelf-reader',
-        })
-        call_report = utils.sync_repo(cfg, repo_href)
-        with self.subTest():
-            self.verify_sync(cfg, call_report)
-        with self.subTest():
-            self.verify_package_types(cfg, repo_href)
-
-
-class PypiToPulpSyncTestCase(UtilsMixin, unittest.TestCase):
-    """Test whether Pulp can sync from a PyPI Python repository.
-
-    As of pulp_python 2.0, the Python repositories published by Pulp may be
-    consumed by other Pulp systems. pulp_python 2.0 is likely to be included in
-    Pulp 2.11. This test case will do the following when executed:
-
-    1. Create a Python repository, and set its feed to a Python repository
-       created by another Pulp system.
-    2. Sync the repository.
-
-    For more information, see:
-
-    * `Pulp #1882 <https://pulp.plan.io/issues/1882>`_
-    * `Pulp Smash #416 <https://github.com/PulpQE/pulp-smash/issues/416>`_
-    """
-
-    def test_all(self):
-        """Test whether Pulp can sync from a PyPI Python repository."""
-        cfg = config.get_config()
-        repo_href = self.create_repo(cfg, {
+        * `Pulp #135 <https://pulp.plan.io/issues/135>`_
+        * `Pulp Smash #494 <https://github.com/PulpQE/pulp-smash/issues/494>`_
+        """
+        if selectors.bug_is_untestable(135, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/135')
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config'] = {
             'feed': constants.PYTHON_PYPI_FEED_URL,
             'package_names': 'shelf-reader',
-        })
-        call_report = utils.sync_repo(cfg, repo_href)
-        with self.subTest():
-            self.verify_sync(cfg, call_report)
-        with self.subTest():
-            self.verify_package_types(cfg, repo_href)
+        }
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(constants.REPOSITORY_PATH, body)
+        self.repos.append(repo)
+        call_report = utils.sync_repo(self.cfg, repo['_href'])
+        with self.subTest(comment='verify the sync succeeded'):
+            self.verify_sync(self.cfg, call_report)
+        with self.subTest(comment='verify content units are present'):
+            self.verify_package_types(self.cfg, repo)
+        repo = get_details(self.cfg, repo)
+        utils.publish_repo(self.cfg, repo)
+
+
+class UploadTestCase(BaseTestCase):
+    """Test whether content can be uploaded to a Python repository."""
+
+    def test_01_first_repo(self):
+        """Create, upload content into and publish a Python repository.
+
+        See:
+
+        * `Pulp #136 <https://pulp.plan.io/issues/136>`_
+        * `Pulp #2334 <https://pulp.plan.io/issues/2334>`_
+        * `Pulp Smash #492 <https://github.com/PulpQE/pulp-smash/issues/492>`_
+        """
+        if selectors.bug_is_untestable(136, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/135')
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(constants.REPOSITORY_PATH, body)
+        self.repos.append(repo)
+        for url in constants.PYTHON_EGG_URL, constants.PYTHON_WHEEL_URL:
+            unit = utils.http_get(url)
+            import_params = {
+                'unit_key': {'filename': basename(urlparse(url).path)},
+                'unit_type_id': 'python_package',
+            }
+            upload_import_unit(self.cfg, unit, import_params, repo)
+        with self.subTest(comment='verify content units are present'):
+            self.verify_package_types(self.cfg, repo)
+        repo = get_details(self.cfg, repo)
+        utils.publish_repo(self.cfg, repo)
+
+
+def get_details(cfg, repo):
+    """Return detailed information about a Python repository."""
+    return api.Client(cfg).get(repo['_href'], params={
+        'distributors': True,
+        'importers': True,
+    }).json()
+
+
+def get_repo_path(cfg, repo):
+    """Return the root path to a published Python repository."""
+    path = cfg.base_url
+    path = urljoin(path, '/pulp/python/web/')
+    path = urljoin(path, repo['id'])
+    path += '/'
+    return path

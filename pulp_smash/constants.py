@@ -238,17 +238,22 @@ to Pulp.
     http://projects.puppetlabs.com/projects/module-site/wiki/Server-api
 """
 
-PYTHON_PULP_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'python-pulp/')
-"""The URL to a Pulp Python repository."""
-
-PYTHON_EGG_URL = urljoin(
-    PYTHON_PULP_FEED_URL,
-    'packages/source/s/shelf-reader/shelf-reader-0.1.tar.gz'
-)
-"""The URL to a Python egg at :data:`PYTHON_PULP_FEED_URL`."""
-
 PYTHON_PYPI_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'python-pypi/')
 """The URL to the PyPI Python repository."""
+
+PYTHON_EGG_URL = urljoin(
+    PYTHON_PYPI_FEED_URL,
+    'packages/3a/e3/a6954c4134a899c0006515fbd40208922572947e960b35d0d19fd5a1b3'
+    'd0/shelf-reader-0.1.tar.gz'
+)
+"""The URL to a Python egg at :data:`PYTHON_PYPI_FEED_URL`."""
+
+PYTHON_WHEEL_URL = urljoin(
+    PYTHON_PYPI_FEED_URL,
+    'packages/77/e0/2156a3da94ee16466a5936394caf7e89873a9b46eed72a9912bc90e42d'
+    'bf/shelf_reader-0.1-py2-none-any.whl'
+)
+"""The URL to a Python egg at :data:`PYTHON_PYPI_FEED_URL`."""
 
 REPOSITORY_EXPORT_DISTRIBUTOR = 'export_distributor'
 """A ``distributor_type_id`` to export a repository.
