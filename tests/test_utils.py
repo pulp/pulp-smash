@@ -188,10 +188,10 @@ class UploadImportUnitTestCase(unittest.TestCase):
                 'upload_id': 'bar',
             }
             response = utils.upload_import_unit(
-                mock.Mock(),  # server_config
-                b'my unit',
-                'my unit type id',
-                'http://example.com',  # repo_href
+                mock.Mock(),  # cfg
+                b'my unit',  # unit
+                {},  # import_params
+                {'_href': 'http://example.com'},  # repo
             )
         self.assertIs(response, client.return_value.post.return_value)
 

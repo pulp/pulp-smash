@@ -114,15 +114,20 @@ class UploadPackageTestCase(_BaseTestCase):
         Return the repository's href.
         """
         self.addCleanup(self.client.delete, ORPHANS_PATH)
-        repo_href = self.client.post(REPOSITORY_PATH, gen_repo())['_href']
-        self.addCleanup(self.client.delete, repo_href)
+        repo = self.client.post(REPOSITORY_PATH, gen_repo())
+        self.addCleanup(self.client.delete, repo['_href'])
 
         pkg = utils.http_get(pkg_url)
         pkg_filename = _get_pkg_filename(pkg_url)
         pkg_unit_type = _get_pkg_unit_type(pkg_filename)
-        utils.upload_import_unit(self.cfg, pkg, pkg_unit_type, repo_href)
+        utils.upload_import_unit(
+            self.cfg,
+            pkg,
+            {'unit_type_id': pkg_unit_type},
+            repo,
+        )
 
-        return repo_href
+        return repo['_href']
 
     def test_signed_drpm(self):
         """Import a signed DRPM into Pulp. Verify its signature."""

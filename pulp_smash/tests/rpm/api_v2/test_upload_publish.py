@@ -13,7 +13,6 @@ import unittest
 from urllib.parse import urljoin
 
 from pulp_smash import api, config, selectors, utils
-from pulp_smash.utils import upload_import_unit
 from pulp_smash.constants import (
     DRPM,
     DRPM_UNSIGNED_URL,
@@ -181,7 +180,7 @@ class UploadDrpmTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, gen_repo()).json()
         cls.resources.add(repo['_href'])
         drpm = utils.http_get(DRPM_UNSIGNED_URL)
-        upload_import_unit(cls.cfg, drpm, 'drpm', repo['_href'])
+        utils.upload_import_unit(cls.cfg, drpm, {'unit_type_id': 'drpm'}, repo)
         cls.repo_units = client.post(
             urljoin(repo['_href'], 'search/units/'),
             {'criteria': {}},
@@ -225,7 +224,7 @@ class UploadSrpmTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, gen_repo()).json()
         cls.resources.add(repo['_href'])
         srpm = utils.http_get(SRPM_UNSIGNED_URL)
-        upload_import_unit(cls.cfg, srpm, 'srpm', repo['_href'])
+        utils.upload_import_unit(cls.cfg, srpm, {'unit_type_id': 'srpm'}, repo)
         cls.repo_units = client.post(
             urljoin(repo['_href'], 'search/units/'),
             {'criteria': {}},
@@ -291,7 +290,12 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
         Execute :meth:`verify_repo_search` and :meth:`verify_repo_download`.
         """
         repo = self.repos[0]
-        utils.upload_import_unit(self.cfg, self.rpm, 'rpm', repo['_href'])
+        utils.upload_import_unit(
+            self.cfg,
+            self.rpm,
+            {'unit_type_id': 'rpm'},
+            repo,
+        )
         utils.publish_repo(self.cfg, repo)
         with self.subTest():
             self.verify_repo_search(repo)

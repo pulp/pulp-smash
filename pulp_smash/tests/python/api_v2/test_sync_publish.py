@@ -6,11 +6,7 @@ from os.path import basename
 from urllib.parse import urljoin, urlparse
 
 from pulp_smash import api, config, constants, selectors, utils
-from pulp_smash.tests.python.api_v2.utils import (
-    gen_distributor,
-    gen_repo,
-    upload_import_unit,
-)
+from pulp_smash.tests.python.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.python.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -159,7 +155,7 @@ class UploadTestCase(BaseTestCase):
                 'unit_key': {'filename': basename(urlparse(url).path)},
                 'unit_type_id': 'python_package',
             }
-            upload_import_unit(self.cfg, unit, import_params, repo)
+            utils.upload_import_unit(self.cfg, unit, import_params, repo)
         with self.subTest(comment='verify content units are present'):
             self.verify_package_types(self.cfg, repo)
         repo = get_details(self.cfg, repo)

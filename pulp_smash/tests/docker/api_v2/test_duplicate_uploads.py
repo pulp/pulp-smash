@@ -30,8 +30,7 @@ class DuplicateUploadsTestCase(
         """Create a Docker repository."""
         super(DuplicateUploadsTestCase, cls).setUpClass()
         unit = utils.http_get(DOCKER_IMAGE_URL)
-        unit_type_id = 'docker_image'
-        client = api.Client(cls.cfg, api.json_handler)
-        repo_href = client.post(REPOSITORY_PATH, gen_repo())['_href']
-        cls.resources.add(repo_href)
-        cls.upload_import_unit_args = (cls.cfg, unit, unit_type_id, repo_href)
+        import_params = {'unit_type_id': 'docker_image'}
+        repo = api.Client(cls.cfg).post(REPOSITORY_PATH, gen_repo()).json()
+        cls.upload_import_unit_args = (cls.cfg, unit, import_params, repo)
+        cls.resources.add(repo['_href'])

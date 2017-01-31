@@ -107,7 +107,7 @@ class RemoveUnitsTestCase(unittest.TestCase):
         time.sleep(1)  # ensure last_unit_removed increments
         unit = random.choice(_get_units_by_type(self.initial_units, type_id))
         self.removed_units.append(unit)
-        _remove_unit(self.cfg, self.repo['_href'], unit)
+        _remove_unit(self.cfg, self.repo, unit)
         lur_after = self.get_repo_last_unit_removed()
         if len(self.removed_units) <= 1:
             self.assertIsNone(lur_before)
@@ -148,20 +148,25 @@ class RepublishTestCase(utils.BaseAPITestCase):
         client = api.Client(cls.cfg)
         body = gen_repo()
         body['distributors'] = [gen_distributor()]
-        cls.repo_href = client.post(REPOSITORY_PATH, body).json()['_href']
+        cls.repo = client.post(REPOSITORY_PATH, body).json()
 
     @classmethod
     def tearDownClass(cls):
         """Remove the created repository and any orphans."""
         client = api.Client(cls.cfg)
-        client.delete(cls.repo_href)
+        client.delete(cls.repo['_href'])
         client.delete(ORPHANS_PATH)
 
     def test_01_add_unit(self):
         """Add a content unit to the repository. Publish the repository."""
         repo_before = self.get_repo()
         rpm = utils.http_get(RPM_UNSIGNED_URL)
-        utils.upload_import_unit(self.cfg, rpm, 'rpm', self.repo_href)
+        utils.upload_import_unit(
+            self.cfg,
+            rpm,
+            {'unit_type_id': 'rpm'},
+            self.repo,
+        )
         utils.publish_repo(self.cfg, repo_before)
         repo_after = self.get_repo()
         with self.subTest(comment='last_unit_added'):
@@ -184,20 +189,16 @@ class RepublishTestCase(utils.BaseAPITestCase):
 
     def test_02_find_unit(self):
         """Search for the content unit. Assert it is available."""
-        units = find_units(
-            self.cfg,
-            repo={'_href': self.repo_href},
-            criteria={'type_ids': ('rpm',)}
-        )
+        units = find_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
         self.assertEqual(len(units), 1, units)
         self.assertEqual(units[0]['metadata']['filename'], RPM)
 
     def test_03_unassociate_unit(self):
         """Unassociate the unit from the repository. Publish the repository."""
         repo_before = self.get_repo()
-        units = find_units(self.cfg, {'_href': self.repo_href})
+        units = find_units(self.cfg, self.repo)
         self.assertEqual(len(units), 1, units)
-        _remove_unit(self.cfg, self.repo_href, units[0])
+        _remove_unit(self.cfg, self.repo, units[0])
         time.sleep(1)  # ensure last_publish increments
         utils.publish_repo(self.cfg, repo_before)
         repo_after = self.get_repo()
@@ -219,11 +220,7 @@ class RepublishTestCase(utils.BaseAPITestCase):
 
     def test_04_find_unit(self):
         """Search for the content unit. Assert it isn't available."""
-        units = find_units(
-            self.cfg,
-            repo={'_href': self.repo_href},
-            criteria={'type_ids': ('rpm',)}
-        )
+        units = find_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
         self.assertEqual(len(units), 0, units)
 
     def get_repo(self):
@@ -231,7 +228,7 @@ class RepublishTestCase(utils.BaseAPITestCase):
         return (
             api
             .Client(self.cfg)
-            .get(self.repo_href, params={'details': True})
+            .get(self.repo['_href'], params={'details': True})
             .json())
 
 
@@ -255,12 +252,12 @@ def _get_units_by_type(units, type_id):
     return [unit for unit in units if unit['unit_type_id'] == type_id]
 
 
-def _remove_unit(cfg, repo_href, unit):
-    """Remove unit ``unit`` from the repository at ``repo_href``.
+def _remove_unit(cfg, repo, unit):
+    """Remove unit ``unit`` from repository ``repo``.
 
     Return the JSON-decoded response body.
     """
-    path = urljoin(repo_href, 'actions/unassociate/')
+    path = urljoin(repo['_href'], 'actions/unassociate/')
     key, value = _get_unit_id(unit)
     body = {'criteria': {
         'filters': {'unit': {key: value}},
@@ -300,7 +297,7 @@ class SelectiveAssociateTestCase(utils.BaseAPITestCase):
         to_remove = random.sample(
             rpm_units, random.randrange(int(RPM_UNSIGNED_FEED_COUNT / 4)))
         for unit in to_remove:
-            _remove_unit(self.cfg, repo['_href'], unit)
+            _remove_unit(self.cfg, repo, unit)
         report = client.post(urljoin(repo['_href'], 'actions/sync/'))
         tasks = tuple(api.poll_spawned_tasks(self.cfg, report))
         self.assertEqual(len(tasks), 1, tasks)

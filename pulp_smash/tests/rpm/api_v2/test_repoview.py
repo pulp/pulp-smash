@@ -45,7 +45,7 @@ class RepoviewTestCase(unittest.TestCase):
         repo = client.post(constants.REPOSITORY_PATH, body).json()
         self.addCleanup(client.delete, repo['_href'])
         rpm = utils.http_get(constants.RPM_UNSIGNED_URL)
-        utils.upload_import_unit(cfg, rpm, 'rpm', repo['_href'])
+        utils.upload_import_unit(cfg, rpm, {'unit_type_id': 'rpm'}, repo)
 
         # Get info about the repo distributor
         repo = client.get(repo['_href'], params={'details': True}).json()

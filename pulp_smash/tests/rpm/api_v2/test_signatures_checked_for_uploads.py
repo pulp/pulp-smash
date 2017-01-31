@@ -105,11 +105,11 @@ def tearDownModule():  # pylint:disable=invalid-name
 def _create_repository(cfg, importer_config):
     """Create an RPM repository with the given importer configuration.
 
-    Return the repository's href.
+    Return a dict of information about the repository.
     """
     body = gen_repo()
     body['importer_config'] = importer_config
-    return api.Client(cfg).post(REPOSITORY_PATH, body).json()['_href']
+    return api.Client(cfg).post(REPOSITORY_PATH, body).json()
 
 
 # NOTE: We could inherit from unittest.TestCase and create a separate
@@ -130,11 +130,11 @@ class RequireValidKeyTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create a repository with an importer."""
         super(RequireValidKeyTestCase, cls).setUpClass()
-        cls.repo_href = _create_repository(cls.cfg, {
+        cls.repo = _create_repository(cls.cfg, {
             'allowed_keys': [PULP_FIXTURES_KEY_ID],
             'require_signature': True,
         })
-        cls.resources.add(cls.repo_href)
+        cls.resources.add(cls.repo['_href'])
 
     def test_signed_packages(self):
         """Import signed DRPM, RPM and SRPM packages into the repository.
@@ -146,8 +146,8 @@ class RequireValidKeyTestCase(utils.BaseAPITestCase):
                 utils.upload_import_unit(
                     self.cfg,
                     package,
-                    key.split(' ')[-1],
-                    self.repo_href,
+                    {'unit_type_id': key.split(' ')[-1]},
+                    self.repo,
                 )
 
     def test_unsigned_packages(self):
@@ -161,8 +161,8 @@ class RequireValidKeyTestCase(utils.BaseAPITestCase):
                     utils.upload_import_unit(
                         self.cfg,
                         package,
-                        key.split(' ')[-1],
-                        self.repo_href,
+                        {'unit_type_id': key.split(' ')[-1]},
+                        self.repo,
                     )
 
 
@@ -180,11 +180,11 @@ class RequireInvalidKeyTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create a repository with an importer."""
         super(RequireInvalidKeyTestCase, cls).setUpClass()
-        cls.repo_href = _create_repository(cls.cfg, {
+        cls.repo = _create_repository(cls.cfg, {
             'allowed_keys': [_INVALID_KEY_ID],
             'require_signature': True,
         })
-        cls.resources.add(cls.repo_href)
+        cls.resources.add(cls.repo['_href'])
 
     def test_all_packages(self):
         """Import signed and unsigned DRPM, RPM & SRPM packages into the repo.
@@ -199,8 +199,8 @@ class RequireInvalidKeyTestCase(utils.BaseAPITestCase):
                     utils.upload_import_unit(
                         self.cfg,
                         package,
-                        key.split(' ')[-1],
-                        self.repo_href,
+                        {'unit_type_id': key.split(' ')[-1]},
+                        self.repo,
                     )
 
 
@@ -218,11 +218,11 @@ class RequireAnyKeyTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create a repository with an importer."""
         super(RequireAnyKeyTestCase, cls).setUpClass()
-        cls.repo_href = _create_repository(cls.cfg, {
+        cls.repo = _create_repository(cls.cfg, {
             'allowed_keys': [],
             'require_signature': True,
         })
-        cls.resources.add(cls.repo_href)
+        cls.resources.add(cls.repo['_href'])
 
     def test_signed_packages(self):
         """Import signed DRPM, RPM and SRPM packages into the repo.
@@ -234,8 +234,8 @@ class RequireAnyKeyTestCase(utils.BaseAPITestCase):
                 utils.upload_import_unit(
                     self.cfg,
                     package,
-                    key.split(' ')[-1],
-                    self.repo_href,
+                    {'unit_type_id': key.split(' ')[-1]},
+                    self.repo,
                 )
 
     def test_unsigned_packages(self):
@@ -249,8 +249,8 @@ class RequireAnyKeyTestCase(utils.BaseAPITestCase):
                     utils.upload_import_unit(
                         self.cfg,
                         package,
-                        key.split(' ')[-1],
-                        self.repo_href,
+                        {'unit_type_id': key.split(' ')[-1]},
+                        self.repo,
                     )
 
 
@@ -268,11 +268,11 @@ class AllowInvalidKeyTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create a repository with an importer."""
         super(AllowInvalidKeyTestCase, cls).setUpClass()
-        cls.repo_href = _create_repository(cls.cfg, {
+        cls.repo = _create_repository(cls.cfg, {
             'allowed_keys': [_INVALID_KEY_ID],
             'require_signature': False,
         })
-        cls.resources.add(cls.repo_href)
+        cls.resources.add(cls.repo['_href'])
 
     def test_signed_packages(self):
         """Import signed DRPM, RPM and SRPM packages into the repository.
@@ -285,8 +285,8 @@ class AllowInvalidKeyTestCase(utils.BaseAPITestCase):
                     utils.upload_import_unit(
                         self.cfg,
                         package,
-                        key.split(' ')[-1],
-                        self.repo_href,
+                        {'unit_type_id': key.split(' ')[-1]},
+                        self.repo,
                     )
 
     def test_unsigned_packages(self):
@@ -299,8 +299,8 @@ class AllowInvalidKeyTestCase(utils.BaseAPITestCase):
                 utils.upload_import_unit(
                     self.cfg,
                     package,
-                    key.split(' ')[-1],
-                    self.repo_href,
+                    {'unit_type_id': key.split(' ')[-1]},
+                    self.repo,
                 )
 
 
@@ -318,11 +318,11 @@ class AllowValidKeyTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create a repository with an importer."""
         super(AllowValidKeyTestCase, cls).setUpClass()
-        cls.repo_href = _create_repository(cls.cfg, {
+        cls.repo = _create_repository(cls.cfg, {
             'allowed_keys': [PULP_FIXTURES_KEY_ID],
             'require_signature': False,
         })
-        cls.resources.add(cls.repo_href)
+        cls.resources.add(cls.repo['_href'])
 
     def test_all_packages(self):
         """Import signed and unsigned DRPM, RPM & SRPM packages into the repo.
@@ -336,8 +336,8 @@ class AllowValidKeyTestCase(utils.BaseAPITestCase):
                 utils.upload_import_unit(
                     self.cfg,
                     package,
-                    key.split(' ')[-1],
-                    self.repo_href,
+                    {'unit_type_id': key.split(' ')[-1]},
+                    self.repo,
                 )
 
 
@@ -355,11 +355,11 @@ class AllowAnyKeyTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create a repository with an importer."""
         super(AllowAnyKeyTestCase, cls).setUpClass()
-        cls.repo_href = _create_repository(cls.cfg, {
+        cls.repo = _create_repository(cls.cfg, {
             'allowed_keys': [],
             'require_signature': False,
         })
-        cls.resources.add(cls.repo_href)
+        cls.resources.add(cls.repo['_href'])
 
     def test_all_packages(self):
         """Import signed and unsigned DRPM, RPM & SRPM packages into the repo.
@@ -373,8 +373,8 @@ class AllowAnyKeyTestCase(utils.BaseAPITestCase):
                 utils.upload_import_unit(
                     self.cfg,
                     package,
-                    key.split(' ')[-1],
-                    self.repo_href,
+                    {'unit_type_id': key.split(' ')[-1]},
+                    self.repo,
                 )
 
 
@@ -397,10 +397,10 @@ class KeyLengthTestCase(unittest.TestCase):
         cfg = config.get_config()
         for allowed_key in ('0123456', '012345678'):
             with self.subTest(allowed_key=allowed_key):
-                repo_href = None
+                repo = None
                 with self.assertRaises(HTTPError):
-                    repo_href = _create_repository(cfg, {
+                    repo = _create_repository(cfg, {
                         'allowed_keys': [allowed_key]
                     })
-                if repo_href is not None:
-                    api.Client(cfg).delete(repo_href)
+                if repo is not None:
+                    api.Client(cfg).delete(repo['_href'])

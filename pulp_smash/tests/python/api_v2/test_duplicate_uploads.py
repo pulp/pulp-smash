@@ -37,8 +37,7 @@ class DuplicateUploadsTestCase(
                 selectors.bug_is_untestable(2334, cls.cfg.version)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2334')
         unit = utils.http_get(PYTHON_EGG_URL)
-        unit_type_id = 'python_package'
-        client = api.Client(cls.cfg, api.json_handler)
-        repo_href = client.post(REPOSITORY_PATH, gen_repo())['_href']
-        cls.resources.add(repo_href)
-        cls.upload_import_unit_args = (cls.cfg, unit, unit_type_id, repo_href)
+        import_params = {'unit_type_id': 'python_package'}
+        repo = api.Client(cls.cfg).post(REPOSITORY_PATH, gen_repo()).json()
+        cls.upload_import_unit_args = (cls.cfg, unit, import_params, repo)
+        cls.resources.add(repo['_href'])

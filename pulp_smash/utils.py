@@ -119,25 +119,45 @@ def reset_pulp(server_config):
     svc_mgr.start(PULP_SERVICES)
 
 
-def upload_import_unit(server_config, unit, unit_type_id, repo_href):
+def upload_import_unit(cfg, unit, import_params, repo):
     """Upload a content unit to a Pulp server and import it into a repository.
 
-    This procedure works for *some* unit types, such as ``rpm`` or
-    ``puppet_package``. Others, like ``package_group``, require an alternate
-    procedure.
+    This procedure only works for some unit types, such as ``rpm`` or
+    ``python_package``. Others, like ``package_group``, require an alternate
+    procedure. The procedure encapsulated by this function is as follows:
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
-    :param unit: A binary blob that can be uploaded to a Pulp server and
-        imported into a repository as a content unit. For example, an RPM file
-        or Python package.
-    :param content_type_id: The type ID of the content unit. For example,
-        ``rpm`` or ``python_package``.
-    :param repo_href: The path to the repository into which ``unit`` will be
-        imported.
+    1. Create an upload request.
+    2. Upload the content unit to Pulp, in small chunks.
+    3. Import the uploaded content unit into a repository.
+    4. Delete the upload request.
+
+    The default set of parameters sent to Pulp during step 3 are::
+
+        {'unit_key': {}, 'upload_id': '…'}
+
+    The actual parameters required by Pulp depending on the circumstances, and
+    the parameters sent to Pulp may be customized via the ``import_params``
+    argument. For example, if uploading a Python content unit,
+    ``import_params`` should be the following::
+
+        {'unit_key': {'filename': '…'}, 'unit_type_id': 'python_package'}
+
+    This would result in the following upload parameters being used::
+
+        {
+            'unit_key': {'filename': '…'},
+            'unit_type_id': 'python_package',
+            'upload_id': '…',
+        }
+
+    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param unit: The unit to be uploaded and imported, as a binary blob.
+    :param import_params: A dict of parameters to be merged into the default
+        set of import parameters during step 3.
+    :param repo: A dict of information about the target repository.
     :returns: The call report returned when importing the unit.
     """
-    client = api.Client(server_config, api.json_handler)
+    client = api.Client(cfg, api.json_handler)
     malloc = client.post(CONTENT_UPLOAD_PATH)
 
     # 200,000 bytes ~= 200 kB
@@ -152,11 +172,10 @@ def upload_import_unit(server_config, unit, unit_type_id, repo_href):
             client.put(path, data=chunk)
             offset += chunk_size
 
-    call_report = client.post(urljoin(repo_href, 'actions/import_upload/'), {
-        'unit_key': {},
-        'unit_type_id': unit_type_id,
-        'upload_id': malloc['upload_id'],
-    })
+    path = urljoin(repo['_href'], 'actions/import_upload/')
+    body = {'unit_key': {}, 'upload_id': malloc['upload_id']}
+    body.update(import_params)
+    call_report = client.post(path, body)
     client.delete(malloc['_href'])
     return call_report
 
