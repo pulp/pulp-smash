@@ -5,12 +5,19 @@ For information on repository CRUD operations, see `Creation, Deletion and
 Configuration
 <http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/cud.html>`_.
 """
+import os
 import unittest
+from urllib.parse import urljoin
 
+import requests
 from packaging import version
 
-from pulp_smash import api, utils
-from pulp_smash.constants import REPOSITORY_PATH, REPOSITORY_GROUP_PATH
+from pulp_smash import api, cli, utils
+from pulp_smash.constants import (
+    REPOSITORY_GROUP_PATH,
+    REPOSITORY_PATH,
+    RPM_WITH_PULP_DISTRIBUTION_FEED_URL,
+)
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -65,6 +72,64 @@ class FeedURLUnquoteTestCase(utils.BaseAPITestCase):
         importer_config = repo['importers'][0]['config']
         self.assertEqual(importer_config['basic_auth_username'], 'usern@me')
         self.assertEqual(importer_config['feed'], 'http://example.com/repo')
+
+
+class PulpDistributionTestCase(utils.BaseAPITestCase):
+    """Check if a feed with PULP_DISTRIBUTION.xml syncs properly.
+
+    See https://pulp.plan.io/issues/1086
+    """
+
+    def test_all(self):
+        """Check for content synced from a feed with PULP_DISTRIBUTION.xml."""
+        if self.cfg.version < version.Version('2.11.2'):
+            self.skipTest(
+                'PULP_DISTRIBUTION.xml improved parsing is available on Pulp '
+                '2.11.2+'
+            )
+        client = api.Client(self.cfg, api.json_handler)
+        distributor = gen_distributor()
+        distributor['auto_publish'] = True
+        body = gen_repo()
+        body['distributors'] = [distributor]
+        body['importer_config'] = {
+            'feed': RPM_WITH_PULP_DISTRIBUTION_FEED_URL,
+        }
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        utils.sync_repo(self.cfg, repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
+        self.assertEqual(repo['content_unit_counts']['distribution'], 1)
+        cli_client = cli.Client(self.cfg, cli.code_handler)
+        relative_url = repo['distributors'][0]['config']['relative_url']
+        pulp_distribution = cli_client.run((
+            'cat',
+            os.path.join(
+                '/var/lib/pulp/published/yum/http/repos/',
+                relative_url,
+                'PULP_DISTRIBUTION.xml',
+            ),
+        )).stdout
+        # make sure published repository PULP_DISTRIBUTION.xml does not include
+        # any extra file from the original repo's PULP_DISTRIBUTION.xml under
+        # metadata directory
+        self.assertNotIn('metadata/productid', pulp_distribution)
+
+        release_info = cli_client.run((
+            'cat',
+            os.path.join(
+                '/var/lib/pulp/published/yum/http/repos/',
+                relative_url,
+                'release-notes/release-info',
+            ),
+        )).stdout
+        response = requests.get(urljoin(
+            urljoin(RPM_WITH_PULP_DISTRIBUTION_FEED_URL, 'release-notes/'),
+            'release-info',
+        ))
+        # make sure published repository has extra files outside the metadata
+        # directory from the origiginal repo's PULP_DISTRIBUTION.xml
+        self.assertEqual(release_info, response.text)
 
 
 class RepositoryGroupCrudTestCase(utils.BaseAPITestCase):

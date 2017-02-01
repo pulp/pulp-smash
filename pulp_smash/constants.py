@@ -393,6 +393,10 @@ RPM_UNSIGNED_URL = urljoin(RPM_UNSIGNED_FEED_URL, RPM)
 Built from :data:`RPM_UNSIGNED_FEED_URL` and :data:`RPM`.
 """
 
+RPM_WITH_PULP_DISTRIBUTION_FEED_URL = urljoin(
+    PULP_FIXTURES_BASE_URL, 'rpm-with-pulp-distribution/')
+"""The URL to a RPM repository with a PULP_DISTRIBUTION.xml file."""
+
 SRPM = 'test-srpm02-1.0-1.src.rpm'
 """An SRPM file at :data:`pulp_smash.constants.SRPM_SIGNED_FEED_URL`."""
 
