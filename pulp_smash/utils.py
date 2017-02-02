@@ -11,6 +11,7 @@ import uuid
 from urllib.parse import urljoin, urlparse
 
 import requests
+from packaging.version import Version
 
 from pulp_smash import api, cli, config, exceptions
 from pulp_smash.cli import _is_root as is_root  # for backward compatibility
@@ -384,26 +385,40 @@ class DuplicateUploadsMixin(object):  # pylint:disable=too-few-public-methods
         self.assertIsNone(call_report['result'])
 
 
-def reset_squid(server_config):
+def reset_squid(cfg):
     """Stop Squid, reset its cache directory, and restart it.
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
+    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
     :returns: Nothing.
     """
-    svc_mgr = cli.ServiceManager(server_config)
+    squid_version = _get_squid_version(cfg)
+    svc_mgr = cli.ServiceManager(cfg)
     svc_mgr.stop(('squid',))
 
-    # Clean out the cache directory and reinitialize it.
-    client = cli.Client(server_config)
-    prefix = '' if is_root(server_config) else 'sudo '
-    client.run((prefix + 'rm -rf /var/spool/squid').split())
-    client.run((prefix + 'mkdir --context=system_u:object_r:squid_cache_t:s0' +
-                ' --mode=750 /var/spool/squid').split())
-    client.run((prefix + 'chown squid:squid /var/spool/squid').split())
-    client.run((prefix + 'squid -z').split())
+    # Remove and re-initialize the cache directory.
+    sudo = () if is_root(cfg) else ('sudo',)
+    client = cli.Client(cfg)
+    client.run(sudo + ('rm', '-rf', '/var/spool/squid'))
+    client.run(sudo + (
+        'mkdir', '--context=system_u:object_r:squid_cache_t:s0', '--mode=750',
+        '/var/spool/squid'))
+    client.run(sudo + ('chown', 'squid:squid', '/var/spool/squid'))
+    if squid_version < Version('4'):
+        client.run(sudo + ('squid', '-z'))
+    else:
+        client.run(sudo + ('squid', '-z', '--foreground'))
 
     svc_mgr.start(('squid',))
+
+
+def _get_squid_version(cfg):
+    """Get Squid's version, as a ``packaging.version.Version`` object."""
+    # The --version option was added in Squid 4.
+    resp = cli.Client(cfg).run(('squid', '-v'))
+    # The first line of output is 'Squid Cache: Version ...' for at least Squid
+    # 3 and 4, and at least Fedora 24, Fedora 25, RHEL 6.8 and RHEL 7.3.
+    phrase = 'squid cache: version '
+    return Version(resp.stdout.splitlines()[0].lower()[len(phrase):].strip())
 
 
 def skip_if_type_is_unsupported(unit_type_id, server_config=None):
