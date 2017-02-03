@@ -5,6 +5,8 @@ import unittest
 from os.path import basename
 from urllib.parse import urljoin, urlparse
 
+from packaging.version import Version
+
 from pulp_smash import api, config, constants, selectors, utils
 from pulp_smash.tests.python.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.python.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -29,6 +31,8 @@ class BaseTestCase(unittest.TestCase):
         cls.repos = []
         if inspect.getmro(cls)[0] == BaseTestCase:
             raise unittest.SkipTest('Abstract base class.')
+        if cls.cfg.version < Version('2.12'):
+            raise unittest.SkipTest('This test requires Pulp 2.12 or newer.')
 
     @classmethod
     def tearDownClass(cls):
