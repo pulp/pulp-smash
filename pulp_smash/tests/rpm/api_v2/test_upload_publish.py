@@ -25,7 +25,6 @@ from pulp_smash.constants import (
     SRPM_UNSIGNED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
-    find_units,
     gen_distributor,
     gen_repo,
     get_repodata,
@@ -181,23 +180,20 @@ class UploadDrpmTestCase(utils.BaseAPITestCase):
         cls.resources.add(repo['_href'])
         drpm = utils.http_get(DRPM_UNSIGNED_URL)
         utils.upload_import_unit(cls.cfg, drpm, {'unit_type_id': 'drpm'}, repo)
-        cls.repo_units = client.post(
-            urljoin(repo['_href'], 'search/units/'),
-            {'criteria': {}},
-        )
+        cls.units = utils.search_units(cls.cfg, repo, {}, api.safe_handler)
 
-    def test_status_code_repo_units(self):
+    def test_status_code_units(self):
         """Verify the HTTP status code for repo units response."""
-        self.assertEqual(self.repo_units.status_code, 200)
+        self.assertEqual(self.units.status_code, 200)
 
     def test_drpm_uploaded_successfully(self):
         """Test if DRPM has been uploaded successfully."""
-        self.assertEqual(len(self.repo_units.json()), 1)
+        self.assertEqual(len(self.units.json()), 1)
 
     def test_drpm_file_name_is_correct(self):
         """Test if DRPM extracted correct metadata for creating filename."""
         self.assertEqual(
-            self.repo_units.json()[0]['metadata']['filename'],
+            self.units.json()[0]['metadata']['filename'],
             DRPM,
         )
 
@@ -225,23 +221,20 @@ class UploadSrpmTestCase(utils.BaseAPITestCase):
         cls.resources.add(repo['_href'])
         srpm = utils.http_get(SRPM_UNSIGNED_URL)
         utils.upload_import_unit(cls.cfg, srpm, {'unit_type_id': 'srpm'}, repo)
-        cls.repo_units = client.post(
-            urljoin(repo['_href'], 'search/units/'),
-            {'criteria': {}},
-        )
+        cls.units = utils.search_units(cls.cfg, repo, {}, api.safe_handler)
 
-    def test_status_code_repo_units(self):
+    def test_status_code_units(self):
         """Verify the HTTP status code for repo units response."""
-        self.assertEqual(self.repo_units.status_code, 200)
+        self.assertEqual(self.units.status_code, 200)
 
     def test_srpm_uploaded_successfully(self):
         """Test if SRPM has been uploaded successfully."""
-        self.assertEqual(len(self.repo_units.json()), 1)
+        self.assertEqual(len(self.units.json()), 1)
 
     def test_srpm_file_name_is_correct(self):
         """Test if SRPM extracted correct metadata for creating filename."""
         self.assertEqual(
-            self.repo_units.json()[0]['metadata']['filename'],
+            self.units.json()[0]['metadata']['filename'],
             SRPM,
         )
 
@@ -319,8 +312,8 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
 
     def test_03_compare_repos(self):
         """Verify the two repositories contain the same content unit."""
-        repo_0_units = find_units(self.cfg, self.repos[0])
-        repo_1_units = find_units(self.cfg, self.repos[1])
+        repo_0_units = utils.search_units(self.cfg, self.repos[0])
+        repo_1_units = utils.search_units(self.cfg, self.repos[1])
         self.assertEqual(
             repo_0_units[0]['unit_id'],
             repo_1_units[0]['unit_id'],
@@ -333,7 +326,7 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
         its metadata attributes are correct. This test targets `Pulp #2365
         <https://pulp.plan.io/issues/2365>`_.
         """
-        units = find_units(self.cfg, repo)
+        units = utils.search_units(self.cfg, repo)
         self.assertEqual(len(units), 1)
 
         # filename and derived attributes

@@ -95,10 +95,7 @@ class BaseTestCase(unittest.TestCase):
 
         This test targets `Pulp #1883 <https://pulp.plan.io/issues/1883>`_.
         """
-        units = api.Client(cfg).post(
-            urljoin(repo['_href'], 'search/units/'),
-            {'criteria': {}},
-        ).json()
+        units = utils.search_units(cfg, repo)
         unit_types = {unit['metadata']['packagetype'] for unit in units}
         self.assertEqual(unit_types, {'sdist', 'bdist_wheel'})
 

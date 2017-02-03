@@ -14,11 +14,7 @@ from pulp_smash.constants import (
     REPOSITORY_PATH,
     RPM_SIGNED_FEED_URL,
 )
-from pulp_smash.tests.rpm.api_v2.utils import (
-    find_units,
-    gen_distributor,
-    gen_repo,
-)
+from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
@@ -150,7 +146,7 @@ class RemoveMissingTestCase(unittest.TestCase):
         utils.publish_repo(self.cfg, self.repos['root'])
 
         # Verify the removed unit cannot be found via a search.
-        units = find_units(self.cfg, self.repos['root'], criteria)
+        units = utils.search_units(self.cfg, self.repos['root'], criteria)
         self.assertEqual(len(units), 0, units)
 
     def test_04_sync_immediate_child(self):
@@ -180,10 +176,7 @@ class RemoveMissingTestCase(unittest.TestCase):
 
 def _get_rpms(cfg, repo):
     """Return RPM content units in the given repository."""
-    return api.Client(cfg).post(
-        urljoin(repo['_href'], 'search/units/'),
-        {'criteria': {'type_ids': ('rpm',)}},
-    ).json()
+    return utils.search_units(cfg, repo, {'type_ids': ('rpm',)})
 
 
 def _get_rpm_ids(search_body):

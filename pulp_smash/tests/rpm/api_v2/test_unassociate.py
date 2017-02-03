@@ -25,11 +25,7 @@ from pulp_smash.constants import (
     RPM_UNSIGNED_FEED_URL,
     RPM_UNSIGNED_URL,
 )
-from pulp_smash.tests.rpm.api_v2.utils import (
-    find_units,
-    gen_distributor,
-    gen_repo,
-)
+from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -53,7 +49,7 @@ class RemoveUnitsTestCase(unittest.TestCase):
         cls.repo = client.post(REPOSITORY_PATH, body).json()
         try:
             utils.sync_repo(cls.cfg, cls.repo['_href'])
-            cls.initial_units = find_units(cls.cfg, cls.repo)
+            cls.initial_units = utils.search_units(cls.cfg, cls.repo)
         except:
             cls.tearDownClass()
             raise
@@ -85,7 +81,8 @@ class RemoveUnitsTestCase(unittest.TestCase):
         """
         removed_ids = {_get_unit_id(unit) for unit in self.removed_units}
         remaining_ids = {
-            _get_unit_id(unit) for unit in find_units(self.cfg, self.repo)
+            _get_unit_id(unit)
+            for unit in utils.search_units(self.cfg, self.repo)
         }
         self.assertEqual(removed_ids & remaining_ids, set())
 
@@ -189,14 +186,14 @@ class RepublishTestCase(utils.BaseAPITestCase):
 
     def test_02_find_unit(self):
         """Search for the content unit. Assert it is available."""
-        units = find_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
+        units = utils.search_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
         self.assertEqual(len(units), 1, units)
         self.assertEqual(units[0]['metadata']['filename'], RPM)
 
     def test_03_unassociate_unit(self):
         """Unassociate the unit from the repository. Publish the repository."""
         repo_before = self.get_repo()
-        units = find_units(self.cfg, self.repo)
+        units = utils.search_units(self.cfg, self.repo)
         self.assertEqual(len(units), 1, units)
         _remove_unit(self.cfg, self.repo, units[0])
         time.sleep(1)  # ensure last_publish increments
@@ -220,7 +217,7 @@ class RepublishTestCase(utils.BaseAPITestCase):
 
     def test_04_find_unit(self):
         """Search for the content unit. Assert it isn't available."""
-        units = find_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
+        units = utils.search_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
         self.assertEqual(len(units), 0, units)
 
     def get_repo(self):
@@ -292,7 +289,9 @@ class SelectiveAssociateTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         utils.sync_repo(self.cfg, repo['_href'])
-        rpm_units = _get_units_by_type(find_units(self.cfg, repo), 'rpm')
+        rpm_units = (
+            _get_units_by_type(utils.search_units(self.cfg, repo), 'rpm')
+        )
         # Let's select up to 1/5 of the available units to remove
         to_remove = random.sample(
             rpm_units, random.randrange(int(RPM_UNSIGNED_FEED_COUNT / 4)))

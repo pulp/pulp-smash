@@ -20,7 +20,6 @@ from pulp_smash.constants import (
     RPM_UNSIGNED_FEED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
-    find_units,
     gen_distributor,
     gen_repo,
     get_repodata,
@@ -438,7 +437,9 @@ class CleanUpTestCase(unittest.TestCase):
         self.updateinfo_xml_hrefs.append(self.get_updateinfo_xml_href())
 
         with self.subTest(comment='check number of RPMs in repo'):
-            units = find_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
+            units = (
+                utils.search_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
+            )
             self.assertEqual(len(units), 31)
         with self.subTest(comment='check updateinfo.xml is available'):
             client.get(self.updateinfo_xml_hrefs[0])
@@ -451,7 +452,9 @@ class CleanUpTestCase(unittest.TestCase):
 
         client = api.Client(self.cfg)
         with self.subTest(comment='check number of RPMs in repo'):
-            units = find_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
+            units = (
+                utils.search_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
+            )
             self.assertEqual(len(units), 32)
         with self.subTest(comment='check updateinfo.xml has a new path'):
             # pylint:disable=no-value-for-parameter

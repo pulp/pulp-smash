@@ -350,9 +350,8 @@ class PublishTestCase(utils.BaseAPITestCase):
             cls.modules.append(client.get(path).content)
 
         # Search for all units in each of the two repositories.
-        body = {'criteria': {}}
         cls.responses['repo units'] = [
-            client.post(urljoin(repo['_href'], 'search/units/'), body)
+            utils.search_units(cls.cfg, repo, {}, api.safe_handler)
             for repo in repos
         ]
 

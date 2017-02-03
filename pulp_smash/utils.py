@@ -520,3 +520,25 @@ def publish_repo(cfg, repo, json=None):
         urljoin(repo['_href'], 'actions/publish/'),
         json
     )
+
+
+def search_units(cfg, repo, criteria=None, response_handler=None):
+    """Find content units in a ``repo``.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about the Pulp host.
+    :param repo: A dict of detailed information about the repository.
+    :param criteria: A dict of criteria to pass in the search body. Defaults to
+        an empty dict.
+    :param response_handler: The callback function used by
+        :class:`pulp_smash.api.Client` after searching. Defaults to
+        :func:`pulp_smash.api.json_handler`.
+    :returns: Whatever is dictated by ``response_handler``.
+    """
+    if criteria is None:
+        criteria = {}
+    if response_handler is None:
+        response_handler = api.json_handler
+    return api.Client(cfg, response_handler).post(
+        urljoin(repo['_href'], 'search/units/'),
+        {'criteria': criteria},
+    )

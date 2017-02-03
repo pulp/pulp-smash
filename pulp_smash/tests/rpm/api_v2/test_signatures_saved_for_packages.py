@@ -17,7 +17,7 @@ For more information, see:
 """
 import inspect
 import unittest
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
@@ -83,11 +83,9 @@ class _BaseTestCase(unittest.TestCase):
         if pkg_unit_type == 'drpm':
             # This is the location of the package relative to the repo root.
             pkg_filename = 'drpms/' + pkg_filename
-        units = self.client.post(urljoin(repo_href, 'search/units/'), {
-            'criteria': {
-                'filters': {'unit': {'filename': {'$in': [pkg_filename]}}},
-                'type_ids': [pkg_unit_type],
-            }
+        units = utils.search_units(self.cfg, {'_href': repo_href}, {
+            'filters': {'unit': {'filename': {'$in': [pkg_filename]}}},
+            'type_ids': [pkg_unit_type],
         })
         self.assertEqual(len(units), 1)
         return units[0]

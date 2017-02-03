@@ -255,3 +255,17 @@ class GetSha256ChecksumTestCase(unittest.TestCase):
         self.assertEqual(http_get.call_count, 2)
         self.assertNotEqual(checksums[0], checksums[1])
         self.assertEqual(checksums[0], checksums[2])
+
+
+class SearchUnitsTestCase(unittest.TestCase):
+    """Test :func:`pulp_smash.utils.search_units`."""
+
+    def test_defaults(self):
+        """Verify that default parameters are correctly set."""
+        with mock.patch.object(api, 'Client') as client:
+            utils.search_units(mock.Mock(), {'_href': 'foo/bar/'})
+        self.assertEqual(client.call_args[0][1], api.json_handler)
+        self.assertEqual(
+            client.return_value.post.call_args[0][1],
+            {'criteria': {}},
+        )

@@ -52,18 +52,6 @@ def create_docker_repo(cfg, upstream_name, use_v1=False):
     return client.post(REPOSITORY_PATH, body)
 
 
-def search_units(cfg, repo, criteria):
-    """Helper to search repository units.
-
-    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
-    :param repo: A dict of information about the targed repository.
-    :param repo: A dict of information about the search criteria.
-    :return: A list of results found for a given repo and criteria.
-    """
-    return api.Client(cfg, api.json_handler).post(
-        urljoin(repo['_href'], 'search/units/'), {'criteria': criteria})
-
-
 def import_upload(cfg, repo, params):
     """Helper to create/update Docker repository tags.
 
@@ -96,12 +84,16 @@ class DockerTagTestCase(utils.BaseAPITestCase):
         self.tags = self._get_tags()
 
     def _get_tags(self):
-        return search_units(self.cfg, self.repo, {'type_ids': ['docker_tag']})
+        return utils.search_units(
+            self.cfg,
+            self.repo,
+            {'type_ids': ['docker_tag']},
+        )
 
     def test_create_tag(self):
         """Check if a tag can be created."""
         tag_name = str(uuid.uuid4())
-        random_manifest = random.choice(search_units(
+        random_manifest = random.choice(utils.search_units(
             self.cfg, self.repo, {'type_ids': ['docker_manifest']}))
         # Create the tag
         import_upload(self.cfg, self.repo, {
@@ -116,7 +108,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
             },
         })
         # Fetch the created tag
-        tag = search_units(self.cfg, self.repo, {
+        tag = utils.search_units(self.cfg, self.repo, {
             'type_ids': ['docker_tag'],
             'filters': {'unit': {'name': tag_name}},
         })
@@ -130,13 +122,13 @@ class DockerTagTestCase(utils.BaseAPITestCase):
 
     def test_update_tag(self):
         """Check if a tag can be updated to a new manifest."""
-        latest_tag = search_units(self.cfg, self.repo, {
+        latest_tag = utils.search_units(self.cfg, self.repo, {
             'type_ids': ['docker_tag'],
             'filters': {'unit': {'name': 'latest'}},
         })
         self.assertEqual(len(latest_tag), 1)
         latest_tag = latest_tag.pop()
-        initial_latest_tag_manifest = search_units(self.cfg, self.repo, {
+        initial_latest_tag_manifest = utils.search_units(self.cfg, self.repo, {
             'type_ids': ['docker_manifest'],
             'filters': {
                 'unit': {'digest': latest_tag['metadata']['manifest_digest']}
@@ -144,7 +136,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
         })
         self.assertEqual(len(initial_latest_tag_manifest), 1)
         initial_latest_tag_manifest = initial_latest_tag_manifest.pop()
-        manifests = search_units(
+        manifests = utils.search_units(
             self.cfg, self.repo, {'type_ids': ['docker_manifest']})
         manifests.remove(initial_latest_tag_manifest)
         random_manifest = random.choice(manifests)
@@ -161,7 +153,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
             },
         })
         # Check if the tag was updated
-        latest_tag = search_units(self.cfg, self.repo, {
+        latest_tag = utils.search_units(self.cfg, self.repo, {
             'type_ids': ['docker_tag'],
             'filters': {'unit': {'name': 'latest'}},
         })
@@ -205,7 +197,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
         utils.sync_repo(self.cfg, other['_href'])
         other = api.Client(self.cfg, api.json_handler).get(
             other['_href'], params={'details': True})
-        other_manifest = random.choice(search_units(
+        other_manifest = random.choice(utils.search_units(
             self.cfg, other, {'type_ids': ['docker_manifest']}))
         tag_name = str(uuid.uuid4())
         with self.assertRaises(TaskReportError) as context:
