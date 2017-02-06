@@ -102,7 +102,8 @@ class PulpDistributionTestCase(utils.BaseAPITestCase):
         self.assertEqual(repo['content_unit_counts']['distribution'], 1)
         cli_client = cli.Client(self.cfg, cli.code_handler)
         relative_url = repo['distributors'][0]['config']['relative_url']
-        pulp_distribution = cli_client.run((
+        sudo = () if utils.is_root(self.cfg) else ('sudo',)
+        pulp_distribution = cli_client.run(sudo + (
             'cat',
             os.path.join(
                 '/var/lib/pulp/published/yum/http/repos/',
@@ -115,7 +116,7 @@ class PulpDistributionTestCase(utils.BaseAPITestCase):
         # metadata directory
         self.assertNotIn('metadata/productid', pulp_distribution)
 
-        release_info = cli_client.run((
+        release_info = cli_client.run(sudo + (
             'cat',
             os.path.join(
                 '/var/lib/pulp/published/yum/http/repos/',
