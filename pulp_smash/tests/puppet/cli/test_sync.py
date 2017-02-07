@@ -4,7 +4,17 @@ import unittest
 
 from pulp_smash import cli, config, selectors, utils
 from pulp_smash.constants import PUPPET_FEED, PUPPET_QUERY
-from pulp_smash.tests.puppet.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.puppet.utils import set_up_module
+
+
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip this module of tests if appropriate.
+
+    See `Pulp #2574 <https://pulp.plan.io/issues/2574>`_.
+    """
+    set_up_module()
+    if selectors.bug_is_untestable(2574, config.get_config()):
+        raise unittest.SkipTest('https://pulp.plan.io/issues/2574')
 
 
 def get_num_units_in_repo(server_config, repo_id):
