@@ -27,9 +27,10 @@ from pulp_smash.constants import (
     RPM_MISSING_PRIMARY_FEED_URL,
     RPM_SIGNED_FEED_COUNT,
     RPM_SIGNED_FEED_URL,
+    RPM_UNSIGNED_FEED_URL,
     SRPM_SIGNED_FEED_URL,
 )
-from pulp_smash.tests.rpm.api_v2.utils import gen_repo
+from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -248,3 +249,69 @@ class SyncInvalidMetadataTestCase(unittest.TestCase):
             task['progress_report']['yum_importer']['content']['state'],
             task,
         )
+
+
+class ChangeFeedTestCase(utils.BaseAPITestCase):
+    """Sync a repository, change its feed, and sync it again.
+
+    Specifically, the test case procedure is as follows:
+
+    1. Create three repositories — call them A, B and C.
+    2. Populate repository A and B with identical content, and publish them.
+    3. Set C's feed to repository A. Sync and publish repository C.
+    4. Set C's feed to repository B. Sync and publish repository C.
+
+    The entire procedure should succeed. This test case targets `Pulp #1922
+    <https://pulp.plan.io/issues/1922>`_.
+    """
+
+    def test_all(self):
+        """Sync a repository, change its feed, and sync it again."""
+        # Create, sync and publish repositories A and B.
+        repos = []
+        for _ in range(2):
+            body = gen_repo()
+            body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
+            body['distributors'] = [gen_distributor()]
+            repos.append(self.create_sync_publish_repo(body))
+
+        # Create repository C, let it sync from repository A, and publish it.
+        body = gen_repo()
+        body['importer_config']['feed'] = self.get_feed(repos[0])
+        body['importer_config']['ssl_validation'] = False
+        body['distributors'] = [gen_distributor()]
+        repo = self.create_sync_publish_repo(body)
+
+        # Update repository C.
+        client = api.Client(self.cfg, api.json_handler)
+        feed = self.get_feed(repos[1])
+        client.put(repo['importers'][0]['_href'], {
+            'importer_config': {'feed': feed}
+        })
+        repo = client.get(repo['_href'], params={'details': True})
+        self.assertEqual(repo['importers'][0]['config']['feed'], feed)
+
+        # Sync and publish repository C.
+        utils.sync_repo(self.cfg, repo['_href'])
+        utils.publish_repo(self.cfg, repo)
+
+    def create_sync_publish_repo(self, body):
+        """Create, sync and publish a repository.
+
+        Also, schedule the repository for deletion.
+
+        :param body: A dict of information to use when creating the repository.
+        :return: A detailed dict of information about the repository.
+        """
+        client = api.Client(self.cfg, api.json_handler)
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
+        utils.sync_repo(self.cfg, repo['_href'])
+        utils.publish_repo(self.cfg, repo)
+        return repo
+
+    def get_feed(self, repo):
+        """Build the feed to an RPM repository's distributor."""
+        feed = urljoin(self.cfg.base_url, 'pulp/repos/')
+        return urljoin(feed, repo['distributors'][0]['config']['relative_url'])
