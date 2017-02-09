@@ -144,50 +144,58 @@ class SyncSrpmRepoTestCase(SyncRepoBaseTestCase):
 
 
 class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
-    """Create an RPM repository with an invalid feed and sync it.
+    """Create and sync an RPM repository with an invalid feed.
 
     The sync should complete with errors reported.
     """
 
     @classmethod
     def setUpClass(cls):
-        """Create an RPM repository with an invalid feed and sync it."""
+        """Create class-wide variables."""
         super(SyncInvalidFeedTestCase, cls).setUpClass()
-        client = api.Client(cls.cfg, api.json_handler)
+        cls.tasks = []
+
+    def test_01_set_up(self):
+        """Create and sync an RPM repository with an invalid feed."""
+        client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = utils.uuid4()
         repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+
         client.response_handler = api.echo_handler
-        cls.report = client.post(urljoin(repo['_href'], 'actions/sync/'))
-        cls.tasks = tuple(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
-        cls.resources.add(repo['_href'])
+        report = client.post(urljoin(repo['_href'], 'actions/sync/'))
+        report.raise_for_status()
+        self.tasks.extend(list(
+            api.poll_spawned_tasks(self.cfg, report.json())
+        ))
+        with self.subTest(comment='verify call report status code'):
+            self.assertEqual(report.status_code, 202)
+        with self.subTest(comment='verify the number of spawned tasks'):
+            self.assertEqual(len(self.tasks), 1, self.tasks)
 
-    def test_start_sync_code(self):
-        """Assert the call to sync a repository returns an HTTP 202."""
-        self.assertEqual(self.report.status_code, 202)
-
-    def test_task_error_traceback(self):
+    @selectors.skip_if(len, 'tasks', 0)
+    def test_02_task_error_traceback(self):
         """Assert each task's "error" and "traceback" fields are non-null."""
         if selectors.bug_is_untestable(1455, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1455')
         for i, task in enumerate(self.tasks):
             for key in {'error', 'traceback'}:
                 with self.subTest((i, key)):
-                    self.assertIsNotNone(task[key])
+                    self.assertIsNotNone(task[key], task)
 
-    def test_task_progress_report(self):
+    @selectors.skip_if(len, 'tasks', 0)
+    def test_02_task_progress_report(self):
         """Assert each task's progress report contains error details."""
-        self.skipTest('https://pulp.plan.io/issues/1376')
+        if selectors.bug_is_untestable(1376, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/1376')
         for i, task in enumerate(self.tasks):
             with self.subTest(i=i):
                 self.assertNotEqual(
                     task['progress_report']['yum_importer']['content']['error_details'],  # noqa pylint:disable=line-too-long
-                    []
+                    [],
+                    task,
                 )
-
-    def test_number_tasks(self):
-        """Assert that only one task was spawned."""
-        self.assertEqual(len(self.tasks), 1)
 
 
 class SyncInvalidMetadataTestCase(unittest.TestCase):
