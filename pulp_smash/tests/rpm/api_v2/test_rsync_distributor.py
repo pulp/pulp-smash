@@ -62,8 +62,10 @@ from pulp_smash import api, cli, config, exceptions, selectors, utils
 from pulp_smash.constants import (
     ORPHANS_PATH,
     REPOSITORY_PATH,
+    RPM2_UNSIGNED_URL,
     RPM_SIGNED_FEED_COUNT,
     RPM_SIGNED_FEED_URL,
+    RPM_UNSIGNED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
     DisableSELinuxMixin,
@@ -339,28 +341,29 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
         self.assertEqual(len(tasks), 1, tasks)
         self.assertEqual(tasks[0]['result']['result'], 'skipped', tasks[0])
 
-    def verify_remote_units_path(self, cfg, distributor_cfg):
+    def verify_remote_units_path(self, cfg, distributor_cfg, num_units=None):
         """Verify the RPM rsync distributor has placed RPMs as appropriate.
 
-        Verify that path ``{root}/{remote_units_path}/rpm`` exists in the
-        target system's filesystem, and that
-        :data:`pulp_smash.constants.RPM_SIGNED_FEED_COUNT` RPMs are present in
-        this directory.
+        Verify that path ``{root}/{remote_units_path}/rpm/`` exists in the
+        target system's filesystem, and that the correct number of RPMs are
+        present in that directory.
 
         :param pulp_smash.config.ServerConfig cfg: Information about the system
             onto which files have been published.
         :param distributor_cfg: A dict of information about an RPM rsync
             distributor.
+        :param num_units: The number of units that should be on the target
+            system's filesystem. Defaults to
+            :data:`pulp_smash.constants.RPM_SIGNED_FEED_COUNT`.
         :returns: Nothing.
         """
-        # This method avoids calling command_string.split() to avoid issues
-        # with spaces and other funny character in path names.
+        if num_units is None:
+            num_units = RPM_SIGNED_FEED_COUNT
         cli_client = cli.Client(cfg)
         sudo = () if utils.is_root(cfg) else ('sudo',)
         path = distributor_cfg['config']['remote']['root']
-        remote_units_path = distributor_cfg['config'].get(
-            'remote_units_path',
-            'content/units',
+        remote_units_path = (
+            distributor_cfg['config'].get('remote_units_path', 'content/units')
         )
         for segment in _split_path(remote_units_path):
             cmd = sudo + ('ls', '-1', path)
@@ -369,7 +372,7 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
             path = os.path.join(path, segment)
         cmd = sudo + ('find', path, '-name', '*.rpm')
         files = cli_client.run(cmd).stdout.strip().split('\n')
-        self.assertEqual(len(files), RPM_SIGNED_FEED_COUNT, files)
+        self.assertEqual(len(files), num_units, files)
 
 
 class PublishBeforeYumDistTestCase(
@@ -734,3 +737,59 @@ class DeleteTestCase(
             cmd.insert(0, 'sudo')
         files = cli.Client(cfg).run(cmd).stdout.strip().split('\n')
         self.assertEqual(files, [''])  # strange, but correct
+
+
+class AddUnitTestCase(_RsyncDistUtilsMixin, unittest.TestCase):
+    """Add a content unit to a repo in the middle of several publishes.
+
+    When executed, this test case does the following:
+
+    1. Create a yum repository with a yum and rsync distributor.
+    2. Add some content to the repository.
+    3. Publish the repository with its yum distributor.
+    4. Add additional content to the repository.
+    5. Publish the repository with its rsync distributor. This publish
+       shouldn't distribute the new content unit, as the new content unit
+       wasn't included in the most recent publish with the yum distributor.
+    6. Publish the repository with its yum distributor.
+    7. Publish the repository with its rsync distributor. This publish should
+       distribute the new content unit, as the new content unit was included in
+       the most recent publish with the yum distributor.
+
+    This test case targets:
+
+    * `Pulp #2532 <https://pulp.plan.io/issues/2532>`_
+    * `Pulp Smash #526 <https://github.com/PulpQE/pulp-smash/issues/526>`_
+    """
+
+    def test_all(self):
+        """Add a content unit to a repo in the middle of several publishes."""
+        cfg = config.get_config()
+        if selectors.bug_is_untestable(2532, cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2532')
+        rpms = (
+            utils.http_get(RPM_UNSIGNED_URL), utils.http_get(RPM2_UNSIGNED_URL)
+        )
+
+        # Create a user and a repository.
+        ssh_user, priv_key = self.make_user(cfg)
+        ssh_identity_file = self.write_private_key(cfg, priv_key)
+        repo = self.make_repo(cfg, {'remote': {
+            'host': urlparse(cfg.base_url).netloc,
+            'root': '/home/' + ssh_user,
+            'ssh_identity_file': ssh_identity_file,
+            'ssh_user': ssh_user,
+        }})
+
+        # Add content, publish w/yum, add more content, publish w/rsync.
+        dists = _get_dists_by_type_id(cfg, repo['_href'])
+        for i, key in enumerate(('yum_distributor', 'rpm_rsync_distributor')):
+            utils.upload_import_unit(
+                cfg, rpms[i], {'unit_type_id': 'rpm'}, repo)
+            utils.publish_repo(cfg, repo, {'id': dists[key]['id']})
+        self.verify_remote_units_path(cfg, dists['rpm_rsync_distributor'], 1)
+
+        # Publish with yum and rsync, respectively.
+        for key in 'yum_distributor', 'rpm_rsync_distributor':
+            utils.publish_repo(cfg, repo, {'id': dists[key]['id']})
+        self.verify_remote_units_path(cfg, dists['rpm_rsync_distributor'], 1)

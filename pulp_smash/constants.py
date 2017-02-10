@@ -286,6 +286,9 @@ REPOSITORY_PATH = '/pulp/api/v2/repositories/'
 RPM = 'bear-4.1-1.noarch.rpm'
 """The name of an RPM file. See :data:`pulp_smash.constants.RPM_SIGNED_URL`."""
 
+RPM2 = 'camel-0.1-1.noarch.rpm'
+"""The name of an RPM. See :data:`pulp_smash.constants.RPM2_UNSIGNED_URL`."""
+
 RPM_ALT_LAYOUT_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-alt-layout/')
 """The URL to a signed RPM repository. See :data:`RPM_SIGNED_URL`."""
 
@@ -396,6 +399,12 @@ RPM_UNSIGNED_URL = urljoin(RPM_UNSIGNED_FEED_URL, RPM)
 """The URL to an unsigned RPM file.
 
 Built from :data:`RPM_UNSIGNED_FEED_URL` and :data:`RPM`.
+"""
+
+RPM2_UNSIGNED_URL = urljoin(RPM_UNSIGNED_FEED_URL, RPM2)
+"""The URL to an unsigned RPM file.
+
+Built from :data:`RPM_UNSIGNED_FEED_URL` and :data:`RPM2`.
 """
 
 RPM_WITH_PULP_DISTRIBUTION_FEED_URL = urljoin(
