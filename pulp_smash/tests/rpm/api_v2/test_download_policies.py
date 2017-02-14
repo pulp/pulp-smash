@@ -196,13 +196,18 @@ class OnDemandTestCase(utils.BaseAPITestCase):
 
     def test_rpm_cache_lookup_header(self):
         """Assert the first request resulted in a cache miss from Squid."""
-        self.assertIn('MISS', self.rpm.headers['X-Cache-Lookup'])
+        headers = self.rpm.headers
+        self.assertIn('MISS', headers['X-Cache-Lookup'], headers)
 
     def test_rpm_cache_control_header(self):
         """Assert the request has the Cache-Control header set."""
+        key = 'Cache-Control'
+        headers = self.rpm.headers
+        self.assertIn(key, headers)
         self.assertEqual(
+            headers[key].split(', '),
             {'s-maxage=86400', 'public', 'max-age=86400'},
-            set(self.rpm.headers['Cache-Control'].split(', '))
+            headers,
         )
 
     def test_same_rpm_checksum(self):
@@ -213,7 +218,8 @@ class OnDemandTestCase(utils.BaseAPITestCase):
 
     def test_same_rpm_cache_header(self):
         """Assert the second request resulted in a cache hit from Squid."""
-        self.assertIn('HIT', self.same_rpm.headers['X-Cache-Lookup'])
+        headers = self.same_rpm.headers
+        self.assertIn('HIT', headers['X-Cache-Lookup'], headers)
 
 
 class FixFileCorruptionTestCase(utils.BaseAPITestCase):
@@ -467,7 +473,7 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
         self.assertEqual(actual, expect)
 
         # Assert the first request resulted in a cache miss from Squid.
-        self.assertIn('MISS', rpm.headers['X-Cache-Lookup'])
+        self.assertIn('MISS', rpm.headers['X-Cache-Lookup'], rpm.headers)
 
         # Assert the checksum of the second RPM matches the metadata.
         actual = hashlib.sha256(same_rpm.content).hexdigest()
@@ -475,7 +481,11 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
         self.assertEqual(actual, expect)
 
         # Assert the second request resulted in a cache hit from Squid."""
-        self.assertIn('HIT', same_rpm.headers['X-Cache-Lookup'])
+        self.assertIn(
+            'HIT',
+            same_rpm.headers['X-Cache-Lookup'],
+            same_rpm.headers,
+        )
 
     def test_background_to_immediate(self):
         """Check if switching from background to immediate works."""
