@@ -201,6 +201,8 @@ class OnDemandTestCase(utils.BaseAPITestCase):
 
     def test_rpm_cache_control_header(self):
         """Assert the request has the Cache-Control header set."""
+        if selectors.bug_is_untestable(2587, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2587')
         key = 'Cache-Control'
         headers = self.rpm.headers
         self.assertIn(key, headers)
@@ -218,6 +220,8 @@ class OnDemandTestCase(utils.BaseAPITestCase):
 
     def test_same_rpm_cache_header(self):
         """Assert the second request resulted in a cache hit from Squid."""
+        if selectors.bug_is_untestable(2587, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2587')
         headers = self.same_rpm.headers
         self.assertIn('HIT', headers['X-Cache-Lookup'], headers)
 
@@ -494,6 +498,8 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
 
     def test_background_to_on_demand(self):
         """Check if switching from background to on_demand works."""
+        if selectors.bug_is_untestable(2587, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2587')
         repo, _ = self.repository_setup('background', 'on_demand')
         self.assert_on_demand(repo)
 
@@ -504,6 +510,8 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
 
     def test_immediate_to_on_demand(self):
         """Check if switching from immediate to on_demand works."""
+        if selectors.bug_is_untestable(2587, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2587')
         repo, _ = self.repository_setup('immediate', 'on_demand')
         self.assert_on_demand(repo)
 
