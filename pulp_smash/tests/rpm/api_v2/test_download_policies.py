@@ -207,7 +207,7 @@ class OnDemandTestCase(utils.BaseAPITestCase):
         headers = self.rpm.headers
         self.assertIn(key, headers)
         self.assertEqual(
-            headers[key].split(', '),
+            set(headers[key].split(', ')),
             {'s-maxage=86400', 'public', 'max-age=86400'},
             headers,
         )
