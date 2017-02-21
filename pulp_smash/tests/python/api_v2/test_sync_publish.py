@@ -49,6 +49,7 @@ class BaseTestCase(unittest.TestCase):
         """
         raise NotImplementedError
 
+    @selectors.skip_if(len, 'repos', 0)  # require first repo
     def test_02_second_repo(self):
         """Create a second Python repository, and sync it from the first.
 
@@ -111,7 +112,8 @@ class SyncTestCase(BaseTestCase):
         * `Pulp #135 <https://pulp.plan.io/issues/135>`_
         * `Pulp Smash #494 <https://github.com/PulpQE/pulp-smash/issues/494>`_
         """
-        if selectors.bug_is_untestable(135, self.cfg.version):
+        if (self.cfg.version <= Version('2.12.1') or
+                selectors.bug_is_untestable(135, self.cfg.version)):
             self.skipTest('https://pulp.plan.io/issues/135')
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
@@ -143,20 +145,26 @@ class UploadTestCase(BaseTestCase):
         * `Pulp #2334 <https://pulp.plan.io/issues/2334>`_
         * `Pulp Smash #492 <https://github.com/PulpQE/pulp-smash/issues/492>`_
         """
-        if selectors.bug_is_untestable(136, self.cfg.version):
+        if (self.cfg.version <= Version('2.12.1') or
+                selectors.bug_is_untestable(136, self.cfg.version)):
             self.skipTest('https://pulp.plan.io/issues/135')
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
         body['distributors'] = [gen_distributor()]
         repo = client.post(constants.REPOSITORY_PATH, body)
         self.repos.append(repo)
-        for url in constants.PYTHON_EGG_URL, constants.PYTHON_WHEEL_URL:
+
+        # A for loop is easier, but it produces hard-to-debug test failures.
+        def upload_import_unit(url):
+            """Upload and import the unit at ``url`` to ``repo``."""
             unit = utils.http_get(url)
-            import_params = {
+            utils.upload_import_unit(self.cfg, unit, {
                 'unit_key': {'filename': basename(urlparse(url).path)},
                 'unit_type_id': 'python_package',
-            }
-            utils.upload_import_unit(self.cfg, unit, import_params, repo)
+            }, repo)
+
+        upload_import_unit(constants.PYTHON_EGG_URL)
+        upload_import_unit(constants.PYTHON_WHEEL_URL)
         with self.subTest(comment='verify content units are present'):
             self.verify_package_types(self.cfg, repo)
         repo = get_details(self.cfg, repo)
