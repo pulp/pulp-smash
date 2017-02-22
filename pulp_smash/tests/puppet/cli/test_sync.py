@@ -3,7 +3,7 @@
 import unittest
 
 from pulp_smash import cli, config, selectors, utils
-from pulp_smash.constants import PUPPET_FEED, PUPPET_QUERY
+from pulp_smash.constants import PUPPET_FEED_2, PUPPET_QUERY_2
 from pulp_smash.tests.puppet.utils import set_up_module
 
 
@@ -83,7 +83,7 @@ class SyncDownloadedContentTestCase(unittest.TestCase):
             client.run((
                 'pulp-admin puppet repo create '
                 '--repo-id {} --feed {} --queries {}'
-            ).format(repo_id, PUPPET_FEED, PUPPET_QUERY).split())
+            ).format(repo_id, PUPPET_FEED_2, PUPPET_QUERY_2).split())
             self.addCleanup(client.run, (
                 'pulp-admin puppet repo delete --repo-id {}'
             ).format(repo_id).split())
@@ -138,7 +138,7 @@ class SyncFromPuppetForgeTestCase(unittest.TestCase):
         client = cli.Client(cfg)
         cmd = (
             'pulp-admin puppet repo create --repo-id {} --feed {} --queries {}'
-        ).format(repo_id, PUPPET_FEED, PUPPET_QUERY)
+        ).format(repo_id, PUPPET_FEED_2, PUPPET_QUERY_2)
         client.run(cmd.split())
         cmd = 'pulp-admin puppet repo delete --repo-id {}'.format(repo_id)
         self.addCleanup(client.run, cmd.split())

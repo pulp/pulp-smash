@@ -197,26 +197,62 @@ Pulp's functioning. However, if resetting Pulp (such as in
 be restarted.
 """
 
-PUPPET_FEED = 'http://forge.puppetlabs.com'
+PUPPET_MODULE_1 = {
+    'author': 'pulpqe',
+    'name': 'dummypuppet',
+    'version': '0.1.0'
+}
+"""Information about a Puppet module available via Pulp Fixtures."""
+
+PUPPET_MODULE_URL_1 = urljoin(
+    urljoin(PULP_FIXTURES_BASE_URL, 'puppet/'),
+    '{}-{}.tar.gz'.format(PUPPET_MODULE_1['author'], PUPPET_MODULE_1['name'])
+)
+"""The URL to a Puppet module module available via Pulp Fixtures.
+
+Test cases that require a single module should use this URL, and test cases
+that require a feed should use :data:`PUPPET_MODULE_URL_2`. Doing so shifts
+load away from the Puppet Forge.
+
+Why do both URLs exist? Because simulating the Puppet Forge's behaviour is
+unreasonably hard.
+
+Pulp Fixtures is designed to create data that can be hosted by a simple HTTP
+server, such as ``python3 -m http.server``. A dynamic API, such as the `Puppet
+Forge API`_, cannot be simulated. We could create a static tree of files, where
+that tree of files is the same as what the Puppet Forge would provide in
+response to a certain HTTP GET request. However:
+
+* The `Puppet Forge API`_ will inevitably change over time as bugs are fixed
+  and features are added. This will make a static facsimile of the Puppet Forge
+  API outdated. This is more than a mere inconvenience: outdated information is
+  also confusing!
+* Without an in-depth understanding of each and every file the Puppet Forge
+  yields, it is probable that static fixtures will be wrong from the get-go.
+
+.. _Puppet Forge API: https://forgeapi.puppetlabs.com/
+"""
+
+PUPPET_FEED_2 = 'http://forge.puppetlabs.com'
 """The URL to a repository of Puppet modules."""
 
-PUPPET_MODULE = {'author': 'pulp', 'name': 'pulp', 'version': '1.0.0'}
-"""Information about a Puppet module available at :data:`PUPPET_FEED`."""
+PUPPET_MODULE_2 = {'author': 'pulp', 'name': 'pulp', 'version': '1.0.0'}
+"""Information about a Puppet module available at :data:`PUPPET_FEED_2`."""
 
-PUPPET_MODULE_URL = ('{}/v3/files/{}-{}-{}.tar.gz'.format(
-    PUPPET_FEED,
-    PUPPET_MODULE['author'],
-    PUPPET_MODULE['name'],
-    PUPPET_MODULE['version'],
+PUPPET_MODULE_URL_2 = ('{}/v3/files/{}-{}-{}.tar.gz'.format(
+    PUPPET_FEED_2,
+    PUPPET_MODULE_2['author'],
+    PUPPET_MODULE_2['name'],
+    PUPPET_MODULE_2['version'],
 ))
-"""The URL to a Puppet module available at :data:`PUPPET_FEED`."""
+"""The URL to a Puppet module available at :data:`PUPPET_FEED_2`."""
 
-PUPPET_QUERY = quote_plus('-'.join(
-    PUPPET_MODULE[key] for key in ('author', 'name', 'version')
+PUPPET_QUERY_2 = quote_plus('-'.join(
+    PUPPET_MODULE_2[key] for key in ('author', 'name', 'version')
 ))
 """A query that can be used to search for Puppet modules.
 
-Built from :data:`PUPPET_MODULE`.
+Built from :data:`PUPPET_MODULE_2`.
 
 Though the `Puppet Forge API`_ supports a variety of search types, Pulp
 only supports the ability to search for modules. As a result, it is
@@ -234,8 +270,7 @@ following URL is constructed:
 In an attempt to avoid this error, this query is encoded before being submitted
 to Pulp.
 
-.. _Puppet Forge API:
-    http://projects.puppetlabs.com/projects/module-site/wiki/Server-api
+.. _Puppet Forge API: https://forgeapi.puppetlabs.com/
 """
 
 PYTHON_PYPI_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'python-pypi/')

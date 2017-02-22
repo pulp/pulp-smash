@@ -41,10 +41,10 @@ from pulp_smash import api, selectors, utils
 from pulp_smash.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,
-    PUPPET_FEED,
-    PUPPET_MODULE,
-    PUPPET_MODULE_URL,
-    PUPPET_QUERY,
+    PUPPET_FEED_2,
+    PUPPET_MODULE_1,
+    PUPPET_MODULE_URL_1,
+    PUPPET_QUERY_2,
     REPOSITORY_PATH,
 )
 from pulp_smash.tests.puppet.api_v2.utils import gen_repo
@@ -61,7 +61,7 @@ class CreateTestCase(utils.BaseAPITestCase):
         cls.bodies = tuple((gen_repo() for _ in range(2)))
         cls.bodies[1]['importer_config'] = {
             'feed': 'http://' + utils.uuid4(),  # Pulp checks for a URI scheme
-            'queries': [PUPPET_QUERY],
+            'queries': [PUPPET_QUERY_2],
         }
 
         client = api.Client(cls.cfg, api.json_handler)
@@ -118,9 +118,9 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
         utils.reset_pulp(cls.cfg)  # See: https://pulp.plan.io/issues/1406
         bodies = tuple((gen_repo() for _ in range(2)))
         for i, query in enumerate((
-                PUPPET_QUERY, PUPPET_QUERY.replace('-', '_'))):
+                PUPPET_QUERY_2, PUPPET_QUERY_2.replace('-', '_'))):
             bodies[i]['importer_config'] = {
-                'feed': PUPPET_FEED,
+                'feed': PUPPET_FEED_2,
                 'queries': [query],
             }
         client = api.Client(cls.cfg, api.json_handler)
@@ -267,7 +267,7 @@ class PublishTestCase(utils.BaseAPITestCase):
         for repo in repos:
             cls.resources.add(repo['_href'])
         client.response_handler = api.safe_handler
-        cls.modules.append(utils.http_get(PUPPET_MODULE_URL))
+        cls.modules.append(utils.http_get(PUPPET_MODULE_URL_1))
 
         # Begin an upload request, upload a puppet module, move the puppet
         # module into a repository, and end the upload request.
@@ -318,7 +318,7 @@ class PublishTestCase(utils.BaseAPITestCase):
 
         # Query both distributors using all three query forms.
         cls.responses['puppet releases'] = []
-        author_name = PUPPET_MODULE['author'] + '/' + PUPPET_MODULE['name']
+        author_name = PUPPET_MODULE_1['author'] + '/' + PUPPET_MODULE_1['name']
         for repo in repos:
             if selectors.bug_is_untestable(1440, cls.cfg.version):
                 continue
