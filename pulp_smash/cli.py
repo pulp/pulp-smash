@@ -1,5 +1,7 @@
 # coding=utf-8
 """A client for working with Pulp systems via their CLI."""
+import contextlib
+import os
 import socket
 from urllib.parse import urlparse
 
@@ -278,6 +280,7 @@ class ServiceManager(object):
         self._client = Client(cfg)
         self._sudo = () if _is_root(cfg) else ('sudo',)
         self._svc_mgr = self._get_service_manager(cfg)
+        self._on_jenkins = 'JENKINS_HOME' in os.environ
 
     @staticmethod
     def _get_service_manager(server_config):
@@ -308,6 +311,15 @@ class ServiceManager(object):
             .format(hostname, {manager for _, manager in commands_managers})
         )
 
+    @contextlib.contextmanager
+    def _disable_selinux(self):
+        """Context manager to temporary disable SELinux."""
+        if self._on_jenkins:
+            self._client.run(self._sudo + ('setenforce', '0'))
+        yield
+        if self._on_jenkins:
+            self._client.run(self._sudo + ('setenforce', '1'))
+
     def start(self, services):
         """Start the given services.
 
@@ -316,7 +328,8 @@ class ServiceManager(object):
             objects.
         """
         if self._svc_mgr == 'sysv':
-            return self._start_sysv(services)
+            with self._disable_selinux():
+                return self._start_sysv(services)
         elif self._svc_mgr == 'systemd':
             return self._start_systemd(services)
         else:
@@ -342,7 +355,8 @@ class ServiceManager(object):
             objects.
         """
         if self._svc_mgr == 'sysv':
-            return self._stop_sysv(services)
+            with self._disable_selinux():
+                return self._stop_sysv(services)
         elif self._svc_mgr == 'systemd':
             return self._stop_systemd(services)
         else:
