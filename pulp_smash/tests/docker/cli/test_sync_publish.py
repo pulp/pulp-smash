@@ -11,6 +11,7 @@ from pulp_smash.constants import (
     DOCKER_UPSTREAM_NAME,
     DOCKER_V1_FEED_URL,
     DOCKER_V2_FEED_URL,
+    ORPHANS_PATH,
 )
 from pulp_smash.tests.docker.cli import utils as docker_utils
 from pulp_smash.tests.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -82,26 +83,28 @@ def _get_manifest(cfg, repo_id, tag):
     return api.Client(cfg).get(path).json()
 
 
-class SyncPublishV2TestCase(_SuccessMixin, _BaseTestCase):
-    """Show it is possible to sync and publish a docker v2 repository.
+class SyncPublishV2TestCase(unittest.TestCase):
+    """Sync and publish a docker v2 repository.
 
-    This test case targets `Pulp #1051`_, "As a user, I can publish v2
-    repositories."
+    This test case targets:
+
+    * `Pulp #1051`_, "As a user, I can publish v2 repositories."
+    * `Pulp #2287`_, "Cannot get docker v2 repo tags list."
 
     .. _Pulp #1051: https://pulp.plan.io/issues/1051
+    .. _Pulp #2287: https://pulp.plan.io/issues/2287
     """
 
     @classmethod
     def setUpClass(cls):
-        """Create and sync a docker repository with a v2 registry.
+        """Create and sync a repository, and get information about it.
 
-        After doing the above, read the repository's JSON app file, tags, and
-        the manifest of the first tag.
-
-        This method requires Pulp 2.8 and above, and will raise a ``SkipTest``
-        exception if run against an earlier version of Pulp.
+        Before creating and syncing the repository, verify that this test
+        should run at all, and execute ``pulp-admin login``. After creating and
+        syncing the repository, verify that the sync succeeded, and then fetch
+        some information for use by the test methods.
         """
-        super(SyncPublishV2TestCase, cls).setUpClass()
+        cls.cfg = config.get_config()
         if cls.cfg.version < Version('2.8'):
             raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
         if (cls.cfg.version >= Version('2.9') and
@@ -110,16 +113,47 @@ class SyncPublishV2TestCase(_SuccessMixin, _BaseTestCase):
         if (cls.cfg.version >= Version('2.10') and
                 selectors.bug_is_untestable(2287, cls.cfg.version)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2287')
+        utils.pulp_admin_login(cls.cfg)
+
+        # Create and sync a repo, and get information about the repo.
+        cls.repo_id = None
+        try:
+            cls.repo_id = cls._create_repo()
+            proc = docker_utils.repo_sync(cls.cfg, cls.repo_id)
+            if ('Task Failed' in proc.stdout or
+                    'Task Succeeded' not in proc.stdout):
+                raise AssertionError(
+                    'Repository sync failed. Response: {}'.format(proc)
+                )
+            cls.app_file = _get_app_file(cls.cfg, cls.repo_id)
+            cls.tags = _get_tags(cls.cfg, cls.repo_id)
+            cls.manifest = _get_manifest(
+                cls.cfg,
+                cls.repo_id,
+                cls.tags['tags'][0]
+            )
+        except:
+            cls.tearDownClass()
+            raise
+
+    @classmethod
+    def tearDownClass(cls):
+        """Delete any orphans."""
+        if cls.repo_id is not None:
+            docker_utils.repo_delete(cls.cfg, cls.repo_id)
+        api.Client(cls.cfg).delete(ORPHANS_PATH)
+
+    @classmethod
+    def _create_repo(cls):
+        """Create a docker repository and return its ID."""
+        repo_id = utils.uuid4()
         docker_utils.repo_create(
             cls.cfg,
             feed=DOCKER_V2_FEED_URL,
-            repo_id=cls.repo_id,
+            repo_id=repo_id,
             upstream_name=DOCKER_UPSTREAM_NAME,
         )
-        cls.completed_proc = docker_utils.repo_sync(cls.cfg, cls.repo_id)
-        cls.app_file = _get_app_file(cls.cfg, cls.repo_id)
-        cls.tags = _get_tags(cls.cfg, cls.repo_id)
-        cls.manifest = _get_manifest(cls.cfg, cls.repo_id, cls.tags['tags'][0])
+        return repo_id
 
     def test_app_file_registry_id(self):
         """Assert that the v2 app file has the correct ``repo-registry-id``."""
@@ -155,7 +189,10 @@ class SyncPublishV2TestCase(_SuccessMixin, _BaseTestCase):
 
         For each of the "fsLayers" in the repository manifest, download and
         checksum its blob, and compare this checksum to the one embedded in the
-        blob's URL.
+        blob's URL. This test targets `Pulp #1781`_, "Files ending in .gz are
+        delivered with incorrect content headers."
+
+        .. _Pulp #1781: https://pulp.plan.io/issues/1781
         """
         # Issue 1781 only affects RHEL 6.
         if (selectors.bug_is_untestable(1781, self.cfg.version) and
