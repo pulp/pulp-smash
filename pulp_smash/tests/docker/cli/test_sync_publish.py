@@ -189,19 +189,25 @@ class SyncPublishV2TestCase(unittest.TestCase):
 
         For each of the "fsLayers" in the repository manifest, download and
         checksum its blob, and compare this checksum to the one embedded in the
-        blob's URL. This test targets `Pulp #1781`_, "Files ending in .gz are
-        delivered with incorrect content headers."
+        blob's URL. This test targets:
+
+        * `Pulp #1781`_, "Files ending in .gz are delivered with incorrect
+          content headers."
+        * `Pulp #2618`_, "'blob' files are delivered with incorrect content
+          headers"
 
         .. _Pulp #1781: https://pulp.plan.io/issues/1781
+        .. _Pulp #2618: https://pulp.plan.io/issues/2618
         """
-        # Issue 1781 only affects RHEL 6.
-        if (selectors.bug_is_untestable(1781, self.cfg.version) and
-                cli.Client(self.cfg, cli.echo_handler).run((
-                    'grep',
-                    '-i',
-                    'red hat enterprise linux server release 6',
-                    '/etc/redhat-release',
-                )).returncode == 0):
+        is_rhel6 = cli.Client(self.cfg, cli.echo_handler).run((
+            'grep',
+            '-i',
+            'red hat enterprise linux server release 6',
+            '/etc/redhat-release',
+        )).returncode == 0
+        if is_rhel6 and selectors.bug_is_untestable(2618, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2618')
+        if is_rhel6 and selectors.bug_is_untestable(1781, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1781')
 
         for fs_layer in self.manifest['fsLayers']:
