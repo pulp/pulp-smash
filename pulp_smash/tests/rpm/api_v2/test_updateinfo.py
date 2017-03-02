@@ -18,6 +18,7 @@ from pulp_smash.constants import (
     RPM_PKGLISTS_UPDATEINFO_FEED_URL,
     RPM_SIGNED_FEED_URL,
     RPM_UNSIGNED_FEED_URL,
+    RPM_UNSIGNED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
@@ -43,7 +44,7 @@ def setUpModule():  # pylint:disable=invalid-name
         raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
 
 
-def _gen_errata_typical():
+def _gen_errata():
     """Generate and return a typical erratum with a unique ID."""
     return {
         'id': utils.uuid4(),
@@ -58,19 +59,19 @@ def _gen_errata_typical():
         'issued': '2015-03-05 05:42:53 UTC',
         'pkglist': [{
             'name': 'pkglist-name',
+            # This package is present in Pulp Fixtures.
             'packages': [{
-                'arch': 'i686',
+                'arch': 'noarch',
                 'epoch': '0',
-                'filename': 'libpfm-4.4.0-9.el7.i686.rpm',
-                'name': 'libpfm',
-                'release': '9.el7',
-                'src': 'libpfm-4.4.0-9.el7.src.rpm',
+                'filename': 'bear-4.1-1.noarch.rpm',
+                'name': 'bear',
+                'release': '1',
                 'sum': [
                     'sha256',
-                    ('ca42a0d97fd99a195b30f9256823a46c94f632c126ab4fbbdd7e1276'
-                     '41f30ee4')
+                    ('ceb0f0bb58be244393cc565e8ee5ef0ad36884d8ba8eec74542ff47'
+                     'd299a34c1')
                 ],
-                'version': '4.4.0',
+                'version': '4.1',
             }],
         }],
         'references': [{
@@ -84,20 +85,6 @@ def _gen_errata_typical():
         'title': 'sample title',
         'type': 'pulp',
         'version': '6',  # intentionally string, not int
-    }
-
-
-def _gen_errata_no_pkglist():
-    """Generate and return an erratum with no package list and a unique ID."""
-    return {
-        'description': 'this unit has no packages',
-        'id': utils.uuid4(),
-        'issued': '2015-04-05 05:42:53 UTC',
-        'solution': 'solution for no pkglist',
-        'status': 'final',
-        'title': 'no pkglist',
-        'type': 'PULP',
-        'version': '9',
     }
 
 
@@ -118,62 +105,61 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Create an RPM repository, upload errata, and publish the repository.
+        """Create, populate and publish a repository.
 
         More specifically, do the following:
 
         1. Create an RPM repository with a distributor.
-        2. Generate a pair of errata. Upload them to Pulp and import them into
-           the repository.
-        3. Publish the repository. Fetch the ``updateinfo.xml`` file from the
-           distributor (via ``repomd.xml``), and parse it.
+        2. Populate the repository with an RPM and two errata, where one
+           erratum references the RPM, and the other does not.
+        3. Publish the repository Fetch and parse its ``updateinfo.xml`` file.
         """
         super(UpdateInfoTestCase, cls).setUpClass()
-        cls.errata = {
-            'import_no_pkglist': _gen_errata_no_pkglist(),
-            'import_typical': _gen_errata_typical(),
-        }
-        cls.tasks = {}  # {'import_no_pkglist': (…), 'import_typical': (…)}
+        cls.errata = {key: _gen_errata() for key in ('full', 'partial')}
+        del cls.errata['partial']['pkglist']
+        cls.tasks = {}
 
-        # Create a repository and add a yum distributor.
+        # Create a repo.
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
-        repo = client.get(repo['_href'], params={'details': True})
         cls.resources.add(repo['_href'])
 
-        # Import errata into our repository. Publish the repository.
-        for key, erratum in cls.errata.items():
-            report = utils.upload_import_erratum(
-                cls.cfg,
-                erratum,
-                repo['_href'],
+        try:
+            # Populate and publish the repo.
+            repo = client.get(repo['_href'], params={'details': True})
+            unit = utils.http_get(RPM_UNSIGNED_URL)
+            utils.upload_import_unit(
+                cls.cfg, unit, {'unit_type_id': 'rpm'}, repo
             )
-            cls.tasks[key] = tuple(api.poll_spawned_tasks(cls.cfg, report))
-        utils.publish_repo(cls.cfg, repo)
+            for key, erratum in cls.errata.items():
+                report = utils.upload_import_erratum(
+                    cls.cfg, erratum, repo['_href']
+                )
+                cls.tasks[key] = tuple(api.poll_spawned_tasks(cls.cfg, report))
+            utils.publish_repo(cls.cfg, repo)
 
-        # Fetch and parse updateinfo.xml (or updateinfo.xml.gz), via repomd.xml
-        cls.root_element = (
-            get_repodata(cls.cfg, repo['distributors'][0], 'updateinfo')
-        )
+            # Fetch and parse updateinfo.xml.
+            cls.updates_element = (
+                get_repodata(cls.cfg, repo['distributors'][0], 'updateinfo')
+            )
+        except:
+            cls.tearDownClass()
+            raise
 
     def test_root(self):
         """Assert the root element of the tree has a tag of "updates"."""
-        self.assertEqual(self.root_element.tag, 'updates')
+        self.assertEqual(self.updates_element.tag, 'updates')
 
-    def test_one_update_per_errata(self):
-        """Assert there is one "update" element per importer erratum."""
-        update_elements = self.root_element.findall('update')
-        self.assertEqual(len(update_elements), len(self.errata))
+    def test_len_updates(self):
+        """Assert there is one "update" element in ``updateinfo.xml``."""
+        update_elements = self.updates_element.findall('update')
+        self.assertEqual(len(update_elements), 1, update_elements)
 
-    def test_update_ids_alone(self):
-        """Assert each "update" element has one "id" child element.
-
-        Each "update" element has an "id" child element. Each parent should
-        have exactly one of these children.
-        """
-        for update_element in self.root_element.findall('update'):
+    def test_one_id_per_update(self):
+        """Assert each "update" element has one "id" child element."""
+        for update_element in self.updates_element.findall('update'):
             with self.subTest(update_element=update_element):
                 self.assertEqual(len(update_element.findall('id')), 1)
 
@@ -183,13 +169,12 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
         Each "update" element has an "id" child element. These IDs should be
         unique.
         """
-        update_ids = set()
-        for update_element in self.root_element.findall('update'):
-            for id_element in update_element.findall('id'):
-                update_id = id_element.text
-                with self.subTest(update_id=update_id):
-                    self.assertNotIn(update_id, update_ids)
-                    update_ids.add(update_id)
+        ids = set()
+        for update_element in self.updates_element.findall('update'):
+            with self.subTest(update_element=update_element):
+                id_ = update_element.find('id').text
+                self.assertNotIn(id_, ids)
+                ids.add(id_)
 
     def test_one_task_per_import(self):
         """Assert only one task is spawned per erratum upload."""
@@ -226,8 +211,10 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
         later made available in the update info tree. Verify the description is
         unchanged.
         """
-        erratum = self.errata['import_typical']
-        update_element = _get_updates_by_id(self.root_element)[erratum['id']]
+        erratum = self.errata['full']
+        update_element = (
+            _get_updates_by_id(self.updates_element)[erratum['id']]
+        )
         description_elements = update_element.findall('description')
         self.assertEqual(len(description_elements), 1, description_elements)
         self.assertEqual(description_elements[0].text, erratum['description'])
@@ -235,7 +222,7 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
     def test_reboot_not_suggested(self):
         """Assert the update info tree does not suggest a spurious reboot.
 
-        The ``import_typical`` erratum does not suggest that a reboot be
+        The errata uploaded by this test case do not suggest that a reboot be
         applied. As a result, the relevant ``<update>`` element in the
         ``updateinfo.xml`` file should not have a ``<reboot_suggested>`` tag.
         Verify that this is so. See `Pulp #2032`_.
@@ -249,8 +236,8 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
         """
         if selectors.bug_is_untestable(2032, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2032')
-        erratum_id = self.errata['import_typical']['id']
-        update_element = _get_updates_by_id(self.root_element)[erratum_id]
+        erratum_id = self.errata['full']['id']
+        update_element = _get_updates_by_id(self.updates_element)[erratum_id]
         reboot_elements = update_element.findall('reboot_suggested')
         self.assertEqual(
             len(reboot_elements),
