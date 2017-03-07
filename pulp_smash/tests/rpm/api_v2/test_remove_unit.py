@@ -15,7 +15,7 @@ from pulp_smash.constants import (
     RPM_SIGNED_FEED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
-from pulp_smash.tests.rpm.utils import check_issue_2277
+from pulp_smash.tests.rpm.utils import check_issue_2277, check_issue_2620
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _PUBLISH_DIR = 'pulp/repos/'
@@ -49,6 +49,8 @@ class RemoveMissingTestCase(unittest.TestCase):
         cls.repos = {}  # Each inner dict has info about a repository.
         if check_issue_2277(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
+        if check_issue_2620(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2620')
 
     @classmethod
     def tearDownClass(cls):

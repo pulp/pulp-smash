@@ -10,7 +10,11 @@ from packaging.version import Version
 
 from pulp_smash import cli, config, constants, selectors, utils
 from pulp_smash.tests.rpm.cli.utils import count_langpacks
-from pulp_smash.tests.rpm.utils import check_issue_2277, set_up_module
+from pulp_smash.tests.rpm.utils import (
+    check_issue_2277,
+    check_issue_2620,
+    set_up_module,
+)
 from pulp_smash.utils import is_root
 
 _REPO_ID = utils.uuid4()
@@ -151,6 +155,8 @@ class CopyTestCase(UtilsMixin, unittest.TestCase):
         Verify that only the "chimpanzee" unit is in the target repository.
         """
         cfg = config.get_config()
+        if check_issue_2620(cfg):
+            self.skipTest('https://pulp.plan.io/issues/2620')
         repo_id = self.create_repo(cfg)
         cli.Client(cfg).run(
             'pulp-admin rpm repo copy rpm --from-repo-id {} --to-repo-id {} '
@@ -180,6 +186,8 @@ class CopyRecursiveTestCase(UtilsMixin, unittest.TestCase):
         copied.
         """
         cfg = config.get_config()
+        if check_issue_2620(cfg):
+            self.skipTest('https://pulp.plan.io/issues/2620')
         repo_id = self.create_repo(cfg)
         cli.Client(cfg).run(
             'pulp-admin rpm repo copy rpm --from-repo-id {} --to-repo-id {} '
@@ -255,6 +263,8 @@ class UpdateRpmTestCase(UtilsMixin, unittest.TestCase):
         cfg = config.get_config()
         if check_issue_2277(cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
+        if check_issue_2620(cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2620')
         client = cli.Client(cfg)
         pkg_mgr = cli.PackageManager(cfg)
         sudo = '' if is_root(cfg) else 'sudo '

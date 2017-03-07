@@ -25,7 +25,11 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     get_repodata,
     get_repodata_repomd_xml,
 )
-from pulp_smash.tests.rpm.utils import check_issue_2277, set_up_module
+from pulp_smash.tests.rpm.utils import (
+    check_issue_2277,
+    check_issue_2620,
+    set_up_module,
+)
 
 
 def setUpModule():  # pylint:disable=invalid-name
@@ -404,6 +408,8 @@ class CleanUpTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Create and sync a repository."""
         cls.cfg = config.get_config()
+        if check_issue_2620(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2620')
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['distributors'] = [gen_distributor()]

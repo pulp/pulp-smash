@@ -21,7 +21,7 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     gen_repo,
     get_unit,
 )
-from pulp_smash.tests.rpm.utils import check_issue_2277
+from pulp_smash.tests.rpm.utils import check_issue_2277, check_issue_2620
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _PUBLISH_DIR = 'pulp/repos/'
@@ -44,6 +44,8 @@ class RepublishTestCase(unittest.TestCase):
         cfg = config.get_config()
         if check_issue_2277(cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
+        if check_issue_2620(cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2620')
 
         # Create, sync and publish a repository.
         client = api.Client(cfg, api.json_handler)

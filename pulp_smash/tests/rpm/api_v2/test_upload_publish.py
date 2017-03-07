@@ -33,6 +33,7 @@ from pulp_smash.tests.rpm.api_v2.utils import (
 from pulp_smash.tests.rpm.utils import (
     check_issue_2277,
     check_issue_2387,
+    check_issue_2620,
     gen_erratum,
 )
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -216,6 +217,8 @@ class UploadSrpmTestCase(utils.BaseAPITestCase):
         3. Search for all content units in the repository.
         """
         super(UploadSrpmTestCase, cls).setUpClass()
+        if check_issue_2620(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2620')
         client = api.Client(cls.cfg)
         repo = client.post(REPOSITORY_PATH, gen_repo()).json()
         cls.resources.add(repo['_href'])
@@ -252,8 +255,10 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create a pair of RPM repositories."""
-        cls.rpm = utils.http_get(RPM_UNSIGNED_URL)
         cls.cfg = config.get_config()
+        if check_issue_2620(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2620')
+        cls.rpm = utils.http_get(RPM_UNSIGNED_URL)
         client = api.Client(cls.cfg, api.json_handler)
         cls.repos = []
         try:

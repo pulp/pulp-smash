@@ -38,6 +38,7 @@ from pulp_smash.constants import (
     SRPM_UNSIGNED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
+from pulp_smash.tests.rpm.utils import check_issue_2620
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -137,12 +138,16 @@ class UploadPackageTestCase(_BaseTestCase):
 
     def test_signed_rpm(self):
         """Import a signed RPM into Pulp. Verify its signature."""
+        if check_issue_2620(self.cfg):
+            self.skipTest('https://pulp.plan.io/issues/2620')
         repo_href = self._create_repo_import_unit(RPM_SIGNED_URL)
         unit = self._find_unit(repo_href, RPM_SIGNED_URL)
         self._verify_pkg_key(unit, PULP_FIXTURES_KEY_ID)
 
     def test_signed_srpm(self):
         """Import a signed SRPM into Pulp. Verify its signature."""
+        if check_issue_2620(self.cfg):
+            self.skipTest('https://pulp.plan.io/issues/2620')
         repo_href = self._create_repo_import_unit(SRPM_SIGNED_URL)
         unit = self._find_unit(repo_href, SRPM_SIGNED_URL)
         self._verify_pkg_key(unit, PULP_FIXTURES_KEY_ID)
@@ -157,12 +162,16 @@ class UploadPackageTestCase(_BaseTestCase):
 
     def test_unsigned_rpm(self):
         """Import an unsigned RPM into Pulp. Veriy it has no signature."""
+        if check_issue_2620(self.cfg):
+            self.skipTest('https://pulp.plan.io/issues/2620')
         repo_href = self._create_repo_import_unit(RPM_UNSIGNED_URL)
         unit = self._find_unit(repo_href, RPM_UNSIGNED_URL)
         self.assertNotIn('signing_key', unit['metadata'])
 
     def test_unsigned_srpm(self):
         """Import an unsigned SRPM into Pulp. Verify it has no signature."""
+        if check_issue_2620(self.cfg):
+            self.skipTest('https://pulp.plan.io/issues/2620')
         repo_href = self._create_repo_import_unit(SRPM_UNSIGNED_URL)
         unit = self._find_unit(repo_href, SRPM_UNSIGNED_URL)
         self.assertNotIn('signing_key', unit['metadata'])
@@ -192,12 +201,16 @@ class SyncPackageTestCase(_BaseTestCase):
 
     def test_signed_rpm(self):
         """Assert signature is stored for signed rpm during sync."""
+        if check_issue_2620(self.cfg):
+            self.skipTest('https://pulp.plan.io/issues/2620')
         repo_href = self._create_sync_repo(RPM_SIGNED_FEED_URL)
         unit = self._find_unit(repo_href, RPM_SIGNED_URL)
         self._verify_pkg_key(unit, PULP_FIXTURES_KEY_ID)
 
     def test_signed_srpm(self):
         """Assert signature is stored for signed srpm during sync."""
+        if check_issue_2620(self.cfg):
+            self.skipTest('https://pulp.plan.io/issues/2620')
         repo_href = self._create_sync_repo(SRPM_SIGNED_FEED_URL)
         unit = self._find_unit(repo_href, SRPM_SIGNED_URL)
         self._verify_pkg_key(unit, PULP_FIXTURES_KEY_ID)
@@ -210,12 +223,16 @@ class SyncPackageTestCase(_BaseTestCase):
 
     def test_unsigned_rpm(self):
         """Assert no signature is stored for unsigned rpm during sync."""
+        if check_issue_2620(self.cfg):
+            self.skipTest('https://pulp.plan.io/issues/2620')
         repo_href = self._create_sync_repo(RPM_UNSIGNED_FEED_URL)
         unit = self._find_unit(repo_href, RPM_UNSIGNED_URL)
         self.assertNotIn('signing_key', unit['metadata'])
 
     def test_unsigned_srpm(self):
         """Assert no signature is stored for unsigned srpm during sync."""
+        if check_issue_2620(self.cfg):
+            self.skipTest('https://pulp.plan.io/issues/2620')
         repo_href = self._create_sync_repo(SRPM_UNSIGNED_FEED_URL)
         unit = self._find_unit(repo_href, SRPM_UNSIGNED_URL)
         self.assertNotIn('signing_key', unit['metadata'])

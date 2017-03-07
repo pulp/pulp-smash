@@ -26,7 +26,15 @@ from pulp_smash.constants import (
     RPM_UNSIGNED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
-from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.rpm.utils import check_issue_2620
+from pulp_smash.tests.rpm.utils import set_up_module
+
+
+def setUpModule():  # pylint:disable=invalid-name
+    """Maybe skip this module of tests."""
+    set_up_module()
+    if check_issue_2620(config.get_config()):
+        raise unittest.SkipTest('https://pulp.plan.io/issues/2620')
 
 
 class RemoveUnitsTestCase(unittest.TestCase):

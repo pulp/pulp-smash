@@ -27,6 +27,7 @@ from pulp_smash.constants import (
     SRPM_SIGNED_FEED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo
+from pulp_smash.tests.rpm.utils import check_issue_2620
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -39,6 +40,8 @@ class BaseSearchTestCase(utils.BaseAPITestCase):
         if inspect.getmro(cls)[0] == BaseSearchTestCase:
             raise unittest.SkipTest('Abstract base class.')
         super(BaseSearchTestCase, cls).setUpClass()
+        if check_issue_2620(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2620')
         body = gen_repo()
         body['importer_config']['feed'] = cls.get_feed_url()
         cls.repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()

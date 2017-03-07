@@ -5,7 +5,7 @@ import unittest
 
 from pulp_smash import cli, config, selectors, utils
 from pulp_smash.constants import RPM_UNSIGNED_FEED_URL
-from pulp_smash.tests.rpm.utils import set_up_module
+from pulp_smash.tests.rpm.utils import check_issue_2620, set_up_module
 from pulp_smash.utils import is_root
 
 
@@ -56,6 +56,8 @@ class RemovedContentTestCase(_BaseTestCase):
     def test_all(self):
         """Test whether Pulp can re-sync content into a repository."""
         cfg = config.get_config()
+        if check_issue_2620(cfg):
+            self.skipTest('https://pulp.plan.io/issues/2620')
         repo_id = utils.uuid4()
         client = cli.Client(cfg)
         client.run((
