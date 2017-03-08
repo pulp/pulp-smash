@@ -246,76 +246,80 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
         )
 
 
-class ErratumPkgListCountTestCase(utils.BaseAPITestCase):
-    """Tests for ``updateinfo.xml`` erratum package list count."""
+class UpdateRepoTestCase(utils.BaseAPITestCase):
+    """Verify ``updateinfo.xml`` changes as the its repo changes."""
 
     @classmethod
     def setUpClass(cls):
-        """Create RPM repository, delete a package, and publish the repository.
-
-        More specifically, do the following:
-
-        1. Create an RPM repository with a distributor.
-        2. Sync the created repository.
-        3. Remove the ``gorilla`` package
-        4. Publish the repository. Fetch the ``updateinfo.xml`` file from the
-           distributor (via ``repomd.xml``), and parse it.
-        """
-        super(ErratumPkgListCountTestCase, cls).setUpClass()
-
-        # Create a repository.
+        """Create an RPM repository with a feed and distributor."""
+        super().setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         body['distributors'] = [gen_distributor()]
-        repo = client.post(REPOSITORY_PATH, body)
-        repo = client.get(repo['_href'], params={'details': True})
-        cls.resources.add(repo['_href'])
+        try:
+            repo = client.post(REPOSITORY_PATH, body)
+            cls.resources.add(repo['_href'])
+            cls.repo = client.get(repo['_href'], params={'details': True})
+        except:
+            cls.tearDownClass()
+            raise
 
-        # Sync the repo.
-        utils.sync_repo(cls.cfg, repo['_href'])
+    def test_01_sync_publish(self):
+        """Sync and publish the repository.
 
-        # Remove the gorilla package unit
-        client.post(
-            urljoin(repo['_href'], 'actions/unassociate/'),
-            {'criteria': {'filters': {'unit': {'name': RPM_ERRATUM_RPM_NAME}}}}
-        )
+        Fetch ``updateinfo.xml`` and verify that:
 
-        # Publish the repository
-        utils.publish_repo(cls.cfg, repo)
+        * an erratum with id :data:`pulp_smash.constants.RPM_ERRATUM_ID` is
+          present,
+        * the erratum has one "pkglist" child element, and
+        * the "pkglist" element has at least the following child elements:
 
-        # Fetch and parse updateinfo.xml (or updateinfo.xml.gz), via repomd.xml
-        root_element = (
-            get_repodata(cls.cfg, repo['distributors'][0], 'updateinfo')
-        )
-
-        # Fetch the erratum and erratum pkglist for the gorilla package
-        updates = _get_updates_by_id(root_element)
-        erratum = updates[RPM_ERRATUM_ID]
-        cls.erratum_pkglists = erratum.findall('pkglist')
-
-    def test_one_pkglist(self):
-        """Ensure there is only one pkglist element on a erratum."""
-        self.assertEqual(len(self.erratum_pkglists), 1)
-
-    def test_pkglist_children(self):
-        """Ensure pkglist children structure.
-
-        Check if the erratum pkglist have the following structure::
+          .. code-block:: xml
 
             <collection short="">
                 <name>1</name>
             </collection>
         """
-        pkglist = self.erratum_pkglists[0]
-        names = pkglist.findall('collection[@short=""]/name')
-        with self.subTest(comment='pkglist have one name children'):
-            self.assertEqual(len(names), 1)
-        name = names[0]
-        with self.subTest(comment='name have no children'):
-            self.assertEqual(len(name.getchildren()), 0)
-        with self.subTest(comment='name have 1 as text'):
-            self.assertEqual(name.text, '1')
+        utils.sync_repo(self.cfg, self.repo['_href'])
+        utils.publish_repo(self.cfg, self.repo)
+        updates_element = (
+            get_repodata(self.cfg, self.repo['distributors'][0], 'updateinfo')
+        )
+        update_elements = _get_updates_by_id(updates_element)
+        self.assertIn(RPM_ERRATUM_ID, update_elements)
+
+        debug = ElementTree.tostring(update_elements[RPM_ERRATUM_ID])
+        pkglist_elements = update_elements[RPM_ERRATUM_ID].findall('pkglist')
+        self.assertEqual(len(pkglist_elements), 1, debug)
+
+        debug = ElementTree.tostring(pkglist_elements[0])
+        name_elements = (
+            pkglist_elements[0].findall('collection[@short=""]/name')
+        )
+        self.assertEqual(len(name_elements), 1, debug)
+        name_element = name_elements[0]
+        with self.subTest(comment='assert <name> has no children'):
+            self.assertEqual(len(name_element.getchildren()), 0, debug)
+        with self.subTest(comment="assert <name>'s text is correct"):
+            self.assertEqual(name_element.text, '1', debug)
+
+    def test_02_unassociate_publish(self):
+        """Unassociate a content unit and publish the repository.
+
+        Fetch ``updateinfo.xml``. Verify that an erratum with id
+        :data:`pulp_smash.constants.RPM_ERRATUM_ID` is not present.
+        """
+        client = api.Client(self.cfg, api.json_handler)
+        client.post(urljoin(self.repo['_href'], 'actions/unassociate/'), {
+            'criteria': {'filters': {'unit': {'name': RPM_ERRATUM_RPM_NAME}}}
+        })
+        utils.publish_repo(self.cfg, self.repo)
+        updates_element = (
+            get_repodata(self.cfg, self.repo['distributors'][0], 'updateinfo')
+        )
+        update_elements = _get_updates_by_id(updates_element)
+        self.assertNotIn(RPM_ERRATUM_ID, update_elements)
 
 
 class PkglistsTestCase(unittest.TestCase):
