@@ -110,21 +110,99 @@ class ClientTestCase(unittest.TestCase):
 
     def test_explicit_local_transport(self):
         """Assert it is possible to explicitly ask for a "local" transport."""
-        cfg = config.ServerConfig(utils.uuid4(), cli_transport='local')
+        cfg = config.PulpSmashConfig(systems=[
+            config.PulpSystem(
+                hostname=utils.uuid4(),
+                roles={
+                    'pulp cli': {},
+                    'shell': {'transport': 'local'},
+                }
+            )
+        ])
         self.assertIsInstance(cli.Client(cfg).machine, LocalMachine)
 
     def test_implicit_local_transport(self):
         """Assert it is possible to implicitly ask for a "local" transport."""
-        cfg = config.ServerConfig(socket.getfqdn())
+        cfg = config.PulpSmashConfig(systems=[
+            config.PulpSystem(
+                hostname=socket.getfqdn(),
+                roles={
+                    'pulp cli': {},
+                }
+            )
+        ])
         self.assertIsInstance(cli.Client(cfg).machine, LocalMachine)
 
     def test_default_response_handler(self):
         """Assert the default response handler checks return codes."""
-        cfg = config.ServerConfig(utils.uuid4(), cli_transport='local')
+        cfg = config.PulpSmashConfig(systems=[
+            config.PulpSystem(
+                hostname=utils.uuid4(),
+                roles={
+                    'pulp cli': {},
+                    'shell': {'transport': 'local'},
+                }
+            )
+        ])
         self.assertIs(cli.Client(cfg).response_handler, cli.code_handler)
 
     def test_explicit_response_handler(self):
         """Assert it is possible to explicitly set a response handler."""
-        cfg = config.ServerConfig(utils.uuid4(), cli_transport='local')
+        cfg = config.PulpSmashConfig(systems=[
+            config.PulpSystem(
+                hostname=utils.uuid4(),
+                roles={
+                    'pulp cli': {},
+                    'shell': {'transport': 'local'},
+                }
+            )
+        ])
         handler = mock.Mock()
         self.assertIs(cli.Client(cfg, handler).response_handler, handler)
+
+    def test_implicit_pulp_system(self):
+        """Assert it is possible to implicitly target a pulp cli PulpSystem."""
+        cfg = config.PulpSmashConfig(systems=[
+            config.PulpSystem(
+                hostname=utils.uuid4(),
+                roles={
+                    'pulp cli': {},
+                }
+            ),
+            config.PulpSystem(
+                hostname=utils.uuid4(),
+                roles={
+                    'pulp cli': {},
+                }
+            )
+        ])
+        with mock.patch('pulp_smash.cli.plumbum') as plumbum:
+            machine = mock.Mock()
+            plumbum.machines.SshMachine.return_value = machine
+            self.assertEqual(cli.Client(cfg).machine, machine)
+            plumbum.machines.SshMachine.assert_called_once_with(
+                cfg.systems[0].hostname)
+
+    def test_explicit_pulp_system(self):
+        """Assert it is possible to explicitly target a pulp cli PulpSystem."""
+        cfg = config.PulpSmashConfig(systems=[
+            config.PulpSystem(
+                hostname=utils.uuid4(),
+                roles={
+                    'pulp cli': {},
+                }
+            ),
+            config.PulpSystem(
+                hostname=utils.uuid4(),
+                roles={
+                    'pulp cli': {},
+                }
+            )
+        ])
+        with mock.patch('pulp_smash.cli.plumbum') as plumbum:
+            machine = mock.Mock()
+            plumbum.machines.SshMachine.return_value = machine
+            self.assertEqual(
+                cli.Client(cfg, pulp_system=cfg.systems[1]).machine, machine)
+            plumbum.machines.SshMachine.assert_called_once_with(
+                cfg.systems[1].hostname)

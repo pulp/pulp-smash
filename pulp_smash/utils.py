@@ -40,8 +40,8 @@ def get_broker(server_config):
     determine which AMQP broker is installed. If Qpid or RabbitMQ appear to be
     installed, return the name of that service. Otherwise, raise an exception.
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        system on which an AMQP broker exists.
+    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+        the system on which an AMQP broker exists.
     :returns: A string such as 'qpidd' or 'rabbitmq'.
     :raises pulp_smash.exceptions.NoKnownBrokerError: If unable to find any
         AMQP brokers on the target system.
@@ -80,23 +80,23 @@ def http_get(url, **kwargs):
 def pulp_admin_login(server_config):
     """Execute ``pulp-admin login``.
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
+    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+        the Pulp server being targeted.
     :return: The completed process.
     :rtype: pulp_smash.cli.CompletedProcess
     """
-    cmd = 'pulp-admin login -u {} -p {}'.format(*server_config.auth).split()
-    return cli.Client(server_config).run(cmd)
+    cmd = 'pulp-admin login -u {} -p {}'.format(*server_config.pulp_auth)
+    return cli.Client(server_config).run(cmd.split())
 
 
 def reset_pulp(server_config):
     """Stop Pulp, reset its database, remove certain files, and start it.
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
+    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+        the Pulp server being targeted.
     :returns: Nothing.
     """
-    svc_mgr = cli.ServiceManager(server_config)
+    svc_mgr = cli.GlobalServiceManager(server_config)
     svc_mgr.stop(PULP_SERVICES)
 
     # Reset the database and nuke accumulated files.
@@ -108,14 +108,19 @@ def reset_pulp(server_config):
     # Why not use runuser's `-u` flag? Because RHEL 6 ships an old version of
     # runuser that doesn't support the flag, and RHEL 6 is a supported Pulp
     # platform.
-    client = cli.Client(server_config)
-    prefix = '' if is_root(server_config) else 'sudo '
+    system = server_config.get_systems('mongod')[0]
+    client = cli.Client(server_config, pulp_system=system)
     client.run('mongo pulp_database --eval db.dropDatabase()'.split())
-    client.run((
-        prefix + 'runuser --shell /bin/sh apache --command pulp-manage-db'
-    ).split())
-    client.run((prefix + 'rm -rf /var/lib/pulp/content').split())
-    client.run((prefix + 'rm -rf /var/lib/pulp/published').split())
+
+    for index, system in enumerate(server_config.get_systems('api')):
+        prefix = '' if is_root(server_config, pulp_system=system) else 'sudo '
+        if index == 0:
+            client.run((
+                prefix + 'runuser --shell /bin/sh apache --command '
+                'pulp-manage-db'
+            ).split())
+        client.run((prefix + 'rm -rf /var/lib/pulp/content').split())
+        client.run((prefix + 'rm -rf /var/lib/pulp/published').split())
 
     svc_mgr.start(PULP_SERVICES)
 
@@ -151,7 +156,8 @@ def upload_import_unit(cfg, unit, import_params, repo):
             'upload_id': '…',
         }
 
-    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+        host.
     :param unit: The unit to be uploaded and imported, as a binary blob.
     :param import_params: A dict of parameters to be merged into the default
         set of import parameters during step 3.
@@ -186,8 +192,8 @@ def upload_import_erratum(server_config, erratum, repo_href):
 
     For most content types, use :meth:`upload_import_unit`.
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
+    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+        the Pulp server being targeted.
     :param erratum: A dict, with keys such as "id," "status," "issued," and
         "references."
     :param repo_href: The path to the repository into which ``erratum`` will be
@@ -221,7 +227,7 @@ class BaseAPITestCase(unittest.TestCase):
         The following class attributes are created this method:
 
         ``cfg``
-            A :class:`pulp_smash.config.ServerConfig` object.
+            A :class:`pulp_smash.config.PulpSmashConfig` object.
         ``resources``
             A set object. If a child class creates some resources that should
             be deleted when the test is complete, the child class should add
@@ -388,11 +394,12 @@ class DuplicateUploadsMixin(object):  # pylint:disable=too-few-public-methods
 def reset_squid(cfg):
     """Stop Squid, reset its cache directory, and restart it.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+        host.
     :returns: Nothing.
     """
     squid_version = _get_squid_version(cfg)
-    svc_mgr = cli.ServiceManager(cfg)
+    svc_mgr = cli.GlobalServiceManager(cfg)
     svc_mgr.stop(('squid',))
 
     # Remove and re-initialize the cache directory.
@@ -425,9 +432,9 @@ def skip_if_type_is_unsupported(unit_type_id, server_config=None):
     """Raise ``SkipTest`` if support for the named type is not availalble.
 
     :param unit_type_id: A content unit type ID, such as "ostree".
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted. If none is provided, the config returned by
-        :func:`pulp_smash.config.get_config` is used.
+    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+        the Pulp server being targeted. If none is provided, the config
+        returned by :func:`pulp_smash.config.get_config` is used.
     :raises: ``unittest.SkipTest`` if support is unavailable.
     :returns: Nothing.
     """
@@ -449,8 +456,8 @@ def get_unit_type_ids(server_config):
     an ID of ``python_package``. This function queries the server and returns
     those unit type IDs.
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
+    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+        the Pulp deployment being targeted.
     :returns: A set of content unit type IDs. For example: ``{'ostree',
         'python_package'}``.
 
@@ -468,8 +475,8 @@ def sync_repo(server_config, href):
     Checks are run against the server's response. If the sync appears to have
     failed, an exception is raised.
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
+    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+        the Pulp deployment being targeted.
     :param href: The API v2 path to the repository to sync.
     :returns: The server's response.
     """
@@ -499,7 +506,8 @@ def get_sha256_checksum(url):
 def publish_repo(cfg, repo, json=None):
     """Publish a repository.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about the Pulp host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        host.
     :param repo: A dict of detailed information about the repository to be
         published.
     :param json: Data to be encoded as JSON and sent as the request body.
@@ -525,7 +533,8 @@ def publish_repo(cfg, repo, json=None):
 def search_units(cfg, repo, criteria=None, response_handler=None):
     """Find content units in a ``repo``.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about the Pulp host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        host.
     :param repo: A dict of detailed information about the repository.
     :param criteria: A dict of criteria to pass in the search body. Defaults to
         an empty dict.

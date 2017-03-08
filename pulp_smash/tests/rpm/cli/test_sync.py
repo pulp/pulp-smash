@@ -154,7 +154,8 @@ class ForceSyncTestCase(_BaseTestCase):
 def get_rpm_names(cfg, repo_id):
     """Get a list of names of all packages in a repository.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp server.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+        deployment.
     :param repo_id: A RPM repository ID.
     :returns: The names of all modules in a repository, as an ``list``.
     """
@@ -171,7 +172,8 @@ def get_rpm_names(cfg, repo_id):
 def sync_repo(cfg, repo_id, force_sync=False):
     """Sync an RPM repository.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp server.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+        deployment.
     :param repo_id: A RPM repository ID.
     :param repo_id: A boolean flag to denote if is a force-full sync.
     :returns: A :class:`pulp_smash.cli.CompletedProcess`.

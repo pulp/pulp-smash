@@ -127,8 +127,8 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
 
         In addition, schedule the repository for deletion.
 
-        :param pulp_smash.config.ServerConfig cfg: Information about the Pulp
-            server being targeted.
+        :param pulp_smash.config.PulpSmashConfig cfg: Information about the
+            Pulp deployment being targeted.
         :param dist_cfg_updates: A dict to be merged into the RPM rsync
             distributor's ``distributor_config`` dict. At a minimum, this
             argument should have a value of ``{'remote': {…}}``.
@@ -158,8 +158,8 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
         Assert that only one task has this type, and that this task has a
         result of ``skipped``.
 
-        :param pulp_smash.config.ServerConfig cfg: Information about the Pulp
-            server being targeted.
+        :param pulp_smash.config.PulpSmashConfig cfg: Information about the
+            Pulp deployment being targeted.
         :param call_report: A call report returned from Pulp after requesting a
             publish; a dict.
         :returns: Nothing.
@@ -178,8 +178,8 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
         target system's filesystem, and that the correct number of RPMs are
         present in that directory.
 
-        :param pulp_smash.config.ServerConfig cfg: Information about the system
-            onto which files have been published.
+        :param pulp_smash.config.PulpSmashConfig cfg: Information about the
+            system onto which files have been published.
         :param distributor_cfg: A dict of information about an RPM rsync
             distributor.
         :param num_units: The number of units that should be on the target

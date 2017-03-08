@@ -172,16 +172,27 @@ class Client(object):
     mechanisms. We've covered response handling mechanisms — let's move on to
     request handling mechanisms.
 
-    When a client is instantiated, a :class:`pulp_smash.config.ServerConfig`
+    When a client is instantiated, a :class:`pulp_smash.config.PulpSmashConfig`
     must be passed to the constructor, and configuration options are copied
-    from the ``ServerConfig`` to the client. These options can be overridden on
-    a per-object or per-request basis. Here's an example:
+    from the ``PulpSmashConfig`` to the client. These options can be overridden
+    on a per-object or per-request basis. Here's an example:
 
     >>> from pulp_smash.api import Client
-    >>> from pulp_smash.config import ServerConfig
-    >>> cfg = ServerConfig('http://example.com', verify='~/Documents/my.crt')
+    >>> from pulp_smash.config import PulpSmashConfig
+    >>> cfg = config.PulpSmashConfig(
+    ...     pulp_auth=('username', 'password'),
+    ...     systems=[
+    ...         config.PulpSystem(
+    ...             hostname='example.com',
+    ...             roles={'api': {
+    ...                'scheme': 'https',
+    ...                'verify': '~/Documents/my.crt',
+    ...             }}
+    ...         )
+    ...     ]
+    ... )
     >>> client = api.Client(cfg)
-    >>> client.request_kwargs['url'] == 'http://example.com'
+    >>> client.request_kwargs['url'] == 'https://example.com'
     True
     >>> client.request_kwargs['verify'] == '~/Documents/my.crt'
     True
@@ -192,8 +203,8 @@ class Client(object):
     >>> response = client.get('/index.html')  # Do default SSL verification
 
     Anything accepted by the `Requests`_ functions may be placed in
-    ``request_kwargs`` or passed in to a specific call. You can set ``verify``,
-    ``auth`` and more.
+    ``request_kwargs`` or passed in to a specific call. You can set ``verify``
+    for example.
 
     The ``url`` argument is slightly special. When making a call, it is
     possible to pass in a relative URL, as shown in the examples above. (e.g.
@@ -235,11 +246,15 @@ class Client(object):
             server_config,
             response_handler=None,
             request_kwargs=None,
+            pulp_system=None,
     ):
         """Initialize this object with needed instance attributes."""
+        if not pulp_system:
+            pulp_system = server_config.get_systems('api')[0]
+        self.pulp_system = pulp_system
         self._cfg = server_config
-        self.request_kwargs = self._cfg.get_requests_kwargs()
-        self.request_kwargs['url'] = self._cfg.base_url
+        self.request_kwargs = self._cfg.get_requests_kwargs(pulp_system)
+        self.request_kwargs['url'] = self._cfg.get_base_url(pulp_system)
         self.request_kwargs.update(
             {} if request_kwargs is None else request_kwargs
         )
@@ -297,7 +312,7 @@ class Client(object):
         request_kwargs = self.request_kwargs.copy()
         request_kwargs['url'] = urljoin(request_kwargs['url'], url)
         request_kwargs.update(kwargs)
-        config_host = urlparse(self._cfg.base_url).netloc
+        config_host = urlparse(self._cfg.get_base_url(self.pulp_system)).netloc
         request_host = urlparse(request_kwargs['url']).netloc
         if request_host != config_host:
             warnings.warn(
@@ -315,40 +330,48 @@ class Client(object):
         )
 
 
-def poll_spawned_tasks(server_config, call_report):
+def poll_spawned_tasks(server_config, call_report, pulp_system=None):
     """Recursively wait for spawned tasks to complete. Yield response bodies.
 
     Recursively wait for each of the spawned tasks listed in the given `call
     report`_ to complete. For each task that completes, yield a response body
     representing that task's final state.
 
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
+    :param server_config: A :class:`pulp_smash.config.PulpSmashConfig` object.
     :param call_report: A dict-like object with a `call report`_ structure.
+    :param pulp_system: The system from where to pool the task. If ``None`` is
+        provided then the first system found with api role will be used.
     :returns: A generator yielding task bodies.
     :raises: Same as :meth:`poll_task`.
 
     .. _call report:
         http://docs.pulpproject.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
     """
+    if not pulp_system:
+        pulp_system = server_config.get_systems('api')[0]
     hrefs = (task['_href'] for task in call_report['spawned_tasks'])
     for href in hrefs:
-        for final_task_state in poll_task(server_config, href):
+        for final_task_state in poll_task(server_config, href, pulp_system):
             yield final_task_state
 
 
-def poll_task(server_config, href):
+def poll_task(server_config, href, pulp_system=None):
     """Wait for a task and its children to complete. Yield response bodies.
 
     Poll the task at ``href``, waiting for the task to complete. When a
     response is received indicating that the task is complete, yield that
     response body and recursively poll each child task.
 
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
+    :param server_config: A :class:`pulp_smash.config.PulpSmashConfig` object.
     :param href: The path to a task you'd like to monitor recursively.
+    :param pulp_system: The system from where to pool the task. If ``None`` is
+        provided then the first system found with api role will be used.
     :returns: An generator yielding response bodies.
     :raises pulp_smash.exceptions.TaskTimedOutError: If a task takes too
         long to complete.
     """
+    if not pulp_system:
+        pulp_system = server_config.get_systems('api')[0]
     # 360 * 5s == 1800s == 30m
     # NOTE: The timeout counter is synchronous. We query Pulp, then count down,
     # then query pulp, then count down, etc. This is… dumb.
@@ -356,8 +379,8 @@ def poll_task(server_config, href):
     poll_counter = 0
     while True:
         response = requests.get(
-            urljoin(server_config.base_url, href),
-            **server_config.get_requests_kwargs()
+            urljoin(server_config.get_base_url(pulp_system), href),
+            **server_config.get_requests_kwargs(pulp_system)
         )
         response.raise_for_status()
         attrs = response.json()

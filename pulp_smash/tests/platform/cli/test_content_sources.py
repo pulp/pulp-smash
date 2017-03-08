@@ -18,7 +18,7 @@ def generate_content_source(server_config, name, **kwargs):
     .. _Defining a Content Source:
         http://docs.pulpproject.org/user-guide/content-sources.html#defining-a-content-source
 
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
+    :param server_config: A :class:`pulp_smash.config.PulpSmashConfig` object.
     :param name: file name and content source id (string inside []).
     :param kwargs: each item will be converted to content source properties
         where the key is the property name and the value its value.
@@ -48,7 +48,7 @@ def generate_content_source(server_config, name, **kwargs):
 def _get_content_source_ids(server_config):
     """Get the id list of all content sources, or empty list.
 
-    :param server_config: A :class:`pulp_smash.config.ServerConfig` object.
+    :param server_config: A :class:`pulp_smash.config.PulpSmashConfig` object.
     :returns: A list of content source IDs, where each ID is a string.
     """
     keyword = 'Source Id:'

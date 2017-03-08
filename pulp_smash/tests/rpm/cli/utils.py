@@ -6,8 +6,8 @@ from pulp_smash import cli
 def count_langpacks(server_config, repo_id):
     """Tell how many langpack content units are in the given repository.
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
+    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+        the Pulp deployment being targeted.
     :param repo_id: A repository ID.
     :returns: The number of langpacks in the named repository, as an integer.
     """

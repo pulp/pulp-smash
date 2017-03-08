@@ -31,7 +31,8 @@ def setUpModule():  # pylint:disable=invalid-name
 def create_docker_repo(cfg, upstream_name, use_v1=False):
     """Create a docker repository.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+        host.
     :param upstream_name: The Docker container upstream name.
     :param use_v1: If ``True`` use Docker V1 feed URL else use Docker V2 feed
         URL.
@@ -55,7 +56,8 @@ def create_docker_repo(cfg, upstream_name, use_v1=False):
 def import_upload(cfg, repo, params):
     """Create or update a docker repository.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+        host.
     :param repo: A dict of information about the targed repository.
     :param params: A dict of information to pass as import_upload body.
     :return: A dict of information about the creation/update report.

@@ -88,7 +88,17 @@ class ClientTestCase(unittest.TestCase):
         methods = {'delete', 'get', 'head', 'options', 'patch', 'post', 'put'}
         cls.mocks = {}
         for method in methods:
-            client = api.Client(config.ServerConfig('http://example.com'))
+            client = api.Client(config.PulpSmashConfig(
+                pulp_auth=['admin', 'admin'],
+                systems=[
+                    config.PulpSystem(
+                        hostname='example.com',
+                        roles={'api': {
+                            'scheme': 'http',
+                        }}
+                    )
+                ]
+            ))
             with mock.patch.object(client, 'request') as request:
                 getattr(client, method)('')
             cls.mocks[method] = request
@@ -115,15 +125,33 @@ class ClientTestCase2(unittest.TestCase):
         The argument should be saved as an instance attribute.
         """
         response_handler = mock.Mock()
-        client = api.Client(config.ServerConfig('base url'), response_handler)
+        client = api.Client(config.PulpSmashConfig(
+            pulp_auth=['admin', 'admin'],
+            systems=[
+                config.PulpSystem(
+                    hostname='base url',
+                    roles={'api': {'scheme': 'http'}},
+                )
+            ]
+        ), response_handler)
         self.assertIs(client.response_handler, response_handler)
 
     def test_json_arg(self):
         """Assert methods with a ``json`` argument pass on that argument."""
         json = mock.Mock()
-        client = api.Client(config.ServerConfig('base url'))
+        client = api.Client(config.PulpSmashConfig(
+            pulp_auth=['admin', 'admin'],
+            systems=[
+                config.PulpSystem(
+                    hostname='base url',
+                    roles={'api': {'scheme': 'http'}},
+                )
+            ]
+        ))
         for method in {'patch', 'post', 'put'}:
             with self.subTest(method=method):
                 with mock.patch.object(client, 'request') as request:
                     getattr(client, method)('some url', json)
+                self.assertEqual(
+                    request.call_args[0], (method.upper(), 'some url'))
                 self.assertIs(request.call_args[1]['json'], json)

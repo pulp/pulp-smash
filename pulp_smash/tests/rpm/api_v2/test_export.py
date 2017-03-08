@@ -89,7 +89,7 @@ class ExportDirMixin(DisableSELinuxMixin):
     other methods only if more granularity is needed.
 
     A class attribute named ``cfg`` must be present. It should be a
-    :class:`pulp_smash.config.ServerConfig`.
+    :class:`pulp_smash.config.PulpSmashConfig`.
     """
 
     def __init__(self, *args, **kwargs):

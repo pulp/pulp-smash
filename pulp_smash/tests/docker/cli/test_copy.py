@@ -22,8 +22,8 @@ def _get_unit_ids(server_config, repo_id, unit_type, regex):
     This method is highly specific to the tests in this module, and the best
     way to understand it is to read its source code.
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
+    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+        the Pulp server being targeted.
     :param repo_id: A docker repository ID.
     :param unit_type: A type of docker content unit, like "image" or "tag."
     :param regex: A regex for searching stdout for unit IDs.

@@ -20,8 +20,8 @@ def setUpModule():  # pylint:disable=invalid-name
 def get_num_units_in_repo(server_config, repo_id):
     """Tell how many puppet modules are in a repository.
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
+    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+        the Pulp server being targeted.
     :param repo_id: A Puppet repository ID.
     :returns: The number of puppet modules in a repository, as an ``int``.
     """

@@ -121,14 +121,14 @@ class SkipIfTypeIsUnsupportedTestCase(unittest.TestCase):
         """Assert nothing happens if the given unit type is supported.
 
         Also assert :func:`pulp_smash.config.get_config` is not called, as we
-        provide a :class:`pulp_smash.config.ServerConfig` argument.
+        provide a :class:`pulp_smash.config.PulpSmashConfig` argument.
         """
         with mock.patch.object(config, 'get_config') as get_config:
             with mock.patch.object(utils, 'get_unit_type_ids') as get_u_t_ids:
                 get_u_t_ids.return_value = {self.unit_type_id}
                 self.assertIsNone(utils.skip_if_type_is_unsupported(
                     self.unit_type_id,
-                    mock.Mock(),  # a ServerConfig object
+                    mock.Mock(),  # a PulpSmashConfig object
                 ))
         self.assertEqual(get_config.call_count, 0)
 
@@ -136,7 +136,7 @@ class SkipIfTypeIsUnsupportedTestCase(unittest.TestCase):
         """Assert ``SkipTest`` is raised if the given unit type is unsupported.
 
         Also assert :func:`pulp_smash.config.get_config` is called, as we do
-        not provide a :class:`pulp_smash.config.ServerConfig` argument.
+        not provide a :class:`pulp_smash.config.PulpSmashConfig` argument.
         """
         with mock.patch.object(config, 'get_config') as get_config:
             with mock.patch.object(utils, 'get_unit_type_ids') as get_u_t_ids:
@@ -224,7 +224,15 @@ class PulpAdminLoginTestCase(unittest.TestCase):
     def test_run(self):
         """Assert the function executes ``cli.Client.run``."""
         with mock.patch.object(cli, 'Client') as client:
-            cfg = config.ServerConfig('http://example.com', auth=['u', 'p'])
+            cfg = config.PulpSmashConfig(
+                pulp_auth=['u', 'p'],
+                systems=[
+                    config.PulpSystem(
+                        hostname='example.com',
+                        roles={'pulp cli': {}}
+                    )
+                ]
+            )
             response = utils.pulp_admin_login(cfg)
             self.assertIs(response, client.return_value.run.return_value)
 

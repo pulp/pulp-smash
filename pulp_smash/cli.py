@@ -3,6 +3,7 @@
 import contextlib
 import os
 import socket
+from abc import ABCMeta, abstractmethod
 from urllib.parse import urlparse
 
 import plumbum
@@ -53,14 +54,18 @@ def _get_hostname(urlstring):
     return parts.hostname
 
 
-def _is_root(cfg):
+def _is_root(cfg, pulp_system=None):
     """Tell if we are root on the target system.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about the target
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the target
         system.
+    :param pulp_system: A :class:`pulp_smash.config.PulpSystem` object that
+        should be targeted instead of choosing the first system found with the
+        ``pulp cli`` role.
     :returns: Either ``True`` or ``False``.
     """
-    if Client(cfg).run(('id', '-u')).stdout.strip() == '0':
+    result = Client(cfg, pulp_system=pulp_system).run(('id', '-u'))
+    if result.stdout.strip() == '0':
         return True
     return False
 
@@ -162,7 +167,9 @@ class Client(object):  # pylint:disable=too-few-public-methods
     local system or a remote system. Here is a simple usage example:
 
     >>> from pulp_smash import cli, config
-    >>> server_config = config.ServerConfig('localhost')
+    >>> server_config = config.PulpSmashConfig(systems={
+    ...     'localhost': {'shell': {'transport': 'local'}}
+    ... })
     >>> client = cli.Client(server_config)
     >>> response = client.run(('echo', '-n', 'foo'))
     >>> response.returncode == 0
@@ -183,29 +190,34 @@ class Client(object):  # pylint:disable=too-few-public-methods
         result is handed to this callback, and the callback's return value is
         handed to the user.
 
-    If ``server_config.cli_transport`` is ``'local'`` or ``'ssh``, set
-    ``machine`` so that commands run locally or over SSH, respectively. If
-    ``server_config.cli_transport`` is ``None``, guess how to set ``machine``
-    by comparing the hostname embedded in ``server_config.base_url`` against
-    the current system's hostname. If they match, set ``machine`` to execute
-    commands locally; and vice versa.
+    If ``pulp_system.roles['shell']['transport']`` is ``'local'`` or ``'ssh``,
+    set ``machine`` so that commands run locally or over SSH, respectively. If
+    ``pulp_system.roles['shell']['transport']`` is ``None``, guess how to set
+    ``machine`` by comparing the hostname embedded in ``pulp_system.hostname``
+    against the current system's hostname. If they match, set ``machine`` to
+    execute commands locally; and vice versa.
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        system on which commands will be executed.
+    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+        the system on which commands will be executed.
     :param response_handler: A callback function. Defaults to
         :func:`pulp_smash.cli.code_handler`.
+    :param pulp_system: A :class:`pulp_smash.config.PulpSystem` object that
+        should be targeted instead of choosing the first system found with the
+        ``pulp cli`` role.
 
     .. _Plumbum: http://plumbum.readthedocs.io/en/latest/index.html
     """
 
-    def __init__(self, server_config, response_handler=None):
+    def __init__(self, server_config, response_handler=None, pulp_system=None):
         """Initialize this object with needed instance attributes."""
         # How do we make requests?
-        hostname = _get_hostname(server_config.base_url)
-        if server_config.cli_transport is None:
+        if not pulp_system:
+            pulp_system = server_config.get_systems('pulp cli')[0]
+        self.pulp_system = pulp_system
+        hostname = pulp_system.hostname
+        transport = pulp_system.roles.get('shell', {}).get('transport')
+        if transport is None:
             transport = 'local' if hostname == socket.getfqdn() else 'ssh'
-        else:
-            transport = server_config.cli_transport
         if transport == 'local':
             self.machine = plumbum.machines.local
         else:  # transport == 'ssh'
@@ -243,19 +255,237 @@ class Client(object):  # pylint:disable=too-few-public-methods
         return self.response_handler(completed_process)
 
 
-class ServiceManager(object):
+class BaseServiceManager(metaclass=ABCMeta):
+    """A base service manager.
+
+    Each subclass must implement the abstract methods to provide the service
+    management on a single or multiple systems.
+
+    Subclasses should take advantage of the helper methods offered by this
+    class in order to manage services and check the proper service manager
+    softeare available on a system.
+
+    This base class also offers a context manager to temporary disable SELinux.
+    It is useful when managing services on RHEL systems earlier than 7 which
+    has SELinux issues when running on Jenkins.
+
+    Make sure to call this class ``__init__`` method on the subclass
+    ``__init__`` method to ensure the helper methods functionality.
+    """
+
+    def __init__(self):
+        """Initialize variables expected by the helper methods."""
+        self._on_jenkins = 'JENKINS_HOME' in os.environ
+
+    @staticmethod
+    def _get_service_manager(cfg, pulp_system):
+        """Talk to the target system and determine the type of service manager.
+
+        Return "systemd" or "sysv" if the service manager appears to be one of
+        those. Raise an exception otherwise.
+        """
+        try:
+            return _SERVICE_MANAGERS[pulp_system.hostname]
+        except KeyError:
+            pass
+
+        client = Client(cfg, echo_handler, pulp_system=pulp_system)
+        commands_managers = (
+            ('which systemctl', 'systemd'),
+            ('which service', 'sysv'),
+            ('test -x /sbin/service', 'sysv'),
+        )
+        for command, service_manager in commands_managers:
+            if client.run(command.split()).returncode == 0:
+                _SERVICE_MANAGERS[pulp_system.hostname] = service_manager
+                return service_manager
+        raise exceptions.NoKnownServiceManagerError(
+            'Unable to determine the service manager used by {}. It does not '
+            'appear to be any of {}.'
+            .format(
+                pulp_system.hostname,
+                {manager for _, manager in commands_managers}
+            )
+        )
+
+    @contextlib.contextmanager
+    def _disable_selinux(self, client, sudo=False):
+        """Context manager to temporary disable SELinux."""
+        sudo = ('sudo',) if sudo else ()
+        if self._on_jenkins:
+            client.run(sudo + ('setenforce', '0'))
+        yield
+        if self._on_jenkins:
+            client.run(sudo + ('setenforce', '1'))
+
+    @staticmethod
+    def _start_sysv(client, sudo, services):
+        sudo = ('sudo',) if sudo else ()
+        return tuple((
+            client.run(sudo + ('service', service, 'start'))
+            for service in services
+        ))
+
+    @staticmethod
+    def _start_systemd(client, sudo, services):
+        sudo = ('sudo',) if sudo else ()
+        cmd = sudo + ('systemctl', 'start') + tuple(services)
+        return (client.run(cmd),)
+
+    @staticmethod
+    def _stop_sysv(client, sudo, services):
+        sudo = ('sudo',) if sudo else ()
+        return tuple((
+            client.run(sudo + ('service', service, 'stop'))
+            for service in services
+        ))
+
+    @staticmethod
+    def _stop_systemd(client, sudo, services):
+        sudo = ('sudo',) if sudo else ()
+        cmd = sudo + ('systemctl', 'stop') + tuple(services)
+        return (client.run(cmd),)
+
+    @abstractmethod
+    def start(self, services):
+        """Start the given services.
+
+        :param services: A list or tuple of services to be started.
+        """
+        pass
+
+    @abstractmethod
+    def stop(self, services):
+        """Stop the given services.
+
+        :param services: A list or tuple of services to be stopped.
+        """
+        pass
+
+
+class GlobalServiceManager(BaseServiceManager):
+    """A service manager that manage services across all Pulp systems.
+
+    Each instance of this class will manage services on all Pulp systems
+    available on the :class:`pulp_smash.config.PulpSmashConfig` object
+    provided.
+
+    This means that asking this service manager, for example, to start
+    ``httpd`` it will iterate over all the available systems and will start the
+    service on every system that has the ``api`` role. The example below
+    illustrate this:
+
+    >>> from pulp_smash import cli, config
+    >>> svc_mgr = cli.GlobalServiceManager(config.get_config())
+    >>> svc_manager.start(['httpd'])
+
+    The :class:`GlobalServiceManager` object will create clients and check if
+    is running as root on demand for every system when managing services. If on
+    a given deployment it has 4 systems and only 2 have the related services
+    available then a connection will be done to those 2 an not on all 4.
+
+    Also, the :class:`GlobalServiceManager` object will try to cache as much
+    information as possible to avoid doing many connections.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        deployment.
+    :raises pulp_smash.exceptions.NoKnownServiceManagerError: If unable to find
+        any service manager on one of the target systems.
+    """
+
+    def __init__(self, cfg):
+        """Initialize a GlobalServiceManager object."""
+        super().__init__()
+        self._cfg = cfg
+        self._is_root_cache = {}
+
+    def _check_root(self, pulp_system):
+        """Tell if we are root on the target system.
+
+        Use the cache if the information is already available.
+        """
+        try:
+            return self._is_root_cache[pulp_system.hostname]
+        except KeyError:
+            pass
+
+        is_root = _is_root(self._cfg, pulp_system)
+        self._is_root_cache[pulp_system.hostname] = is_root
+        return is_root
+
+    def start(self, services):
+        """Start the services on every system that has the services.
+
+        :param services: An iterable of service names.
+        :return: A dict mapping the affected systems' hostnames with a list of
+            :class:`pulp_smash.cli.CompletedProcess` objects.
+        """
+        services = set(services)
+        result = {}
+        for system in self._cfg.systems:
+            intersection = services.intersection(
+                self._cfg.services_for_roles(system.roles))
+            if intersection:
+                client = Client(self._cfg, pulp_system=system)
+                svc_mgr = self._get_service_manager(self._cfg, system)
+                sudo = not self._check_root(system)
+                if svc_mgr == 'sysv':
+                    with self._disable_selinux(client, sudo):
+                        result[system.hostname] = self._start_sysv(
+                            client, sudo, services)
+                elif svc_mgr == 'systemd':
+                    result[system.hostname] = self._start_systemd(
+                        client, sudo, services)
+                else:
+                    raise NotImplementedError(
+                        'Service manager "{}" not supported on "{}"'.format(
+                            svc_mgr, system.hostname)
+                    )
+        return result
+
+    def stop(self, services):
+        """Stop the services on every system that has the services.
+
+        :param services: An iterable of service names.
+        :return: A dict mapping the affected systems' hostnames with a list of
+            :class:`pulp_smash.cli.CompletedProcess` objects.
+        """
+        services = set(services)
+        result = {}
+        for system in self._cfg.systems:
+            intersection = services.intersection(
+                self._cfg.services_for_roles(system.roles))
+            if intersection:
+                client = Client(self._cfg, pulp_system=system)
+                svc_mgr = self._get_service_manager(self._cfg, system)
+                sudo = not self._check_root(system)
+                if svc_mgr == 'sysv':
+                    with self._disable_selinux(client, sudo):
+                        result[system.hostname] = self._stop_sysv(
+                            client, sudo, services)
+                elif svc_mgr == 'systemd':
+                    result[system.hostname] = self._stop_systemd(
+                        client, sudo, services)
+                else:
+                    raise NotImplementedError(
+                        'Service manager not supported: {}'.format(svc_mgr)
+                    )
+        return result
+
+
+class ServiceManager(BaseServiceManager):
     """A service manager on a system.
 
     Each instance of this class represents the service manager on a system. An
     example may help to clarify this idea:
 
     from pulp_smash import cli, config
-    >>> svc_mgr = cli.ServiceManager(config.get_config())
-    >>> completed_process = svc_manager.stop(['httpd'])
-    >>> completed_process = svc_manager.start(['httpd'])
+    >>> svc_mgr = cli.ServiceManager(config.get_config(), pulp_system)
+    >>> completed_process_list = svc_manager.stop(['httpd'])
+    >>> completed_process_list = svc_manager.start(['httpd'])
 
     In the example above, the ``svc_mgr`` object represents the service manager
-    on the host referenced by :func:`pulp_smash.config.get_config`.
+    on the host referenced by ``pulp_system``.
 
     Upon instantiation, a :class:`ServiceManager` object talks to its target
     system and uses simple heuristics to determine which service manager is
@@ -268,56 +498,20 @@ class ServiceManager(object):
     either execute commands as root or can successfully execute ``sudo``. You
     may need to edit your ``~/.ssh/config`` file.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about the target
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the target
         system.
+    :param pulp_system: A :class:`pulp_smash.config.PulpSystem` object to be
+        targeted.
     :raises pulp_smash.exceptions.NoKnownServiceManagerError: If unable to find
         any service manager on the target system.
     """
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, pulp_system):
         """Initialize a new object."""
-        self._client = Client(cfg)
-        self._sudo = () if _is_root(cfg) else ('sudo',)
-        self._svc_mgr = self._get_service_manager(cfg)
-        self._on_jenkins = 'JENKINS_HOME' in os.environ
-
-    @staticmethod
-    def _get_service_manager(server_config):
-        """Talk to the target system and determine the type of service manager.
-
-        Return "systemd" or "sysv" if the service manager appears to be one of
-        those. Raise an exception otherwise.
-        """
-        hostname = _get_hostname(server_config.base_url)
-        try:
-            return _SERVICE_MANAGERS[hostname]
-        except KeyError:
-            pass
-
-        client = Client(server_config, echo_handler)
-        commands_managers = (
-            ('which systemctl', 'systemd'),
-            ('which service', 'sysv'),
-            ('test -x /sbin/service', 'sysv'),
-        )
-        for command, service_manager in commands_managers:
-            if client.run(command.split()).returncode == 0:
-                _SERVICE_MANAGERS[hostname] = service_manager
-                return service_manager
-        raise exceptions.NoKnownServiceManagerError(
-            'Unable to determine the service manager used by {}. It does not '
-            'appear to be any of {}.'
-            .format(hostname, {manager for _, manager in commands_managers})
-        )
-
-    @contextlib.contextmanager
-    def _disable_selinux(self):
-        """Context manager to temporary disable SELinux."""
-        if self._on_jenkins:
-            self._client.run(self._sudo + ('setenforce', '0'))
-        yield
-        if self._on_jenkins:
-            self._client.run(self._sudo + ('setenforce', '1'))
+        super().__init__()
+        self._client = Client(cfg, pulp_system=pulp_system)
+        self._sudo = not _is_root(cfg, pulp_system)
+        self._svc_mgr = self._get_service_manager(cfg, pulp_system)
 
     def start(self, services):
         """Start the given services.
@@ -327,24 +521,14 @@ class ServiceManager(object):
             objects.
         """
         if self._svc_mgr == 'sysv':
-            with self._disable_selinux():
-                return self._start_sysv(services)
+            with self._disable_selinux(self._client, self._sudo):
+                return self._start_sysv(self._client, self._sudo, services)
         elif self._svc_mgr == 'systemd':
-            return self._start_systemd(services)
+            return self._start_systemd(self._client, self._sudo, services)
         else:
             raise NotImplementedError(
                 'Service manager not supported: {}'.format(self._svc_mgr)
             )
-
-    def _start_sysv(self, services):
-        return tuple((
-            self._client.run(self._sudo + ('service', service, 'start'))
-            for service in services
-        ))
-
-    def _start_systemd(self, services):
-        cmd = self._sudo + ('systemctl', 'start') + tuple(services)
-        return (self._client.run(cmd),)
 
     def stop(self, services):
         """Stop the given services.
@@ -354,24 +538,14 @@ class ServiceManager(object):
             objects.
         """
         if self._svc_mgr == 'sysv':
-            with self._disable_selinux():
-                return self._stop_sysv(services)
+            with self._disable_selinux(self._client, self._sudo):
+                return self._stop_sysv(self._client, self._sudo, services)
         elif self._svc_mgr == 'systemd':
-            return self._stop_systemd(services)
+            return self._stop_systemd(self._client, self._sudo, services)
         else:
             raise NotImplementedError(
                 'Service manager not supported: {}'.format(self._svc_mgr)
             )
-
-    def _stop_sysv(self, services):
-        return tuple((
-            self._client.run(self._sudo + ('service', service, 'stop'))
-            for service in services
-        ))
-
-    def _stop_systemd(self, services):
-        cmd = self._sudo + ('systemctl', 'stop') + tuple(services)
-        return (self._client.run(cmd),)
 
 
 class PackageManager(object):
@@ -399,7 +573,7 @@ class PackageManager(object):
     either execute commands as root or can successfully execute ``sudo``. You
     may need to edit your ``~/.ssh/config`` file.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about the target
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the target
         system.
     :raises pulp_smash.exceptions.NoKnownPackageManagerError: If unable to find
         any package manager on the target system.

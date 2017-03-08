@@ -71,8 +71,8 @@ class UtilsMixin(object):  # pylint:disable=too-few-public-methods
     def create_repo(self, cfg):
         """Create a repository and schedule it for deletion.
 
-        :param pulp_smash.config.ServerConfig cfg: The Pulp system on which to
-            create a repository.
+        :param pulp_smash.config.PulpSmashConfig cfg: The Pulp system on which
+            to create a repository.
         :return: The repository's ID.
         """
         repo_id = utils.uuid4()
@@ -93,8 +93,8 @@ def gen_yum_config_file(cfg, repositoryid, **kwargs):
     Generate a yum configuration file containing a single repository section,
     and write it to ``/etc/yum.repos.d/{repositoryid}.repo``.
 
-    :param pulp_smash.config.ServerConfig cfg: The system on which to create a
-        yum configuration file.
+    :param pulp_smash.config.PulpSmashConfig cfg: The system on which to create
+        a yum configuration file.
     :param repositoryid: The section's ``repositoryid``. Used when naming the
         configuration file and populating the brackets at the head of the file.
         For details, see yum.conf(5).
@@ -117,8 +117,8 @@ def gen_yum_config_file(cfg, repositoryid, **kwargs):
 def _get_rpm_names_versions(server_config, repo_id):
     """Get a dict of repo's RPMs with names as keys, mapping to version lists.
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
+    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+        the Pulp deployment being targeted.
     :param repo_id: A RPM repository ID.
     :returns: The name and versions of each package in the repository, with the
         versions sorted in ascending order. For example: ``{'walrus': ['0.71',

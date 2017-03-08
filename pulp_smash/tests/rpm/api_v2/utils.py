@@ -46,7 +46,8 @@ def gen_distributor():
 def get_repodata_repomd_xml(cfg, distributor, response_handler=None):
     """Download the given repository's ``repodata/repomd.xml`` file.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+        host.
     :param distributor: A dict of information about a repository distributor.
     :param response_handler: The callback function used by
         :class:`pulp_smash.api.Client` after downloading the ``repomd.xml``
@@ -71,7 +72,8 @@ def get_repodata(
         repomd_xml=None):
     """Download a file of the given ``type_`` from a ``repodata/`` directory.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+        host.
     :param distributor: A dict of information about a repository distributor.
     :param type_: The type of file to fetch from a repository's ``repodata/``
         directory. Valid values might be "updateinfo" or "group".
@@ -149,8 +151,8 @@ class DisableSELinuxMixin(object):  # pylint:disable=too-few-public-methods
         enforcing on the target Pulp system, then disable SELinux and schedule
         it to be re-enabled. (Method ``addCleanup`` is used for the schedule.)
 
-        :param pulp_smash.config.ServerConfig cfg: Information about the Pulp
-            server being targeted.
+        :param pulp_smash.config.PulpSmashConfig cfg: Information about the
+            Pulp deployment being targeted.
         :param pulp_issue_id: The (integer) ID of a `Pulp issue`_. If the
             referenced issue is fixed in the Pulp system under test, this
             method immediately returns.
@@ -208,8 +210,8 @@ class TemporaryUserMixin(object):
 
         In addition, schedule the user for deletion with ``self.addCleanup``.
 
-        :param pulp_smash.config.ServerConfig cfg: Information about the host
-            being targeted.
+        :param pulp_smash.config.PulpSmashConfig cfg: Information about the
+            host being targeted.
         :returns: A ``(username, private_key)`` tuple.
         """
         creator = self._make_user(cfg)
@@ -308,8 +310,8 @@ class TemporaryUserMixin(object):
         ``600``. In addition, schedule the key for deletion with
         ``self.addCleanup``.
 
-        :param pulp_smash.config.ServerConfig cfg: Information about the host
-            being targeted.
+        :param pulp_smash.config.PulpSmashConfig cfg: Information about the
+            host being targeted.
         :returns: The path to the private key on disk, as a string.
         """
         sudo = '' if utils.is_root(cfg) else 'sudo '
@@ -347,7 +349,8 @@ def get_unit(cfg, distributor, unit_name, primary_xml=None):
         >>> foo_rpm = get_unit(cfg, distributor, 'foo.rpm', primary_xml)
         >>> bar_rpm = get_unit(cfg, distributor, 'bar.rpm', primary_xml)
 
-    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+        host.
     :param distributor: A dict of information about a repository distributor.
     :param unit_name: The name of a content unit to be fetched. For example:
         "bear-4.1-1.noarch.rpm".
@@ -377,7 +380,8 @@ def get_unit(cfg, distributor, unit_name, primary_xml=None):
 def get_dists_by_type_id(cfg, repo):
     """Return the named repository's distributors, keyed by their type IDs.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+        host.
     :param repo_href: A dict of information about a repository.
     :returns: A dict in the form ``{'type_id': {distributor_info}}``.
     """
@@ -397,7 +401,8 @@ def set_pulp_manage_rsync(cfg, boolean):
     rsync Distributor → Configuration
     <http://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/iso-rsync-distributor.html#configuration>`_.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+        host.
     :param boolean: Either ``True`` or ``False``.
     :returns: Information about the executed command, or ``None`` if no command
         was executed.

@@ -19,10 +19,10 @@ def restart_pulp(cfg):
     Unlike :func:`pulp_smash.utils.reset_pulp`, do not reset the state of any
     of Pulp's services.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about the Pulp
-        server being targeted.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        deployment being targeted.
     """
-    svc_mgr = cli.ServiceManager(cfg)
+    svc_mgr = cli.GlobalServiceManager(cfg)
     svc_mgr.stop(PULP_SERVICES)
     svc_mgr.start(PULP_SERVICES)
 
@@ -30,8 +30,8 @@ def restart_pulp(cfg):
 def get_pulp_worker_procs(cfg):
     """Use ``ps aux`` to get information about each Pulp worker process.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about the Pulp
-        server being targeted.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        deployment being targeted.
     :return: An iterable of strings, one per line of matching output.
     """
     cmd = ['ps', 'aux']

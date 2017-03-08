@@ -56,7 +56,7 @@ class BrokerTestCase(unittest.TestCase):
         if check_issue_2387(self.cfg):
             self.skipTest('https://pulp.plan.io/issues/2387')
         self.broker = (utils.get_broker(self.cfg),)
-        self.svc_mgr = cli.ServiceManager(self.cfg)
+        self.svc_mgr = cli.GlobalServiceManager(self.cfg)
 
     def tearDown(self):
         """Ensure Pulp services and AMQP broker are running.

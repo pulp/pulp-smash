@@ -5,7 +5,7 @@ from os.path import join
 
 from xdg import BaseDirectory
 
-from pulp_smash.config import ServerConfig
+from pulp_smash.config import PulpSmashConfig
 
 MESSAGE = tuple((
     '''\
@@ -16,33 +16,48 @@ MESSAGE = tuple((
     '''\
     {
         "pulp": {
-            "base_url": "https://pulp.example.com",
             "auth": ["username", "password"],
-            "verify": true,
-            "version": "2.7.5",
-            "cli_transport": "local"
+            "version": "2.12.2"
         },
-        "pulp agent": {
-            "base_url": "https://pulp-agent.example.com"
-        }
+        "systems": [
+            {
+                "hostname": "pulp.example.com",
+                "roles": {
+                    "amqp broker": {"service": "qpidd"},
+                    "api": {
+                        "scheme": "https",
+                        "verify": true
+                    },
+                    "mongod": {},
+                    "pulp cli": {},
+                    "pulp celerybeat": {},
+                    "pulp resource manager": {},
+                    "pulp workers": {},
+                    "shell": {"transport": "local"},
+                    "squid": {}
+                }
+            }
+        ]
     }''',
     '''\
-    Each section provides information about a single Pulp-related service and
-    the host on which that service is installed. The "pulp" and "pulp agent"
-    sections tell about the Pulp and Pulp Agent services, respectively. The
-    former is required. The latter is optional, and if omitted, relevant tests
-    are skipped.
+    This configuration file format allows configuring either single machine
+    Pulp deployment (as seen in the example above) or clustered Pulp deployment
+    where each service can be installed on its own machine. The "pulp" section
+    lets you declare the version of and authentication credentials for the Pulp
+    deployment under test. The "systems" section provides information about
+    each system that composes the deployment. A system must have its hostname
+    and the roles that system has.
     ''',
     '''\
-    The `verify`, `version` and `cli_transport` keys are optional. The `verify`
-    option can be used to explicitly enable or disable SSL verification. The
-    `version` option can be used to explicitly run tests suitable for an older
-    version of Pulp. By default, Pulp Smash assumes that the Pulp server under
-    test is the latest development version. The `cli_transport` key can be used
-    to explicitly choose how to contact the Pulp server when executing shell
-    commands. This can be set to "local" or "ssh". If omitted, Pulp Smash
-    guesses which transport to use by comparing the hostname in the `base_url`
-    against the current system's hostname.
+    Not all roles requires additional information. Currently, only the amqp
+    broker, api and shell roles do. The amqp broker expects the service to be
+    defined and it can be qpidd or rabbitmq. The api role means that httpd will
+    be running on the system. The api's scheme allows specifying if the API
+    should be accessed using http or https, verify allows specifying if the
+    request SSL should be verified (true or false or a path to a certificate
+    file). The shell role configures how the system will be accessed by using a
+    local or ssh transport, only set local if Pulp Smash is running on that
+    same system.
     ''',
     '''\
     Notes:
@@ -70,7 +85,7 @@ MESSAGE = tuple((
 
 def main():
     """Provide usage instructions to the user."""
-    cfg = ServerConfig()
+    cfg = PulpSmashConfig()
     cfg_path = join(
         # pylint:disable=protected-access
         BaseDirectory.save_config_path(cfg._xdg_config_dir),

@@ -52,7 +52,7 @@ class BaseTestCase(unittest.TestCase):
 
     def tearDown(self):
         """Start all of Pulp's services."""
-        cli.ServiceManager(config.get_config()).start(
+        cli.GlobalServiceManager(config.get_config()).start(
             CONFLICTING_SERVICES.union(REQUIRED_SERVICES)
         )
 
@@ -62,7 +62,7 @@ class PositiveTestCase(BaseTestCase):
 
     def test_conflicting_stopped(self):
         """Test with :data:`CONFLICTING_SERVICES` stopped."""
-        cli.ServiceManager(self.cfg).stop((
+        cli.GlobalServiceManager(self.cfg).stop((
             'pulp_celerybeat',
             'pulp_resource_manager',
             'pulp_workers',
@@ -75,7 +75,7 @@ class NegativeTestCase(BaseTestCase):
 
     def test_required_stopped(self):
         """Test with :data:`REQUIRED_SERVICES` stopped."""
-        cli.ServiceManager(self.cfg).stop(REQUIRED_SERVICES)
+        cli.GlobalServiceManager(self.cfg).stop(REQUIRED_SERVICES)
         self._do_test()
 
     def test_conflicting_running(self):
@@ -84,7 +84,7 @@ class NegativeTestCase(BaseTestCase):
 
     def test_celerybeat_running(self):
         """Test with ``pulp_celerybeat`` running."""
-        cli.ServiceManager(config.get_config()).stop((
+        cli.GlobalServiceManager(config.get_config()).stop((
             CONFLICTING_SERVICES.difference(('pulp_celerybeat',))
         ))
         self._do_test()
@@ -96,7 +96,7 @@ class NegativeTestCase(BaseTestCase):
         """
         if selectors.bug_is_untestable(2684, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2684')
-        cli.ServiceManager(config.get_config()).stop((
+        cli.GlobalServiceManager(config.get_config()).stop((
             CONFLICTING_SERVICES.difference(('pulp_resource_manager',))
         ))
         self._do_test()
@@ -108,7 +108,7 @@ class NegativeTestCase(BaseTestCase):
         """
         if selectors.bug_is_untestable(2684, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2684')
-        cli.ServiceManager(config.get_config()).stop((
+        cli.GlobalServiceManager(config.get_config()).stop((
             CONFLICTING_SERVICES.difference(('pulp_workers',))
         ))
         self._do_test()

@@ -59,8 +59,8 @@ class UtilsMixin(object):
 
         In addition, schedule the repository for deletion with ``addCleanup``.
 
-        :param pulp_smash.config.ServerConfig cfg: The Pulp server on which to
-            create a repository.
+        :param pulp_smash.config.PulpSmashConfig cfg: The Pulp deployment on
+            which to create a repository.
         :param feed: A value for the yum importer's ``feed`` option.
         :param relative_url: A value for the yum distributor's ``relative_url``
             option. If ``None``, this option is not passed to Pulp.

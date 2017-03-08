@@ -37,8 +37,8 @@ from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pyli
 def get_parse_repodata_xml(server_config, distributor, file_path):
     """Fetch, parse and return an XML file from a ``repodata`` directory.
 
-    :param pulp_smash.config.ServerConfig server_config: Information about the
-        Pulp server being targeted.
+    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+        the Pulp deployment being targeted.
     :param distributor: Information about a distributor. It should be a dict
         containing at least ``{'config': {'relative_url': …}}``.
     :param file_path: The path to an XML file, relative to the distributor's
@@ -53,8 +53,8 @@ def get_parse_repodata_xml(server_config, distributor, file_path):
 def get_parse_repodata_primary_xml(cfg, distributor):
     """Fetch, decompress, parse and return a ``repodata/…primary.xml.gz`` file.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about the Pulp
-        server being targeted.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        deployment being targeted.
     :param distributor: Information about a distributor. It should be a dict
         containing at least ``{'config': {'relative_url': …}}``.
     :returns: An ``xml.etree.ElementTree`` object.

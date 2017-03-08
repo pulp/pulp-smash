@@ -2,9 +2,10 @@
 """Utility functions for docker CLI tests.
 
 All of the functions in this module share a common structure. The first
-argument is a :class:`pulp_smash.config.ServerConfig`, and all other arguments
-correspond to command-line options. Most arguments are named after a flag. For
-example, an argument ``to_repo_id`` corresponds to the flag ``--to-repo-id``.
+argument is a :class:`pulp_smash.config.PulpSmashConfig`, and all other
+arguments correspond to command-line options. Most arguments are named after a
+flag. For example, an argument ``to_repo_id`` corresponds to the flag
+``--to-repo-id``.
 
 For the meaning of each argument, see pulp-admin.
 """

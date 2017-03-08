@@ -4,14 +4,15 @@
 Pulp Smash needs to know what servers it can talk to and how to talk to those
 systems. For example, it needs to know the protocol, hostname and port of a
 Pulp server (e.g. 'https://example.com:250') and how to authenticate with that
-server. :class:`pulp_smash.config.ServerConfig` eases the task of managing that
-information.
+server. :class:`pulp_smash.config.PulpSmashConfig` eases the task of managing
+that information.
 """
+import collections
 import json
 import os
 import warnings
 from copy import deepcopy
-from threading import Lock
+from urllib.parse import urlparse
 
 from packaging.version import Version
 from xdg import BaseDirectory
@@ -24,6 +25,29 @@ from pulp_smash import exceptions
 # avoid a config file by fetching values from the UI.
 _CONFIG = None
 
+# Set of roles that are required on a Pulp deployment
+REQUIRED_ROLES = {
+    'amqp broker',
+    'api',
+    'mongod',
+    'pulp celerybeat',
+    'pulp resource manager',
+    'pulp workers',
+    'shell',
+}
+
+# Set of roles that can be present or not on a Pulp deployment
+OPTIONAL_ROLES = {
+    'pulp cli',
+    'squid',
+}
+
+# Set of all available roles on a Pulp deployment
+ROLES = REQUIRED_ROLES.union(OPTIONAL_ROLES)
+
+# Set of expected amqp services
+AMQP_SERVICES = {'qpidd', 'rabbitmq'}
+
 
 def _public_attrs(obj):
     """Return a copy of the public elements in ``vars(obj)``."""
@@ -34,61 +58,61 @@ def _public_attrs(obj):
 
 
 def get_config():
-    """Return a copy of the global ``ServerConfig`` object.
+    """Return a copy of the global ``PulpSmashConfig`` object.
 
     This method makes use of a cache. If the cache is empty, the configuration
     file is parsed and the cache is populated. Otherwise, a copy of the cached
     configuration object is returned.
 
     :returns: A copy of the global server configuration object.
-    :rtype: pulp_smash.config.ServerConfig
+    :rtype: pulp_smash.config.PulpSmashConfig
     """
     global _CONFIG  # pylint:disable=global-statement
     if _CONFIG is None:
-        _CONFIG = ServerConfig().read()
+        _CONFIG = PulpSmashConfig().read()
     return deepcopy(_CONFIG)
 
 
-class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
-    """Facts about a server, plus methods for manipulating those facts.
+# Representation of a system and its roles."""
+PulpSystem = collections.namedtuple('PulpSystem', 'hostname roles')
 
-    This object stores a set of facts that are used when communicating with a
-    Pulp server. A typical usage of this object is as follows:
+
+class PulpSmashConfig(object):
+    """Information about a Pulp deployment.
+
+    This object stores a set of information about a Pulp deployment and its
+    systems. A typical usage of this object is as follows:
 
     >>> import requests
-    >>> from pulp_smash.config import ServerConfig
+    >>> from pulp_smash.config import PulpSmashConfig
     >>> cfg = ServerConfig(
-    ...     base_url='https://pulp.example.com',
-    ...     auth=('username', 'password'),
-    ...     verify=False,  # Disable SSL verification
-    ...     version='2.7.5',
+    ...     pulp_auth=('username', 'password'),
+    ...     pulp_version='2.12.2',
+    ...     systems=[
+    ...         PulpSystem(
+    ...             hostname='pulp.example.com',
+    ...             roles={
+    ...                 'amqp broker': {'service': 'qpidd'},
+    ...                 'api': {
+    ...                     'scheme': 'https',
+    ...                     'verify': False,  # Disable SSL verification
+    ...                 },
+    ...                 'mongod': {},
+    ...                 'pulp cli': {},
+    ...                 'pulp celerybeat': {},
+    ...                 'pulp resource manager': {},
+    ...                 'pulp workers': {},
+    ...                 'shell': {
+    ...                     'transport': 'ssh',
+    ...                 },
+    ...             },
+    ...         )
+    ...     ]
     ... )
     >>> response = requests.post(
     ...     cfg.base_url + '/pulp/api/v2/actions/login/',
     ...     **cfg.get_requests_kwargs()
     ... )
-
-    One can also :meth:`save` a ``ServerConfig`` out to a file, :meth:`read`
-    one back and more. By way of example, assume that a file with the following
-    contents exists on the filesystem::
-
-        {
-          "pulp": {"base_url": "example.com", "auth": ["alice", "hackme"]},
-          "pulp agent": {"base_url": "example.org", "auth": ["bob", "hackme"]},
-        }
-
-    The two top-level sections can be read like so:
-
-    >>> from pulp_smash.config import ServerConfig
-    >>> 'example.com' == ServerConfig().read('pulp').base_url
-    >>> 'example.org' == ServerConfig().read('pulp agent').base_url
-
-    By default, :meth:`read` reads the "pulp" section. As a result, this
-    holds true:
-
-    >>> from pulp_smash.config import ServerConfig
-    >>> ServerConfig().read() == ServerConfig().read('pulp')
-    >>> ServerConfig().read() != ServerConfig().read('pulp agent')
 
     All methods dealing with files obey the `XDG Base Directory Specification
     <http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_.
@@ -100,52 +124,24 @@ class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
     set, the environment variable should be a file name like ``settings2.json``
     (or a relative path), *not* an absolute path.
 
-    :param base_url: A string. A protocol, hostname and optionally a port. For
-        example, ``'http://example.com:250'``. Do not append a trailing slash.
-    :param auth: A two-tuple. Credentials to use when communicating with the
-        server. For example: ``('username', 'password')``.
-    :param verify: A boolean. Should SSL be verified when communicating with
-        the server?
-    :param version: A string, such as '1.2' or '0.8.rc3'. Defaults to '1!0'
-        (epoch 1, version 0). Must be compatible with the `packaging`_
+    :param pulp_auth: A two-tuple. Credentials to use when communicating with
+        the server. For example: ``('username', 'password')``.
+    :param pulp_version: A string, such as '1.2' or '0.8.rc3'. Defaults to
+        '1!0' (epoch 1, version 0). Must be compatible with the `packaging`_
         library's ``packaging.version.Version`` class.
-    :param cli_transport: Either 'local' or 'ssh'. See
-        :class:`pulp_smash.cli.Client` for details.
+    :param systems: A list of `pulp_smash.config.PulpSystem`. Mapping every
+        system on a given Pulp deployment.
 
     .. _packaging: https://packaging.pypa.io/en/latest/
     """
 
-    # Pylint reasonably warns that this class has too many arguments and
-    # instance attributes. How can we fix that problem? This class has the dual
-    # responsibilities of housing information about a server and being able to
-    # (de)serialize that information from and to config files, and the first
-    # responsibility is the dangerous one. It's easy to let configuration
-    # options collect here. Most CLI options are pushed out into an ssh_config
-    # file. And the few API options that live here, like `verify`, just
-    # shouldn't be code.
-
-    # Used to lock access to the configuration file when performing destructive
-    # operations, such as saving.
-    _file_lock = Lock()
-
-    def __init__(  # pylint:disable=too-many-arguments
-            self,
-            base_url=None,
-            auth=None,
-            verify=None,
-            version=None,
-            cli_transport=None):
+    def __init__(self, pulp_auth=None, pulp_version=None, systems=None):
         """Initialize this object with needed instance attributes."""
-        self.base_url = base_url
-        self.auth = auth
-        self.verify = verify
-        if version is None:
-            self.version = Version('1!0')
-        else:
-            self.version = Version(version)
-        self.cli_transport = cli_transport
-
-        self._section = 'pulp'
+        self.pulp_auth = pulp_auth
+        self.pulp_version = pulp_version
+        self.systems = systems
+        if self.systems is None:
+            self.systems = []
         self._xdg_config_file = os.environ.get(
             'PULP_SMASH_CONFIG_FILE',
             'settings.json'
@@ -154,121 +150,24 @@ class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
 
     def __repr__(self):  # noqa
         attrs = _public_attrs(self)
-        attrs['version'] = type('')(attrs['version'])
+        attrs['pulp_version'] = type('')(attrs['pulp_version'])
         str_kwargs = ', '.join(
             '{}={}'.format(key, repr(value)) for key, value in attrs.items()
         )
         return '{}({})'.format(type(self).__name__, str_kwargs)
 
-    def save(self, section=None, xdg_config_file=None, xdg_config_dir=None):
-        """Save ``self`` as a top-level section of a configuration file.
-
-        This method is thread-safe.
-
-        :param section: A string. An identifier for the current configuration.
-            If no top-level section named ``section`` exists in the
-            configuration file, one is created. Otherwise, it is replaced.
-        :param xdg_config_file: A string. The name of the file to manipulate.
-        :param xdg_config_dir: A string. The XDG configuration directory in
-            which the configuration file resides.
-        :returns: Nothing.
-        """
-        # What will we write out?
-        if section is None:
-            section = self._section
-        attrs = _public_attrs(self)
-        attrs['version'] = type('')(attrs['version'])
-
-        # What file is being manipulated?
-        if xdg_config_file is None:
-            xdg_config_file = self._xdg_config_file
-        if xdg_config_dir is None:
-            xdg_config_dir = self._xdg_config_dir
-        path = os.path.join(
-            BaseDirectory.save_config_path(xdg_config_dir),
-            xdg_config_file
-        )
-
-        # Lock, write, unlock.
-        self._file_lock.acquire()
-        try:
-            try:
-                with open(path) as config_file:
-                    config = json.load(config_file)
-            except IOError:
-                config = {}
-            config[section] = attrs
-            with open(path, 'w') as config_file:
-                json.dump(config, config_file)
-        finally:
-            self._file_lock.release()
-
-    def delete(self, section=None, xdg_config_file=None, xdg_config_dir=None):
-        """Delete a top-level section from a configuration file.
-
-        This method is thread safe.
-
-        :param section: A string. The name of the section to be deleted.
-        :param xdg_config_file: A string. The name of the file to manipulate.
-        :param xdg_config_dir: A string. The XDG configuration directory in
-            which the configuration file resides.
-        :returns: Nothing.
-        """
-        # What will we delete?
-        if section is None:
-            section = self._section
-
-        # What file is being manipulated?
-        if xdg_config_file is None:
-            xdg_config_file = self._xdg_config_file
-        if xdg_config_dir is None:
-            xdg_config_dir = self._xdg_config_dir
-        path = _get_config_file_path(xdg_config_dir, xdg_config_file)
-
-        # Lock, delete, unlock.
-        self._file_lock.acquire()
-        try:
-            with open(path) as config_file:
-                config = json.load(config_file)
-            del config[section]
-            with open(path, 'w') as config_file:
-                json.dump(config, config_file)
-        finally:
-            self._file_lock.release()
-
-    def sections(self, xdg_config_file=None, xdg_config_dir=None):
-        """Read a configuration file and return its top-level sections.
+    def read(self, xdg_config_file=None, xdg_config_dir=None):
+        """Read a configuration file.
 
         :param xdg_config_file: A string. The name of the file to manipulate.
         :param xdg_config_dir: A string. The XDG configuration directory in
             which the configuration file resides.
-        :returns: An iterable of strings. Each string is the name of a
-            configuration file section.
-        """
-        # What file is being manipulated?
-        if xdg_config_file is None:
-            xdg_config_file = self._xdg_config_file
-        if xdg_config_dir is None:
-            xdg_config_dir = self._xdg_config_dir
-        path = _get_config_file_path(xdg_config_dir, xdg_config_file)
-
-        with open(path) as config_file:
-            return set(json.load(config_file).keys())
-
-    def read(self, section=None, xdg_config_file=None, xdg_config_dir=None):
-        """Read a section from a configuration file.
-
-        :param section: A string. The name of the section to be deleted.
-        :param xdg_config_file: A string. The name of the file to manipulate.
-        :param xdg_config_dir: A string. The XDG configuration directory in
-            which the configuration file resides.
-        :returns: A new :class:`pulp_smash.config.ServerConfig` object. The
+        :returns: A new :class:`pulp_smash.config.PulpSmashConfig` object. The
             current object is not modified by this method.
-        :rtype: ServerConfig
-        :raises: ``warnings.DecprecationWarning`` if the user does not specify
-            which section should be read and the configuration file contains a
-            single section named ``default``. (The section should be renamed
-            from ``default`` to ``pulp``.)
+        :rtype: PulpSmashConfig
+        :raises: ``warnings.DecprecationWarning`` if the configuration file
+            uses the old format instead of the new system with roles based
+            format.
         """
         # Read the configuration file.
         if xdg_config_file is None:
@@ -279,72 +178,153 @@ class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
         with open(path) as handle:
             config_file = json.load(handle)
 
-        # Decide which section to read from the config file, then do so.
-        if section is None and list(config_file.keys()) == ['default']:
-            section = 'default'
+        pulp = config_file.get('pulp', {})
+        pulp_auth = pulp.get('auth', ['admin', 'admin'])
+        pulp_version = Version(pulp.get('version', '1!0'))
+
+        systems = []
+        if 'systems' not in config_file:
             # We could use textwrap.wrap() on the message, but that makes log
             # files harder to grep.
             warnings.warn(
                 (
-                    'By default, Pulp Smash reads a section named "{0}" from '
-                    'its configuration file. Formerly, Pulp Smash defaulted '
-                    'to reading a section named "{1}". The configuration file '
-                    'at "{2}" appears to be following the old standard; '
-                    'consider renaming section "{1}" to "{0}".'
-                    .format(self._section, 'default', path)
+                    'Pulp Smash configuration file should follow the systems '
+                    'with roles format. But the configuration file at "{0}" '
+                    'appears to be following the old configuration file '
+                    'format. Consider updating the configuration file to the '
+                    'new system with roles format, run python3 -m pulp_smash '
+                    'for more information.'
+                    .format(path)
                 ),
                 DeprecationWarning
             )
-        elif section is None:
-            section = self._section
-        try:
-            config_section = config_file[section]
-        except KeyError:
-            raise exceptions.ConfigFileSectionNotFoundError(
-                'The Pulp Smash configuration file at {} has no section '
-                'entitled {}.'.format(path, section)
+            parsed_url = urlparse(pulp.get('base_url'))
+            systems.append(PulpSystem(
+                parsed_url.hostname or '',
+                {
+                    'amqp broker': {'service': 'qpidd'},
+                    'api': {
+                        'scheme': parsed_url.scheme,
+                        'verify': pulp.get('verify'),
+                    },
+                    'mongod': {},
+                    'pulp cli': {},
+                    'pulp celerybeat': {},
+                    'pulp resource manager': {},
+                    'pulp workers': {},
+                    'shell': {
+                        'transport': pulp.get('cli_transport'),
+                    },
+                    'squid': {},
+                }
+            ))
+        else:
+            for system in config_file.get('systems', []):
+                systems.append(PulpSystem(**system))
+        return PulpSmashConfig(pulp_auth, pulp_version, systems)
+
+    def get_systems(self, role):
+        """Return a list of systems fulfilling the given role.
+
+        :param role: The role to filter the available systems, see
+            `pulp_smash.config.ROLES` for more information.
+        """
+        if role not in ROLES:
+            raise ValueError(
+                'The given role, {}, is not recognized. Valid roles are: {}'
+                .format(role, ROLES)
             )
+        return [system for system in self.systems if role in system.roles]
 
-        # Instantiate a config and populate it with values from the settings
-        # file. We tell the config object which file it has been populated from
-        # so calls to its `save` method and other methods hit the same file.
-        cfg = type(self)(**config_section)
-        # pylint:disable=protected-access
-        cfg._section = section
-        cfg._xdg_config_file = xdg_config_file
-        cfg._xdg_config_dir = xdg_config_dir
-        return cfg
+    @staticmethod
+    def services_for_roles(roles):
+        """Return the services based on the roles."""
+        services = []
+        for role in roles:
+            if role == 'amqp broker':
+                service = roles[role].get('service')
+                if service in AMQP_SERVICES:
+                    services.append(service)
+            elif role == 'api':
+                services.append('httpd')
+            elif role in (
+                    'pulp celerybeat',
+                    'pulp resource manager',
+                    'pulp workers',
+            ):
+                services.append(role.replace(' ', '_'))
+            elif role in ('mongod', 'squid'):
+                services.append(role)
+            else:
+                continue
+        return set(services)
 
-    def get_requests_kwargs(self):
+    @property
+    def base_url(self):
+        """Map old config base_url to the system with api role."""
+        api_system = self.get_systems('api')[0]
+        return '{}://{}/'.format(
+            api_system.roles['api']['scheme'], api_system.hostname)
+
+    def get_base_url(self, pulp_system=None):
+        """Generate the base URL for a given ``pulp_sytem``.
+
+        If ``pulp_system`` is ``None`` then the first system found with the
+        ``api`` role will be chosen.
+        """
+        if not pulp_system:
+            pulp_system = self.get_systems('api')[0]
+        return '{}://{}/'.format(
+            pulp_system.roles['api'].get('scheme', 'https'),
+            pulp_system.hostname
+        )
+
+    @property
+    def version(self):
+        """Map old config version to the pulp_version."""
+        return self.pulp_version
+
+    @property
+    def cli_transport(self):
+        """Map old config cli_transport to the system with shell role."""
+        return self.get_systems('shell')[0].roles['shell']['transport']
+
+    @property
+    def verify(self):
+        """Map old config verify to the system with api role."""
+        return self.get_systems('api')[0].roles['api'].get('verify')
+
+    def get_requests_kwargs(self, pulp_system=None):
         """Get kwargs for use by the Requests functions.
 
         This method returns a dict of attributes that can be unpacked and used
         as kwargs via the ``**`` operator. For example:
 
-        >>> cfg = ServerConfig().read()
+        >>> cfg = PulpSmashConfig().read()
         >>> requests.get(cfg.base_url + '…', **cfg.get_requests_kwargs())
 
         This method is useful because client code may not know which attributes
-        should be passed from a ``ServerConfig`` object to Requests. Consider
-        that the example above could also be written like this:
+        should be passed from a ``PulpSmashConfig`` object to Requests.
+        Consider that the example above could also be written like this:
 
-        >>> cfg = ServerConfig().get()
+        >>> cfg = PulpSmashConfig().get()
         >>> requests.get(
         ...     cfg.base_url + '…',
-        ...     auth=tuple(cfg.auth),
-        ...     verify=cfg.verify
+        ...     auth=tuple(cfg.pulp_auth),
+        ...     verify=cfg.get_systems('api')[0].roles['api']['verify'],
         ... )
 
-        But this latter approach is more fragile. The user must remember to
-        convert ``auth`` to a tuple, and it will require maintenance if ``cfg``
-        gains or loses attributes.
+        But this latter approach is more fragile. The user must remember to get
+        a system with api role to check for the verify config, then convert
+        ``pulp_auth`` config to a tuple, and it will require maintenance if
+        ``cfg`` gains or loses attributes.
         """
-        attrs = _public_attrs(self)
-        for key in ('base_url', 'cli_transport', 'version'):
-            del attrs[key]
-        if attrs['auth'] is not None:
-            attrs['auth'] = tuple(attrs['auth'])
-        return attrs
+        if not pulp_system:
+            pulp_system = self.get_systems('api')[0]
+        kwargs = deepcopy(pulp_system.roles['api'])
+        kwargs['auth'] = tuple(self.pulp_auth)
+        kwargs.pop('scheme', None)
+        return kwargs
 
 
 def _get_config_file_path(xdg_config_dir, xdg_config_file):

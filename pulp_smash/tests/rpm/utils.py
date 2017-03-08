@@ -16,7 +16,7 @@ def set_up_module():
 def check_issue_2277(cfg):
     """Return true if `Pulp #2277`_ affects the targeted Pulp system.
 
-    :param pulp_smash.config.ServerConfig cfg: The Pulp system under test.
+    :param pulp_smash.config.PulpSmashConfig cfg: The Pulp system under test.
 
     .. _Pulp #2277: https://pulp.plan.io/issues/2277
     """
@@ -29,7 +29,7 @@ def check_issue_2277(cfg):
 def check_issue_2387(cfg):
     """Return true if `Pulp #2387`_ affects the targeted Pulp system.
 
-    :param pulp_smash.config.ServerConfig cfg: The Pulp system under test.
+    :param pulp_smash.config.PulpSmashConfig cfg: The Pulp system under test.
 
     .. _Pulp #2387: https://pulp.plan.io/issues/2387
     """
@@ -42,7 +42,7 @@ def check_issue_2387(cfg):
 def check_issue_2354(cfg):
     """Return true if `Pulp #2354`_ affects the targeted Pulp system.
 
-    :param pulp_smash.config.ServerConfig cfg: The Pulp system under test.
+    :param pulp_smash.config.PulpSmashConfig cfg: The Pulp system under test.
 
     .. _Pulp #2354: https://pulp.plan.io/issues/2354
     """
@@ -55,7 +55,7 @@ def check_issue_2354(cfg):
 def check_issue_2620(cfg):
     """Return true if `Pulp #2620`_ affects the targeted Pulp system.
 
-    :param pulp_smash.config.ServerConfig cfg: The Pulp system under test.
+    :param pulp_smash.config.PulpSmashConfig cfg: The Pulp system under test.
 
     .. _Pulp #2620: https://pulp.plan.io/issues/2620
     """
@@ -68,7 +68,7 @@ def check_issue_2620(cfg):
 def os_is_rhel6(cfg):
     """Return ``True`` if the server runs RHEL 6, or ``False`` otherwise.
 
-    :param pulp_smash.config.ServerConfig cfg: Information about the system
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the system
         being targeted.
     :returns: True or false.
     """
