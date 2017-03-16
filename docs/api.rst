@@ -68,6 +68,7 @@ developers, not a gospel.
     api/pulp_smash.tests.rpm
     api/pulp_smash.tests.rpm.api_v2
     api/pulp_smash.tests.rpm.api_v2.test_broker
+    api/pulp_smash.tests.rpm.api_v2.test_character_encoding
     api/pulp_smash.tests.rpm.api_v2.test_comps_xml
     api/pulp_smash.tests.rpm.api_v2.test_crud
     api/pulp_smash.tests.rpm.api_v2.test_download_policies
@@ -99,6 +100,7 @@ developers, not a gospel.
     api/pulp_smash.tests.rpm.api_v2.test_upload_publish
     api/pulp_smash.tests.rpm.api_v2.utils
     api/pulp_smash.tests.rpm.cli
+    api/pulp_smash.tests.rpm.cli.test_character_encoding
     api/pulp_smash.tests.rpm.cli.test_copy_units
     api/pulp_smash.tests.rpm.cli.test_environments
     api/pulp_smash.tests.rpm.cli.test_langpacks
