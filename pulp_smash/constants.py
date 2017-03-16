@@ -448,13 +448,13 @@ RPM_WITH_PULP_DISTRIBUTION_FEED_URL = urljoin(
 
 RPM_WITH_NON_ASCII_URL = urljoin(
     PULP_FIXTURES_BASE_URL,
-    'rpm-with-non-ascii/rpm-with-non-ascii-1-1.fc24.noarch.rpm'
+    'rpm-with-non-ascii/rpm-with-non-ascii-1-1.fc25.noarch.rpm'
 )
 """The URL to an RPM with non-ascii metadata in its header."""
 
 RPM_WITH_NON_UTF_8_URL = urljoin(
     PULP_FIXTURES_BASE_URL,
-    'rpm-with-non-utf-8/rpm-with-non-utf-8-1-1.fc24.noarch.rpm'
+    'rpm-with-non-utf-8/rpm-with-non-utf-8-1-1.fc25.noarch.rpm'
 )
 """The URL to an RPM with non-UTF-8 metadata in its header."""
 
