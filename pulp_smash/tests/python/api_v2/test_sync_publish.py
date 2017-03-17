@@ -58,7 +58,8 @@ class BaseTestCase(unittest.TestCase):
         * `Pulp #140 <https://pulp.plan.io/issues/140>`_
         * `Pulp Smash #493 <https://github.com/PulpQE/pulp-smash/issues/493>`_
         """
-        if selectors.bug_is_untestable(140, self.cfg.version):
+        if (self.cfg.version <= Version('2.13') or
+                selectors.bug_is_untestable(140, self.cfg.version)):
             self.skipTest('https://pulp.plan.io/issues/140')
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
@@ -112,7 +113,7 @@ class SyncTestCase(BaseTestCase):
         * `Pulp #135 <https://pulp.plan.io/issues/135>`_
         * `Pulp Smash #494 <https://github.com/PulpQE/pulp-smash/issues/494>`_
         """
-        if (self.cfg.version <= Version('2.12.1') or
+        if (self.cfg.version <= Version('2.13') or
                 selectors.bug_is_untestable(135, self.cfg.version)):
             self.skipTest('https://pulp.plan.io/issues/135')
         client = api.Client(self.cfg, api.json_handler)
@@ -145,9 +146,9 @@ class UploadTestCase(BaseTestCase):
         * `Pulp #2334 <https://pulp.plan.io/issues/2334>`_
         * `Pulp Smash #492 <https://github.com/PulpQE/pulp-smash/issues/492>`_
         """
-        if (self.cfg.version <= Version('2.12.1') or
+        if (self.cfg.version <= Version('2.13') or
                 selectors.bug_is_untestable(136, self.cfg.version)):
-            self.skipTest('https://pulp.plan.io/issues/135')
+            self.skipTest('https://pulp.plan.io/issues/136')
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
         body['distributors'] = [gen_distributor()]
