@@ -37,7 +37,7 @@ from urllib.parse import urljoin
 
 from packaging.version import Version
 
-from pulp_smash import api, selectors, utils
+from pulp_smash import api, config, exceptions, selectors, utils
 from pulp_smash.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,
@@ -196,6 +196,42 @@ class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
         self.assertIsNotNone(
             self.tasks[0]['progress_report']['puppet_importer']['metadata']['error']  # noqa pylint:disable=line-too-long
         )
+
+
+class SyncNoFeedTestCase(utils.BaseAPITestCase):
+    """Create and sync a puppet repository with no feed.
+
+    At least one of the sync tasks should fail. The task should fail in a
+    graceful manner, without e.g. an internal tracebacks. This test targets
+    `Pulp #2628 <https://pulp.plan.io/issues/2628>`_.
+    """
+
+    def test_all(self):
+        """Create and sync a puppet repository with no feed."""
+        cfg = config.get_config()
+        if selectors.bug_is_untestable(2628, cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2628')
+
+        # Create a repository.
+        client = api.Client(cfg, api.json_handler)
+        repo = client.post(REPOSITORY_PATH, gen_repo())
+        self.addCleanup(client.delete, repo['_href'])
+
+        # Sync the repository. An error *should* occur. We just want the error
+        # to be sane.
+        with self.assertRaises(exceptions.TaskReportError) as err:
+            utils.sync_repo(cfg, repo['_href'])
+        with self.subTest(comment='check task "error" field'):
+            self.assertIsNotNone(err.exception.task['error'])
+            self.assertNotEqual(
+                err.exception.task['error']['description'],
+                "'NoneType' object has no attribute 'endswith'"
+            )
+            self.assertNotEqual(err.exception.task['error']['code'], 'PLP0000')
+        with self.subTest(comment='check task "exception" field'):
+            self.assertIsNone(err.exception.task['exception'])
+        with self.subTest(comment='check task "traceback" field'):
+            self.assertIsNone(err.exception.task['traceback'])
 
 
 class SyncValidManifestFeedTestCase(utils.BaseAPITestCase):
