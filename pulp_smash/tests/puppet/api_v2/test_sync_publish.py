@@ -36,6 +36,7 @@ from itertools import product
 from urllib.parse import urljoin
 
 from packaging.version import Version
+from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, exceptions, selectors, utils
 from pulp_smash.constants import (
@@ -43,11 +44,13 @@ from pulp_smash.constants import (
     CONTENT_UPLOAD_PATH,
     PUPPET_FEED_2,
     PUPPET_MODULE_1,
+    PUPPET_MODULE_2,
     PUPPET_MODULE_URL_1,
+    PUPPET_MODULE_URL_2,
     PUPPET_QUERY_2,
     REPOSITORY_PATH,
 )
-from pulp_smash.tests.puppet.api_v2.utils import gen_repo
+from pulp_smash.tests.puppet.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.puppet.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -105,57 +108,92 @@ class CreateTestCase(utils.BaseAPITestCase):
 
 
 class SyncValidFeedTestCase(utils.BaseAPITestCase):
-    """Create puppet repositories with valid feeds.
+    """Create and sync puppet repositories with valid feeds."""
 
-    Create two repositories with valid feeds. Sync both, using an invalid query
-    for one sync. Ensure the sync finishes for both.
-    """
+    def test_matching_query(self):
+        """Sync a repository with a query that matches units.
 
-    @classmethod
-    def setUpClass(cls):
-        """Create and sync two puppet repositories."""
-        super(SyncValidFeedTestCase, cls).setUpClass()
-        utils.reset_pulp(cls.cfg)  # See: https://pulp.plan.io/issues/1406
-        bodies = tuple((gen_repo() for _ in range(2)))
-        for i, query in enumerate((
-                PUPPET_QUERY_2, PUPPET_QUERY_2.replace('-', '_'))):
-            bodies[i]['importer_config'] = {
-                'feed': PUPPET_FEED_2,
-                'queries': [query],
-            }
-        client = api.Client(cls.cfg, api.json_handler)
-        repos = [client.post(REPOSITORY_PATH, body) for body in bodies]
-        cls.resources.update({repo['_href'] for repo in repos})
+        Assert that:
 
-        # Trigger repository sync and collect completed tasks.
-        cls.reports = []  # raw responses to "start syncing" commands
-        cls.tasks = []  # completed tasks
-        for repo in repos:
-            report = utils.sync_repo(cls.cfg, repo['_href'])
-            cls.reports.append(report)
-            for task in api.poll_spawned_tasks(cls.cfg, report.json()):
-                cls.tasks.append(task)
+        * None of the sync tasks has an error message.
+        * Searching for module :data:`pulp_smash.constants.PUPPET_MODULE_2`
+          yields one result.
+        * The synced-in module can be downloaded.
+        """
+        # Create and sync a repository.
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config'] = {
+            'feed': PUPPET_FEED_2,
+            'queries': [PUPPET_QUERY_2],
+        }
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
+        self.sync_repo(repo)
 
-    def test_status_code(self):
-        """Assert the call to sync each repository returns an HTTP 202."""
-        for i, report in enumerate(self.reports):
-            with self.subTest(i=i):
-                self.assertEqual(report.status_code, 202)
+        # Publish the repository.
+        utils.publish_repo(self.cfg, repo)
+        module = '/'.join((PUPPET_MODULE_2['author'], PUPPET_MODULE_2['name']))
+        response = client.get(
+            '/v3/releases',
+            auth=('repository', repo['id']),
+            params={'module': module},
+        )
+        self.assertEqual(len(response['results']), 1)
 
-    def test_task_error_traceback(self):
-        """Assert each task's "error" and "traceback" fields are null."""
-        for i, task in enumerate(self.tasks):
-            for key in {'error', 'traceback'}:
-                with self.subTest((i, key)):
-                    self.assertIsNone(task[key])
+        # Download the Puppet module.
+        module = utils.http_get(PUPPET_MODULE_URL_2)
+        client.response_handler = api.safe_handler
+        response = client.get(response['results'][0]['file_uri'])
+        with self.subTest():
+            self.assertEqual(module, response.content)
+        with self.subTest():
+            self.assertIn(
+                response.headers['content-type'],
+                ('application/gzip', 'application/x-gzip')
+            )
 
-    def test_task_progress_report(self):
-        """Assert each task's progress shows no errors."""
-        for i, task in enumerate(self.tasks):
-            with self.subTest(i=i):
-                self.assertIsNone(
-                    task['progress_report']['puppet_importer']['metadata']['error_message']  # noqa pylint:disable=line-too-long
-                )
+    def test_non_matching_query(self):
+        """Sync a repository with a query that doesn't match any units.
+
+        Assert that:
+
+        * None of the sync tasks has an error message.
+        * Searching for module :data:`pulp_smash.constants.PUPPET_MODULE_2`
+          yields no results.
+        """
+        # Create and sync a repository.
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config'] = {
+            'feed': PUPPET_FEED_2,
+            'queries': [PUPPET_QUERY_2.replace('-', '_')],
+        }
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
+        self.sync_repo(repo)
+
+        # Publish the repository.
+        utils.publish_repo(self.cfg, repo)
+        module = '/'.join((PUPPET_MODULE_2['author'], PUPPET_MODULE_2['name']))
+        with self.assertRaises(HTTPError):
+            client.get(
+                '/v3/releases',
+                auth=('repository', repo['id']),
+                params={'module': module},
+            )
+
+    def sync_repo(self, repo):
+        """Sync a repository, and verify no tasks contain an error message."""
+        report = utils.sync_repo(self.cfg, repo['_href']).json()
+        for task in api.poll_spawned_tasks(self.cfg, report):
+            self.assertIsNone(
+                task['progress_report']['puppet_importer']['metadata']['error_message']  # noqa pylint:disable=line-too-long
+            )
 
 
 class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
