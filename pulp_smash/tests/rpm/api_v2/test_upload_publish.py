@@ -171,10 +171,8 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
             repo,
         )
         utils.publish_repo(self.cfg, repo)
-        with self.subTest():
-            self.verify_repo_search(repo)
-        with self.subTest():
-            self.verify_repo_download(repo)
+        self.verify_repo_search(repo)
+        self.verify_repo_download(repo)
 
     def test_02_copy_publish(self):
         """Copy and RPM from the first repo to the second, and publish it.
@@ -186,10 +184,8 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
             {'source_repo_id': self.repos[0]['id']}
         )
         utils.publish_repo(self.cfg, self.repos[1])
-        with self.subTest():
-            self.verify_repo_search(self.repos[1])
-        with self.subTest():
-            self.verify_repo_download(self.repos[1])
+        self.verify_repo_search(self.repos[1])
+        self.verify_repo_download(self.repos[1])
 
     def test_03_compare_repos(self):
         """Verify the two repositories contain the same content unit."""
@@ -241,5 +237,11 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
 
         Verify that it is exactly equal to the one uploaded earlier.
         """
-        repo_rpm = get_unit(self.cfg, repo['distributors'][0], RPM).content
-        self.assertEqual(self.rpm, repo_rpm)
+        response = get_unit(self.cfg, repo['distributors'][0], RPM)
+        with self.subTest():
+            self.assertIn(
+                response.headers['content-type'],
+                ('application/octet-stream', 'application/x-rpm')
+            )
+        with self.subTest():
+            self.assertEqual(self.rpm, response.content)

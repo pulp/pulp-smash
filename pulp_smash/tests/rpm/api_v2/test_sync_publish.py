@@ -20,6 +20,7 @@ from pulp_smash.constants import (
     DRPM_UNSIGNED_FEED_URL,
     ORPHANS_PATH,
     REPOSITORY_PATH,
+    RPM,
     RPM_INCOMPLETE_FILELISTS_FEED_URL,
     RPM_INCOMPLETE_OTHER_FEED_URL,
     RPM_MISSING_FILELISTS_FEED_URL,
@@ -28,13 +29,15 @@ from pulp_smash.constants import (
     RPM_SIGNED_FEED_COUNT,
     RPM_SIGNED_FEED_URL,
     RPM_UNSIGNED_FEED_URL,
+    RPM_UNSIGNED_URL,
     SRPM_SIGNED_FEED_URL,
 )
-from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
+from pulp_smash.tests.rpm.api_v2.utils import (
+    gen_distributor,
+    gen_repo,
+    get_unit,
+)
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
-
-
-_REPO_PUBLISH_PATH = '/pulp/repos/'  # + relative_url + unit_name.rpm.arch
 
 
 # This class is left public for documentation purposes.
@@ -260,6 +263,7 @@ class ChangeFeedTestCase(utils.BaseAPITestCase):
     2. Populate repository A and B with identical content, and publish them.
     3. Set C's feed to repository A. Sync and publish repository C.
     4. Set C's feed to repository B. Sync and publish repository C.
+    5. Download an RPM from repository C.
 
     The entire procedure should succeed. This test case targets `Pulp #1922
     <https://pulp.plan.io/issues/1922>`_.
@@ -294,6 +298,16 @@ class ChangeFeedTestCase(utils.BaseAPITestCase):
         # Sync and publish repository C.
         utils.sync_repo(self.cfg, repo['_href'])
         utils.publish_repo(self.cfg, repo)
+
+        rpm = utils.http_get(RPM_UNSIGNED_URL)
+        response = get_unit(self.cfg, repo['distributors'][0], RPM)
+        with self.subTest():
+            self.assertIn(
+                response.headers['content-type'],
+                ('application/octet-stream', 'application/x-rpm')
+            )
+        with self.subTest():
+            self.assertEqual(rpm, response.content)
 
     def create_sync_publish_repo(self, body):
         """Create, sync and publish a repository.
