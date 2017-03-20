@@ -21,3 +21,17 @@ def gen_distributor():
         'distributor_id': utils.uuid4(),
         'distributor_type_id': 'puppet_distributor',
     }
+
+
+def gen_install_distributor():
+    """Return a semi-random dict used for creating a Puppet install distributor.
+
+    The caller must fill the install_path distributor_config option otherwise
+    Pulp will throw an error when creating the distributor.
+    """
+    return {
+        'auto_publish': False,
+        'distributor_config': {},
+        'distributor_id': utils.uuid4(),
+        'distributor_type_id': 'puppet_install_distributor',
+    }
