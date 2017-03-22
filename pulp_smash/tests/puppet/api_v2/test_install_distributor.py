@@ -33,32 +33,25 @@ class InstallDistributorTestCase(utils.BaseAPITestCase):
         4. Check if the puppet_install_distributor config was properly used
         """
         cli_client = cli.Client(self.cfg)
-        sudo = '' if utils.is_root(self.cfg) else 'sudo '
-        install_path = cli_client.run(
-            'mktemp --directory'.split()).stdout.strip()
-        self.addCleanup(
-            cli_client.run, (sudo + 'rm -rf {} ' + install_path).split())
+        sudo = () if utils.is_root(self.cfg) else ('sudo',)
 
-        # Make sure Pulp can write to the install_path directory
-        cli_client.run((sudo + 'chown apache:apache ' + install_path).split())
-        cli_client.run(
-            (sudo + 'chcon -t puppet_etc_t ' + install_path).split())
+        # Create a directory and make sure Pulp can write to it.
+        install_path = cli_client.run(('mktemp', '--directory')).stdout.strip()
+        self.addCleanup(cli_client.run, sudo + ('rm', '-rf', install_path))
+        cli_client.run(sudo + ('chown', 'apache:apache', install_path))
+        cli_client.run(sudo + ('chcon', '-t', 'puppet_etc_t', install_path))
 
         # Make sure the pulp_manage_puppet boolean is enabled
-        cli_client.run((
-            sudo + 'semanage boolean --modify --on pulp_manage_puppet'
-        ).split())
-        self.addCleanup(
-            cli_client.run,
-            (sudo + 'semanage boolean --modify --off pulp_manage_puppet')
-            .split()
-        )
+        cli_client.run(sudo + (
+            'semanage', 'boolean', '--modify', '--on', 'pulp_manage_puppet'))
+        self.addCleanup(cli_client.run, sudo + (
+            'semanage', 'boolean', '--modify', '--off', 'pulp_manage_puppet'))
 
-        install_distributor = gen_install_distributor()
-        install_distributor['distributor_config']['install_path'] = (
-            install_path)
+        # Create and populate a Puppet repository.
+        distributor = gen_install_distributor()
+        distributor['distributor_config']['install_path'] = install_path
         body = gen_repo()
-        body['distributors'] = [install_distributor]
+        body['distributors'] = [distributor]
         client = api.Client(self.cfg, api.json_handler)
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
@@ -66,8 +59,9 @@ class InstallDistributorTestCase(utils.BaseAPITestCase):
         unit = utils.http_get(PUPPET_MODULE_URL_1)
         utils.upload_import_unit(
             self.cfg, unit, {'unit_type_id': 'puppet_module'}, repo)
+
+        # Publish, and verify the module is present.
         utils.publish_repo(self.cfg, repo)
         self.assertIn(
             PUPPET_MODULE_1['name'],
-            cli_client.run(('ls ' + install_path).split()).stdout
-        )
+            cli_client.run(('ls', '-1', install_path)).stdout.split('\n'))
