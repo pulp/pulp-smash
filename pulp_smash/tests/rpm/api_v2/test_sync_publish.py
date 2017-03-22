@@ -179,27 +179,30 @@ class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
             self.assertEqual(len(self.tasks), 1, self.tasks)
 
     @selectors.skip_if(len, 'tasks', 0)
-    def test_02_task_error_traceback(self):
-        """Assert each task's "error" and "traceback" fields are non-null."""
+    def test_02_task_traceback(self):
+        """Assert each task's "traceback" field is non-null."""
         if selectors.bug_is_untestable(1455, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1455')
         for i, task in enumerate(self.tasks):
-            for key in {'error', 'traceback'}:
-                with self.subTest((i, key)):
-                    self.assertIsNotNone(task[key], task)
+            with self.subTest(i=i):
+                self.assertIsNotNone(task['traceback'], task)
 
     @selectors.skip_if(len, 'tasks', 0)
-    def test_02_task_progress_report(self):
-        """Assert each task's progress report contains error details."""
-        if selectors.bug_is_untestable(1376, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/1376')
+    def test_02_task_error(self):
+        """Assert each task's "error" field is non-null.
+
+        Also, assert each error has a useful "description" field. For each
+        error that is present, its "description" field should not be the
+        (vague) string "Unsupported scheme: ". This test targets `Pulp #1376
+        <https://pulp.plan.io/issues/1376>`_.
+        """
+        if selectors.bug_is_untestable(1455, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/1455')
         for i, task in enumerate(self.tasks):
             with self.subTest(i=i):
+                self.assertIsNotNone(task['error'], task)
                 self.assertNotEqual(
-                    task['progress_report']['yum_importer']['content']['error_details'],  # noqa pylint:disable=line-too-long
-                    [],
-                    task,
-                )
+                    task['error']['description'], 'Unsupported scheme: ', task)
 
 
 class SyncInvalidMetadataTestCase(unittest.TestCase):
