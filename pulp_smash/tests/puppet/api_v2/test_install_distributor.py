@@ -61,8 +61,9 @@ class InstallDistributorTestCase(utils.BaseAPITestCase):
             self.cfg, unit, {'unit_type_id': 'puppet_module'}, repo)
 
         # Publish, and verify the module is present. (Dir has 700 permissions.)
+        utils.publish_repo(self.cfg, repo)
         proc = cli_client.run(sudo + (
-            'runuser', '--shell', '/bin/sh', 'apache', '--command', 'ls', '-1',
-            install_path
+            'runuser', '--shell', '/bin/sh', '--command',
+            'ls -1 {}'.format(install_path), '-', 'apache'
         ))
-        self.assertIn(PUPPET_MODULE_1['name'], proc.stdout.split('\n'))
+        self.assertIn(PUPPET_MODULE_1['name'], proc.stdout.split('\n'), proc)
