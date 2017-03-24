@@ -10,7 +10,6 @@ from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
 from pulp_smash.tests.docker.cli import utils as docker_utils
 from pulp_smash.tests.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
-_DIGEST_RE = r'(?:Digest:)\s*(.*)'
 _IMAGE_ID_RE = r'(?:Image Id:)\s*(.*)'
 _NAME_RE = r'(?:Name:)\s*(.*)'
 _UNIT_ID_RE = r'(?:Unit Id:)\s*(.*)'
@@ -37,21 +36,6 @@ def _get_unit_ids(server_config, repo_id, unit_type, regex):
         unit_type=unit_type,
     ).stdout
     return set(re.findall(regex, units))
-
-
-def _truncate_ids(unit_ids):
-    """Drop the last character of each unit ID and return the result as a set.
-
-    pulp-admin hard-wraps search results. This can result in wonky output::
-
-        Metadata:
-          Digest: sha256:3e2261c673a3e5284252cf182c5706154471e6548e1b0eb9082c4c
-                  c
-
-    An incorrect but easy solution is to use these truncated IDs and truncate
-    the other set of IDs too. See: https://pulp.plan.io/issues/1696
-    """
-    return {unit_id[:-1] for unit_id in unit_ids}
 
 
 class _BaseTestCase(unittest.TestCase):
@@ -176,21 +160,44 @@ class CopyAllManifestsTestCase(_BaseTestCase, _CopyMixin):
         )
 
     def test_positive_copy_output(self):
-        """Assert that the list of manifests in the copy output are correct."""
-        units_search = docker_utils.repo_search(
+        """Verify the ``pulp-admin docker repo copy`` stdout looks correct.
+
+        Assert that stdout references the correct number of manifests.
+        """
+        proc = docker_utils.repo_search(
             self.cfg,
             fields='digest',
             repo_id=self.repo_ids[0],
             unit_type='manifest',
-        ).stdout
-        unit_ids_search = set(re.findall(_DIGEST_RE, units_search))
+        )
+        n_search_digests = len(re.findall('Digest: ', proc.stdout))
 
-        # The manifest digests are printed after "docker_manifest:".
-        unit_ids_copy = self.copy.stdout.split('docker_manifest:')[1]
-        unit_ids_copy = re.findall(r'(?: {2})(\w*:\w*)', unit_ids_copy)
-        unit_ids_copy = _truncate_ids(unit_ids_copy)
+        # Before Pulp 2.13, stdout is in this form:
+        #
+        #     Copied:
+        #      docker_blob:
+        #       sha256:082340653daf0364a24268c6ca0594f22766a683b3e17f49028ef564b229e835
+        #       …
+        #      docker_manifest:
+        #       sha256:01cecc256987d4305fb0b72df9df8440441c4da17036f63c85d5fa89399df53d
+        #       …
+        #
+        # Starting with Pulp 2.13, stdout is more concise:
+        #
+        #     Copied:
+        #       docker_blob: 45
+        #       docker_manifest: 75
+        #
+        if self.cfg.version < Version('2.13'):
+            n_copy_digests = self.copy.stdout.split('docker_manifest:')[1]
+            n_copy_digests = len(re.findall(r'  (\w*:\w*)', n_copy_digests))
+        else:
+            n_copy_digests = int(re.search(
+                r'docker_manifest: (\d+)',
+                self.copy.stdout
+            ).group(1))
 
-        self.assertEqual(unit_ids_search, unit_ids_copy)
+        self.assertEqual(n_search_digests, n_copy_digests)
 
     def test_positive_units_copied(self):
         """Assert that all units were copied."""
