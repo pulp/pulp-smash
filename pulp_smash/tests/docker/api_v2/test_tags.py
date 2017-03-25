@@ -74,7 +74,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
     """Tests for docker repository tagging feature."""
 
     def setUp(self):
-        """Create a docker repository."""
+        """Create and sync a docker repository."""
         super().setUp()
         self.repo = create_docker_repo(self.cfg, DOCKER_UPSTREAM_NAME)
         self.addCleanup(api.Client(self.cfg).delete, self.repo['_href'])
@@ -121,49 +121,63 @@ class DockerTagTestCase(utils.BaseAPITestCase):
         self.assertEqual(len(self._get_tags()), len(self.tags) + 1)
 
     def test_update_tag(self):
-        """Check if a tag can be updated to a new manifest."""
-        latest_tag = utils.search_units(self.cfg, self.repo, {
-            'type_ids': ['docker_tag'],
-            'filters': {'unit': {'name': 'latest'}},
-        })
-        self.assertEqual(len(latest_tag), 1)
-        latest_tag = latest_tag.pop()
-        initial_latest_tag_manifest = utils.search_units(self.cfg, self.repo, {
+        """Check if a tag can be updated to a new manifest.
+
+        Do the following:
+
+        1. Find the tag in this test's docker repository whose name is
+           "latest." Make note of the manifest it references.
+        2. Pick some other manifest. Update the repository so that the "latest"
+           tag references the chosen manifest.
+        3. Find the tag in this test's docker repository whose name is
+           "latest." Assert it references the chosen manifest.
+        """
+        # Find the "latest" tag.
+        tag = self.get_latest_tags()
+        self.assertEqual(len(tag), 1)
+        tag = tag.pop()
+
+        # Find the manifest the "latest" tag references.
+        old_manifest = utils.search_units(self.cfg, self.repo, {
             'type_ids': ['docker_manifest'],
             'filters': {
-                'unit': {'digest': latest_tag['metadata']['manifest_digest']}
+                'unit': {'digest': tag['metadata']['manifest_digest']}
             },
         })
-        self.assertEqual(len(initial_latest_tag_manifest), 1)
-        initial_latest_tag_manifest = initial_latest_tag_manifest.pop()
-        manifests = utils.search_units(
-            self.cfg, self.repo, {'type_ids': ['docker_manifest']})
-        manifests.remove(initial_latest_tag_manifest)
-        random_manifest = random.choice(manifests)
-        # Update the tag
+        self.assertEqual(len(old_manifest), 1)
+        old_manifest = old_manifest.pop()
+
+        # Pick a new manifest.
+        manifests = self.get_manifests()
+        manifests.remove(old_manifest)
+        new_manifest = random.choice(manifests)
+
+        # Make the "latest" tag reference the new manifest.
         import_upload(self.cfg, self.repo, {
-            'unit_type_id': 'docker_tag',
+            # Identify the tag being updated...
             'unit_key': {
-                'repo_id': self.repo['id'],
-                'name': 'latest',
+                'name': tag['metadata']['name'],
+                'repo_id': tag['metadata']['repo_id'],
             },
+            'unit_type_id': 'docker_tag',
+            # ...and provide changed attributes.
             'unit_metadata': {
-                'name': 'latest',
-                'digest': random_manifest['metadata']['digest'],
+                'digest': new_manifest['metadata']['digest'],
+                'name': tag['metadata']['name'],
             },
         })
-        # Check if the tag was updated
-        latest_tag = utils.search_units(self.cfg, self.repo, {
-            'type_ids': ['docker_tag'],
-            'filters': {'unit': {'name': 'latest'}},
-        })
-        self.assertEqual(len(latest_tag), 1)
-        latest_tag = latest_tag.pop()
-        self.assertEqual(
-            latest_tag['metadata']['manifest_digest'],
-            random_manifest['metadata']['digest']
-        )
-        self.assertEqual(len(self._get_tags()), len(self.tags))
+
+        # Find the "latest" tag.
+        tag = self.get_latest_tags()
+        self.assertEqual(len(tag), 1)
+        tag = tag.pop()
+
+        # Assert the tag references the correct manifest.
+        tag_digest = tag['metadata']['manifest_digest']
+        with self.subTest():
+            self.assertNotEqual(tag_digest, old_manifest['metadata']['digest'])
+        with self.subTest():
+            self.assertEqual(tag_digest, new_manifest['metadata']['digest'])
 
     def test_update_tag_invalid_manifest(self):  # pylint:disable=invalid-name
         """Check if tagging fail for a invalid manifest."""
@@ -218,3 +232,34 @@ class DockerTagTestCase(utils.BaseAPITestCase):
             context.exception.task['error']['description']
         )
         self.assertEqual(len(self._get_tags()), len(self.tags))
+
+    def get_latest_tags(self):
+        """Return all tags in this test's repo with a name of "latest".
+
+        Starting with Pulp 2.13, docker schema v2 is supported. As a result, a
+        tag or manifest may be included in search results twice, with a
+        differing schema_version. For convenience, if the Pulp system under
+        test is version 2.13 or newer, only schema v1 is targeted. (The choice
+        of schema version 1 is arbitrary.) See `Pulp #2099
+        <https://pulp.plan.io/issues/2099>`_.
+
+        :returns: A list of docker tags.
+        """
+        criteria = {
+            'filters': {'unit': {'name': 'latest'}},
+            'type_ids': ['docker_tag'],
+        }
+        if self.cfg.version >= Version('2.13'):
+            criteria['filters']['unit']['schema_version'] = 1
+        return utils.search_units(self.cfg, self.repo, criteria)
+
+    def get_manifests(self):
+        """Return all manifests in this test's repo.
+
+        If the Pulp system under test is version 2.13 or newer, only return
+        schema v1 manifests. See :meth:`get_latest_tags`.
+        """
+        criteria = {'type_ids': ['docker_manifest']}
+        if self.cfg.version >= Version('2.13'):
+            criteria['filters'] = {'unit': {'schema_version': 1}}
+        return utils.search_units(self.cfg, self.repo, criteria)
