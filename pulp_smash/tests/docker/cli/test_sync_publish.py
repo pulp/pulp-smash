@@ -105,6 +105,11 @@ class SyncPublishV2TestCase(unittest.TestCase):
         some information for use by the test methods.
         """
         cls.cfg = config.get_config()
+        if cls.cfg.version >= Version('2.13'):
+            raise unittest.SkipTest(
+                'These tests are not yet compatible with Pulp 2.13+. Please '
+                'update the CI jobs to install Crane.'
+            )
         if cls.cfg.version < Version('2.8'):
             raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
         if (cls.cfg.version >= Version('2.9') and
