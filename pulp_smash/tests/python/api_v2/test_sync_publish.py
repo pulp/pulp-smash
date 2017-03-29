@@ -57,6 +57,10 @@ class BaseTestCase(unittest.TestCase):
 
         * `Pulp #140 <https://pulp.plan.io/issues/140>`_
         * `Pulp Smash #493 <https://github.com/PulpQE/pulp-smash/issues/493>`_
+
+        Note that, for `Pulp #140`_ to be fully tested, an additional test case
+        should be created wherein one Pulp application syncs from another
+        completely independent Pulp application.
         """
         if (self.cfg.version < Version('2.13') or
                 selectors.bug_is_untestable(140, self.cfg.version)):
