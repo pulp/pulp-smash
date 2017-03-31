@@ -12,10 +12,11 @@ from urllib.parse import urljoin
 import requests
 from packaging import version
 
-from pulp_smash import api, cli, utils
+from pulp_smash import api, cli, selectors, utils
 from pulp_smash.constants import (
     REPOSITORY_GROUP_PATH,
     REPOSITORY_PATH,
+    RPM_UNSIGNED_FEED_URL,
     RPM_WITH_PULP_DISTRIBUTION_FEED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
@@ -223,3 +224,74 @@ class RPMDistributorTestCase(utils.BaseAPITestCase):
             repo = client.get(repo['_href'], params={'details': True})
             config = repo['distributors'][0]['config']
             self.assertEqual(config.get('checksum_type'), checksum_type)
+
+
+class LastUnitAddedTestCase(utils.BaseAPITestCase):
+    """Tests for ensuring proper last_unit_added behavior."""
+
+    def setUp(self):
+        """Create a repository with a feed and sync it."""
+        self.client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config'] = {
+            'feed': RPM_UNSIGNED_FEED_URL,
+        }
+        repo = self.client.post(REPOSITORY_PATH, body)
+        self.addCleanup(self.client.delete, repo['_href'])
+        self.repo = self.client.get(repo['_href'], params={'details': True})
+
+    def test_update_on_sync(self):
+        """Check if last_unit_added is updated on repo syncing.
+
+        Do the following:
+
+        1. Create a repository with a feed
+        2. Assert last_unit_added is null
+        3. Sync the repository
+        4. Assert the last_unit_added is updated
+        """
+        self.assertIsNone(self.repo['last_unit_added'])
+        utils.sync_repo(self.cfg, self.repo['_href'])
+        self.repo = self.client.get(
+            self.repo['_href'], params={'details': True})
+        self.assertIsNotNone(self.repo['last_unit_added'])
+
+    def test_update_on_copy(self):
+        """Check if last_unit_added is updated on unit copying.
+
+        Do the following:
+
+        1. Create a repository with a feed and sync it
+        2. Create a second repository
+        3. Assert second repository's last_unit_added is null
+        4. Copy one unit from first repository to the second
+        5. Publish the second repository
+        6. Assert second repository's last_unit_added is updated
+        """
+        if selectors.bug_is_untestable(2688, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2688')
+        utils.sync_repo(self.cfg, self.repo['_href'])
+        self.repo = self.client.get(
+            self.repo['_href'], params={'details': True})
+
+        body = gen_repo()
+        body['distributors'] = [gen_distributor()]
+        second_repo = self.client.post(REPOSITORY_PATH, body)
+        self.addCleanup(self.client.delete, second_repo['_href'])
+        second_repo = self.client.get(
+            second_repo['_href'], params={'details': True})
+        self.assertIsNone(second_repo['last_unit_added'])
+
+        body = {
+            'source_repo_id': self.repo['id'],
+            'criteria': {
+                'filters': {'unit': {'name': 'bear'}},
+                'type_ids': ['rpm'],
+            },
+        }
+        associate_url = urljoin(second_repo['_href'], 'actions/associate/')
+        self.client.post(associate_url, body)
+        utils.publish_repo(self.cfg, second_repo)
+        second_repo = self.client.get(
+            second_repo['_href'], params={'details': True})
+        self.assertIsNotNone(second_repo['last_unit_added'], second_repo)
