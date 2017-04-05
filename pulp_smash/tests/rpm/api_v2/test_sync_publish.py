@@ -196,8 +196,9 @@ class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
         (vague) string "Unsupported scheme: ". This test targets `Pulp #1376
         <https://pulp.plan.io/issues/1376>`_.
         """
-        if selectors.bug_is_untestable(1455, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/1455')
+        for id_ in (1376, 1455):
+            if selectors.bug_is_untestable(id_, self.cfg.version):
+                self.skipTest('https://pulp.plan.io/issues/{}'.format(id_))
         for i, task in enumerate(self.tasks):
             with self.subTest(i=i):
                 self.assertIsNotNone(task['error'], task)
