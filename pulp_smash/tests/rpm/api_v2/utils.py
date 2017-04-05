@@ -2,11 +2,13 @@
 """Utility functions for RPM API tests."""
 import gzip
 import io
+import time
+import unittest
 from os.path import basename
 from urllib.parse import urljoin
 from xml.etree import ElementTree
 
-from pulp_smash import api, cli, selectors, utils
+from pulp_smash import api, cli, exceptions, selectors, utils
 from pulp_smash.constants import RPM_NAMESPACES
 
 
@@ -185,6 +187,148 @@ class DisableSELinuxMixin(object):  # pylint:disable=too-few-public-methods
         self.addCleanup(client.run, cmd)
 
 
+class TemporaryUserMixin(object):
+    """A mixin providing the ability to create a temporary user.
+
+    A typical usage of this mixin is as follows:
+
+    .. code-block:: python
+
+        ssh_user, priv_key = self.make_user(cfg)
+        ssh_identity_file = self.write_private_key(cfg, priv_key)
+
+    This mixin requires that the ``unittest.TestCase`` class from the standard
+    library be a parent class.
+    """
+
+    def make_user(self, cfg):
+        """Create a user account with a home directory and an SSH keypair.
+
+        In addition, schedule the user for deletion with ``self.addCleanup``.
+
+        :param pulp_smash.config.ServerConfig cfg: Information about the host
+            being targeted.
+        :returns: A ``(username, private_key)`` tuple.
+        """
+        creator = self._make_user(cfg)
+        username = next(creator)
+        self.addCleanup(self.delete_user, cfg, username)
+        private_key = next(creator)
+        return (username, private_key)
+
+    @staticmethod
+    def _make_user(cfg):
+        """A generator to create a user account on the target system.
+
+        Yield a username and private key. The corresponding public key is made
+        the one and only key in the user's ``authorized_keys`` file.
+
+        The username and private key are yielded one-by-one rather than as a
+        pair because the user creation and key creation steps are executed
+        serially.  Should the latter fail, the calling function will still be
+        able to delete the created user.
+
+        The user is given a home directory. When deleting this user, make sure
+        to pass ``--remove`` to ``userdel``. Otherwise, the home directory will
+        be left in place.
+        """
+        client = cli.Client(cfg)
+        sudo = '' if utils.is_root(cfg) else 'sudo '
+
+        # According to useradd(8), usernames may be up to 32 characters long.
+        # But long names break the rsync publish process: (SNIP == username)
+        #
+        #     unix_listener:
+        #     "/tmp/rsync_distributor-[SNIP]@example.com:22.64tcAiD8em417CiN"
+        #     too long for Unix domain socket
+        #
+        username = utils.uuid4()[:12]
+        cmd = 'useradd --create-home {0}'
+        client.run((sudo + cmd.format(username)).split())
+        yield username
+
+        cmd = 'runuser --shell /bin/sh {} --command'.format(username)
+        cmd = (sudo + cmd).split()
+        cmd.append('ssh-keygen -N "" -f /home/{}/.ssh/mykey'.format(username))
+        client.run(cmd)
+        cmd = 'cp /home/{0}/.ssh/mykey.pub /home/{0}/.ssh/authorized_keys'
+        client.run((sudo + cmd.format(username)).split())
+        cmd = 'cat /home/{0}/.ssh/mykey'
+        private_key = client.run((sudo + cmd.format(username)).split()).stdout
+        yield private_key
+
+    @staticmethod
+    def delete_user(cfg, username):
+        """Delete a user.
+
+        The Pulp rsync distributor has a habit of leaving (idle?) SSH sessions
+        open even after publishing a repository. When executed, this function
+        will:
+
+        1. Poll the process list until all processes belonging to ``username``
+           have died, or raise a ``unittest.SkipTest`` exception if the time
+           limit is exceeded.
+        2. Delete ``username``.
+        """
+        sudo = () if utils.is_root(cfg) else ('sudo',)
+        client = cli.Client(cfg)
+
+        # values are arbitrary
+        iter_time = 2  # seconds
+        iter_limit = 15  # unitless
+
+        # Wait for user's processes to die.
+        cmd = sudo + ('ps', '-wwo', 'args', '--user', username, '--no-headers')
+        i = 0
+        while i <= iter_limit:
+            try:
+                user_processes = client.run(cmd).stdout.splitlines()
+            except exceptions.CalledProcessError:
+                break
+            i += 1
+            time.sleep(iter_time)
+        else:
+            raise unittest.SkipTest(
+                'User still has processes running after {}+ seconds. Aborting '
+                'test. User processes: {}'
+                .format(iter_time * iter_limit, user_processes)
+            )
+
+        # Delete user.
+        cmd = sudo + ('userdel', '--remove', username)
+        client.run(cmd)
+
+    def write_private_key(self, cfg, private_key):
+        """Write the given private key to a file on disk.
+
+        Ensure that the file is owned by user "apache" and has permissions of
+        ``600``. In addition, schedule the key for deletion with
+        ``self.addCleanup``.
+
+        :param pulp_smash.config.ServerConfig cfg: Information about the host
+            being targeted.
+        :returns: The path to the private key on disk, as a string.
+        """
+        sudo = '' if utils.is_root(cfg) else 'sudo '
+        client = cli.Client(cfg)
+        ssh_identity_file = client.run(['mktemp']).stdout.strip()
+        self.addCleanup(client.run, (sudo + 'rm ' + ssh_identity_file).split())
+        client.machine.session().run(
+            "echo '{}' > {}".format(private_key, ssh_identity_file)
+        )
+        client.run(['chmod', '600', ssh_identity_file])
+        client.run((sudo + 'chown apache ' + ssh_identity_file).split())
+        # Pulp's SELinux policy requires files handled by Pulp to have the
+        # httpd_sys_rw_content_t label
+        enforcing = client.run(['getenforce']).stdout.strip()
+        if enforcing.lower() != 'disabled':
+            client.run(
+                (sudo + 'chcon -t httpd_sys_rw_content_t ' + ssh_identity_file)
+                .split()
+            )
+        return ssh_identity_file
+
+
 def get_unit(cfg, distributor, unit_name, primary_xml=None):
     """Download a file from a published repository.
 
@@ -225,3 +369,47 @@ def get_unit(cfg, distributor, unit_name, primary_xml=None):
         path += '/'
     path = urljoin(path, href)
     return api.Client(cfg).get(path)
+
+
+def get_dists_by_type_id(cfg, repo):
+    """Return the named repository's distributors, keyed by their type IDs.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param repo_href: A dict of information about a repository.
+    :returns: A dict in the form ``{'type_id': {distributor_info}}``.
+    """
+    dists = api.Client(cfg).get(urljoin(repo['_href'], 'distributors/')).json()
+    return {dist['distributor_type_id']: dist for dist in dists}
+
+
+def set_pulp_manage_rsync(cfg, boolean):
+    """Set the ``pulp_manage_rsync`` SELinux policy.
+
+    If the ``semanage`` executable is not available, return. (This is the case
+    if SELinux isn't installed on the system under test.) Otherwise, set the
+    ``pulp_manage_rsync SELinux policy on or off, depending on the truthiness
+    of ``boolean``.
+
+    For more information on the ``pulp_manage_rsync`` SELinux policy, see `ISO
+    rsync Distributor → Configuration
+    <http://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/iso-rsync-distributor.html#configuration>`_.
+
+    :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
+    :param boolean: Either ``True`` or ``False``.
+    :returns: Information about the executed command, or ``None`` if no command
+        was executed.
+    :rtype: pulp_smash.cli.CompletedProcess
+    """
+    sudo = () if utils.is_root(cfg) else ('sudo',)
+    client = cli.Client(cfg)
+    try:
+        # semanage is installed at /sbin/semanage on some distros, and requires
+        # root privileges to discover.
+        client.run(sudo + ('which', 'semanage'))
+    except exceptions.CalledProcessError:
+        return
+    cmd = sudo
+    cmd += ('semanage', 'boolean', '--modify')
+    cmd += ('--on',) if boolean else ('--off',)
+    cmd += ('pulp_manage_rsync',)
+    return client.run(cmd)

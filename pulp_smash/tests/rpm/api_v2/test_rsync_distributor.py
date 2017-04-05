@@ -52,13 +52,12 @@ files will be laid out as follows::
         ┆
 """
 import os
-import time
 import unittest
 from urllib.parse import urljoin, urlparse
 
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, cli, config, exceptions, selectors, utils
+from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
     ORPHANS_PATH,
     REPOSITORY_PATH,
@@ -69,8 +68,11 @@ from pulp_smash.constants import (
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
     DisableSELinuxMixin,
+    TemporaryUserMixin,
     gen_distributor,
     gen_repo,
+    get_dists_by_type_id,
+    set_pulp_manage_rsync,
 )
 from pulp_smash.tests.rpm.utils import set_up_module
 
@@ -98,99 +100,14 @@ def setUpModule():  # pylint:disable=invalid-name
     cfg = config.get_config()
     if selectors.bug_is_untestable(1759, cfg.version):
         raise unittest.SkipTest('https://pulp.plan.io/issues/1759')
-    _set_pulp_manage_rsync(cfg, True)
+    set_pulp_manage_rsync(cfg, True)
 
 
 def tearDownModule():  # pylint:disable=invalid-name
     """Delete orphan content units."""
     cfg = config.get_config()
     api.Client(cfg).delete(ORPHANS_PATH)
-    _set_pulp_manage_rsync(cfg, False)
-
-
-def _make_user(cfg):
-    """A generator to create a user account on the target system.
-
-    Yield a username and private key. The corresponding public key is made the
-    one and only key in the user's ``authorized_keys`` file.
-
-    The username and private key are yielded one-by-one rather than as a pair
-    because the user creation and key creation steps are executed serially.
-    Should the latter fail, the calling function will still be able to delete
-    the created user.
-
-    The user is given a home directory. When deleting this user, make sure to
-    pass ``--remove`` to ``userdel``. Otherwise, the home directory will be
-    left in place.
-    """
-    client = cli.Client(cfg)
-    sudo = '' if utils.is_root(cfg) else 'sudo '
-
-    # According to useradd(8), usernames may be up to 32 characters long. But
-    # long names break the rsync publish process: (SNIP == username)
-    #
-    #     unix_listener:
-    #     "/tmp/rsync_distributor-[SNIP]@example.com:22.64tcAiD8em417CiN"
-    #     too long for Unix domain socket
-    #
-    username = utils.uuid4()[:12]
-    cmd = 'useradd --create-home {0}'
-    client.run((sudo + cmd.format(username)).split())
-    yield username
-
-    cmd = 'runuser --shell /bin/sh {} --command'.format(username)
-    cmd = (sudo + cmd).split()
-    cmd.append('ssh-keygen -N "" -f /home/{}/.ssh/mykey'.format(username))
-    client.run(cmd)
-    cmd = 'cp /home/{0}/.ssh/mykey.pub /home/{0}/.ssh/authorized_keys'
-    client.run((sudo + cmd.format(username)).split())
-    cmd = 'cat /home/{0}/.ssh/mykey'
-    private_key = client.run((sudo + cmd.format(username)).split()).stdout
-    yield private_key
-
-
-def _get_dists_by_type_id(cfg, repo_href):
-    """Return the named repository's distributors, keyed by their type IDs.
-
-    :param pulp_smash.config.ServerConfig cfg: Information about the Pulp
-        server being targeted.
-    :param repo_href: The path to a repository with a yum distributor.
-    :returns: A dict in the form ``{'type_id': {distributor_info}}``.
-    """
-    dists = api.Client(cfg).get(urljoin(repo_href, 'distributors/')).json()
-    return {dist['distributor_type_id']: dist for dist in dists}
-
-
-def _set_pulp_manage_rsync(cfg, boolean):
-    """Modify the ``pulp_manage_rsync`` SELinux policy.
-
-    If the ``semanage`` executable is not available, return. Do this to deal
-    with the possibility that SELinux is not installed on the system under
-    test.
-
-    For more information on the ``pulp_manage_rsync`` SELinux policy, see `ISO
-    rsync Distributor → Configuration
-    <http://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/iso-rsync-distributor.html#configuration>`_.
-
-    :param pulp_smash.config.ServerConfig cfg: Information about the system
-        being modified.
-    :param state: Either ``True`` or ``False``, indicating whether the
-        ``pulp_manage_rsync`` SELinux policy should be turned on or off.
-    :rtype: pulp_smash.cli.CompletedProcess
-    """
-    sudo = () if utils.is_root(cfg) else ('sudo',)
-    client = cli.Client(cfg)
-    try:
-        # semanage is installed at /sbin/semanage on some distros, and requires
-        # root privileges to discover.
-        client.run(sudo + ('which', 'semanage'))
-    except exceptions.CalledProcessError:
-        return
-    cmd = sudo
-    cmd += ('semanage', 'boolean', '--modify')
-    cmd += ('--on',) if boolean else ('--off',)
-    cmd += ('pulp_manage_rsync',)
-    return client.run(cmd)
+    set_pulp_manage_rsync(cfg, False)
 
 
 class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
@@ -199,92 +116,6 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
     This mixin requires that the ``unittest.TestCase`` class from the standard
     library is a parent class.
     """
-
-    def make_user(self, cfg):
-        """Create a user account with a home directory and an SSH keypair.
-
-        In addition, schedule the user for deletion with ``self.addCleanup``.
-
-        :param pulp_smash.config.ServerConfig cfg: Information about the server
-            being targeted.
-        :returns: A ``(username, private_key)`` tuple.
-        """
-        creator = _make_user(cfg)
-        username = next(creator)
-        self.addCleanup(self.delete_user, cfg, username)
-        private_key = next(creator)
-        return (username, private_key)
-
-    @staticmethod
-    def delete_user(cfg, username):
-        """Delete a user.
-
-        The Pulp rsync distributor has a habit of leaving (idle?) SSH sessions
-        open even after publishing a repository. When executed, this function
-        will:
-
-        1. Poll the process list until all processes belonging to ``username``
-           have died, or raise a ``unittest.SkipTest`` exception if the time
-           limit is exceeded.
-        2. Delete ``username``.
-        """
-        sudo = () if utils.is_root(cfg) else ('sudo',)
-        client = cli.Client(cfg)
-
-        # values are arbitrary
-        iter_time = 2  # seconds
-        iter_limit = 15  # unitless
-
-        # Wait for user's processes to die.
-        cmd = sudo + ('ps', '-wwo', 'args', '--user', username, '--no-headers')
-        i = 0
-        while i <= iter_limit:
-            try:
-                user_processes = client.run(cmd).stdout.splitlines()
-            except exceptions.CalledProcessError:
-                break
-            i += 1
-            time.sleep(iter_time)
-        else:
-            raise unittest.SkipTest(
-                'User still has processes running after {}+ seconds. Aborting '
-                'test. User processes: {}'
-                .format(iter_time * iter_limit, user_processes)
-            )
-
-        # Delete user.
-        cmd = sudo + ('userdel', '--remove', username)
-        client.run(cmd)
-
-    def write_private_key(self, cfg, private_key):
-        """Write the given private key to a file on disk.
-
-        Ensure that the file is owned by user "apache" and has permissions of
-        ``600``. In addition, schedule the key for deletion with
-        ``self.addCleanup``.
-
-        :param pulp_smash.config.ServerConfig cfg: Information about the server
-            being targeted.
-        :returns: The path to the private key on disk, as a string.
-        """
-        sudo = '' if utils.is_root(cfg) else 'sudo '
-        client = cli.Client(cfg)
-        ssh_identity_file = client.run(['mktemp']).stdout.strip()
-        self.addCleanup(client.run, (sudo + 'rm ' + ssh_identity_file).split())
-        client.machine.session().run(
-            "echo '{}' > {}".format(private_key, ssh_identity_file)
-        )
-        client.run(['chmod', '600', ssh_identity_file])
-        client.run((sudo + 'chown apache ' + ssh_identity_file).split())
-        # Pulp's SELinux policy requires files handled by Pulp to have the
-        # httpd_sys_rw_content_t label
-        enforcing = client.run(['getenforce']).stdout.strip()
-        if enforcing.lower() != 'disabled':
-            client.run(
-                (sudo + 'chcon -t httpd_sys_rw_content_t ' + ssh_identity_file)
-                .split()
-            )
-        return ssh_identity_file
 
     def make_repo(self, cfg, dist_cfg_updates):
         """Create a repository with an importer and pair of distributors.
@@ -377,6 +208,7 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
 
 class PublishBeforeYumDistTestCase(
         _RsyncDistUtilsMixin,
+        TemporaryUserMixin,
         unittest.TestCase):
     """Publish a repo with the rsync distributor before the yum distributor.
 
@@ -405,7 +237,7 @@ class PublishBeforeYumDistTestCase(
         }})
 
         # Publish with the rsync distributor.
-        distribs = _get_dists_by_type_id(cfg, repo['_href'])
+        distribs = get_dists_by_type_id(cfg, repo)
         self.verify_publish_is_skip(cfg, utils.publish_repo(
             cfg,
             repo,
@@ -422,6 +254,7 @@ class PublishBeforeYumDistTestCase(
 class ForceFullTestCase(
         _RsyncDistUtilsMixin,
         DisableSELinuxMixin,
+        TemporaryUserMixin,
         unittest.TestCase):
     """Use the ``force_full`` RPM rsync distributor option.
 
@@ -469,7 +302,7 @@ class ForceFullTestCase(
 
         # Publish the repo with the yum and rsync distributors, respectively.
         # Verify that the RPM rsync distributor has placed files.
-        distribs = _get_dists_by_type_id(cfg, repo['_href'])
+        distribs = get_dists_by_type_id(cfg, repo)
         self.maybe_disable_selinux(cfg, 2199)
         for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
             utils.publish_repo(cfg, repo, {'id': distribs[type_id]['id']})
@@ -593,6 +426,7 @@ class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest.TestCase):
 class RemoteUnitsPathTestCase(
         _RsyncDistUtilsMixin,
         DisableSELinuxMixin,
+        TemporaryUserMixin,
         unittest.TestCase):
     """Exercise the ``remote_units_path`` option.
 
@@ -632,12 +466,12 @@ class RemoteUnitsPathTestCase(
             },
             'remote_units_path': paths[0],
         })
-        distribs = _get_dists_by_type_id(cfg, repo['_href'])
+        distribs = get_dists_by_type_id(cfg, repo)
         utils.sync_repo(cfg, repo['_href'])
 
         # Publish the repo with the yum and rpm rsync distributors,
         # respectively. Verify that files have been correctly placed.
-        distribs = _get_dists_by_type_id(cfg, repo['_href'])
+        distribs = get_dists_by_type_id(cfg, repo)
         self.maybe_disable_selinux(cfg, 2199)
         for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
             utils.publish_repo(cfg, repo, {
@@ -651,6 +485,7 @@ class RemoteUnitsPathTestCase(
 class DeleteTestCase(
         _RsyncDistUtilsMixin,
         DisableSELinuxMixin,
+        TemporaryUserMixin,
         unittest.TestCase):
     """Use the ``delete`` RPM rsync distributor option.
 
@@ -689,7 +524,7 @@ class DeleteTestCase(
 
         # Publish the repo with the yum and rsync distributors, respectively.
         # Verify that the RPM rsync distributor has placed files.
-        distribs = _get_dists_by_type_id(cfg, repo['_href'])
+        distribs = get_dists_by_type_id(cfg, repo)
         self.maybe_disable_selinux(cfg, 2199)
         for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
             utils.publish_repo(cfg, repo, {'id': distribs[type_id]['id']})
@@ -739,7 +574,10 @@ class DeleteTestCase(
         self.assertEqual(files, [''])  # strange, but correct
 
 
-class AddUnitTestCase(_RsyncDistUtilsMixin, unittest.TestCase):
+class AddUnitTestCase(
+        _RsyncDistUtilsMixin,
+        TemporaryUserMixin,
+        unittest.TestCase):
     """Add a content unit to a repo in the middle of several publishes.
 
     When executed, this test case does the following:
@@ -782,7 +620,7 @@ class AddUnitTestCase(_RsyncDistUtilsMixin, unittest.TestCase):
         }})
 
         # Add content, publish w/yum, add more content, publish w/rsync.
-        dists = _get_dists_by_type_id(cfg, repo['_href'])
+        dists = get_dists_by_type_id(cfg, repo)
         for i, key in enumerate(('yum_distributor', 'rpm_rsync_distributor')):
             utils.upload_import_unit(
                 cfg, rpms[i], {'unit_type_id': 'rpm'}, repo)
