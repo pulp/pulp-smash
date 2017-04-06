@@ -230,25 +230,23 @@ class LastUnitAddedTestCase(utils.BaseAPITestCase):
     """Tests for ensuring proper last_unit_added behavior."""
 
     def setUp(self):
-        """Create a repository with a feed and sync it."""
+        """Perform common set-up tasks."""
         self.client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
-        body['importer_config'] = {
-            'feed': RPM_UNSIGNED_FEED_URL,
-        }
+        body['importer_config'] = {'feed': RPM_UNSIGNED_FEED_URL}
         repo = self.client.post(REPOSITORY_PATH, body)
         self.addCleanup(self.client.delete, repo['_href'])
         self.repo = self.client.get(repo['_href'], params={'details': True})
 
     def test_update_on_sync(self):
-        """Check if last_unit_added is updated on repo syncing.
+        """Check if syncing a repo updates ``last_unit_added``.
 
         Do the following:
 
-        1. Create a repository with a feed
-        2. Assert last_unit_added is null
-        3. Sync the repository
-        4. Assert the last_unit_added is updated
+        1. Create a repository with a feed.
+        2. Assert the repository's ``last_unit_added`` attribute is null.
+        3. Sync the repository.
+        4. Assert the repository's ``last_unit_added`` attribute is non-null.
         """
         self.assertIsNone(self.repo['last_unit_added'])
         utils.sync_repo(self.cfg, self.repo['_href'])
@@ -257,41 +255,49 @@ class LastUnitAddedTestCase(utils.BaseAPITestCase):
         self.assertIsNotNone(self.repo['last_unit_added'])
 
     def test_update_on_copy(self):
-        """Check if last_unit_added is updated on unit copying.
+        """Check if copying units into a repo updates ``last_unit_added``.
 
         Do the following:
 
-        1. Create a repository with a feed and sync it
-        2. Create a second repository
-        3. Assert second repository's last_unit_added is null
-        4. Copy one unit from first repository to the second
-        5. Publish the second repository
-        6. Assert second repository's last_unit_added is updated
+        1. Create a repository with a feed and sync it.
+        2. Create a second repository. Assert the second repository's
+           ``last_unit_added`` attribute is null.
+        3. Copy a content unit from first repository to the second. Assert the
+           second repository's ``last_unit_added`` attribute is non-null.
+        4. Publish the second repository. Assert its ``last_unit_added``
+           attribute is non-null.
         """
         if selectors.bug_is_untestable(2688, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2688')
+
+        # create a repo with a feed and sync it
         utils.sync_repo(self.cfg, self.repo['_href'])
         self.repo = self.client.get(
             self.repo['_href'], params={'details': True})
 
+        # create a second repository
         body = gen_repo()
         body['distributors'] = [gen_distributor()]
-        second_repo = self.client.post(REPOSITORY_PATH, body)
-        self.addCleanup(self.client.delete, second_repo['_href'])
-        second_repo = self.client.get(
-            second_repo['_href'], params={'details': True})
-        self.assertIsNone(second_repo['last_unit_added'])
+        repo2 = self.client.post(REPOSITORY_PATH, body)
+        self.addCleanup(self.client.delete, repo2['_href'])
+        repo2 = self.client.get(repo2['_href'], params={'details': True})
+        with self.subTest(comment='after repository creation'):
+            self.assertIsNone(repo2['last_unit_added'])
 
-        body = {
+        # copy a content unit from the first repo to the second
+        self.client.post(urljoin(repo2['_href'], 'actions/associate/'), {
             'source_repo_id': self.repo['id'],
             'criteria': {
                 'filters': {'unit': {'name': 'bear'}},
                 'type_ids': ['rpm'],
             },
-        }
-        associate_url = urljoin(second_repo['_href'], 'actions/associate/')
-        self.client.post(associate_url, body)
-        utils.publish_repo(self.cfg, second_repo)
-        second_repo = self.client.get(
-            second_repo['_href'], params={'details': True})
-        self.assertIsNotNone(second_repo['last_unit_added'], second_repo)
+        })
+        repo2 = self.client.get(repo2['_href'], params={'details': True})
+        with self.subTest(comment='after unit association'):
+            self.assertIsNotNone(repo2['last_unit_added'], repo2)
+
+        # publish the second repo
+        utils.publish_repo(self.cfg, repo2)
+        repo2 = self.client.get(repo2['_href'], params={'details': True})
+        with self.subTest(comment='after repository publish'):
+            self.assertIsNotNone(repo2['last_unit_added'], repo2)
