@@ -141,7 +141,7 @@ class RequireValidKeyTestCase(_BaseTestCase):
             'allowed_keys': [PULP_FIXTURES_KEY_ID],
             'require_signature': True,
         }, _REPOS['signed']['id'])
-        content_unit_counts = {key: 1 for key in _SIGNED_PACKAGES.keys()}
+        content_unit_counts = {key: 1 for key in _SIGNED_PACKAGES}
         self.assertEqual(repo['content_unit_counts'], content_unit_counts)
 
     def test_unsigned_packages(self):
@@ -208,7 +208,7 @@ class RequireAnyKeyTestCase(_BaseTestCase):
             'allowed_keys': [],
             'require_signature': True,
         }, _REPOS['signed']['id'])
-        content_unit_counts = {key: 1 for key in _SIGNED_PACKAGES.keys()}
+        content_unit_counts = {key: 1 for key in _SIGNED_PACKAGES}
         self.assertEqual(repo['content_unit_counts'], content_unit_counts)
 
     def test_unsigned_packages(self):
@@ -253,7 +253,7 @@ class AllowInvalidKeyTestCase(_BaseTestCase):
             'allowed_keys': ['01234567'],
             'require_signature': False,
         }, _REPOS['unsigned']['id'])
-        content_unit_counts = {key: 1 for key in _UNSIGNED_PACKAGES.keys()}
+        content_unit_counts = {key: 1 for key in _UNSIGNED_PACKAGES}
         self.assertEqual(repo['content_unit_counts'], content_unit_counts)
 
 
@@ -279,7 +279,7 @@ class AllowValidKeyTestCase(_BaseTestCase):
             'allowed_keys': [PULP_FIXTURES_KEY_ID],
             'require_signature': False,
         }, _REPOS['signed']['id'])
-        content_unit_counts = {key: 1 for key in _SIGNED_PACKAGES.keys()}
+        content_unit_counts = {key: 1 for key in _SIGNED_PACKAGES}
         self.assertEqual(repo['content_unit_counts'], content_unit_counts)
 
     def test_unsigned_packages(self):
@@ -291,7 +291,7 @@ class AllowValidKeyTestCase(_BaseTestCase):
             'allowed_keys': [PULP_FIXTURES_KEY_ID],
             'require_signature': False,
         }, _REPOS['unsigned']['id'])
-        content_unit_counts = {key: 1 for key in _UNSIGNED_PACKAGES.keys()}
+        content_unit_counts = {key: 1 for key in _UNSIGNED_PACKAGES}
         self.assertEqual(repo['content_unit_counts'], content_unit_counts)
 
 
@@ -314,7 +314,7 @@ class AllowAnyKeyTestCase(_BaseTestCase):
             'allowed_keys': [],
             'require_signature': False,
         }, _REPOS['signed']['id'])
-        content_unit_counts = {key: 1 for key in _SIGNED_PACKAGES.keys()}
+        content_unit_counts = {key: 1 for key in _SIGNED_PACKAGES}
         self.assertEqual(repo['content_unit_counts'], content_unit_counts)
 
     def test_unsigned_packages(self):
@@ -326,5 +326,5 @@ class AllowAnyKeyTestCase(_BaseTestCase):
             'allowed_keys': [],
             'require_signature': False,
         }, _REPOS['unsigned']['id'])
-        content_unit_counts = {key: 1 for key in _UNSIGNED_PACKAGES.keys()}
+        content_unit_counts = {key: 1 for key in _UNSIGNED_PACKAGES}
         self.assertEqual(repo['content_unit_counts'], content_unit_counts)

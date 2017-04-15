@@ -24,7 +24,6 @@ def count_langpacks(server_config, repo_id):
     # A "Package Langpacks: n" line is printed only if at least one unit of
     # that kind is present.
     assert len(lines) in (0, 1)
-    if len(lines) == 0:
-        return 0
-    else:
+    if lines:
         return int(lines[0].split(keyword)[1].strip())
+    return 0

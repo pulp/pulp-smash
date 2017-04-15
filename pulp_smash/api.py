@@ -268,22 +268,19 @@ class Client(object):
         """Send an HTTP PATCH request."""
         if json is _SENTINEL:
             return self.request('PATCH', url, **kwargs)
-        else:
-            return self.request('PATCH', url, json=json, **kwargs)
+        return self.request('PATCH', url, json=json, **kwargs)
 
     def post(self, url, json=_SENTINEL, **kwargs):
         """Send an HTTP POST request."""
         if json is _SENTINEL:
             return self.request('POST', url, **kwargs)
-        else:
-            return self.request('POST', url, json=json, **kwargs)
+        return self.request('POST', url, json=json, **kwargs)
 
     def put(self, url, json=_SENTINEL, **kwargs):
         """Send an HTTP PUT request."""
         if json is _SENTINEL:
             return self.request('PUT', url, **kwargs)
-        else:
-            return self.request('PUT', url, json=json, **kwargs)
+        return self.request('PUT', url, json=json, **kwargs)
 
     def request(self, method, url, **kwargs):
         """Send an HTTP request.
@@ -368,8 +365,8 @@ def poll_task(server_config, href):
             # This task has completed. Yield its final state, then iterate
             # through each of its children and yield their final states.
             yield attrs
-            for href in (task['_href'] for task in attrs['spawned_tasks']):
-                for final_task_state in poll_task(server_config, href):
+            for href_ in (task['_href'] for task in attrs['spawned_tasks']):
+                for final_task_state in poll_task(server_config, href_):
                     yield final_task_state
             break
         poll_counter += 1

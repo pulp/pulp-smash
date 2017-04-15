@@ -50,8 +50,7 @@ def _get_hostname(urlstring):
     parts = urlparse(urlstring)
     if parts.hostname is None:
         return _get_hostname('//' + parts.path)
-    else:
-        return parts.hostname
+    return parts.hostname
 
 
 def _is_root(cfg):
@@ -212,7 +211,7 @@ class Client(object):  # pylint:disable=too-few-public-methods
         else:  # transport == 'ssh'
             # The SshMachine is a wrapper around the system's "ssh" binary.
             # Thus, it uses ~/.ssh/config, ~/.ssh/known_hosts, etc.
-            self.machine = (  # pylint:disable=redefined-variable-type
+            self.machine = (
                 plumbum.machines.SshMachine(hostname)
             )
 

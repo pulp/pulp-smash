@@ -56,8 +56,7 @@ def _get_pkg_unit_type(pkg_filename):
     suffix = pkg_filename.split('.')[-2:]
     if suffix[-2] == 'src':
         return 'srpm'
-    else:
-        return suffix[-1]
+    return suffix[-1]
 
 
 class _BaseTestCase(unittest.TestCase):

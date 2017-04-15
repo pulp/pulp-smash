@@ -35,10 +35,9 @@ def get_num_units_in_repo(server_config, repo_id):
     # If puppet modules are present, a "Puppet Module: n" line is printed.
     # Otherwise, nothing is printed.
     assert len(lines) in (0, 1)
-    if len(lines) == 0:
-        return 0
-    else:
+    if lines:
         return int(lines[0].split(keyword)[1].strip())
+    return 0
 
 
 class SyncDownloadedContentTestCase(unittest.TestCase):

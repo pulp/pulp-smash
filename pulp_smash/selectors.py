@@ -115,7 +115,7 @@ def _get_bug(bug_id):
     # Let's return the bug from the cache if possible. ¶ We shouldn't need to
     # declare a global until we want to assign to it, but waiting causes Python
     # itself to emit a SyntaxWarning.
-    global _BUG_STATUS_CACHE  # pylint:disable=global-variable-not-assigned
+    global _BUG_STATUS_CACHE  # pylint:disable=global-statement
     try:
         return _BUG_STATUS_CACHE[bug_id]
     except KeyError:

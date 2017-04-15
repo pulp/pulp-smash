@@ -82,8 +82,7 @@ def _split_path(path):
     head, tail = os.path.split(path)
     if head == '':
         return (tail,)
-    else:
-        return _split_path(head) + (tail,)
+    return _split_path(head) + (tail,)
 
 
 def setUpModule():  # pylint:disable=invalid-name
@@ -402,9 +401,9 @@ class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest.TestCase):
         try:
             with self.assertRaises(HTTPError, msg=body):
                 repo = api_client.post(REPOSITORY_PATH, body)
-        except AssertionError as err:
+        except AssertionError:
             self.addCleanup(api_client.delete, repo['_href'])
-            raise err
+            raise
 
     def test_root(self):
         """Pass a relative path to the ``root`` configuration option."""

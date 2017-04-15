@@ -36,13 +36,6 @@ class CalledProcessError(Exception):
     See :meth:`pulp_smash.cli.CompletedProcess` for more information.
     """
 
-    def __init__(self, args, returncode, stdout, stderr):
-        """An exceptionally simple constructor.
-
-        Pass all arguments to ``super()``.
-        """
-        super().__init__(args, returncode, stdout, stderr)
-
     def __str__(self):
         """Provide a human-friendly string representation of this exception."""
         return (
