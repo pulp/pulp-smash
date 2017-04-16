@@ -134,7 +134,8 @@ class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
             auth=None,
             verify=None,
             version=None,
-            cli_transport=None):
+            cli_transport=None,
+            ssh_port=22):
         """Initialize this object with needed instance attributes."""
         self.base_url = base_url
         self.auth = auth
@@ -144,6 +145,7 @@ class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
         else:
             self.version = Version(version)
         self.cli_transport = cli_transport
+        self.ssh_port = ssh_port
 
         self._section = 'pulp'
         self._xdg_config_file = os.environ.get(
@@ -340,7 +342,7 @@ class ServerConfig(object):  # pylint:disable=too-many-instance-attributes
         gains or loses attributes.
         """
         attrs = _public_attrs(self)
-        for key in ('base_url', 'cli_transport', 'version'):
+        for key in ('base_url', 'cli_transport', 'version', 'ssh_port'):
             del attrs[key]
         if attrs['auth'] is not None:
             attrs['auth'] = tuple(attrs['auth'])

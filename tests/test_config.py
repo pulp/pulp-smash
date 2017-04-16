@@ -27,6 +27,7 @@ def _gen_attrs():
     attrs['version'] = '.'.join(
         type('')(random.randint(1, 150)) for _ in range(4)
     )
+    attrs['ssh_port'] = random.randint(5000, 65535)
     return attrs
 
 
@@ -173,7 +174,7 @@ class GetRequestsKwargsTestCase(unittest.TestCase):
     def test_kwargs(self):
         """Assert that the method returns correct values."""
         attrs = self.attrs.copy()
-        for key in ('base_url', 'cli_transport', 'version'):
+        for key in ('base_url', 'cli_transport', 'version', 'ssh_port'):
             del attrs[key]
         attrs['auth'] = tuple(attrs['auth'])
         self.assertEqual(attrs, self.kwargs)
