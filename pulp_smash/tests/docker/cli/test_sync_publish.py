@@ -1,338 +1,235 @@
 # coding=utf-8
 """Tests for syncing and publishing docker repositories."""
-import hashlib
-import json
 import unittest
-
-from packaging.version import Version
+from urllib.parse import urlsplit, urlunsplit
 
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
     DOCKER_UPSTREAM_NAME,
     DOCKER_V1_FEED_URL,
     DOCKER_V2_FEED_URL,
-    ORPHANS_PATH,
 )
 from pulp_smash.tests.docker.cli import utils as docker_utils
-from pulp_smash.tests.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
-
-_BYTE_UNICODE = (type(b''), type(u''))
+from pulp_smash.tests.docker.utils import set_up_module
 
 
-class _BaseTestCase(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        """Provide a server config and a repository ID."""
-        cls.cfg = config.get_config()
-        cls.repo_id = utils.uuid4()
-        utils.pulp_admin_login(cls.cfg)
-
-    @classmethod
-    def tearDownClass(cls):
-        """Delete the created repository."""
-        docker_utils.repo_delete(cls.cfg, cls.repo_id)
+def setUpModule():  # pylint:disable=invalid-name
+    """Execute ``pulp-admin login``."""
+    set_up_module()
+    utils.pulp_admin_login(config.get_config())
 
 
-class _SuccessMixin(object):
+class SyncPublishMixin(object):
+    """Tools for test cases that test repository syncing and publishing.
 
-    def test_task_succeeded(self):
-        """Assert the phrase "Task Succeeded" is in stdout."""
-        self.assertIn('Task Succeeded', self.completed_proc.stdout)
-
-    def test_task_failed(self):
-        """Assert the phrase "Task Failed" is not in stdout."""
-        self.assertNotIn('Task Failed', self.completed_proc.stdout)
-
-
-class SyncV1TestCase(_SuccessMixin, _BaseTestCase):
-    """Show it is possible to sync a docker repository with a v1 registry."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Create and sync a docker repository with a v1 registry."""
-        super(SyncV1TestCase, cls).setUpClass()
-        if (cls.cfg.version >= Version('2.9') and
-                selectors.bug_is_untestable(1909, cls.cfg.version)):
-            raise unittest.SkipTest('https://pulp.plan.io/issues/1909')
-        docker_utils.repo_create(
-            cls.cfg,
-            feed=DOCKER_V1_FEED_URL,
-            repo_id=cls.repo_id,
-            upstream_name=DOCKER_UPSTREAM_NAME,
-        )
-        cls.completed_proc = docker_utils.repo_sync(cls.cfg, cls.repo_id)
-
-
-def _get_app_file(cfg, repo_id):
-    """Return the text of the repo json app file."""
-    cmd = 'sudo cat /var/lib/pulp/published/docker/v2/app/{}.json'
-    cmd = cmd.format(repo_id).split()
-    return json.loads(cli.Client(cfg).run(cmd).stdout)
-
-
-def _get_tags(cfg, repo_id):
-    """Return the tags for the repo."""
-    path = '/pulp/docker/v2/{}/tags/list'.format(repo_id)
-    return api.Client(cfg).get(path).json()
-
-
-def _get_manifest(cfg, repo_id, tag):
-    """Return the manifest of tag ``tag`` in repository ``repo_id``."""
-    path = '/pulp/docker/v2/{}/manifests/{}'.format(repo_id, tag)
-    return api.Client(cfg).get(path).json()
-
-
-class SyncPublishV2TestCase(unittest.TestCase):
-    """Sync and publish a docker v2 repository.
-
-    This test case targets:
-
-    * `Pulp #1051`_, "As a user, I can publish v2 repositories."
-    * `Pulp #2287`_, "Cannot get docker v2 repo tags list."
-
-    .. _Pulp #1051: https://pulp.plan.io/issues/1051
-    .. _Pulp #2287: https://pulp.plan.io/issues/2287
+    This class must be mixed in to a class that inherits from
+    ``unittest.TestCase``.
     """
 
+    def verify_proc(self, proc):
+        """Assert ``proc.stdout`` has correct contents.
+
+        Assert "Task Succeeded" is present and "Task Failed" is absent.
+        """
+        self.assertIn('Task Succeeded', proc.stdout)
+        self.assertNotIn('Task Failed', proc.stdout)
+
+    @staticmethod
+    def adjust_url(url):
+        """Return a URL that can be used for talking with Crane.
+
+        The URL returned is the same as ``url``, except that the scheme is set
+        to HTTP, and the port is set to (or replaced by) 5000.
+
+        :param url: A string, such as ``https://pulp.example.com/foo``.
+        :returns: A string, such as ``http://pulp.example.com:5000/foo``.
+        """
+        parse_result = urlsplit(url)
+        netloc = parse_result[1].partition(':')[0] + ':5000'
+        return urlunsplit(('http', netloc) + parse_result[2:])
+
+    @staticmethod
+    def make_crane_client(cfg):
+        """Make an API client for talking with Crane.
+
+        Create an API client for talking to Crane. The client returned by this
+        method is similar to the following ``client``:
+
+        >>> client = api.Client(cfg, api.json_handler)
+
+        However:
+
+        * The client's base URL is adjusted as described by :meth:`adjust_url`.
+        * The client will send an ``accept:application/json`` header with each
+          request.
+
+        :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+            deployment.
+        :returns: An API client for talking with Crane.
+        :rtype: pulp_smash.api.Client
+        """
+        client = api.Client(
+            cfg,
+            api.json_handler,
+            {'headers': {'accept': 'application/json'}},
+        )
+        client.request_kwargs['url'] = SyncPublishMixin.adjust_url(
+            client.request_kwargs['url']
+        )
+        return client
+
+
+class SyncPublishV1TestCase(SyncPublishMixin, utils.BaseAPITestCase):
+    """Create, sync, publish and interact with a Docker v1 repository."""
+
+    def test_all(self):
+        """Create, sync and publish a Docker v1 repository.
+
+        Specifically, do the following:
+
+        1. Create, sync and publish a Docker repository. Set the repository's
+           feed to a v1 feed.
+        2. Make Crane immediately re-read the metadata files published by Pulp.
+           (Restart Apache.)
+        3. Issue an HTTP GET request to ``/crane/repositories``, and verify the
+           correct information is reported.
+        """
+        # Create, sync and publish a repository.
+        repo_id = utils.uuid4()
+        self.assertNotIn('Task Failed', docker_utils.repo_create(
+            self.cfg,
+            enable_v1='true',
+            enable_v2='false',
+            feed=DOCKER_V1_FEED_URL,
+            repo_id=repo_id,
+            upstream_name=DOCKER_UPSTREAM_NAME,
+        ).stdout)
+        self.addCleanup(docker_utils.repo_delete, self.cfg, repo_id)
+        self.verify_proc(docker_utils.repo_sync(self.cfg, repo_id))
+        self.verify_proc(docker_utils.repo_publish(self.cfg, repo_id))
+
+        # Make Crane read the metadata. (Now!)
+        cli.GlobalServiceManager(self.cfg).restart(('httpd',))
+
+        # Get and inspect /crane/repositories.
+        client = self.make_crane_client(self.cfg)
+        repos = client.get('/crane/repositories')
+        self.assertIn(repo_id, repos.keys())
+        with self.subTest():
+            self.assertFalse(repos[repo_id]['protected'])
+        with self.subTest():
+            self.assertTrue(repos[repo_id]['image_ids'])
+        with self.subTest():
+            self.assertTrue(repos[repo_id]['tags'])
+
+
+class SyncPublishV2TestCase(SyncPublishMixin, utils.BaseAPITestCase):
+    """Create, sync, publish and interact with a Docker v2 repository."""
+
     @classmethod
     def setUpClass(cls):
-        """Create and sync a repository, and get information about it.
-
-        Before creating and syncing the repository, verify that this test
-        should run at all, and execute ``pulp-admin login``. After creating and
-        syncing the repository, verify that the sync succeeded, and then fetch
-        some information for use by the test methods.
-        """
-        cls.cfg = config.get_config()
-        if cls.cfg.version >= Version('2.13'):
-            raise unittest.SkipTest(
-                'These tests are not yet compatible with Pulp 2.13+. Please '
-                'update the CI jobs to install Crane.'
-            )
-        if cls.cfg.version < Version('2.8'):
-            raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
-        if (cls.cfg.version >= Version('2.9') and
-                selectors.bug_is_untestable(1909, cls.cfg.version)):
-            raise unittest.SkipTest('https://pulp.plan.io/issues/1909')
-        if (cls.cfg.version >= Version('2.10') and
-                selectors.bug_is_untestable(2287, cls.cfg.version)):
+        """Maybe skip this test case, and execute ``pulp-admin login``."""
+        super().setUpClass()
+        if selectors.bug_is_untestable(2287, cls.cfg.version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2287')
-        utils.pulp_admin_login(cls.cfg)
 
-        # Create and sync a repo, and get information about the repo.
-        cls.repo_id = None
-        try:
-            cls.repo_id = cls._create_repo()
-            proc = docker_utils.repo_sync(cls.cfg, cls.repo_id)
-            if ('Task Failed' in proc.stdout or
-                    'Task Succeeded' not in proc.stdout):
-                raise AssertionError(
-                    'Repository sync failed. Response: {}'.format(proc)
-                )
-            cls.app_file = _get_app_file(cls.cfg, cls.repo_id)
-            cls.tags = _get_tags(cls.cfg, cls.repo_id)
-            cls.manifest = _get_manifest(
-                cls.cfg,
-                cls.repo_id,
-                cls.tags['tags'][0]
-            )
-        except:
-            cls.tearDownClass()
-            raise
+    def test_all(self):
+        """Create, sync and publish a repository. Interact with it.
 
-    @classmethod
-    def tearDownClass(cls):
-        """Delete any orphans."""
-        if cls.repo_id is not None:
-            docker_utils.repo_delete(cls.cfg, cls.repo_id)
-        api.Client(cls.cfg).delete(ORPHANS_PATH)
+        Specifically, do the following:
 
-    @classmethod
-    def _create_repo(cls):
-        """Create a docker repository and return its ID."""
+        1. Create, sync and publish a Docker repository. Set the repository's
+           feed to a v2 feed.
+        2. Make Crane immediately re-read the metadata files published by Pulp.
+           (Restart Apache.)
+        3. Issue an HTTP GET request to ``/crane/repositories``, and verify the
+           correct information is reported.
+        """
+        # Create, sync and publish a repository.
         repo_id = utils.uuid4()
-        docker_utils.repo_create(
-            cls.cfg,
+        self.assertNotIn('Task Failed', docker_utils.repo_create(
+            self.cfg,
+            enable_v1='false',
+            enable_v2='true',
             feed=DOCKER_V2_FEED_URL,
             repo_id=repo_id,
             upstream_name=DOCKER_UPSTREAM_NAME,
-        )
-        return repo_id
+        ).stdout)
+        self.addCleanup(docker_utils.repo_delete, self.cfg, repo_id)
+        self.verify_proc(docker_utils.repo_sync(self.cfg, repo_id))
+        self.verify_proc(docker_utils.repo_publish(self.cfg, repo_id))
 
-    def test_app_file_registry_id(self):
-        """Assert that the v2 app file has the correct ``repo-registry-id``."""
-        self.assertEqual(self.app_file['repo-registry-id'], self.repo_id)
+        # Make Crane read the metadata. (Now!)
+        cli.GlobalServiceManager(self.cfg).restart(('httpd',))
 
-    def test_app_file_repository(self):
-        """Assert that the v2 app file has the correct repository."""
-        self.assertEqual(self.app_file['repository'], self.repo_id)
-
-    def test_app_file_url(self):
-        """Assert that the v2 app file has the correct url."""
-        cmd = 'hostname --fqdn'
-        fqdn = cli.Client(self.cfg).run(cmd.split()).stdout.strip()
-        self.assertEqual(
-            self.app_file['url'],
-            'https://{}/pulp/docker/v2/{}/'.format(fqdn, self.repo_id)
-        )
-
-    def test_app_file_version(self):
-        """Assert that the v2 app file has the correct version."""
-        self.assertEqual(self.app_file['version'], 2)
-
-    def test_app_file_protected(self):
-        """Assert that the repository is not marked as protected."""
-        self.assertFalse(self.app_file['protected'])
-
-    def test_app_file_type(self):
-        """Assert that the v2 app file has the correct type."""
-        self.assertEqual(self.app_file['type'], 'pulp-docker-redirect')
-
-    def test_blob_digests(self):
-        """Assert that the checksum embedded in each blob's URL is correct.
-
-        For each of the "fsLayers" in the repository manifest, download and
-        checksum its blob, and compare this checksum to the one embedded in the
-        blob's URL. This test targets:
-
-        * `Pulp #1781`_, "Files ending in .gz are delivered with incorrect
-          content headers."
-        * `Pulp #2618`_, "'blob' files are delivered with incorrect content
-          headers"
-
-        .. _Pulp #1781: https://pulp.plan.io/issues/1781
-        .. _Pulp #2618: https://pulp.plan.io/issues/2618
-        """
-        is_rhel6 = cli.Client(self.cfg, cli.echo_handler).run((
-            'grep',
-            '-i',
-            'red hat enterprise linux server release 6',
-            '/etc/redhat-release',
-        )).returncode == 0
-        if is_rhel6 and selectors.bug_is_untestable(2618, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/2618')
-        if is_rhel6 and selectors.bug_is_untestable(1781, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/1781')
-
-        for fs_layer in self.manifest['fsLayers']:
-            with self.subTest(fs_layer=fs_layer):
-                blob_sum = fs_layer['blobSum']
-                blob = api.Client(self.cfg).get(
-                    '/pulp/docker/v2/{}/blobs/{}'
-                    .format(self.repo_id, blob_sum)
-                ).content
-                algo, expected_digest = blob_sum.split(':')
-                hasher = getattr(hashlib, algo)()
-                hasher.update(blob)
-                self.assertEqual(expected_digest, hasher.hexdigest())
-
-    def test_manifest_fslayers(self):
-        """Verify the structure of each of the "fsLayers" in the manifest.
-
-        Assert that "fsLayers" is a list of dicts, that each dict has a single
-        "blobSum" key, and that this key corresponds to a string.
-        """
-        self.assertIsInstance(self.manifest['fsLayers'], list)
-        for fs_layer in self.manifest['fsLayers']:
-            with self.subTest(fs_layer=fs_layer):
-                self.assertIsInstance(fs_layer, dict)
-                self.assertEqual(set(fs_layer.keys()), {'blobSum'})
-                self.assertIsInstance(fs_layer['blobSum'], _BYTE_UNICODE)
-
-    def test_manifest_keys(self):
-        """Assert that the manifest has the expected keys."""
-        self.assertEqual(
-            set(self.manifest.keys()),
-            {
-                u'architecture',
-                u'fsLayers',
-                u'history',
-                u'name',
-                u'schemaVersion',
-                u'signatures',
-                u'tag',
-            }
-        )
-
-    def test_manifest_name(self):
-        """Assert that the manifest of the first tag has the correct name."""
-        self.assertEqual(self.manifest['name'], 'library/busybox')
-
-    def test_manifest_schema_version(self):
-        """Assert that the manifest has the expected schema version."""
-        self.assertEqual(self.manifest['schemaVersion'], 1)
-
-    def test_manifest_tag(self):
-        """Assert that the manifest of the first tag has the correct tag."""
-        self.assertEqual(self.manifest['tag'], self.tags['tags'][0])
-
-    def test_tags_name(self):
-        """Assert that the tags name is the repo_id."""
-        self.assertEqual(self.tags['name'], self.repo_id)
-
-    def test_tags_list(self):
-        """Assert that the tags are a non-empty list of strings."""
-        self.assertIsInstance(self.tags['tags'], list)
-        self.assertGreater(len(self.tags['tags']), 0)
-        for tag in self.tags['tags']:
-            self.assertIsInstance(tag, _BYTE_UNICODE)
+        # Get and inspect /crane/repositories.
+        client = self.make_crane_client(self.cfg)
+        repos = client.get('/crane/repositories')
+        self.assertIn(repo_id, repos.keys())
+        with self.subTest():
+            self.assertFalse(repos[repo_id]['protected'])
+        if selectors.bug_is_testable(2723, self.cfg.version):
+            with self.subTest():
+                self.assertTrue(repos[repo_id]['image_ids'])
+            with self.subTest():
+                self.assertTrue(repos[repo_id]['tags'])
 
 
-class SyncUnnamespacedV2TestCase(_SuccessMixin, _BaseTestCase):
-    """Show it Pulp can sync an unnamespaced docker repo from a v2 registry."""
+class SyncNonNamespacedV2TestCase(SyncPublishMixin, utils.BaseAPITestCase):
+    """Create, sync and publish a non-namespaced repository."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Create a docker repository from an unnamespaced v2 registry.
-
-        This method requires Pulp 2.8 and above, and will raise a ``SkipTest``
-        exception if run against an earlier version of Pulp.
-        """
-        super(SyncUnnamespacedV2TestCase, cls).setUpClass()
-        if cls.cfg.version < Version('2.8'):
-            raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
-        if (cls.cfg.version >= Version('2.9') and
-                selectors.bug_is_untestable(1909, cls.cfg.version)):
-            raise unittest.SkipTest('https://pulp.plan.io/issues/1909')
-        # The split() drops 'library/'.
-        docker_utils.repo_create(
-            cls.cfg,
+    def test_all(self):
+        """Create, sync and publish a non-namespaced repository."""
+        repo_id = utils.uuid4()
+        self.assertNotIn('Task Failed', docker_utils.repo_create(
+            self.cfg,
+            enable_v1='false',
+            enable_v2='true',
             feed=DOCKER_V2_FEED_URL,
-            repo_id=cls.repo_id,
-            upstream_name=DOCKER_UPSTREAM_NAME.split('/')[-1],
-        )
-        cls.completed_proc = docker_utils.repo_sync(cls.cfg, cls.repo_id)
+            repo_id=repo_id,
+            upstream_name=DOCKER_UPSTREAM_NAME.split('/')[-1],  # drop library/
+        ).stdout)
+        self.addCleanup(docker_utils.repo_delete, self.cfg, repo_id)
+        self.verify_proc(docker_utils.repo_sync(self.cfg, repo_id))
+        self.verify_proc(docker_utils.repo_publish(self.cfg, repo_id))
+
+        # Make Crane read the metadata. (Now!)
+        cli.GlobalServiceManager(self.cfg).restart(('httpd',))
+
+        # Get and inspect /crane/repositories.
+        client = self.make_crane_client(self.cfg)
+        repos = client.get('/crane/repositories')
+        self.assertIn(repo_id, repos.keys())
+        with self.subTest():
+            self.assertFalse(repos[repo_id]['protected'])
+        if selectors.bug_is_testable(2723, self.cfg.version):
+            with self.subTest():
+                self.assertTrue(repos[repo_id]['image_ids'])
+            with self.subTest():
+                self.assertTrue(repos[repo_id]['tags'])
 
 
-class InvalidFeedTestCase(_BaseTestCase):
+class InvalidFeedTestCase(utils.BaseAPITestCase):
     """Show Pulp behaves correctly when syncing a repo with an invalid feed."""
 
-    @classmethod
-    def setUpClass(cls):
+    def test_all(self):
         """Create a docker repo with an invalid feed and sync it."""
-        super(InvalidFeedTestCase, cls).setUpClass()
-        docker_utils.repo_create(
-            cls.cfg,
+        repo_id = utils.uuid4()
+        self.assertNotIn('Task Failed', docker_utils.repo_create(
+            self.cfg,
             feed='https://docker.example.com',
-            repo_id=cls.repo_id,
+            repo_id=repo_id,
             upstream_name=DOCKER_UPSTREAM_NAME,
-        )
-        cls.completed_proc = cli.Client(cls.cfg, cli.echo_handler).run(
-            'pulp-admin docker repo sync run --repo-id {}'
-            .format(cls.repo_id).split()
-        )
-
-    def test_return_code(self):
-        """Assert the "sync" command has a non-zero return code."""
-        if selectors.bug_is_untestable(427, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/427')
-        self.assertNotEqual(self.completed_proc.returncode, 0)
-
-    def test_task_succeeded(self):
-        """Assert the phrase "Task Succeeded" is not in stdout."""
-        self.assertNotIn('Task Succeeded', self.completed_proc.stdout)
-
-    def test_task_failed(self):
-        """Assert the phrase "Task Failed" is in stdout."""
-        self.assertIn('Task Failed', self.completed_proc.stdout)
+        ).stdout)
+        self.addCleanup(docker_utils.repo_delete, self.cfg, repo_id)
+        client = cli.Client(self.cfg, cli.echo_handler)
+        proc = client.run((
+            'pulp-admin', 'docker', 'repo', 'sync', 'run', '--repo-id', repo_id
+        ))
+        if selectors.bug_is_testable(427, self.cfg.version):
+            with self.subTest():
+                self.assertNotEqual(proc.returncode, 0)
+        with self.subTest():
+            self.assertNotIn('Task Succeeded', proc.stdout)
+        with self.subTest():
+            self.assertIn('Task Failed', proc.stdout)

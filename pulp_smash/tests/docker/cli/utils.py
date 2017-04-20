@@ -100,3 +100,15 @@ def repo_update(  # pylint:disable=too-many-arguments
     if repo_registry_id is not None:
         cmd.extend(('--repo-registry-id', repo_registry_id))
     return cli.Client(server_config).run(cmd)
+
+
+def repo_publish(server_config, repo_id, bg=None, force_full=None):  # noqa pylint:disable=invalid-name
+    """Execute ``pulp-admin docker repo publish run``."""
+    cmd = (
+        'pulp-admin', 'docker', 'repo', 'publish', 'run', '--repo-id', repo_id
+    )
+    if bg:
+        cmd += '--bg'
+    if force_full:
+        cmd += '--force-full'
+    return cli.Client(server_config).run(cmd)

@@ -312,16 +312,16 @@ class Client(object):
         request_kwargs = self.request_kwargs.copy()
         request_kwargs['url'] = urljoin(request_kwargs['url'], url)
         request_kwargs.update(kwargs)
-        config_host = urlparse(self._cfg.get_base_url(self.pulp_system)).netloc
-        request_host = urlparse(request_kwargs['url']).netloc
-        if request_host != config_host:
+        cfg_host = urlparse(self._cfg.get_base_url(self.pulp_system)).hostname
+        request_host = urlparse(request_kwargs['url']).hostname
+        if request_host != cfg_host:
             warnings.warn(
-                'This client is configured to make HTTP requests to {0}, but '
-                'a request is being made to {1}. The request will be made, '
-                'but some options may be incorrect. For example, an incorrect '
-                'SSL certificate may be specified with the `verify` option. '
-                'Request options: {2}'
-                .format(config_host, request_host, request_kwargs),
+                'This client was originally created for communicating with '
+                '{0}, but a request is being made to {1}. The request will be '
+                'made, but beware that information intended for {0} (such as '
+                "authentication tokens) may now be sent to {1}. Here's the "
+                'full list of options being sent with this request: {2}'
+                .format(cfg_host, request_host, request_kwargs),
                 RuntimeWarning
             )
         return self.response_handler(

@@ -346,6 +346,20 @@ class BaseServiceManager(metaclass=ABCMeta):
         cmd = sudo + ('systemctl', 'stop') + tuple(services)
         return (client.run(cmd),)
 
+    @staticmethod
+    def _restart_sysv(client, sudo, services):
+        sudo = ('sudo',) if sudo else ()
+        return tuple((
+            client.run(sudo + ('service', service, 'restart'))
+            for service in services
+        ))
+
+    @staticmethod
+    def _restart_systemd(client, sudo, services):
+        sudo = ('sudo',) if sudo else ()
+        cmd = sudo + ('systemctl', 'restart') + tuple(services)
+        return (client.run(cmd),)
+
     @abstractmethod
     def start(self, services):
         """Start the given services.
@@ -359,6 +373,14 @@ class BaseServiceManager(metaclass=ABCMeta):
         """Stop the given services.
 
         :param services: A list or tuple of services to be stopped.
+        """
+        pass
+
+    @abstractmethod
+    def restart(self, services):
+        """Restart the given services.
+
+        :param services: A list or tuple of services to be restarted.
         """
         pass
 
@@ -472,6 +494,35 @@ class GlobalServiceManager(BaseServiceManager):
                     )
         return result
 
+    def restart(self, services):
+        """Restart the services on every system that has the services.
+
+        :param services: An iterable of service names.
+        :return: A dict mapping the affected systems' hostnames with a list of
+            :class:`pulp_smash.cli.CompletedProcess` objects.
+        """
+        services = set(services)
+        result = {}
+        for system in self._cfg.systems:
+            intersection = services.intersection(
+                self._cfg.services_for_roles(system.roles))
+            if intersection:
+                client = Client(self._cfg, pulp_system=system)
+                svc_mgr = self._get_service_manager(self._cfg, system)
+                sudo = not self._check_root(system)
+                if svc_mgr == 'sysv':
+                    with self._disable_selinux(client, sudo):
+                        result[system.hostname] = self._restart_sysv(
+                            client, sudo, services)
+                elif svc_mgr == 'systemd':
+                    result[system.hostname] = self._restart_systemd(
+                        client, sudo, services)
+                else:
+                    raise NotImplementedError(
+                        'Service manager not supported: {}'.format(svc_mgr)
+                    )
+        return result
+
 
 class ServiceManager(BaseServiceManager):
     """A service manager on a system.
@@ -542,6 +593,23 @@ class ServiceManager(BaseServiceManager):
                 return self._stop_sysv(self._client, self._sudo, services)
         elif self._svc_mgr == 'systemd':
             return self._stop_systemd(self._client, self._sudo, services)
+        else:
+            raise NotImplementedError(
+                'Service manager not supported: {}'.format(self._svc_mgr)
+            )
+
+    def restart(self, services):
+        """Restart the given services.
+
+        :param services: An iterable of service names.
+        :return: An iterable of :class:`pulp_smash.cli.CompletedProcess`
+            objects.
+        """
+        if self._svc_mgr == 'sysv':
+            with self._disable_selinux(self._client, self._sudo):
+                return self._restart_sysv(self._client, self._sudo, services)
+        elif self._svc_mgr == 'systemd':
+            return self._restart_systemd(self._client, self._sudo, services)
         else:
             raise NotImplementedError(
                 'Service manager not supported: {}'.format(self._svc_mgr)
