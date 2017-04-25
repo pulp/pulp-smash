@@ -233,3 +233,95 @@ class InvalidFeedTestCase(utils.BaseAPITestCase):
             self.assertNotIn('Task Succeeded', proc.stdout)
         with self.subTest():
             self.assertIn('Task Failed', proc.stdout)
+
+
+class RepoRegistryIdTestCase(SyncPublishMixin, utils.BaseAPITestCase):
+    """Show Pulp can publish repos with varying ``repo_registry_id`` values.
+
+    The ``repo_registry_id`` setting defines a repository's name as seen by
+    clients such as the Docker CLI. It's traditionally a two-part name such as
+    ``docker/busybox``, but according to `Pulp #2368`_, it can contain an
+    arbitrary number of slashes. This test case verifies that the
+    ``repo_registry_id`` can be set to values containing varying numbers of
+    slashes.
+
+    .. _Pulp #2368:
+        https://pulp.plan.io/issues/2368https://pulp.plan.io/issues/2368
+    """
+
+    def test_zero_slashes(self):
+        """Give ``repo_registry_id`` zero slashes."""
+        repo_registry_id = '/'.join(utils.uuid4() for _ in range(1))
+        self.create_sync_publish_repo(repo_registry_id)
+        cli.GlobalServiceManager(self.cfg).restart(('httpd',))  # restart Crane
+
+        # Get and inspect /crane/repositories.
+        client = self.make_crane_client(self.cfg)
+        repos = client.get('/crane/repositories')
+        self.assertIn(repo_registry_id, repos.keys())
+        with self.subTest():
+            self.assertFalse(repos[repo_registry_id]['protected'])
+        if selectors.bug_is_testable(2723, self.cfg.version):
+            with self.subTest():
+                self.assertTrue(repos[repo_registry_id]['image_ids'])
+            with self.subTest():
+                self.assertTrue(repos[repo_registry_id]['tags'])
+
+    def test_one_slash(self):
+        """Give ``repo_registry_id`` one slash."""
+        repo_registry_id = '/'.join(utils.uuid4() for _ in range(2))
+        self.create_sync_publish_repo(repo_registry_id)
+        cli.GlobalServiceManager(self.cfg).restart(('httpd',))  # restart Crane
+
+        # Get and inspect /crane/repositories.
+        client = self.make_crane_client(self.cfg)
+        repos = client.get('/crane/repositories')
+        self.assertIn(repo_registry_id, repos.keys())
+        with self.subTest():
+            self.assertFalse(repos[repo_registry_id]['protected'])
+        if selectors.bug_is_testable(2723, self.cfg.version):
+            with self.subTest():
+                self.assertTrue(repos[repo_registry_id]['image_ids'])
+            with self.subTest():
+                self.assertTrue(repos[repo_registry_id]['tags'])
+
+    def test_two_slashes(self):
+        """Give ``repo_registry_id`` two slashes."""
+        repo_registry_id = '/'.join(utils.uuid4() for _ in range(3))
+        self.create_sync_publish_repo(repo_registry_id)
+        cli.GlobalServiceManager(self.cfg).restart(('httpd',))  # restart Crane
+
+        # Get and inspect /crane/repositories.
+        client = self.make_crane_client(self.cfg)
+        repos = client.get('/crane/repositories')
+        self.assertIn(repo_registry_id, repos.keys())
+        with self.subTest():
+            self.assertFalse(repos[repo_registry_id]['protected'])
+        if selectors.bug_is_testable(2723, self.cfg.version):
+            with self.subTest():
+                self.assertTrue(repos[repo_registry_id]['image_ids'])
+            with self.subTest():
+                self.assertTrue(repos[repo_registry_id]['tags'])
+
+    def create_sync_publish_repo(self, repo_registry_id):
+        """Create, sync and publish a Docker repository.
+
+        Also, schedule the repository for deletion with ``addCleanup``.
+
+        :param repo_registry_id: Passed to
+            :meth:`pulp_smash.tests.docker.cli.utils.repo_create`.
+        :returns: Nothing.
+        """
+        repo_id = utils.uuid4()
+        self.assertNotIn('Task Failed', docker_utils.repo_create(
+            self.cfg,
+            enable_v1='false',
+            enable_v2='true',
+            feed=DOCKER_V2_FEED_URL,
+            repo_id=repo_id,
+            repo_registry_id=repo_registry_id,
+            upstream_name=DOCKER_UPSTREAM_NAME,
+        ).stdout)
+        self.addCleanup(docker_utils.repo_delete, self.cfg, repo_id)
+        self.verify_proc(docker_utils.repo_sync(self.cfg, repo_id))
+        self.verify_proc(docker_utils.repo_publish(self.cfg, repo_id))

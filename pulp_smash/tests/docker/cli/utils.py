@@ -28,6 +28,7 @@ def repo_create(  # pylint:disable=too-many-arguments
         enable_v2=None,
         feed=None,
         repo_id=None,
+        repo_registry_id=None,
         upstream_name=None):
     """Execute ``pulp-admin docker repo create``."""
     cmd = 'pulp-admin docker repo create'.split()
@@ -39,6 +40,8 @@ def repo_create(  # pylint:disable=too-many-arguments
         cmd.extend(('--feed', feed))
     if repo_id is not None:
         cmd.extend(('--repo-id', repo_id))
+    if repo_registry_id is not None:
+        cmd.extend(('--repo-registry-id', repo_registry_id))
     if upstream_name is not None:
         cmd.extend(('--upstream-name', upstream_name))
     return cli.Client(server_config).run(cmd)
