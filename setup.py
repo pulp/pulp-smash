@@ -38,6 +38,7 @@ setup(
     ],
     packages=find_packages(include=['pulp_smash', 'pulp_smash.*']),
     install_requires=[
+        'jsonschema',
         'packaging',
         'plumbum',
         'python-dateutil',

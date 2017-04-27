@@ -12,6 +12,101 @@ from pulp_smash.constants import (
 from pulp_smash.tests.docker.cli import utils as docker_utils
 from pulp_smash.tests.docker.utils import set_up_module
 
+from jsonschema import validate
+
+IMAGE_MANIFEST_V2_SCHEMA_1 = {
+    '$schema': 'http://json-schema.org/schema#',
+    'title': 'Image Manifest Version 2, Schema 1',
+    'description': (
+        'Derived from: https://docs.docker.com/registry/spec/manifest-v2-1/'
+    ),
+    'type': 'object',
+    'properties': {
+        'architecture': {'type': 'string'},
+        'fsLayers': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {'blobSum': {'type': 'string'}},
+            },
+        },
+        'history': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {'v1Compatibility': {'type': 'string'}},
+            },
+        },
+        'name': {'type': 'string'},
+        'schemaVersion': {'type': 'integer'},
+        'signatures': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'header': {
+                        'type': 'object',
+                        'properties': {
+                            'jwk': {
+                                'type': 'object',
+                                'properties': {
+                                    'crv': {'type': 'string'},
+                                    'kid': {'type': 'string'},
+                                    'kty': {'type': 'string'},
+                                    'x': {'type': 'string'},
+                                    'y': {'type': 'string'},
+                                },
+                            },
+                            'alg': {'type': 'string'},
+                        },
+                    },
+                    'protected': {'type': 'string'},
+                    'signature': {'type': 'string'},
+                },
+            },
+        },
+        'tag': {'type': 'string'},
+    },
+}
+"""A schema for docker v2 image manifests, schema 1."""
+
+IMAGE_MANIFEST_V2_SCHEMA_2 = {
+    '$schema': 'http://json-schema.org/schema#',
+    'title': 'Image Manifest Version 2, Schema 2',
+    'description': (
+        'Derived from: https://docs.docker.com/registry/spec/manifest-v2-2/'
+    ),
+    'type': 'object',
+    'properties': {
+        'config': {
+            'type': 'object',
+            'properties': {
+                'digest': {'type': 'string'},
+                'mediaType': {'type': 'string'},
+                'size': {'type': 'integer'},
+            },
+        },
+        'layers': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'digest': {'type': 'string'},
+                    'mediaType': {'type': 'string'},
+                    'size': {'type': 'integer'},
+                    'urls': {
+                        'type': 'array',
+                        'items': {'type': 'string'},
+                    },
+                },
+            },
+        },
+        'mediaType': {'type': 'string'},
+        'schemaVersion': {'type': 'integer'},
+    },
+}
+"""A schema for docker v2 image manifests, schema 2."""
+
 
 def setUpModule():  # pylint:disable=invalid-name
     """Execute ``pulp-admin login``."""
@@ -82,8 +177,21 @@ class SyncPublishMixin(object):
 class SyncPublishV1TestCase(SyncPublishMixin, utils.BaseAPITestCase):
     """Create, sync, publish and interact with a Docker v1 repository."""
 
-    def test_all(self):
-        """Create, sync and publish a Docker v1 repository.
+    @classmethod
+    def setUpClass(cls):
+        """Maybe skip this test case, and execute ``pulp-admin login``."""
+        super().setUpClass()
+        cls.repo_id = None
+
+    @classmethod
+    def tearDownClass(cls):
+        """Destroy resources created by this test case."""
+        if cls.repo_id:
+            docker_utils.repo_delete(cls.cfg, cls.repo_id)
+        super().tearDownClass()
+
+    def test_01_set_up(self):
+        """Create, sync and publish a repository.
 
         Specifically, do the following:
 
@@ -91,10 +199,7 @@ class SyncPublishV1TestCase(SyncPublishMixin, utils.BaseAPITestCase):
            feed to a v1 feed.
         2. Make Crane immediately re-read the metadata files published by Pulp.
            (Restart Apache.)
-        3. Issue an HTTP GET request to ``/crane/repositories``, and verify the
-           correct information is reported.
         """
-        # Create, sync and publish a repository.
         repo_id = utils.uuid4()
         self.assertNotIn('Task Failed', docker_utils.repo_create(
             self.cfg,
@@ -111,16 +216,22 @@ class SyncPublishV1TestCase(SyncPublishMixin, utils.BaseAPITestCase):
         # Make Crane read the metadata. (Now!)
         cli.GlobalServiceManager(self.cfg).restart(('httpd',))
 
-        # Get and inspect /crane/repositories.
-        client = self.make_crane_client(self.cfg)
-        repos = client.get('/crane/repositories')
-        self.assertIn(repo_id, repos.keys())
+    @selectors.skip_if(bool, 'repo_id', False)
+    def test_02_get_crane_repositories(self):
+        """Issue an HTTP GET request to ``/crane/repositories``.
+
+        Assert that the response is as described by `Crane Admin
+        <http://docs.pulpproject.org/plugins/crane/index.html#crane-admin>`_.
+        """
+        repos = self.make_crane_client(self.cfg).get('/crane/repositories')
+        self.assertIn(self.repo_id, repos.keys())
+        repo = repos[self.repo_id]
         with self.subTest():
-            self.assertFalse(repos[repo_id]['protected'])
+            self.assertFalse(repo['protected'])
         with self.subTest():
-            self.assertTrue(repos[repo_id]['image_ids'])
+            self.assertTrue(repo['image_ids'])
         with self.subTest():
-            self.assertTrue(repos[repo_id]['tags'])
+            self.assertTrue(repo['tags'])
 
 
 class SyncPublishV2TestCase(SyncPublishMixin, utils.BaseAPITestCase):
@@ -132,9 +243,17 @@ class SyncPublishV2TestCase(SyncPublishMixin, utils.BaseAPITestCase):
         super().setUpClass()
         if selectors.bug_is_untestable(2287, cls.cfg.version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2287')
+        cls.repo_id = None
 
-    def test_all(self):
-        """Create, sync and publish a repository. Interact with it.
+    @classmethod
+    def tearDownClass(cls):
+        """Destroy resources created by this test case."""
+        if cls.repo_id:
+            docker_utils.repo_delete(cls.cfg, cls.repo_id)
+        super().tearDownClass()
+
+    def test_01_set_up(self):
+        """Create, sync and publish a repository.
 
         Specifically, do the following:
 
@@ -142,37 +261,93 @@ class SyncPublishV2TestCase(SyncPublishMixin, utils.BaseAPITestCase):
            feed to a v2 feed.
         2. Make Crane immediately re-read the metadata files published by Pulp.
            (Restart Apache.)
-        3. Issue an HTTP GET request to ``/crane/repositories``, and verify the
-           correct information is reported.
         """
-        # Create, sync and publish a repository.
         repo_id = utils.uuid4()
-        self.assertNotIn('Task Failed', docker_utils.repo_create(
+        proc = docker_utils.repo_create(
             self.cfg,
             enable_v1='false',
             enable_v2='true',
             feed=DOCKER_V2_FEED_URL,
             repo_id=repo_id,
             upstream_name=DOCKER_UPSTREAM_NAME,
-        ).stdout)
-        self.addCleanup(docker_utils.repo_delete, self.cfg, repo_id)
+        )
+        type(self).repo_id = repo_id  # schedule clean-up
+        self.assertNotIn('Task Failed', proc.stdout)
         self.verify_proc(docker_utils.repo_sync(self.cfg, repo_id))
         self.verify_proc(docker_utils.repo_publish(self.cfg, repo_id))
 
         # Make Crane read the metadata. (Now!)
         cli.GlobalServiceManager(self.cfg).restart(('httpd',))
 
-        # Get and inspect /crane/repositories.
-        client = self.make_crane_client(self.cfg)
-        repos = client.get('/crane/repositories')
-        self.assertIn(repo_id, repos.keys())
+    @selectors.skip_if(bool, 'repo_id', False)
+    def test_02_get_crane_repositories(self):
+        """Issue an HTTP GET request to ``/crane/repositories``.
+
+        Assert that the response is as described by `Crane Admin
+        <http://docs.pulpproject.org/plugins/crane/index.html#crane-admin>`_.
+        """
+        repos = self.make_crane_client(self.cfg).get('/crane/repositories')
+        self.assertIn(self.repo_id, repos.keys())
+        repo = repos[self.repo_id]
         with self.subTest():
-            self.assertFalse(repos[repo_id]['protected'])
+            self.assertFalse(repo['protected'])
         if selectors.bug_is_testable(2723, self.cfg.version):
             with self.subTest():
-                self.assertTrue(repos[repo_id]['image_ids'])
+                self.assertTrue(repo['image_ids'])
             with self.subTest():
-                self.assertTrue(repos[repo_id]['tags'])
+                self.assertTrue(repo['tags'])
+
+    @selectors.skip_if(bool, 'repo_id', False)
+    def test_02_get_manifest_v1(self):
+        """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
+
+        Pass a header of
+        ``accept:application/vnd.docker.distribution.manifest.v1+json``. Assert
+        that the response is as described by `Image Manifest Version 2, Schema
+        1 <https://docs.docker.com/registry/spec/manifest-v2-1/>`_.
+
+        This test targets `Pulp #2336 <https://pulp.plan.io/issues/2336>`_.
+        """
+        if selectors.bug_is_untestable(2336, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2336')
+        client = api.Client(self.cfg, api.json_handler)
+        client.request_kwargs['url'] = self.adjust_url(
+            client.request_kwargs['url']
+        )
+        headers_iter = (
+            {},
+            {'accept': 'application/json'},
+            {'accept': 'application/vnd.docker.distribution.manifest.v1+json'},
+        )
+        for headers in headers_iter:
+            with self.subTest(headers=headers):
+                manifest = client.get(
+                    '/v2/{}/manifests/latest'.format(self.repo_id),
+                    headers=headers,
+                )
+                validate(manifest, IMAGE_MANIFEST_V2_SCHEMA_1)
+
+    @selectors.skip_if(bool, 'repo_id', False)
+    def test_02_get_manifest_v2(self):
+        """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
+
+        Pass a header of
+        ``accept:application/vnd.docker.distribution.manifest.v2+json``. Assert
+        that the response is as described by `Image Manifest Version 2, Schema
+        2 <https://docs.docker.com/registry/spec/manifest-v2-2/>`_.
+
+        This test targets `Pulp #2336 <https://pulp.plan.io/issues/2336>`_.
+        """
+        if selectors.bug_is_untestable(2336, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2336')
+        client = api.Client(self.cfg, api.json_handler, {'headers': {
+            'accept': 'application/vnd.docker.distribution.manifest.v2+json'
+        }})
+        client.request_kwargs['url'] = self.adjust_url(
+            client.request_kwargs['url']
+        )
+        manifest = client.get('/v2/{}/manifests/latest'.format(self.repo_id))
+        validate(manifest, IMAGE_MANIFEST_V2_SCHEMA_2)
 
 
 class SyncNonNamespacedV2TestCase(SyncPublishMixin, utils.BaseAPITestCase):
