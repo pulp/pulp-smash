@@ -114,6 +114,42 @@ class GetConfigTestCase(unittest.TestCase):
         self.assertEqual(read.call_count, 1)
 
 
+class ValidateConfigTestCase(unittest.TestCase):
+    """Test :func:`pulp_smash.config.validate_config`."""
+
+    def test_valid_config(self):
+        """A valid config does not raise an exception."""
+        self.assertIsNone(
+            config.validate_config(json.loads(PULP_SMASH_CONFIG)))
+
+    def test_invalid_config(self):
+        """An invalid config raises an exception."""
+        config_dict = json.loads(PULP_SMASH_CONFIG)
+        config_dict['pulp']['auth'] = []
+        config_dict['systems'][0]['hostname'] = ''
+        with self.assertRaises(exceptions.ConfigValidationError) as err:
+            config.validate_config(config_dict)
+        self.assertEqual(sorted(err.exception.error_messages), sorted([
+            'Failed to validate config[\'pulp\'][\'auth\'] because [] is too '
+            'short.',
+            'Failed to validate config[\'systems\'][0][\'hostname\'] because '
+            '\'\' is not a \'hostname\'.',
+        ]))
+
+    def test_config_missing_roles(self):
+        """Missing required roles in config raises an exception."""
+        config_dict = json.loads(PULP_SMASH_CONFIG)
+        for system in config_dict['systems']:
+            system['roles'].pop('api', None)
+            system['roles'].pop('pulp workers', None)
+        with self.assertRaises(exceptions.ConfigValidationError) as err:
+            config.validate_config(config_dict)
+        self.assertEqual(
+            err.exception.error_messages,
+            ['The following roles are missing: api, pulp workers']
+        )
+
+
 class InitTestCase(unittest.TestCase):
     """Test :class:`pulp_smash.config.PulpSmashConfig` instantiation."""
 

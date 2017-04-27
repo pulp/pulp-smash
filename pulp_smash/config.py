@@ -8,12 +8,14 @@ server. :class:`pulp_smash.config.PulpSmashConfig` eases the task of managing
 that information.
 """
 import collections
+import itertools
 import json
 import os
 import warnings
 from copy import deepcopy
 from urllib.parse import urlparse
 
+import jsonschema
 from packaging.version import Version
 from xdg import BaseDirectory
 
@@ -48,6 +50,96 @@ ROLES = REQUIRED_ROLES.union(OPTIONAL_ROLES)
 # Set of expected amqp services
 AMQP_SERVICES = {'qpidd', 'rabbitmq'}
 
+# Config file JSON schema
+CONFIG_JSON_SCHEMA = {
+    'type': 'object',
+    'properties': {
+        'pulp': {
+            'additionalProperties': False,
+            'required': ['auth', 'version'],
+            'type': 'object',
+            'properties': {
+                'auth': {'type': 'array', 'maxItems': 2, 'minItems': 2},
+                'version': {'type': 'string'},
+            }
+        },
+        'systems': {
+            'type': 'array',
+            'minItems': 1,
+            'items': {'$ref': '#/definitions/system'},
+        }
+    },
+    'definitions': {
+        'system': {
+            'additionalProperties': False,
+            'type': 'object',
+            'properties': {
+                'hostname': {
+                    'type': 'string',
+                    'format': 'hostname',
+                },
+                'roles': {
+                    'additionalProperties': False,
+                    'required': ['shell'],
+                    'type': 'object',
+                    'properties': {
+                        'amqp broker': {
+                            'required': ['service'],
+                            'type': 'object',
+                            'properties': {
+                                'service': {
+                                    'enum': list(AMQP_SERVICES),
+                                    'type': 'string',
+                                },
+                            }
+                        },
+                        'api': {
+                            'required': ['scheme'],
+                            'type': 'object',
+                            'properties': {
+                                'scheme': {
+                                    'enum': ['http', 'https'],
+                                    'type': 'string',
+                                },
+                                'verify': {
+                                    'type': ['boolean', 'string'],
+                                },
+                            }
+                        },
+                        'mongod': {
+                            'type': 'object',
+                        },
+                        'pulp cli': {
+                            'type': 'object',
+                        },
+                        'pulp celerybeat': {
+                            'type': 'object',
+                        },
+                        'pulp resource manager': {
+                            'type': 'object',
+                        },
+                        'pulp workers': {
+                            'type': 'object',
+                        },
+                        'shell': {
+                            'type': 'object',
+                            'properties': {
+                                'transport': {
+                                    'enum': ['local', 'ssh'],
+                                    'type': 'string',
+                                }
+                            }
+                        },
+                        'squid': {
+                            'type': 'object',
+                        },
+                    }
+                }
+            }
+        }
+    },
+}
+
 
 def _public_attrs(obj):
     """Return a copy of the public elements in ``vars(obj)``."""
@@ -71,6 +163,53 @@ def get_config():
     if _CONFIG is None:
         _CONFIG = PulpSmashConfig().read()
     return deepcopy(_CONFIG)
+
+
+def validate_config(config_dict):
+    """Validate the config file schema.
+
+    :param config_dict: A dictionary returned by ``json.load`` or
+        ``json.loads`` after reading the config file.
+    :raises pulp_smash.exceptions.ConfigValidationError: If the any validation
+        error is found.
+    """
+    validator_cls = jsonschema.validators.validator_for(CONFIG_JSON_SCHEMA)
+    validator = validator_cls(
+        schema=CONFIG_JSON_SCHEMA, format_checker=jsonschema.FormatChecker())
+    validator.check_schema(CONFIG_JSON_SCHEMA)
+    messages = []
+
+    if not validator.is_valid(config_dict):
+        for error in validator.iter_errors(config_dict):
+            # jsonschema returns messages where the first letter is uppercase,
+            # make sure to lower the first letter case to fit better on our
+            # message.
+            error_message = error.message[:1].lower() + error.message[1:]
+            if error.relative_path:
+                config_path = '[{}]'.format(
+                    ']['.join([repr(i) for i in error.relative_path])
+                )
+            else:
+                config_path = ''
+            messages.append(
+                'Failed to validate config{} because {}.'.format(
+                    config_path,
+                    error_message,
+                )
+            )
+    if messages:
+        raise exceptions.ConfigValidationError(messages)
+
+    # Now that the schema is valid, let's check if all the REQUIRED_ROLES are
+    # defined
+    config_roles = set(itertools.chain(*[
+        list(system['roles'].keys()) for system in config_dict['systems']]))
+    if not REQUIRED_ROLES.issubset(config_roles):
+        raise exceptions.ConfigValidationError([
+            'The following roles are missing: {}'.format(
+                ', '.join(sorted(REQUIRED_ROLES.difference(config_roles)))
+            )
+        ])
 
 
 # Representation of a system and its roles."""

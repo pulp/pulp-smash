@@ -53,6 +53,26 @@ class ConfigFileNotFoundError(Exception):
     """
 
 
+class ConfigValidationError(Exception):
+    """The configuration file has validation errors.
+
+    See :func:`pulp_smash.config.validate_config` for more information on how
+        configuration validation is handled.
+    """
+
+    def __init__(self, error_messages, *args, **kwargs):
+        """Require that the validation messages list is defined."""
+        super().__init__(error_messages, *args, **kwargs)
+        self.error_messages = error_messages
+
+    def __str__(self):
+        """Provide a human-friendly string representation of this exception."""
+        return (
+            'Configuration file is not valid:\n\n'
+            '{}'
+        ).format('\n'.join(self.error_messages))
+
+
 class ConfigFileSectionNotFoundError(Exception):
     """We cannot read the requested Pulp Smash configuration file section.
 
