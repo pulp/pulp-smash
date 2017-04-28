@@ -117,6 +117,9 @@ FILE_FEED_COUNT = 3
 FILE_MIXED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'file-mixed/')
 """The URL to a file repository containing invalid and valid entries."""
 
+FILE_URL = urljoin(FILE_FEED_URL, '1.iso')
+"""The URL to an ISO file at :data:`FILE_FEED_URL`."""
+
 ERROR_KEYS = frozenset((
     '_href',
     'error',

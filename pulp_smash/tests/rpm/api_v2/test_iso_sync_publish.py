@@ -1,13 +1,16 @@
 # coding=utf-8
 """Tests that sync and publish ISO repositories."""
+import hashlib
 import os
 import unittest
 from urllib.parse import urlparse
+from urllib.parse import urlsplit
 
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
     FILE_FEED_COUNT,
     FILE_FEED_URL,
+    FILE_URL,
     REPOSITORY_PATH,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
@@ -111,3 +114,46 @@ class ServeHttpsFalseTestCase(TemporaryUserMixin, unittest.TestCase):
         cmd = sudo + ('find', path, '-name', '*.iso')
         files = cli_client.run(cmd).stdout.strip().split('\n')
         self.assertEqual(len(files), FILE_FEED_COUNT, files)
+
+
+class UploadIsoTestCase(unittest.TestCase):
+    """Upload an ISO file into an ISO repository."""
+
+    def test_all(self):  # pylint:disable=no-self-use
+        """Upload an ISO file into an ISO repository.
+
+        Specifically, do the following:
+
+        1. Create an ISO repository.
+        2. Upload :data:`pulp_smash.constants.FILE_URL` to the repository.
+
+        .. NOTE:: A nice future addition would be to publish the repository,
+            download the published ISO file, and assert that it's identical to
+            the ISO file uploaded earlier.
+        """
+        # create a repo
+        cfg = config.get_config()
+        client = api.Client(cfg, api.json_handler)
+        body = {
+            'id': utils.uuid4(),
+            'importer_type_id': 'iso_importer',
+            'distributors': [{
+                'auto_publish': False,
+                'distributor_id': utils.uuid4(),
+                'distributor_type_id': 'iso_distributor',
+            }],
+        }
+        repo = client.post(REPOSITORY_PATH, body)
+        repo = client.get(repo['_href'], params={'details': True})
+
+        # upload an ISO to the repository
+        iso = utils.http_get(FILE_URL)
+        iso_name = os.path.basename(urlsplit(FILE_URL).path)
+        utils.upload_import_unit(cfg, iso, {
+            'unit_type_id': 'iso',
+            'unit_key': {
+                'checksum': hashlib.sha256(iso).hexdigest(),
+                'name': iso_name,
+                'size': len(iso),
+            },
+        }, repo)
