@@ -176,7 +176,7 @@ def bug_is_untestable(bug_id, pulp_version):
 
 
 def require(version_string):
-    """A decorator for optionally skipping test methods.
+    """Optionally skip a test method, based on a version string.
 
     This decorator concisely encapsulates a common pattern for skipping tests.
     It can be used like so:
@@ -203,10 +203,10 @@ def require(version_string):
     min_version = Version(version_string)
 
     def plain_decorator(test_method):
-        """An argument-less decorator. Accepts the function being wrapped."""
+        """Decorate function ``test_method``."""
         @wraps(test_method)
         def new_test_method(self, *args, **kwargs):
-            """A wrapper around a test method."""
+            """Wrap a (unittest test) method."""
             if self.cfg.version < min_version:
                 self.skipTest(
                     'This test requires Pulp {} or later, but Pulp {} is '
@@ -220,7 +220,7 @@ def require(version_string):
 
 
 def skip_if(func, var_name, result):
-    """A decorator for optionally skipping a unittest test method.
+    """Optionally skip a test method, based on a condition.
 
     This decorator checks to see if ``func(getattr(self, var_name))`` equals
     ``result``. If so, a ``unittest.SkipTest`` exception is raised. Otherwise,
@@ -249,10 +249,10 @@ def skip_if(func, var_name, result):
     :param var_name: A valid variable name.
     """
     def plain_decorator(test_method):
-        """An argument-less decorator. Accepts the function being wrapped."""
+        """Decorate function ``test_method``."""
         @wraps(test_method)
         def new_test_method(self, *args, **kwargs):
-            """An expanded (unittest test) method."""
+            """Wrap a (unittest test) method."""
             var_value = getattr(self, var_name)
             if func(var_value) == result:
                 self.skipTest('{}({}) != {}'.format(func, var_value, result))

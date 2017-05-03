@@ -53,7 +53,7 @@ def create_docker_repo(cfg, upstream_name, use_v1=False):
 
 
 def import_upload(cfg, repo, params):
-    """Helper to create/update Docker repository tags.
+    """Create or update a docker repository.
 
     :param pulp_smash.config.ServerConfig cfg: Information about a Pulp host.
     :param repo: A dict of information about the targed repository.

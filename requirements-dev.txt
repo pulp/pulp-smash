@@ -2,8 +2,7 @@
 flake8
 flake8-docstrings
 flake8-quotes
-# See: https://gitlab.com/pycqa/flake8-docstrings/issues/19
-pydocstyle<2
+pydocstyle
 pylint
 astroid
 

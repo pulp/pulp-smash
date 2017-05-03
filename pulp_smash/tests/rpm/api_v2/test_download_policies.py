@@ -370,7 +370,7 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
         utils.reset_pulp(self.cfg)
 
     def repository_setup(self, first, second):
-        """Setup a repository for download policy switch test.
+        """Set up a repository for download policy switch test.
 
         Create a repository using the first download policy, assert it was set,
         update to the second download policy, assert it was set, then sync the
@@ -399,7 +399,7 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
         return repo, tasks
 
     def _assert_background_immediate(self, repo):
-        """Common assertions for background and immediate download policies."""
+        """Make assertions about background and immediate download policies."""
         # Download an RPM.
         rpm = get_unit(self.cfg, repo['distributors'][0], RPM)
 
