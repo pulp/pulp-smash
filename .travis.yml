@@ -3,6 +3,7 @@ language: python
 python:
     - 3.4
     - 3.5
+    - 3.6
 install:
     - ./setup.py test; git clean -dfx
     - pip install -r requirements.txt -r requirements-dev.txt
