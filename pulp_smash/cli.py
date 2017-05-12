@@ -164,13 +164,14 @@ class Client(object):  # pylint:disable=too-few-public-methods
     """A convenience object for working with a CLI.
 
     This class provides the ability to execute shell commands on either the
-    local system or a remote system. Here is a simple usage example:
+    local system or a remote system. Here is a pedagogic usage example:
 
     >>> from pulp_smash import cli, config
-    >>> server_config = config.PulpSmashConfig(systems={
-    ...     'localhost': {'shell': {'transport': 'local'}}
-    ... })
-    >>> client = cli.Client(server_config)
+    >>> system = (
+    ...     config.PulpSystem('localhost', {'shell': {'transport': 'local'}})
+    ... )
+    >>> cfg = config.PulpSmashConfig(systems=[system])
+    >>> client = cli.Client(cfg, pulp_system=system)
     >>> response = client.run(('echo', '-n', 'foo'))
     >>> response.returncode == 0
     True
@@ -179,8 +180,12 @@ class Client(object):  # pylint:disable=too-few-public-methods
     >>> response.stderr == ''
     True
 
-    You can customize how commands are executed and how responses are handled
-    by fiddling with the two public instance attributes:
+    The above example shows how various classes fit together. It's also
+    verbose: smartly chosen defaults mean that most real code is much more
+    concise.
+
+    You can customize how ``Client`` objects execute commands and handle
+    responses by fiddling with the two public instance attributes:
 
     ``machine``
         A `Plumbum`_ machine. :meth:`run` delegates all command execution
@@ -191,11 +196,12 @@ class Client(object):  # pylint:disable=too-few-public-methods
         handed to the user.
 
     If ``pulp_system.roles['shell']['transport']`` is ``'local'`` or ``'ssh``,
-    set ``machine`` so that commands run locally or over SSH, respectively. If
-    ``pulp_system.roles['shell']['transport']`` is ``None``, guess how to set
-    ``machine`` by comparing the hostname embedded in ``pulp_system.hostname``
-    against the current system's hostname. If they match, set ``machine`` to
-    execute commands locally; and vice versa.
+    ``machine`` will be set so that commands run locally or over SSH,
+    respectively. If ``pulp_system.roles['shell']['transport']`` is ``None``,
+    the constructor will guess how to set ``machine`` by comparing the hostname
+    embedded in ``pulp_system.hostname`` against the current system's hostname.
+    If they match, ``machine`` is set to execute commands locally; and vice
+    versa.
 
     :param pulp_smash.config.PulpSmashConfig server_config: Information about
         the system on which commands will be executed.

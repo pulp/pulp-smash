@@ -85,7 +85,7 @@ class PulpSmashConfig(object):
 
     >>> import requests
     >>> from pulp_smash.config import PulpSmashConfig
-    >>> cfg = ServerConfig(
+    >>> cfg = PulpSmashConfig(
     ...     pulp_auth=('username', 'password'),
     ...     pulp_version='2.12.2',
     ...     systems=[
