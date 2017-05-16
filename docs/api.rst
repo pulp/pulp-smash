@@ -11,12 +11,12 @@ developers, not a gospel.
 .. toctree::
 
     api/pulp_smash
-    api/pulp_smash.__main__
     api/pulp_smash.api
     api/pulp_smash.cli
     api/pulp_smash.config
     api/pulp_smash.constants
     api/pulp_smash.exceptions
+    api/pulp_smash.pulp_smash_cli
     api/pulp_smash.selectors
     api/pulp_smash.tests
     api/pulp_smash.tests.docker
@@ -118,5 +118,6 @@ developers, not a gospel.
     api/tests.test_api
     api/tests.test_cli
     api/tests.test_config
+    api/tests.test_pulp_smash_cli
     api/tests.test_selectors
     api/tests.test_utils

@@ -38,6 +38,7 @@ setup(
     ],
     packages=find_packages(include=['pulp_smash', 'pulp_smash.*']),
     install_requires=[
+        'click',
         'jsonschema',
         'packaging',
         'plumbum',
@@ -45,5 +46,8 @@ setup(
         'pyxdg',
         'requests',
     ],
+    entry_points={
+        'console_scripts': ['pulp-smash=pulp_smash.pulp_smash_cli:pulp_smash'],
+    },
     test_suite='tests',
 )

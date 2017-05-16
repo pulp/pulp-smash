@@ -27,7 +27,6 @@ from pulp_smash import exceptions
 # avoid a config file by fetching values from the UI.
 _CONFIG = None
 
-# Set of roles that are required on a Pulp deployment
 REQUIRED_ROLES = {
     'amqp broker',
     'api',
@@ -37,18 +36,19 @@ REQUIRED_ROLES = {
     'pulp workers',
     'shell',
 }
+"""Set of roles that are required on a Pulp deployment."""
 
-# Set of roles that can be present or not on a Pulp deployment
 OPTIONAL_ROLES = {
     'pulp cli',
     'squid',
 }
+"""Set of roles that can be present or not on a Pulp deployment."""
 
-# Set of all available roles on a Pulp deployment
 ROLES = REQUIRED_ROLES.union(OPTIONAL_ROLES)
+"""Set of all available roles on a Pulp deployment."""
 
-# Set of expected amqp services
 AMQP_SERVICES = {'qpidd', 'rabbitmq'}
+"""Set of expected amqp services."""
 
 # Config file JSON schema
 CONFIG_JSON_SCHEMA = {
@@ -166,6 +166,47 @@ def get_config():
     if _CONFIG is None:
         _CONFIG = PulpSmashConfig().read()
     return deepcopy(_CONFIG)
+
+
+def convert_old_config(config_dict):
+    """Convert the old configuration dict representation to the new format."""
+    config_dict = deepcopy(config_dict)
+    converted = {
+        'pulp': {},
+        'systems': [{
+            'roles': {
+                'amqp broker': {'service': 'qpidd'},
+                'api': {},
+                'mongod': {},
+                'pulp cli': {},
+                'pulp celerybeat': {},
+                'pulp resource manager': {},
+                'pulp workers': {},
+                'shell': {},
+                'squid': {},
+            },
+        }],
+    }
+    pulp = config_dict.get('pulp', {})
+    pulp_auth = pulp.get('auth')
+    if pulp_auth:
+        converted['pulp']['auth'] = pulp_auth
+    pulp_version = pulp.get('version')
+    if pulp_version:
+        converted['pulp']['version'] = pulp_version
+    base_url = pulp.get('base_url')
+    system = converted['systems'][0]
+    if base_url:
+        parsed_url = urlparse(base_url)
+        system['hostname'] = parsed_url.hostname
+        system['roles']['api']['scheme'] = parsed_url.scheme
+    cli_transport = pulp.get('cli_transport')
+    if cli_transport:
+        system['roles']['shell']['transport'] = cli_transport
+    verify = pulp.get('verify')
+    if verify is not None:  # Verify can be either a boolean or string
+        system['roles']['api']['verify'] = verify
+    return converted
 
 
 def validate_config(config_dict):
@@ -298,6 +339,23 @@ class PulpSmashConfig(object):
         )
         return '{}({})'.format(type(self).__name__, str_kwargs)
 
+    @property
+    def default_config_file_path(self):
+        """Build the default config file path."""
+        return os.path.join(
+            BaseDirectory.save_config_path(self._xdg_config_dir),
+            self._xdg_config_file
+        )
+
+    def get_config_file_path(self):
+        """Get the config file path.
+
+        :raises pulp_smash.exceptions.ConfigFileNotFoundError: If configuration
+            file cannot be found.
+        """
+        return _get_config_file_path(
+            self._xdg_config_dir, self._xdg_config_file)
+
     def read(self, xdg_config_file=None, xdg_config_dir=None):
         """Read a configuration file.
 
@@ -316,15 +374,10 @@ class PulpSmashConfig(object):
             xdg_config_file = self._xdg_config_file
         if xdg_config_dir is None:
             xdg_config_dir = self._xdg_config_dir
-        path = _get_config_file_path(xdg_config_dir, xdg_config_file)
+        path = self.get_config_file_path()
         with open(path) as handle:
             config_file = json.load(handle)
 
-        pulp = config_file.get('pulp', {})
-        pulp_auth = pulp.get('auth', ['admin', 'admin'])
-        pulp_version = Version(pulp.get('version', '1!0'))
-
-        systems = []
         if 'systems' not in config_file:
             # We could use textwrap.wrap() on the message, but that makes log
             # files harder to grep.
@@ -340,29 +393,14 @@ class PulpSmashConfig(object):
                 ),
                 DeprecationWarning
             )
-            parsed_url = urlparse(pulp.get('base_url'))
-            systems.append(PulpSystem(
-                parsed_url.hostname or '',
-                {
-                    'amqp broker': {'service': 'qpidd'},
-                    'api': {
-                        'scheme': parsed_url.scheme,
-                        'verify': pulp.get('verify'),
-                    },
-                    'mongod': {},
-                    'pulp cli': {},
-                    'pulp celerybeat': {},
-                    'pulp resource manager': {},
-                    'pulp workers': {},
-                    'shell': {
-                        'transport': pulp.get('cli_transport'),
-                    },
-                    'squid': {},
-                }
-            ))
-        else:
-            for system in config_file.get('systems', []):
-                systems.append(PulpSystem(**system))
+            config_file = convert_old_config(config_file)
+
+        pulp = config_file.get('pulp', {})
+        pulp_auth = pulp.get('auth', ['admin', 'admin'])
+        pulp_version = Version(pulp.get('version', '1!0'))
+        systems = [
+            PulpSystem(**system) for system in config_file.get('systems', [])
+        ]
         return PulpSmashConfig(pulp_auth, pulp_version, systems)
 
     def get_systems(self, role):

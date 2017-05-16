@@ -114,6 +114,39 @@ class GetConfigTestCase(unittest.TestCase):
         self.assertEqual(read.call_count, 1)
 
 
+class ConvertOldConfigTestCase(unittest.TestCase):
+    """Test :func:`pulp_smash.config.convert_old_config`."""
+
+    def test_convert_old_config(self):
+        """Assert the conversion works."""
+        expected_config = {
+            'pulp': {
+                'auth': ['username', 'password'],
+                'version': '2.12'
+            },
+            'systems': [
+                {
+                    'hostname': 'pulp.example.com',
+                    'roles': {
+                        'amqp broker': {'service': 'qpidd'},
+                        'api': {'scheme': 'https', 'verify': False},
+                        'mongod': {},
+                        'pulp celerybeat': {},
+                        'pulp cli': {},
+                        'pulp resource manager': {},
+                        'pulp workers': {},
+                        'shell': {'transport': 'ssh'},
+                        'squid': {},
+                    }
+                }
+            ]
+        }
+        self.assertEqual(
+            config.convert_old_config(json.loads(OLD_CONFIG)),
+            expected_config
+        )
+
+
 class ValidateConfigTestCase(unittest.TestCase):
     """Test :func:`pulp_smash.config.validate_config`."""
 
