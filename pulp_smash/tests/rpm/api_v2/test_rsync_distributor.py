@@ -150,6 +150,24 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
         self.addCleanup(api_client.delete, repo['_href'])
         return api_client.get(repo['_href'], params={'details': True})
 
+    def get_publish_task(self, cfg, call_report):
+        """Find the 'publish' task and return it.
+
+        Assert that only one such task exists.
+
+        :param pulp_smash.config.PulpSmashConfig cfg: Information about the
+            Pulp deployment being targeted.
+        :param call_report: A call report returned from Pulp after requesting a
+            publish; a dict.
+        :returns: Nothing.
+        """
+        tasks = [
+            task for task in api.poll_spawned_tasks(cfg, call_report)
+            if task['task_type'] == 'pulp.server.managers.repo.publish.publish'
+        ]
+        self.assertEqual(len(tasks), 1, tasks)
+        return tasks[0]
+
     def verify_publish_is_skip(self, cfg, call_report):
         """Find the 'publish' task and verify it has a result of 'skipped'.
 
@@ -164,12 +182,8 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
             publish; a dict.
         :returns: Nothing.
         """
-        tasks = [
-            task for task in api.poll_spawned_tasks(cfg, call_report)
-            if task['task_type'] == 'pulp.server.managers.repo.publish.publish'
-        ]
-        self.assertEqual(len(tasks), 1, tasks)
-        self.assertEqual(tasks[0]['result']['result'], 'skipped', tasks[0])
+        task = self.get_publish_task(cfg, call_report)
+        self.assertEqual(task['result']['result'], 'skipped', task)
 
     def verify_remote_units_path(self, cfg, distributor_cfg, num_units=None):
         """Verify the RPM rsync distributor has placed RPMs as appropriate.
@@ -642,3 +656,77 @@ class AddUnitTestCase(
         for key in 'yum_distributor', 'rpm_rsync_distributor':
             utils.publish_repo(cfg, repo, {'id': dists[key]['id']})
         self.verify_remote_units_path(cfg, dists['rpm_rsync_distributor'], 1)
+
+
+class PublishTwiceTestCase(
+        _RsyncDistUtilsMixin,
+        TemporaryUserMixin,
+        unittest.TestCase):
+    """Publish with a yum and rsync distributor twice.
+
+    Do the following when executed:
+
+    1. Create a yum repository with a yum and rsync distributor.
+    2. Add some content to the repository.
+    3. Publish with the yum and rsync distributor.
+    4. Publish with the yum and rsync distributor again.
+
+    The second publish with the rsync distributor should be a fast-forward
+    publish, as no new units were added to the repository between the first and
+    second publishes. Verify that the first rsync publish is not a fast-foward
+    publish and that the second one is.
+
+    This test case targets `Pulp #2666 <https://pulp.plan.io/issues/2666>`_.
+    """
+
+    def test_all(self):
+        """Publish with a yum and rsync distributor twice."""
+        cfg = config.get_config()
+        if selectors.bug_is_untestable(2666, cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2666')
+
+        # Create a user and a repository.
+        ssh_user, priv_key = self.make_user(cfg)
+        ssh_identity_file = self.write_private_key(cfg, priv_key)
+        repo = self.make_repo(cfg, {'remote': {
+            'host': urlparse(cfg.base_url).netloc,
+            'root': '/home/' + ssh_user,
+            'ssh_identity_file': ssh_identity_file,
+            'ssh_user': ssh_user,
+        }})
+
+        # Add content.
+        utils.upload_import_unit(
+            cfg,
+            utils.http_get(RPM_UNSIGNED_URL),
+            {'unit_type_id': 'rpm'},
+            repo
+        )
+        dists = get_dists_by_type_id(cfg, repo)
+
+        # Publish with yum and rsync.
+        for dist in 'yum_distributor', 'rpm_rsync_distributor':
+            report = (
+                utils.publish_repo(cfg, repo, {'id': dists[dist]['id']}).json()
+            )
+            publish_task = self.get_publish_task(cfg, report)
+        total_num_processed = self.get_total_num_processed(publish_task)
+        with self.subTest(comment='first rsync publish'):
+            self.assertGreater(total_num_processed, 0, publish_task)
+
+        # Publish with yum and rsync again.
+        for dist in 'yum_distributor', 'rpm_rsync_distributor':
+            report = (
+                utils.publish_repo(cfg, repo, {'id': dists[dist]['id']}).json()
+            )
+            publish_task = self.get_publish_task(cfg, report)
+        total_num_processed = self.get_total_num_processed(publish_task)
+        with self.subTest(comment='second rsync publish'):
+            self.assertEqual(total_num_processed, 0, publish_task)
+
+    @staticmethod
+    def get_total_num_processed(publish_task):
+        """Return total ``num_processed`` for each step in ``publish_task``."""
+        return sum(
+            step['num_processed'] for step in publish_task['result']['details']
+        )
