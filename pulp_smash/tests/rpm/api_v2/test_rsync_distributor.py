@@ -214,9 +214,18 @@ class PublishBeforeYumDistTestCase(
     Do the following:
 
     1. Create a repository with a yum distributor and rsync distributor.
-    2. Publish with the rpm rsync distributor. Verify that the publish fails.
+    2. Publish with the rpm rsync distributor. Verify that:
 
-    This test targets `Pulp #2187 <https://pulp.plan.io/issues/2187>`_.
+       * The publish has a result of "skipped."
+       * No files are placed on the remote system.
+
+    3. Publish with the rpm rsync distributor again. Perform the same
+       verification steps.
+
+    This test targets:
+
+    * `Pulp #2187 <https://pulp.plan.io/issues/2187>`_
+    * `Pulp #2722 <https://pulp.plan.io/issues/2722>`_
     """
 
     def test_all(self):
@@ -237,17 +246,20 @@ class PublishBeforeYumDistTestCase(
 
         # Publish with the rsync distributor.
         distribs = get_dists_by_type_id(cfg, repo)
-        self.verify_publish_is_skip(cfg, utils.publish_repo(
-            cfg,
-            repo,
-            {'id': distribs['rpm_rsync_distributor']['id']}
-        ).json())
+        args = (cfg, repo, {'id': distribs['rpm_rsync_distributor']['id']})
+        self.verify_publish_is_skip(cfg, utils.publish_repo(*args).json())
 
-        # Verify that the rsync distributor hasn't placed files
+        # Verify that the rsync distributor hasn't placed files.
         sudo = '' if utils.is_root(cfg) else 'sudo '
         cmd = (sudo + 'ls -1 /home/{}'.format(ssh_user)).split()
         dirs = set(cli.Client(cfg).run(cmd).stdout.strip().split('\n'))
         self.assertNotIn('content', dirs)
+
+        # Publish with the rsync distributor again, and verify again.
+        if selectors.bug_is_testable(2722, cfg.version):
+            self.verify_publish_is_skip(cfg, utils.publish_repo(*args).json())
+            dirs = set(cli.Client(cfg).run(cmd).stdout.strip().split('\n'))
+            self.assertNotIn('content', dirs)
 
 
 class ForceFullTestCase(
