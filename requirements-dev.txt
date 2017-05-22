@@ -1,8 +1,7 @@
 # For `make lint`
 flake8
 flake8-docstrings
-# See: https://github.com/zheller/flake8-quotes/issues/55
-flake8-quotes<0.10
+flake8-quotes
 pydocstyle
 pylint
 astroid

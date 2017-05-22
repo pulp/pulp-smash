@@ -8,12 +8,12 @@ from xdg import BaseDirectory
 from pulp_smash.config import PulpSmashConfig
 
 MESSAGE = tuple((
-    '''\
+    """\
     Please create a configuration file at {} and call `python3 -m unittest
     discover pulp_smash.tests`. The configuration file should have this
     structure:
-    ''',
-    '''\
+    """,
+    """\
     {
         "pulp": {
             "auth": ["username", "password"],
@@ -38,8 +38,8 @@ MESSAGE = tuple((
                 }
             }
         ]
-    }''',
-    '''\
+    }""",
+    """\
     This configuration file format allows configuring either single machine
     Pulp deployment (as seen in the example above) or clustered Pulp deployment
     where each service can be installed on its own machine. The "pulp" section
@@ -47,8 +47,8 @@ MESSAGE = tuple((
     deployment under test. The "systems" section provides information about
     each system that composes the deployment. A system must have its hostname
     and the roles that system has.
-    ''',
-    '''\
+    """,
+    """\
     Not all roles requires additional information. Currently, only the amqp
     broker, api and shell roles do. The amqp broker expects the service to be
     defined and it can be qpidd or rabbitmq. The api role means that httpd will
@@ -58,28 +58,28 @@ MESSAGE = tuple((
     file). The shell role configures how the system will be accessed by using a
     local or ssh transport, only set local if Pulp Smash is running on that
     same system.
-    ''',
-    '''\
+    """,
+    """\
     Notes:
-    ''',
-    '''\
+    """,
+    """\
     Pulp Smash abides by the XDG Base Directory Specification. The
     configuration file may be placed in any XDG-compliant location. The first
     configuration file found is used. Settings are not cascaded.
-    ''',
-    '''\
+    """,
+    """\
     A non-default configuration file can be selected with an environment
     variable like so: `PULP_SMASH_CONFIG_FILE=alternate-{} python3 -m unittest
     discover pulp_smash.tests`. This variable should be a file name, not a
     path.
-    ''',
-    '''\
+    """,
+    """\
     The provided command will run all tests, but any subset of tests may also
     be selected. For example, you may also run `python3 -m unittest
     pulp_smash.tests.platform.api_v2.test_login`. Consult the unittest
     documentation for test selection syntax, and consult the source code to see
     which test modules are available.
-    ''',
+    """,
 ))
 
 
