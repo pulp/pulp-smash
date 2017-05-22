@@ -710,9 +710,9 @@ class PublishTwiceTestCase(
                 utils.publish_repo(cfg, repo, {'id': dists[dist]['id']}).json()
             )
             publish_task = self.get_publish_task(cfg, report)
-        total_num_processed = self.get_total_num_processed(publish_task)
+        num_processed = self.get_num_processed(publish_task)
         with self.subTest(comment='first rsync publish'):
-            self.assertGreater(total_num_processed, 0, publish_task)
+            self.assertGreater(num_processed, 0, publish_task)
 
         # Publish with yum and rsync again.
         for dist in 'yum_distributor', 'rpm_rsync_distributor':
@@ -720,13 +720,14 @@ class PublishTwiceTestCase(
                 utils.publish_repo(cfg, repo, {'id': dists[dist]['id']}).json()
             )
             publish_task = self.get_publish_task(cfg, report)
-        total_num_processed = self.get_total_num_processed(publish_task)
+        num_processed = self.get_num_processed(publish_task)
         with self.subTest(comment='second rsync publish'):
-            self.assertEqual(total_num_processed, 0, publish_task)
+            self.assertEqual(num_processed, 0, publish_task)
 
     @staticmethod
-    def get_total_num_processed(publish_task):
-        """Return total ``num_processed`` for each step in ``publish_task``."""
+    def get_num_processed(publish_task):
+        """Return ``num_processed`` for unit query step in ``publish_task``."""
         return sum(
             step['num_processed'] for step in publish_task['result']['details']
+            if step['step_type'].lower().startswith('unit query step')
         )
