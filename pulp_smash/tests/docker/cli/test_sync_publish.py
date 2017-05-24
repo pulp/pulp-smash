@@ -420,8 +420,9 @@ class RepoRegistryIdTestCase(SyncPublishMixin, utils.BaseAPITestCase):
     ``repo_registry_id`` can be set to values containing varying numbers of
     slashes.
 
-    .. _Pulp #2368:
-        https://pulp.plan.io/issues/2368https://pulp.plan.io/issues/2368
+    Also see: `Pulp #2723 <https://pulp.plan.io/issues/2723>`_.
+
+    .. _Pulp #2368: https://pulp.plan.io/issues/2368
     """
 
     def test_zero_slashes(self):
