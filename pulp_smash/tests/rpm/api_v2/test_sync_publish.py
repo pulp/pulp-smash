@@ -11,6 +11,7 @@ For information on repository sync and publish operations, see
 """
 import inspect
 import unittest
+from threading import Thread
 from urllib.parse import urljoin
 
 from packaging.version import Version
@@ -21,6 +22,7 @@ from pulp_smash.constants import (
     ORPHANS_PATH,
     REPOSITORY_PATH,
     RPM,
+    RPM_ERRATUM_COUNT,
     RPM_INCOMPLETE_FILELISTS_FEED_URL,
     RPM_INCOMPLETE_OTHER_FEED_URL,
     RPM_MISSING_FILELISTS_FEED_URL,
@@ -333,3 +335,76 @@ class ChangeFeedTestCase(utils.BaseAPITestCase):
         """Build the feed to an RPM repository's distributor."""
         feed = urljoin(self.cfg.base_url, 'pulp/repos/')
         return urljoin(feed, repo['distributors'][0]['config']['relative_url'])
+
+
+class SyncInParallelTestCase(unittest.TestCase):
+    """Sync several repositories in parallel."""
+
+    def test_all(self):
+        """Sync several repositories in parallel.
+
+        Specifically, do the following:
+
+        1. Create several repositories. Ensure each repository has an importer
+           whose feed references a repository containing one or more errata.
+        2. Sync each repository. Assert each sync completed successfully.
+        3. Get a summary of information about each repository, and assert the
+           repo has an appropriate number of errata.
+
+        `Pulp #2721`_ describes how a race condition can occur when multiple
+        repos with identical errata are synced at the same time. This test case
+        attempts to trigger that race condition.
+
+        .. _Pulp #2721: https://pulp.plan.io/issues/2721
+        """
+        cfg = config.get_config()
+        client = api.Client(cfg, api.json_handler)
+        repos = []  # append() is thread-safe
+
+        def create_repo():
+            """Create a repository and schedule its deletion.
+
+            Append a dict of information about the repository to ``repos``.
+            """
+            body = gen_repo()
+            body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
+            repo = client.post(REPOSITORY_PATH, body)
+            self.addCleanup(client.delete, repo['_href'])
+            repos.append(repo)
+
+        def get_repo(repo):
+            """Get information about a repository. Append it to ``repos``.
+
+            :param repo: A dict of information about a repository.
+            """
+            repos.append(client.get(repo['_href']))
+
+        threads = tuple(Thread(target=create_repo) for _ in range(5))
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        threads = tuple(
+            Thread(target=utils.sync_repo, args=(cfg, repo['_href']))
+            for repo in repos
+        )
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        threads = tuple(
+            Thread(target=get_repo, args=(repo,)) for repo in repos
+        )
+        repos.clear()
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        for repo in repos:
+            with self.subTest():
+                self.assertEqual(
+                    repo['content_unit_counts']['erratum'],
+                    RPM_ERRATUM_COUNT,
+                )
