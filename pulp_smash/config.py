@@ -482,14 +482,13 @@ def _get_config_file_path(xdg_config_dir, xdg_config_file):
     :raises pulp_smash.exceptions.ConfigFileNotFoundError: If the requested
         configuration file cannot be found.
     """
-    paths = [
-        os.path.join(config_dir, xdg_config_file)
-        for config_dir in BaseDirectory.load_config_paths(xdg_config_dir)
-    ]
-    for path in paths:
-        if os.path.isfile(path):
-            return path
+    path = BaseDirectory.load_first_config(xdg_config_dir, xdg_config_file)
+    if path and os.path.isfile(path):
+        return path
     raise exceptions.ConfigFileNotFoundError(
         'Pulp Smash is unable to find a configuration file. The following '
-        '(XDG compliant) paths have been searched: ' + ', '.join(paths)
+        '(XDG compliant) paths have been searched: ' + ', '.join([
+            os.path.join(config_dir, xdg_config_dir, xdg_config_file)
+            for config_dir in BaseDirectory.xdg_config_dirs
+        ])
     )
