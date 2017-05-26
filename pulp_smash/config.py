@@ -52,6 +52,8 @@ AMQP_SERVICES = {'qpidd', 'rabbitmq'}
 
 # Config file JSON schema
 CONFIG_JSON_SCHEMA = {
+    'additionalProperties': False,
+    'required': ['pulp', 'systems'],
     'type': 'object',
     'properties': {
         'pulp': {
@@ -72,6 +74,7 @@ CONFIG_JSON_SCHEMA = {
     'definitions': {
         'system': {
             'additionalProperties': False,
+            'required': ['hostname', 'roles'],
             'type': 'object',
             'properties': {
                 'hostname': {
