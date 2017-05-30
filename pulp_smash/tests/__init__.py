@@ -75,9 +75,9 @@ use a different test runner.
 """
 from warnings import simplefilter
 
-import requests
+import urllib3
 
 simplefilter(
     'ignore',
-    requests.packages.urllib3.exceptions.InsecureRequestWarning,
+    urllib3.exceptions.InsecureRequestWarning,
 )
