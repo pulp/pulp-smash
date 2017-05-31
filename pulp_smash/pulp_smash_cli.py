@@ -58,7 +58,8 @@ def settings_create(ctx):
     else:
         system_api_scheme = 'http'
 
-    if system_api_scheme == 'https' and click.confirm('Verify HTTPS?'):
+    if (system_api_scheme == 'https' and
+            click.confirm('Verify HTTPS?', default=True)):
         certificate_path = click.prompt('SSL certificate path', default='')
         if not certificate_path:
             system_api_verify = True  # pragma: no cover

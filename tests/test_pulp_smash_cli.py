@@ -66,7 +66,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
                     'amqp broker': {'service': 'qpidd'},
                     'api': {
                         'scheme': 'https',
-                        'verify': False,
+                        'verify': True,
                     },
                     'mongod': {},
                     'pulp celerybeat': {},
@@ -186,6 +186,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
         system_roles = self.expected_config_dict['systems'][0]['roles']
         system_roles['amqp broker']['service'] = 'rabbitmq'
         system_roles['api']['scheme'] = 'http'
+        system_roles['api']['verify'] = False
         system_roles['shell']['transport'] = 'local'
         self.assertEqual(
             json.loads(generated_settings), self.expected_config_dict)
