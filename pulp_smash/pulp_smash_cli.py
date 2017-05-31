@@ -67,7 +67,8 @@ def settings_create(ctx):
     else:
         system_api_verify = False
 
-    if click.confirm('Is Pulp\'s message broker Qpid?', default=True):
+    if click.confirm(
+            'Is Pulp\'s message broker Qpid (no for RabbitMQ)?', default=True):
         amqp_broker = 'qpidd'
     else:
         amqp_broker = 'rabbitmq'
