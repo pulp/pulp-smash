@@ -3,6 +3,8 @@
 import unittest
 from urllib.parse import urlsplit, urlunsplit
 
+from packaging.version import Version
+
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
     DOCKER_UPSTREAM_NAME,
@@ -209,7 +211,7 @@ class SyncPublishV1TestCase(SyncPublishMixin, utils.BaseAPITestCase):
             repo_id=repo_id,
             upstream_name=DOCKER_UPSTREAM_NAME,
         ).stdout)
-        self.addCleanup(docker_utils.repo_delete, self.cfg, repo_id)
+        type(self).repo_id = repo_id
         self.verify_proc(docker_utils.repo_sync(self.cfg, repo_id))
         self.verify_proc(docker_utils.repo_publish(self.cfg, repo_id))
 
@@ -225,7 +227,24 @@ class SyncPublishV1TestCase(SyncPublishMixin, utils.BaseAPITestCase):
         """
         repos = self.make_crane_client(self.cfg).get('/crane/repositories')
         self.assertIn(self.repo_id, repos.keys())
-        repo = repos[self.repo_id]
+        self.verify_v1_repo(repos[self.repo_id])
+
+    @selectors.skip_if(bool, 'repo_id', False)
+    def test_02_get_crane_repositories_v1(self):  # pylint:disable=invalid-name
+        """Issue an HTTP GET request to ``/crane/repositories/v1``.
+
+        Assert that the response is as described by `Crane Admin
+        <http://docs.pulpproject.org/plugins/crane/index.html#crane-admin>`_.
+        """
+        if (self.cfg.version < Version('2.14') or
+                selectors.bug_is_untestable(2723, self.cfg.version)):
+            self.skipTest('https://pulp.plan.io/issues/2723')
+        repos = self.make_crane_client(self.cfg).get('/crane/repositories/v1')
+        self.assertIn(self.repo_id, repos.keys())
+        self.verify_v1_repo(repos[self.repo_id])
+
+    def verify_v1_repo(self, repo):
+        """Implement the assertions for the ``test_02*`` methods."""
         with self.subTest():
             self.assertFalse(repo['protected'])
         with self.subTest():
@@ -280,22 +299,19 @@ class SyncPublishV2TestCase(SyncPublishMixin, utils.BaseAPITestCase):
         cli.GlobalServiceManager(self.cfg).restart(('httpd',))
 
     @selectors.skip_if(bool, 'repo_id', False)
-    def test_02_get_crane_repositories(self):
-        """Issue an HTTP GET request to ``/crane/repositories``.
+    def test_02_get_crane_repositories_v2(self):  # pylint:disable=invalid-name
+        """Issue an HTTP GET request to ``/crane/repositories/v2``.
 
         Assert that the response is as described by `Crane Admin
         <http://docs.pulpproject.org/plugins/crane/index.html#crane-admin>`_.
         """
-        repos = self.make_crane_client(self.cfg).get('/crane/repositories')
+        if (self.cfg.version < Version('2.14') or
+                selectors.bug_is_untestable(2723, self.cfg.version)):
+            self.skipTest('https://pulp.plan.io/issues/2723')
+        repos = self.make_crane_client(self.cfg).get('/crane/repositories/v2')
         self.assertIn(self.repo_id, repos.keys())
         repo = repos[self.repo_id]
-        with self.subTest():
-            self.assertFalse(repo['protected'])
-        if selectors.bug_is_testable(2723, self.cfg.version):
-            with self.subTest():
-                self.assertTrue(repo['image_ids'])
-            with self.subTest():
-                self.assertTrue(repo['tags'])
+        self.assertFalse(repo['protected'])
 
     @selectors.skip_if(bool, 'repo_id', False)
     def test_02_get_manifest_v1(self):
@@ -371,17 +387,14 @@ class SyncNonNamespacedV2TestCase(SyncPublishMixin, utils.BaseAPITestCase):
         # Make Crane read the metadata. (Now!)
         cli.GlobalServiceManager(self.cfg).restart(('httpd',))
 
-        # Get and inspect /crane/repositories.
-        client = self.make_crane_client(self.cfg)
-        repos = client.get('/crane/repositories')
-        self.assertIn(repo_id, repos.keys())
-        with self.subTest():
-            self.assertFalse(repos[repo_id]['protected'])
-        if selectors.bug_is_testable(2723, self.cfg.version):
+        # Get and inspect /crane/repositories/v2.
+        if (self.cfg.version >= Version('2.14') and
+                selectors.bug_is_testable(2723, self.cfg.version)):
+            client = self.make_crane_client(self.cfg)
+            repos = client.get('/crane/repositories/v2')
+            self.assertIn(repo_id, repos.keys())
             with self.subTest():
-                self.assertTrue(repos[repo_id]['image_ids'])
-            with self.subTest():
-                self.assertTrue(repos[repo_id]['tags'])
+                self.assertFalse(repos[repo_id]['protected'])
 
 
 class InvalidFeedTestCase(utils.BaseAPITestCase):
@@ -427,57 +440,51 @@ class RepoRegistryIdTestCase(SyncPublishMixin, utils.BaseAPITestCase):
 
     def test_zero_slashes(self):
         """Give ``repo_registry_id`` zero slashes."""
+        if (self.cfg.version < Version('2.14') or
+                selectors.bug_is_untestable(2723, self.cfg.version)):
+            self.skipTest('https://pulp.plan.io/issues/2723')
         repo_registry_id = '/'.join(utils.uuid4() for _ in range(1))
         self.create_sync_publish_repo(repo_registry_id)
         cli.GlobalServiceManager(self.cfg).restart(('httpd',))  # restart Crane
 
-        # Get and inspect /crane/repositories.
+        # Get and inspect /crane/repositories/v2.
         client = self.make_crane_client(self.cfg)
-        repos = client.get('/crane/repositories')
+        repos = client.get('/crane/repositories/v2')
         self.assertIn(repo_registry_id, repos.keys())
         with self.subTest():
             self.assertFalse(repos[repo_registry_id]['protected'])
-        if selectors.bug_is_testable(2723, self.cfg.version):
-            with self.subTest():
-                self.assertTrue(repos[repo_registry_id]['image_ids'])
-            with self.subTest():
-                self.assertTrue(repos[repo_registry_id]['tags'])
 
     def test_one_slash(self):
         """Give ``repo_registry_id`` one slash."""
+        if (self.cfg.version < Version('2.14') or
+                selectors.bug_is_untestable(2723, self.cfg.version)):
+            self.skipTest('https://pulp.plan.io/issues/2723')
         repo_registry_id = '/'.join(utils.uuid4() for _ in range(2))
         self.create_sync_publish_repo(repo_registry_id)
         cli.GlobalServiceManager(self.cfg).restart(('httpd',))  # restart Crane
 
-        # Get and inspect /crane/repositories.
+        # Get and inspect /crane/repositories/v2.
         client = self.make_crane_client(self.cfg)
-        repos = client.get('/crane/repositories')
+        repos = client.get('/crane/repositories/v2')
         self.assertIn(repo_registry_id, repos.keys())
         with self.subTest():
             self.assertFalse(repos[repo_registry_id]['protected'])
-        if selectors.bug_is_testable(2723, self.cfg.version):
-            with self.subTest():
-                self.assertTrue(repos[repo_registry_id]['image_ids'])
-            with self.subTest():
-                self.assertTrue(repos[repo_registry_id]['tags'])
 
     def test_two_slashes(self):
         """Give ``repo_registry_id`` two slashes."""
+        if (self.cfg.version < Version('2.14') or
+                selectors.bug_is_untestable(2723, self.cfg.version)):
+            self.skipTest('https://pulp.plan.io/issues/2723')
         repo_registry_id = '/'.join(utils.uuid4() for _ in range(3))
         self.create_sync_publish_repo(repo_registry_id)
         cli.GlobalServiceManager(self.cfg).restart(('httpd',))  # restart Crane
 
-        # Get and inspect /crane/repositories.
+        # Get and inspect /crane/repositories/v2.
         client = self.make_crane_client(self.cfg)
-        repos = client.get('/crane/repositories')
+        repos = client.get('/crane/repositories/v2')
         self.assertIn(repo_registry_id, repos.keys())
         with self.subTest():
             self.assertFalse(repos[repo_registry_id]['protected'])
-        if selectors.bug_is_testable(2723, self.cfg.version):
-            with self.subTest():
-                self.assertTrue(repos[repo_registry_id]['image_ids'])
-            with self.subTest():
-                self.assertTrue(repos[repo_registry_id]['tags'])
 
     def create_sync_publish_repo(self, repo_registry_id):
         """Create, sync and publish a Docker repository.
