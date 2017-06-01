@@ -3,8 +3,7 @@
 import hashlib
 import os
 import unittest
-from urllib.parse import urlparse
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlparse, urlsplit
 
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
@@ -126,10 +125,9 @@ class UploadIsoTestCase(unittest.TestCase):
 
         1. Create an ISO repository.
         2. Upload :data:`pulp_smash.constants.FILE_URL` to the repository.
-
-        .. NOTE:: A nice future addition would be to publish the repository,
-            download the published ISO file, and assert that it's identical to
-            the ISO file uploaded earlier.
+        3. Publish the repository.
+        4. Download the published ISO, and assert it's equal to the uploaded
+           ISO.
         """
         # create a repo
         cfg = config.get_config()
@@ -144,6 +142,7 @@ class UploadIsoTestCase(unittest.TestCase):
             }],
         }
         repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
 
         # upload an ISO to the repository
@@ -157,3 +156,10 @@ class UploadIsoTestCase(unittest.TestCase):
                 'size': len(iso),
             },
         }, repo)
+
+        # publish the repository, and get the published ISO
+        utils.publish_repo(cfg, repo)
+        client.response_handler = api.safe_handler
+        path = urljoin(urljoin('/pulp/isos/', repo['id'] + '/'), iso_name)
+        iso2 = client.get(path).content
+        self.assertEqual(iso, iso2)
