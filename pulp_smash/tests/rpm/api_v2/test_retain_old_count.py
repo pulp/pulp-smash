@@ -1,15 +1,10 @@
 # coding utf-8
-"""Test the functionality in RPM repos when `retain_old_count`_ is specified.
+"""Test the `retain_old_count`_ feature.
 
-Following steps are executed in order to test correct functionality of
-repository created with valid feed and `retain_old_count`_ option set.
-
-1. Create repository foo with valid feed, run sync, add distributor to it and
-   publish over http and https.
-2. Create second repository bar, with feed pointing to first repository, set
-   ``retain_old_count=0`` and run sync.
-3. Assert that repositories do not contain same set of units.
-4. Assert that number or RPMs in repo bar is less then in foo repo.
+When more than one version of an RPM is present in a repository and Pulp syncs
+from that repository, it must choose how many versions of that RPM to sync. By
+default, it syncs all versions of that RPM. The `retain_old_count`_ option lets
+one sync a limited number of outdated RPMs.
 
 .. _retain_old_count:
     https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/yum-plugins.html
@@ -17,91 +12,61 @@ repository created with valid feed and `retain_old_count`_ option set.
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, utils
-from pulp_smash.constants import REPOSITORY_PATH, RPM_SIGNED_FEED_URL
+from pulp_smash import api, config, utils
+from pulp_smash.constants import REPOSITORY_PATH, RPM_UNSIGNED_FEED_URL
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
-_PUBLISH_DIR = 'pulp/repos/'
 
+class RetainOldCountTestCase(unittest.TestCase):
+    """Test the ``retain_old_count`` feature."""
 
-class RetainOldCountTestCase(utils.BaseAPITestCase):
-    """Test functionality of --retain-old-count option specified."""
+    def test_all(self):
+        """Test the ``retain_old_count`` feature.
 
-    @classmethod
-    def setUpClass(cls):  # pylint:disable=arguments-differ
-        """Create two repositories, first is feed of second one.
+        Specifically, do the following:
 
-        Provides server config and set of iterable to delete. Following steps
-        are executed:
-
-        1. Create repository foo with feed, sync and publish it.
-        2. Create repository bar with foo as a feed with
-           ``retain_old_count=0``.
-        3. Run sync of repo foo.
-        4. Get information on both repositories.
+        1. Create, populate and publish repository. Ensure at least two
+           versions of some RPM are present.
+        2. Create and sync a second repository whose feed references the first
+           repository and where ``retain_old_count`` is zero.
+        3. Inspect the two repositories. Assert that only the newest version of
+           any duplicate RPMs has been copied to the second repository.
         """
-        super(RetainOldCountTestCase, cls).setUpClass()
-        if check_issue_2277(cls.cfg):
+        cfg = config.get_config()
+        if check_issue_2277(cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
-        client = api.Client(cls.cfg)
-        cls.responses = {}
-        hrefs = []  # repository hrefs
+        client = api.Client(cfg, api.json_handler)
 
-        # Create and sync the first repository.
+        # Create, populate and publish a repo.
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
-        hrefs.append(client.post(REPOSITORY_PATH, body).json()['_href'])
-        cls.responses['first sync'] = utils.sync_repo(cls.cfg, hrefs[0])
+        body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
+        utils.sync_repo(cfg, repo['_href'])
+        utils.publish_repo(cfg, repo)
 
-        # Add distributor and publish
-        cls.responses['distribute'] = client.post(
-            urljoin(hrefs[0], 'distributors/'),
-            gen_distributor(),
-        )
-        cls.responses['publish'] = client.post(
-            urljoin(hrefs[0], 'actions/publish/'),
-            {'id': cls.responses['distribute'].json()['id']},
-        )
-
-        # Create and sync the second repository. Ensure it fetches content from
-        # the first, and that the `retain_old_count` option is set correctly.
-        # We disable SSL validation for a practical reason: each HTTPS feed
-        # must have a certificate to work, which is burdensome to do here.
+        # Create second repository. We disable SSL validation for a practical
+        # reason: each HTTPS feed must have a certificate to work, which is
+        # burdensome to do here.
         body = gen_repo()
         body['importer_config']['feed'] = urljoin(
-            cls.cfg.base_url,
-            _PUBLISH_DIR +
-            cls.responses['distribute'].json()['config']['relative_url'],
+            cfg.base_url,
+            'pulp/repos/' + repo['distributors'][0]['config']['relative_url'],
         )
-        body['importer_config']['retain_old_count'] = 0  # see docstring
+        body['importer_config']['retain_old_count'] = 0
         body['importer_config']['ssl_validation'] = False
-        hrefs.append(client.post(REPOSITORY_PATH, body).json()['_href'])
-        cls.responses['second sync'] = utils.sync_repo(cls.cfg, hrefs[1])
+        repo2 = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo2['_href'])
+        utils.sync_repo(cfg, repo2['_href'])
 
-        # Read the repositories and mark them for deletion.
-        cls.repos = [client.get(href).json() for href in hrefs]
-        cls.resources.update(set(hrefs))
-
-    def test_status_code(self):
-        """Verify the HTTP status code of each server response."""
-        for step, code in (
-                ('first sync', 202),
-                ('distribute', 201),
-                ('publish', 202),
-                ('second sync', 202),
-        ):
-            with self.subTest(step=step):
-                self.assertEqual(self.responses[step].status_code, code)
-
-    def test_retain_old_count_works(self):
-        """Test that ``content_unit_counts`` in repositories differ.
-
-        Most of the RPMs in the first repository are unique. However, there are
-        two different versions of the "walrus" RPM. When we copy its contents
-        to the second repository with ``retain_old_count=0``, zero old versions
-        of the "walrus" RPM will be copied.
-        """
-        counts = [repo.get('content_unit_counts', {}) for repo in self.repos]
-        self.assertEqual(counts[0]['rpm'] - 1, counts[1]['rpm'])
+        # Inspect the repos. Most of the RPMs in the first repo are unique.
+        # However, there are two versions of the "walrus" RPM, and when
+        # ``retain_old_count=0``, zero old versions should be copied over.
+        repo = client.get(repo['_href'], params={'details': True})
+        repo2 = client.get(repo2['_href'], params={'details': True})
+        counts = [repo['content_unit_counts']['rpm'] for repo in (repo, repo2)]
+        self.assertEqual(counts[0] - 1, counts[1])
