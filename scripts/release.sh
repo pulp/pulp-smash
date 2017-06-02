@@ -35,7 +35,7 @@ source "${venv}/bin/activate"
 set -u
 for dist in dist/*; do
     pip install --quiet "${dist}"
-    python -m pulp_smash 1>/dev/null
+    pulp-smash settings --help 1>/dev/null
     pip uninstall --quiet --yes pulp_smash
 done
 set +u
