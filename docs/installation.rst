@@ -8,10 +8,10 @@ and activate a virtual environment:
 
 .. code-block:: sh
 
-    pyvenv env
+    python3 -m venv env
     source env/bin/activate  # run `deactivate` to exit environment
 
-To install Pulp Smash from `PyPi`_:
+Pulp Smash can be installed from PyPI or from source. To install from `PyPI`_:
 
 .. code-block:: sh
 
@@ -23,10 +23,10 @@ To install Pulp Smash from source (`GitHub`_):
 
     git clone https://github.com/PulpQE/pulp-smash.git
     cd pulp-smash
-    python setup.py install
+    pip install .
 
-To install Pulp Smash from source in "develop mode," where changes to source
-files are reflected in the working environment:
+Pulp Smash can also be installed from source in "develop mode," where changes to
+source code are reflected in the working environment:
 
 .. code-block:: sh
 
@@ -38,11 +38,11 @@ For an explanation of key concepts and more installation strategies, see
 `Installing Python Modules`_.
 
 .. [1] See `Virtual Environments and Packages`_ for an explanation of virtual
-    environments. The ``pyvenv`` and ``virtualenv`` tools are similar, but the
+    environments. ``python3 -m venv`` and ``virtualenv`` are similar, but the
     former ships with Python as of Python 3.3, whereas the latter is a third
     party tool.
 
 .. _GitHub: https://github.com/PulpQE/pulp-smash
 .. _Installing Python Modules: https://docs.python.org/3/installing/
-.. _PyPi: https://pypi.python.org/pypi/pulp-smash
+.. _PyPI: https://pypi.python.org/pypi/pulp-smash
 .. _Virtual Environments and Packages: https://docs.python.org/3/tutorial/venv.html
