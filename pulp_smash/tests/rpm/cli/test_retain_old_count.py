@@ -15,71 +15,98 @@ from urllib.parse import urljoin
 
 from pulp_smash import cli, config, utils
 from pulp_smash.constants import RPM_UNSIGNED_FEED_URL
-from pulp_smash.tests.rpm.utils import check_issue_2277
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
 class RetainOldCountTestCase(unittest.TestCase):
-    """Test the ``retain_old_count`` feature."""
+    """Test the ``retain_old_count`` feature.
 
-    def test_all(self):
-        """Test the ``retain_old_count`` feature.
+    This test targets `Pulp #2785 <https://pulp.plan.io/issues/2785>`_.
+    """
 
-        Specifically, do the following:
+    @classmethod
+    def setUpClass(cls):
+        """Create, populate and publish a repository.
 
-        1. Create, populate and publish repository. Ensure at least two
-           versions of some RPM are present.
-        2. Create and sync a second repository whose feed references the first
-           repository and where ``retain_old_count`` is zero.
-        3. Inspect the two repositories. Assert that only the newest version of
-           any duplicate RPMs has been copied to the second repository.
+        Ensure at least two versions of an RPM are present in the repository.
         """
-        cfg = config.get_config()
-        if check_issue_2277(cfg):
-            raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
-        utils.pulp_admin_login(cfg)
-        repo_ids = tuple(utils.uuid4() for _ in range(2))
-        relative_url = utils.uuid4() + '/'
-        client = cli.Client(cfg)
-
-        # Create, populate and publish a repo.
+        cls.cfg = config.get_config()
+        cls.repo_id = None
+        cls.relative_url = utils.uuid4() + '/'
+        utils.pulp_admin_login(cls.cfg)
+        client = cli.Client(cls.cfg)
+        repo_id = utils.uuid4()
         client.run((
-            'pulp-admin', 'rpm', 'repo', 'create', '--repo-id', repo_ids[0],
-            '--feed', RPM_UNSIGNED_FEED_URL, '--relative-url', relative_url
+            'pulp-admin', 'rpm', 'repo', 'create', '--repo-id', repo_id,
+            '--feed', RPM_UNSIGNED_FEED_URL, '--relative-url', cls.relative_url
         ))
-        self.addCleanup(client.run, (
-            'pulp-admin', 'rpm', 'repo', 'delete', '--repo-id', repo_ids[0],
-        ))
-        client.run((
-            'pulp-admin', 'rpm', 'repo', 'sync', 'run', '--repo-id',
-            repo_ids[0]
-        ))
-
-        # Create and sync a second repository.
-        client.run((
-            'pulp-admin', 'rpm', 'repo', 'create',
-            '--repo-id', repo_ids[1],
-            '--feed', urljoin(cfg.base_url, 'pulp/repos/' + relative_url),
-            '--retain-old-count', '0',
-        ))
-        self.addCleanup(client.run, (
-            'pulp-admin', 'rpm', 'repo', 'delete', '--repo-id', repo_ids[1],
-        ))
-        client.run((
-            'pulp-admin', 'rpm', 'repo', 'sync', 'run', '--repo-id',
-            repo_ids[1],
-        ))
-
-        # Inspect the repos. Most of the RPMs in the first repo are unique.
-        # However, there are two versions of the "walrus" RPM, and when
-        # ``retain_old_count=0``, zero old versions should be copied over.
-        contents = [
+        cls.repo_id = repo_id
+        del repo_id
+        try:
             client.run((
+                'pulp-admin', 'rpm', 'repo', 'sync', 'run', '--repo-id',
+                cls.repo_id
+            ))
+            cls.content = client.run((
                 'pulp-admin', 'rpm', 'repo', 'content', 'rpm', '--repo-id',
-                repo_id
+                cls.repo_id
             )).stdout
-            for repo_id in repo_ids
-        ]
+        except:
+            cls.tearDownClass()
+            raise
+
+    @classmethod
+    def tearDownClass(cls):
+        """Destroy the repository created by :meth:`setUpClass`."""
+        if cls.repo_id:
+            cli.Client(cls.cfg).run((
+                'pulp-admin', 'rpm', 'repo', 'delete', '--repo-id', cls.repo_id
+            ))
+
+    def test_retain_zero(self):
+        """Give ``retain_old_count`` a value of zero.
+
+        Create a repository whose feed references the repository created by
+        :meth:`setUpClass`, and whose ``retain_old_count`` option is zero.
+        Sync the repository, and assert that zero old versions of any duplicate
+        RPMs were copied over.
+        """
+        content = self.create_sync_repo(0)
         matcher = re.compile(r'^Name:\s+walrus$', re.MULTILINE)
-        matches = [matcher.findall(content) for content in contents]
+        matches = [matcher.findall(_) for _ in (self.content, content)]
         self.assertEqual(len(matches[0]) - 1, len(matches[1]))
+
+    def test_retain_one(self):
+        """Give ``retain_old_count`` a value of one.
+
+        Create a repository whose feed references the repository created in
+        :meth:`setUpClass`, and whose ``retain_old_count`` option is one. Sync
+        the repository, and assert that one old version of any duplicate RPMs
+        were copied over.
+        """
+        content = self.create_sync_repo(1)
+        matcher = re.compile(r'^Name:\s+walrus$', re.MULTILINE)
+        matches = [matcher.findall(_) for _ in (self.content, content)]
+        self.assertEqual(len(matches[0]), len(matches[1]))
+
+    def create_sync_repo(self, retain_old_count):
+        """Create and sync a repository. Return information about it.
+
+        Implement the logic described by the ``test_retain_*`` methods.
+        """
+        client = cli.Client(self.cfg)
+        repo_id = utils.uuid4()
+        feed = urljoin(self.cfg.base_url, 'pulp/repos/' + self.relative_url)
+        client.run((
+            'pulp-admin', 'rpm', 'repo', 'create', '--repo-id', repo_id,
+            '--feed', feed, '--retain-old-count', str(retain_old_count),
+        ))
+        self.addCleanup(client.run, (
+            'pulp-admin', 'rpm', 'repo', 'delete', '--repo-id', repo_id,
+        ))
+        client.run((
+            'pulp-admin', 'rpm', 'repo', 'sync', 'run', '--repo-id', repo_id,
+        ))
+        return client.run((
+            'pulp-admin', 'rpm', 'repo', 'content', 'rpm', '--repo-id', repo_id
+        )).stdout
