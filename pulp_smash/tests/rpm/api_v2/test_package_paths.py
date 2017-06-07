@@ -43,7 +43,7 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     gen_repo,
     get_unit,
 )
-from pulp_smash.tests.rpm.utils import check_issue_2354
+from pulp_smash.tests.rpm.utils import check_issue_2354, check_issue_2798
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -71,6 +71,8 @@ class ReuseContentTestCase(unittest.TestCase):
     def test_all(self):
         """Sync two repositories w/identical content but differing layouts."""
         cfg = config.get_config()
+        if check_issue_2798(cfg):
+            self.skipTest('https://pulp.plan.io/issues/2798')
         if check_issue_2354(cfg):
             self.skipTest('https://pulp.plan.io/issues/2354')
         repos = [
