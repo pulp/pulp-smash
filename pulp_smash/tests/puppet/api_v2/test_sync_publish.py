@@ -189,7 +189,7 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
 
     def sync_repo(self, repo):
         """Sync a repository, and verify no tasks contain an error message."""
-        report = utils.sync_repo(self.cfg, repo['_href']).json()
+        report = utils.sync_repo(self.cfg, repo).json()
         for task in api.poll_spawned_tasks(self.cfg, report):
             self.assertIsNone(
                 task['progress_report']['puppet_importer']['metadata']['error_message']  # noqa pylint:disable=line-too-long
@@ -258,7 +258,7 @@ class SyncNoFeedTestCase(utils.BaseAPITestCase):
         # Sync the repository. An error *should* occur. We just want the error
         # to be sane.
         with self.assertRaises(exceptions.TaskReportError) as err:
-            utils.sync_repo(cfg, repo['_href'])
+            utils.sync_repo(cfg, repo)
         with self.subTest(comment='check task "error" field'):
             self.assertIsNotNone(err.exception.task['error'])
             self.assertNotEqual(
@@ -288,7 +288,7 @@ class SyncValidManifestFeedTestCase(utils.BaseAPITestCase):
         cls.resources.add(repo['_href'])
 
         # Trigger a repository sync and collect completed tasks.
-        cls.report = utils.sync_repo(cls.cfg, repo['_href'])
+        cls.report = utils.sync_repo(cls.cfg, repo)
         cls.tasks = list(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
 
     def test_status_code(self):

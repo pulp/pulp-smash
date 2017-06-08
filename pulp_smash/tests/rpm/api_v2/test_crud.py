@@ -98,7 +98,7 @@ class PulpDistributionTestCase(utils.BaseAPITestCase):
         }
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(self.cfg, repo['_href'])
+        utils.sync_repo(self.cfg, repo)
         repo = client.get(repo['_href'], params={'details': True})
         self.assertEqual(repo['content_unit_counts']['distribution'], 1)
         cli_client = cli.Client(self.cfg, cli.code_handler)
@@ -249,7 +249,7 @@ class LastUnitAddedTestCase(utils.BaseAPITestCase):
         4. Assert the repository's ``last_unit_added`` attribute is non-null.
         """
         self.assertIsNone(self.repo['last_unit_added'])
-        utils.sync_repo(self.cfg, self.repo['_href'])
+        utils.sync_repo(self.cfg, self.repo)
         self.repo = self.client.get(
             self.repo['_href'], params={'details': True})
         self.assertIsNotNone(self.repo['last_unit_added'])
@@ -271,7 +271,7 @@ class LastUnitAddedTestCase(utils.BaseAPITestCase):
             self.skipTest('https://pulp.plan.io/issues/2688')
 
         # create a repo with a feed and sync it
-        utils.sync_repo(self.cfg, self.repo['_href'])
+        utils.sync_repo(self.cfg, self.repo)
         self.repo = self.client.get(
             self.repo['_href'], params={'details': True})
 

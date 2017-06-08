@@ -81,10 +81,10 @@ class _BaseTestCase(unittest.TestCase):
         body = gen_repo()
         body['importer_config'] = importer_config
         self.addCleanup(client.delete, ORPHANS_PATH)
-        repo_href = client.post(REPOSITORY_PATH, body)['_href']
-        self.addCleanup(client.delete, repo_href)
-        utils.sync_repo(self.cfg, repo_href)
-        return client.get(repo_href)
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        utils.sync_repo(self.cfg, repo)
+        return client.get(repo['_href'])
 
 
 class RequireValidKeyTestCase(_BaseTestCase):

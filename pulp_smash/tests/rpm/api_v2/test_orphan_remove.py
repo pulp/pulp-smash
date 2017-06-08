@@ -55,7 +55,7 @@ class OrphansTestCase(unittest.TestCase):
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         try:
-            utils.sync_repo(cfg, repo['_href'])
+            utils.sync_repo(cfg, repo)
         finally:
             client.delete(repo['_href'])
         cls.orphans_available = False

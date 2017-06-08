@@ -89,7 +89,7 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         # Create, sync and publish a repository.
         repo = _create_repo(cls.cfg, 'background')
         cls.resources.add(repo['_href'])
-        report = utils.sync_repo(cls.cfg, repo['_href']).json()
+        report = utils.sync_repo(cls.cfg, repo).json()
 
         # Record the tasks spawned when syncing the repository, and the state
         # of the repository itself after the sync.
@@ -161,7 +161,7 @@ class OnDemandTestCase(utils.BaseAPITestCase):
         # Create, sync and publish a repository.
         repo = _create_repo(cls.cfg, 'on_demand')
         cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo['_href'])
+        utils.sync_repo(cls.cfg, repo)
 
         # Read the repository.
         client = api.Client(cls.cfg)
@@ -258,7 +258,7 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
         # Create, sync and publish a repository.
         repo = _create_repo(cls.cfg, 'on_demand')
         cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo['_href'])
+        utils.sync_repo(cls.cfg, repo)
 
         # Trigger a repository download. Read the repo before and after.
         api_client = api.Client(cls.cfg, api.json_handler)
@@ -397,7 +397,7 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
             repo['_href'], params={'details': True}).json()
         self.assertEqual(
             repo['importers'][0]['config']['download_policy'], second)
-        report = utils.sync_repo(self.cfg, repo['_href']).json()
+        report = utils.sync_repo(self.cfg, repo).json()
         tasks = tuple(api.poll_spawned_tasks(self.cfg, report))
         return repo, tasks
 

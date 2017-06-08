@@ -59,9 +59,9 @@ class SyncRepoBaseTestCase(utils.BaseAPITestCase):
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = cls.get_feed_url()
-        cls.repo_href = client.post(REPOSITORY_PATH, body)['_href']
-        cls.resources.add(cls.repo_href)
-        cls.report = utils.sync_repo(cls.cfg, cls.repo_href)
+        cls.repo = client.post(REPOSITORY_PATH, body)
+        cls.resources.add(cls.repo['_href'])
+        cls.report = utils.sync_repo(cls.cfg, cls.repo)
 
     @staticmethod
     def get_feed_url():
@@ -113,7 +113,7 @@ class SyncRpmRepoTestCase(SyncRepoBaseTestCase):
         }
         if self.cfg.version >= Version('2.9'):  # langpack support added in 2.9
             content_unit_counts['package_langpacks'] = 1
-        repo = api.Client(self.cfg).get(self.repo_href).json()
+        repo = api.Client(self.cfg).get(self.repo['_href']).json()
         self.assertEqual(repo['content_unit_counts'], content_unit_counts)
 
     def test_no_change_in_second_sync(self):
@@ -122,7 +122,7 @@ class SyncRpmRepoTestCase(SyncRepoBaseTestCase):
         If the repository have not changed then Pulp must state that anything
         was changed when doing a second sync.
         """
-        report = utils.sync_repo(self.cfg, self.repo_href)
+        report = utils.sync_repo(self.cfg, self.repo)
         tasks = tuple(api.poll_spawned_tasks(self.cfg, report.json()))
         with self.subTest(comment='spawned tasks'):
             self.assertEqual(len(tasks), 1)
@@ -251,7 +251,7 @@ class SyncInvalidMetadataTestCase(unittest.TestCase):
         self.addCleanup(client.delete, repo['_href'])
 
         with self.assertRaises(exceptions.TaskReportError) as context:
-            utils.sync_repo(cfg, repo['_href'])
+            utils.sync_repo(cfg, repo)
         task = context.exception.task
         self.assertEqual(
             'NOT_STARTED',
@@ -302,7 +302,7 @@ class ChangeFeedTestCase(utils.BaseAPITestCase):
         self.assertEqual(repo['importers'][0]['config']['feed'], feed)
 
         # Sync and publish repository C.
-        utils.sync_repo(self.cfg, repo['_href'])
+        utils.sync_repo(self.cfg, repo)
         utils.publish_repo(self.cfg, repo)
 
         rpm = utils.http_get(RPM_UNSIGNED_URL)
@@ -327,7 +327,7 @@ class ChangeFeedTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(self.cfg, repo['_href'])
+        utils.sync_repo(self.cfg, repo)
         utils.publish_repo(self.cfg, repo)
         return repo
 
@@ -386,7 +386,7 @@ class SyncInParallelTestCase(unittest.TestCase):
             thread.join()
 
         threads = tuple(
-            Thread(target=utils.sync_repo, args=(cfg, repo['_href']))
+            Thread(target=utils.sync_repo, args=(cfg, repo))
             for repo in repos
         )
         for thread in threads:

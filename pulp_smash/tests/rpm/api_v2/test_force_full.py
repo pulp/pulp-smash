@@ -34,7 +34,7 @@ class ForceFullTestCase(utils.BaseAPITestCase):
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo['_href'])
+        utils.sync_repo(cls.cfg, repo)
         cls.repo = client.get(repo['_href'], params={'details': True})
 
     def get_step(self, steps, step_type):

@@ -323,7 +323,7 @@ class ForceFullTestCase(
             'ssh_identity_file': ssh_identity_file,
             'ssh_user': ssh_user,
         }})
-        utils.sync_repo(cfg, repo['_href'])
+        utils.sync_repo(cfg, repo)
 
         # Publish the repo with the yum and rsync distributors, respectively.
         # Verify that the RPM rsync distributor has placed files.
@@ -492,7 +492,7 @@ class RemoteUnitsPathTestCase(
             'remote_units_path': paths[0],
         })
         distribs = get_dists_by_type_id(cfg, repo)
-        utils.sync_repo(cfg, repo['_href'])
+        utils.sync_repo(cfg, repo)
 
         # Publish the repo with the yum and rpm rsync distributors,
         # respectively. Verify that files have been correctly placed.
@@ -545,7 +545,7 @@ class DeleteTestCase(
             'ssh_identity_file': ssh_identity_file,
             'ssh_user': ssh_user,
         }})
-        utils.sync_repo(cfg, repo['_href'])
+        utils.sync_repo(cfg, repo)
 
         # Publish the repo with the yum and rsync distributors, respectively.
         # Verify that the RPM rsync distributor has placed files.

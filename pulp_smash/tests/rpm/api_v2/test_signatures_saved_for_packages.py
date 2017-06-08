@@ -187,10 +187,10 @@ class SyncPackageTestCase(_BaseTestCase):
         self.addCleanup(self.client.delete, ORPHANS_PATH)
         body = gen_repo()
         body['importer_config']['feed'] = feed_url
-        repo_href = self.client.post(REPOSITORY_PATH, body)['_href']
-        self.addCleanup(self.client.delete, repo_href)
-        utils.sync_repo(self.cfg, repo_href)
-        return repo_href
+        repo = self.client.post(REPOSITORY_PATH, body)
+        self.addCleanup(self.client.delete, repo['_href'])
+        utils.sync_repo(self.cfg, repo)
+        return repo['_href']
 
     def test_signed_drpm(self):
         """Assert signature is stored for signed drpm during sync."""

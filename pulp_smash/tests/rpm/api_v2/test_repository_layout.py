@@ -120,7 +120,7 @@ class RepositoryLayoutTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(self.cfg, repo['_href'])
+        utils.sync_repo(self.cfg, repo)
         distributor = client.post(
             urljoin(repo['_href'], 'distributors/'),
             gen_distributor(),

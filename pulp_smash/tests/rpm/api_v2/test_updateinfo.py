@@ -360,7 +360,7 @@ class UpdateRepoTestCase(utils.BaseAPITestCase):
         * one of its child ``<package>`` elements has a "name" attribute equal
           to :data:`pulp_smash.constants.RPM_ERRATUM_RPM_NAME`.
         """
-        utils.sync_repo(self.cfg, self.repo['_href'])
+        utils.sync_repo(self.cfg, self.repo)
         utils.publish_repo(self.cfg, self.repo)
         updates_element = (
             get_repodata(self.cfg, self.repo['distributors'][0], 'updateinfo')
@@ -433,7 +433,7 @@ class PkglistsTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(cfg, repo['_href'])
+        utils.sync_repo(cfg, repo)
         utils.publish_repo(cfg, repo)
 
         # Fetch and parse ``updateinfo.xml``.
@@ -500,7 +500,7 @@ class CleanUpTestCase(unittest.TestCase):
 
     def test_01_first_publish(self):
         """Populate and publish the repository."""
-        utils.sync_repo(self.cfg, self.repo['_href'])
+        utils.sync_repo(self.cfg, self.repo)
         client = api.Client(self.cfg)
         client.post(urljoin(self.repo['_href'], 'actions/unassociate/'), {
             'criteria': {
@@ -521,7 +521,7 @@ class CleanUpTestCase(unittest.TestCase):
 
     def test_02_second_publish(self):
         """Add an additional content unit and publish the repository again."""
-        utils.sync_repo(self.cfg, self.repo['_href'])
+        utils.sync_repo(self.cfg, self.repo)
         utils.publish_repo(self.cfg, self.repo)
         self.updateinfo_xml_hrefs.append(self.get_updateinfo_xml_href())
 

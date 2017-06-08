@@ -80,7 +80,7 @@ class ReuseContentTestCase(unittest.TestCase):
             for feed in (RPM_ALT_LAYOUT_FEED_URL, RPM_UNSIGNED_FEED_URL)
         ]
         for repo in repos:
-            utils.sync_repo(cfg, repo['_href'])
+            utils.sync_repo(cfg, repo)
         for repo in repos:
             utils.publish_repo(cfg, repo)
         rpms = []

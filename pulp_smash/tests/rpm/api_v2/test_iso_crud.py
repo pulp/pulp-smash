@@ -322,7 +322,7 @@ class PulpManifestTestCase(utils.BaseAPITestCase):
         client = api.Client(self.cfg, api.json_handler)
         repo = client.post(REPOSITORY_PATH, _gen_iso_repo(FILE_FEED_URL))
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(self.cfg, repo['_href'])
+        utils.sync_repo(self.cfg, repo)
         repo = client.get(repo['_href'], params={'details': True})
         self.assertEqual(repo['total_repository_units'], pulp_manifest_count)
         self.assertEqual(
@@ -346,7 +346,7 @@ class PulpManifestTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, _gen_iso_repo(FILE_MIXED_FEED_URL))
         self.addCleanup(client.delete, repo['_href'])
         with self.assertRaises(exceptions.TaskReportError) as context:
-            utils.sync_repo(self.cfg, repo['_href'])
+            utils.sync_repo(self.cfg, repo)
         task = context.exception.task
         self.assertIsNotNone(task['error'])
         # Description is a string generated after a Python's list of dicts

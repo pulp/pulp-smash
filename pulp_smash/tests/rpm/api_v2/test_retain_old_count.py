@@ -35,7 +35,7 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
         cls.resources.add(cls.repo['_href'])
         try:
             cls.repo = client.get(cls.repo['_href'], params={'details': True})
-            utils.sync_repo(cls.cfg, cls.repo['_href'])
+            utils.sync_repo(cls.cfg, cls.repo)
             utils.publish_repo(cls.cfg, cls.repo)
             cls.repo = client.get(cls.repo['_href'], params={'details': True})
         except:
@@ -84,5 +84,5 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
         body['importer_config']['ssl_validation'] = False
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(self.cfg, repo['_href'])
+        utils.sync_repo(self.cfg, repo)
         return client.get(repo['_href'], params={'details': True})

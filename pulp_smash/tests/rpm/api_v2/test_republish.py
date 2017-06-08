@@ -55,7 +55,7 @@ class RepublishTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(cfg, repo['_href'])
+        utils.sync_repo(cfg, repo)
         utils.publish_repo(cfg, repo)
 
         # Pick a random content unit and verify it's accessible.

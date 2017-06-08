@@ -117,7 +117,7 @@ class SyncTestCase(_SyncMixin, utils.BaseAPITestCase):
         body['importer_config']['branches'] = [OSTREE_BRANCH]
         repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
         cls.resources.add(repo['_href'])
-        cls.report = utils.sync_repo(cls.cfg, repo['_href'])
+        cls.report = utils.sync_repo(cls.cfg, repo)
         cls.tasks = tuple(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
 
     def test_task_progress_report(self):

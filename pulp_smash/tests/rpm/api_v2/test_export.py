@@ -186,7 +186,7 @@ class BaseExportChecksumTypeTestCase(ExportDirMixin, utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         cls.repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
         cls.resources.add(cls.repo['_href'])
-        utils.sync_repo(cls.cfg, cls.repo['_href'])
+        utils.sync_repo(cls.cfg, cls.repo)
 
     def _publish_to_web(self, entity, distributor):
         """Publish ``entity`` to web using the ``distributor``.
@@ -421,7 +421,7 @@ class ExportDistributorTestCase(ExportDirMixin, utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         cls.repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
         cls.resources.add(cls.repo['_href'])
-        utils.sync_repo(cls.cfg, cls.repo['_href'])
+        utils.sync_repo(cls.cfg, cls.repo)
         if (cls.cfg.version >= Version('2.9') and
                 selectors.bug_is_untestable(1928, cls.cfg.version)):
             cls.distributor = None

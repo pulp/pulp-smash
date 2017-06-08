@@ -38,7 +38,7 @@ class CreateSuccessTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body).json()
         cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo['_href'])
+        utils.sync_repo(cls.cfg, repo)
 
         # Schedule a publish to run every 30 seconds
         distributor = gen_distributor()
@@ -91,7 +91,7 @@ class CreateFailureTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body).json()
         cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo['_href'])
+        utils.sync_repo(cls.cfg, repo)
 
         # Add a distibutor
         distributor = gen_distributor()
@@ -162,7 +162,7 @@ class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo['_href'])
+        utils.sync_repo(cls.cfg, repo)
 
         # Create schedules
         distributor = gen_distributor()
@@ -270,7 +270,7 @@ class ScheduledPublishTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo['_href'])
+        utils.sync_repo(cls.cfg, repo)
 
         # Schedule a publish to run every 2 minutes
         distributor = gen_distributor()

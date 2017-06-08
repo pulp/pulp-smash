@@ -73,7 +73,7 @@ class BaseTestCase(unittest.TestCase):
         }
         repo = client.post(constants.REPOSITORY_PATH, body)
         self.repos.append(repo)
-        call_report = utils.sync_repo(self.cfg, repo['_href'])
+        call_report = utils.sync_repo(self.cfg, repo)
         with self.subTest(comment='verify the sync succeeded'):
             self.verify_sync(self.cfg, call_report)
         with self.subTest(comment='verify content units are present'):
@@ -129,7 +129,7 @@ class SyncTestCase(BaseTestCase):
         body['distributors'] = [gen_distributor()]
         repo = client.post(constants.REPOSITORY_PATH, body)
         self.repos.append(repo)
-        call_report = utils.sync_repo(self.cfg, repo['_href'])
+        call_report = utils.sync_repo(self.cfg, repo)
         with self.subTest(comment='verify the sync succeeded'):
             self.verify_sync(self.cfg, call_report)
         with self.subTest(comment='verify content units are present'):

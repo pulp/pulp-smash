@@ -46,7 +46,7 @@ class BaseSearchTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = cls.get_feed_url()
         cls.repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
         cls.resources.add(cls.repo['_href'])
-        utils.sync_repo(cls.cfg, cls.repo['_href'])
+        utils.sync_repo(cls.cfg, cls.repo)
 
     @staticmethod
     def get_feed_url():

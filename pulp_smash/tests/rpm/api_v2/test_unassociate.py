@@ -56,7 +56,7 @@ class RemoveUnitsTestCase(unittest.TestCase):
         body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
         cls.repo = client.post(REPOSITORY_PATH, body).json()
         try:
-            utils.sync_repo(cls.cfg, cls.repo['_href'])
+            utils.sync_repo(cls.cfg, cls.repo)
             cls.initial_units = utils.search_units(cls.cfg, cls.repo)
         except:
             cls.tearDownClass()
@@ -296,7 +296,7 @@ class SelectiveAssociateTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(self.cfg, repo['_href'])
+        utils.sync_repo(self.cfg, repo)
         rpm_units = (
             _get_units_by_type(utils.search_units(self.cfg, repo), 'rpm')
         )

@@ -469,18 +469,17 @@ def get_unit_type_ids(server_config):
     return {unit_type['id'] for unit_type in unit_types}
 
 
-def sync_repo(server_config, href):
-    """Sync the referenced repository via the API. Return the server response.
+def sync_repo(cfg, repo):
+    """Sync a repository.
 
-    Checks are run against the server's response. If the sync appears to have
-    failed, an exception is raised.
-
-    :param pulp_smash.config.PulpSmashConfig server_config: Information about
-        the Pulp deployment being targeted.
-    :param href: The API v2 path to the repository to sync.
-    :returns: The server's response.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        host.
+    :param repo: A dict of detailed information about the repository to be
+        published.
+    :returns: The server's reponse. Call ``.json()`` on the response to get a
+        call report.
     """
-    return api.Client(server_config).post(urljoin(href, 'actions/sync/'))
+    return api.Client(cfg).post(urljoin(repo['_href'], 'actions/sync/'))
 
 
 def get_sha256_checksum(url):

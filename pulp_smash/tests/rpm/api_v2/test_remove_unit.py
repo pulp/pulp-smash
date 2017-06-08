@@ -71,7 +71,7 @@ class RemoveMissingTestCase(unittest.TestCase):
         body['distributors'] = [gen_distributor()]
         self.repos['root'] = client.post(REPOSITORY_PATH, body)
         self.repos['root'] = _get_details(self.cfg, self.repos['root'])
-        utils.sync_repo(self.cfg, self.repos['root']['_href'])
+        utils.sync_repo(self.cfg, self.repos['root'])
         utils.publish_repo(self.cfg, self.repos['root'])
 
     def test_02_create_immediate_child(self):
@@ -95,7 +95,7 @@ class RemoveMissingTestCase(unittest.TestCase):
         self.repos['immediate'] = (
             _get_details(self.cfg, self.repos['immediate'])
         )
-        utils.sync_repo(self.cfg, self.repos['immediate']['_href'])
+        utils.sync_repo(self.cfg, self.repos['immediate'])
 
         # Verify the two repositories have the same contents.
         root_ids = _get_rpm_ids(_get_rpms(self.cfg, self.repos['root']))
@@ -125,7 +125,7 @@ class RemoveMissingTestCase(unittest.TestCase):
         self.repos['on demand'] = (
             _get_details(self.cfg, self.repos['on demand'])
         )
-        utils.sync_repo(self.cfg, self.repos['on demand']['_href'])
+        utils.sync_repo(self.cfg, self.repos['on demand'])
 
         # Verify the two repositories have the same contents.
         root_ids = _get_rpm_ids(_get_rpms(self.cfg, self.repos['root']))
@@ -156,7 +156,7 @@ class RemoveMissingTestCase(unittest.TestCase):
 
         Verify it has the same contents as the root repository.
         """
-        utils.sync_repo(self.cfg, self.repos['immediate']['_href'])
+        utils.sync_repo(self.cfg, self.repos['immediate'])
         root_ids = _get_rpm_ids(_get_rpms(self.cfg, self.repos['root']))
         immediate_ids = _get_rpm_ids(
             _get_rpms(self.cfg, self.repos['immediate'])
@@ -168,7 +168,7 @@ class RemoveMissingTestCase(unittest.TestCase):
 
         Verify it has the same contents as the root repository.
         """
-        utils.sync_repo(self.cfg, self.repos['on demand']['_href'])
+        utils.sync_repo(self.cfg, self.repos['on demand'])
         root_ids = _get_rpm_ids(_get_rpms(self.cfg, self.repos['root']))
         on_demand_ids = _get_rpm_ids(
             _get_rpms(self.cfg, self.repos['on demand'])

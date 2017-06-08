@@ -140,7 +140,7 @@ class SyncRepoTestCase(utils.BaseAPITestCase):
         repo = client.get(repo['_href'], params={'details': True})
 
         # Sync and publish the repo.
-        utils.sync_repo(cls.cfg, repo['_href'])
+        utils.sync_repo(cls.cfg, repo)
         utils.publish_repo(cls.cfg, repo)
 
         # Fetch and parse comps.xml.

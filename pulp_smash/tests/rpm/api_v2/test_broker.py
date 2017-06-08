@@ -122,7 +122,7 @@ class BrokerTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(self.cfg, repo['_href'])
+        utils.sync_repo(self.cfg, repo)
         utils.publish_repo(self.cfg, repo)
         pulp_rpm = get_unit(self.cfg, repo['distributors'][0], RPM).content
 

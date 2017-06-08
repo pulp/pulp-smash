@@ -76,7 +76,7 @@ def setUpModule():  # pylint:disable=invalid-name
     _REPO.update(client.post(REPOSITORY_PATH, body))
     _CLEANUP.append((client.delete, [_REPO['_href']], {}))
     try:
-        utils.sync_repo(cfg, _REPO['_href'])
+        utils.sync_repo(cfg, _REPO)
     except (exceptions.CallReportError, exceptions.TaskReportError,
             exceptions.TaskTimedOutError):
         tearDownModule()

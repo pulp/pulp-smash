@@ -96,7 +96,7 @@ class ServeHttpsFalseTestCase(TemporaryUserMixin, unittest.TestCase):
         #     "/var/lib/pulp/published/https/isos/repo-id/PULP_MANIFEST"
         #     failed: No such file or directory (2)
         #
-        utils.sync_repo(self.cfg, repo['_href'])
+        utils.sync_repo(self.cfg, repo)
         dists = get_dists_by_type_id(self.cfg, repo)
         utils.publish_repo(self.cfg, repo, {
             'id': dists['iso_distributor']['id'],

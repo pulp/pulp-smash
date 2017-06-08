@@ -80,7 +80,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
         super().setUp()
         self.repo = create_docker_repo(self.cfg, DOCKER_UPSTREAM_NAME)
         self.addCleanup(api.Client(self.cfg).delete, self.repo['_href'])
-        utils.sync_repo(self.cfg, self.repo['_href'])
+        utils.sync_repo(self.cfg, self.repo)
         self.repo = api.Client(self.cfg, api.json_handler).get(
             self.repo['_href'], params={'details': True})
         self.tags = self._get_tags()
@@ -210,7 +210,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
         """Check if tagging fail for a manifest from another repo."""
         other = create_docker_repo(self.cfg, 'library/swarm')
         self.addCleanup(api.Client(self.cfg).delete, other['_href'])
-        utils.sync_repo(self.cfg, other['_href'])
+        utils.sync_repo(self.cfg, other)
         other = api.Client(self.cfg, api.json_handler).get(
             other['_href'], params={'details': True})
         other_manifest = random.choice(utils.search_units(

@@ -169,7 +169,10 @@ class SyncRepoTestCase(unittest.TestCase):
     def test_post(self):
         """Assert the function makes an HTTP POST request."""
         with mock.patch.object(api, 'Client') as client:
-            response = utils.sync_repo(mock.Mock(), 'http://example.com')
+            response = utils.sync_repo(
+                mock.Mock(),
+                {'_href': 'http://example.com'},
+            )
         self.assertIs(response, client.return_value.post.return_value)
 
 

@@ -130,7 +130,7 @@ class GoodMirrorlistTestCase(UtilsMixin, unittest.TestCase):
         self.check_issue_2277(cfg)
         self.check_issue_2326(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_GOOD)
-        utils.sync_repo(cfg, repo['_href'])
+        utils.sync_repo(cfg, repo)
         utils.publish_repo(cfg, repo)
         actual_rpm = get_unit(cfg, repo['distributors'][0], RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
@@ -146,7 +146,7 @@ class GoodRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
         self.check_issue_2277(cfg)
         self.check_issue_2326(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_GOOD, _gen_rel_url())
-        utils.sync_repo(cfg, repo['_href'])
+        utils.sync_repo(cfg, repo)
         utils.publish_repo(cfg, repo)
         actual_rpm = get_unit(cfg, repo['distributors'][0], RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
@@ -168,7 +168,7 @@ class MixedMirrorlistTestCase(UtilsMixin, unittest.TestCase):
         self.check_issue_2277(cfg)
         self.check_issue_2321(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_MIXED)
-        utils.sync_repo(cfg, repo['_href'])
+        utils.sync_repo(cfg, repo)
         utils.publish_repo(cfg, repo)
         actual_rpm = get_unit(cfg, repo['distributors'][0], RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
@@ -184,7 +184,7 @@ class MixedRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
         self.check_issue_2277(cfg)
         self.check_issue_2321(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_MIXED, _gen_rel_url())
-        utils.sync_repo(cfg, repo['_href'])
+        utils.sync_repo(cfg, repo)
         utils.publish_repo(cfg, repo)
         actual_rpm = get_unit(cfg, repo['distributors'][0], RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
@@ -207,7 +207,7 @@ class BadMirrorlistTestCase(UtilsMixin, unittest.TestCase):
         self.check_issue_2363(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_BAD)
         with self.assertRaises(TaskReportError):
-            utils.sync_repo(cfg, repo['_href'])
+            utils.sync_repo(cfg, repo)
 
 
 class BadRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
@@ -219,4 +219,4 @@ class BadRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
         self.check_issue_2363(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_BAD, _gen_rel_url())
         with self.assertRaises(TaskReportError):
-            utils.sync_repo(cfg, repo['_href'])
+            utils.sync_repo(cfg, repo)

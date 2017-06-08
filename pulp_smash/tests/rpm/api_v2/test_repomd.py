@@ -135,7 +135,7 @@ class FastForwardIntegrityTestCase(unittest.TestCase):
         # Create a dummy-primary.xml. Trigger an incremental fast-forward pub.
         # Fast-forward publish described here: https://pulp.plan.io/issues/2113
         self._create_dummy_primary_xml(cfg, repo, old_phrase, new_phrase)
-        utils.sync_repo(cfg, repo['_href'])
+        utils.sync_repo(cfg, repo)
         utils.publish_repo(cfg, repo)
         primary_xml = self._read_primary_xml(cfg, repo)
         self.assertIn(old_phrase, primary_xml)
@@ -199,7 +199,7 @@ class FastForwardIntegrityTestCase(unittest.TestCase):
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(cfg, repo['_href'])
+        utils.sync_repo(cfg, repo)
         repo = client.get(repo['_href'], params={'details': True})
         return client.get(repo['_href'], params={'details': True})
 

@@ -34,7 +34,7 @@ class PublishTestCase(unittest.TestCase):
         self.addCleanup(client.delete, repo['_href'])
 
         # Sync the repository.
-        utils.sync_repo(cfg, repo['_href'])
+        utils.sync_repo(cfg, repo)
         repo = client.get(repo['_href'], params={'details': True})
         with self.subTest(comment='verify last_publish after sync'):
             self.assertIsNone(repo['distributors'][0]['last_publish'])
