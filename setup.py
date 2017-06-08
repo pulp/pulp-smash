@@ -35,6 +35,7 @@ setup(
          '(GPLv3+)'),
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
     packages=find_packages(include=['pulp_smash', 'pulp_smash.*']),
     install_requires=[
