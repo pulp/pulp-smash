@@ -14,7 +14,7 @@ from pulp_smash import api, config, utils
 from pulp_smash.constants import (
     CONSUMERS_ACTIONS_CONTENT_REGENERATE_APPLICABILITY_PATH,
     CONSUMERS_CONTENT_APPLICABILITY_PATH,
-    CONSUMER_PATH,
+    CONSUMERS_PATH,
     REPOSITORY_PATH,
     RPM_UNSIGNED_FEED_URL,
 )
@@ -143,11 +143,11 @@ class BasicTestCase(unittest.TestCase):
         # Create a consumer.
         client = api.Client(self.cfg, api.json_handler)
         consumer_id = utils.uuid4()
-        consumer = client.post(CONSUMER_PATH, {'id': consumer_id})
+        consumer = client.post(CONSUMERS_PATH, {'id': consumer_id})
         self.addCleanup(client.delete, consumer['consumer']['_href'])
 
         # Bind the consumer.
-        client.post(urljoin(CONSUMER_PATH, consumer_id + '/bindings/'), {
+        client.post(urljoin(CONSUMERS_PATH, consumer_id + '/bindings/'), {
             'distributor_id': self.repo['distributors'][0]['id'],
             'notify_agent': False,
             'repo_id': self.repo['id'],
@@ -158,7 +158,7 @@ class BasicTestCase(unittest.TestCase):
         rpm_with_erratum_metadata['version'] = '4.0'
         rpm_without_erratum_metadata = RPM_WITHOUT_ERRATUM_METADATA.copy()
         rpm_without_erratum_metadata['version'] = '0.0.1'
-        client.post(urljoin(CONSUMER_PATH, consumer_id + '/profiles/'), {
+        client.post(urljoin(CONSUMERS_PATH, consumer_id + '/profiles/'), {
             'content_type': 'rpm',
             'profile': [
                 rpm_with_erratum_metadata,
@@ -191,18 +191,18 @@ class BasicTestCase(unittest.TestCase):
         # Create a consumer.
         client = api.Client(self.cfg, api.json_handler)
         consumer_id = utils.uuid4()
-        consumer = client.post(CONSUMER_PATH, {'id': consumer_id})
+        consumer = client.post(CONSUMERS_PATH, {'id': consumer_id})
         self.addCleanup(client.delete, consumer['consumer']['_href'])
 
         # Bind the consumer.
-        client.post(urljoin(CONSUMER_PATH, consumer_id + '/bindings/'), {
+        client.post(urljoin(CONSUMERS_PATH, consumer_id + '/bindings/'), {
             'distributor_id': self.repo['distributors'][0]['id'],
             'notify_agent': False,
             'repo_id': self.repo['id'],
         })
 
         # Create a consumer profile.
-        client.post(urljoin(CONSUMER_PATH, consumer_id + '/profiles/'), {
+        client.post(urljoin(CONSUMERS_PATH, consumer_id + '/profiles/'), {
             'content_type': 'rpm',
             'profile': [
                 # The JSON serializer can't handle MappingProxyType objects.

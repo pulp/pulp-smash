@@ -31,7 +31,7 @@ CALL_REPORT_KEYS = frozenset(('error', 'result', 'spawned_tasks'))
     http://docs.pulpproject.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
 """
 
-CONSUMER_PATH = '/pulp/api/v2/consumers/'
+CONSUMERS_PATH = '/pulp/api/v2/consumers/'
 """See: `Consumer APIs`_.
 
 .. _Consumer APIs:
@@ -39,7 +39,7 @@ CONSUMER_PATH = '/pulp/api/v2/consumers/'
 """
 
 CONSUMERS_ACTIONS_CONTENT_REGENERATE_APPLICABILITY_PATH = urljoin(
-    CONSUMER_PATH,
+    CONSUMERS_PATH,
     'actions/content/regenerate_applicability/',
 )
 """See: `Content Applicability`_.
@@ -49,7 +49,7 @@ CONSUMERS_ACTIONS_CONTENT_REGENERATE_APPLICABILITY_PATH = urljoin(
 """
 
 CONSUMERS_CONTENT_APPLICABILITY_PATH = urljoin(
-    CONSUMER_PATH,
+    CONSUMERS_PATH,
     'content/applicability/',
 )
 """See: `Content Applicability`_.

@@ -8,7 +8,7 @@ import unittest
 from urllib.parse import urljoin
 
 from pulp_smash import api, config, utils
-from pulp_smash.constants import CONSUMER_PATH, REPOSITORY_PATH
+from pulp_smash.constants import CONSUMERS_PATH, REPOSITORY_PATH
 from pulp_smash.tests.rpm.api_v2.utils import gen_repo, gen_distributor
 
 
@@ -41,12 +41,12 @@ class BindConsumerTestCase(unittest.TestCase):
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body).json()
         self.addCleanup(client.delete, repo['_href'])
-        consumer = client.post(CONSUMER_PATH, {'id': utils.uuid4()}).json()
+        consumer = client.post(CONSUMERS_PATH, {'id': utils.uuid4()}).json()
         self.addCleanup(client.delete, consumer['consumer']['_href'])
 
         # Step 3
         repo = client.get(repo['_href'], params={'details': True}).json()
-        path = urljoin(CONSUMER_PATH, consumer['consumer']['id'] + '/')
+        path = urljoin(CONSUMERS_PATH, consumer['consumer']['id'] + '/')
         path = urljoin(path, 'bindings/')
         body = {
             'binding_config': {'B': 21},
