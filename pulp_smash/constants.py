@@ -38,6 +38,26 @@ CONSUMER_PATH = '/pulp/api/v2/consumers/'
     https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/consumer/index.html
 """
 
+CONSUMERS_ACTIONS_CONTENT_REGENERATE_APPLICABILITY_PATH = urljoin(
+    CONSUMER_PATH,
+    'actions/content/regenerate_applicability/',
+)
+"""See: `Content Applicability`_.
+
+.. _Content Applicability:
+    http://docs.pulpproject.org/dev-guide/integration/rest-api/consumer/applicability.html
+"""
+
+CONSUMERS_CONTENT_APPLICABILITY_PATH = urljoin(
+    CONSUMER_PATH,
+    'content/applicability/',
+)
+"""See: `Content Applicability`_.
+
+.. _Content Applicability:
+    http://docs.pulpproject.org/dev-guide/integration/rest-api/consumer/applicability.html
+"""
+
 CONTENT_SOURCES_PATH = '/etc/pulp/content/sources/conf.d'
 """See: `Content Sources`_.
 
