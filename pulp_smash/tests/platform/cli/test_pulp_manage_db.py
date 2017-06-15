@@ -69,6 +69,17 @@ class PositiveTestCase(BaseTestCase):
         ))
         cli.Client(self.cfg).run(self.cmd)
 
+    def test_dry_run(self):
+        """Make sure pulp-manage-db runs if --dry-run is passed."""
+        if selectors.bug_is_untestable(2776, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2776')
+        cmd = () if utils.is_root(self.cfg) else ('sudo',)
+        cmd += (
+            'runuser', '--shell', '/bin/sh', '--command',
+            'pulp-manage-db --dry-run', '-', 'apache'
+        )
+        cli.Client(self.cfg).run(cmd)
+
 
 class NegativeTestCase(BaseTestCase):
     """Assert ``pulp-manage-db`` doesn't run when inappropriate."""
