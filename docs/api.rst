@@ -47,7 +47,6 @@ developers, not a gospel.
     api/pulp_smash.tests.platform.api_v2.test_search
     api/pulp_smash.tests.platform.api_v2.test_user
     api/pulp_smash.tests.platform.cli
-    api/pulp_smash.tests.platform.cli.test_content_sources
     api/pulp_smash.tests.platform.cli.test_pulp_manage_db
     api/pulp_smash.tests.platform.cli.test_selinux
     api/pulp_smash.tests.puppet
@@ -73,6 +72,7 @@ developers, not a gospel.
     api/pulp_smash.tests.rpm.api_v2.test_character_encoding
     api/pulp_smash.tests.rpm.api_v2.test_comps_xml
     api/pulp_smash.tests.rpm.api_v2.test_content_applicability
+    api/pulp_smash.tests.rpm.api_v2.test_content_sources
     api/pulp_smash.tests.rpm.api_v2.test_crud
     api/pulp_smash.tests.rpm.api_v2.test_download_policies
     api/pulp_smash.tests.rpm.api_v2.test_duplicate_uploads
