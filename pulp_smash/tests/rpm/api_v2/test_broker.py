@@ -3,17 +3,18 @@
 
 Tests for `#55 <https://github.com/PulpQE/pulp-smash/issues/55>`_:
 
-> Pulp offers a collection of behaviors known as "reconnect support" for the
-> Pulp Broker. Here are the expected behaviors:
->
-> * If you start a Pulp service that connects to the broker and the broker is
->   not running or is not network accessible for some reason, the Pulp services
->   will wait-and-retry. It has a backoff behavior, but the important part is
->   that Pulp services don't exit if they can't connect due to availability,
->   and when the availability problem is resolved, the Pulp services reconnect.
-> * If you have a Pulp service connected to the broker and the broker shuts
->   down, the Pulp services need the wait-and-retry as described above. Once
->   the broker becomes available again the Pulp services should reconnect.
+    Pulp offers a collection of behaviors known as "reconnect support" for the
+    Pulp Broker. Here are the expected behaviors:
+
+    * If you start a Pulp service that connects to the broker and the broker is
+      not running or is not network accessible for some reason, the Pulp
+      services will wait-and-retry. It has a backoff behavior, but the
+      important part is that Pulp services don't exit if they can't connect due
+      to availability, and when the availability problem is resolved, the Pulp
+      services reconnect.
+    * If you have a Pulp service connected to the broker and the broker shuts
+      down, the Pulp services need the wait-and-retry as described above. Once
+      the broker becomes available again the Pulp services should reconnect.
 
 There are two scenarios to test here:
 
