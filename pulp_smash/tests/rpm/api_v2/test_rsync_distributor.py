@@ -698,12 +698,13 @@ class PublishTwiceTestCase(
         }})
 
         # Add content.
-        utils.upload_import_unit(
-            cfg,
-            utils.http_get(RPM_UNSIGNED_URL),
-            {'unit_type_id': 'rpm'},
-            repo
-        )
+        for url in (RPM_UNSIGNED_URL, RPM2_UNSIGNED_URL):
+            utils.upload_import_unit(
+                cfg,
+                utils.http_get(url),
+                {'unit_type_id': 'rpm'},
+                repo
+            )
         dists = get_dists_by_type_id(cfg, repo)
 
         # Publish with yum and rsync.
@@ -714,7 +715,7 @@ class PublishTwiceTestCase(
             publish_task = self.get_publish_task(cfg, report)
         num_processed = self.get_num_processed(publish_task)
         with self.subTest(comment='first rsync publish'):
-            self.assertGreater(num_processed, 0, publish_task)
+            self.assertEqual(num_processed, 2, publish_task)
 
         # Publish with yum and rsync again.
         for dist in 'yum_distributor', 'rpm_rsync_distributor':
