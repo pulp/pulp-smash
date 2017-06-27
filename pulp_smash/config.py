@@ -41,6 +41,7 @@ REQUIRED_ROLES = {
 OPTIONAL_ROLES = {
     'pulp cli',
     'squid',
+    'pulp consumer',
 }
 """Set of roles that can be present or not on a Pulp deployment."""
 
@@ -134,6 +135,9 @@ CONFIG_JSON_SCHEMA = {
                             }
                         },
                         'squid': {
+                            'type': 'object',
+                        },
+                        'pulp consumer': {
                             'type': 'object',
                         },
                     }

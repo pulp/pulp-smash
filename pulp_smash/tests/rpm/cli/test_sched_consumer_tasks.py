@@ -9,19 +9,6 @@ from pulp_smash.constants import RPM_UNSIGNED_FEED_URL
 from pulp_smash.tests.rpm.utils import set_up_module
 from pulp_smash.utils import is_root
 
-
-def consumer_not_enabled():
-    """See if pulp-consumer-client has been installed.
-
-    Return "True" if it has not been, indicating that
-    the test should be skipped.
-    """
-    cmd = cli.Client(config.get_config(), cli.echo_handler).run((
-        'rpm', '-q', 'pulp-consumer-client',
-    ))
-    return cmd.returncode != 0
-
-
 def setUpModule():  # pylint:disable=invalid-name
     """Execute common steps for rpm tests."""
     set_up_module()
@@ -39,17 +26,17 @@ class _BaseTestCase(unittest.TestCase):
         3) Create, sync, and publish a repository.
         4) Create a consumer and register it to the server
         """
-        utils.reset_pulp(config.get_config())
         cls.cfg = config.get_config()
+        try:
+            pulp_consumer = cls.cfg.get_systems('pulp consumer')[0]
+        except IndexError:
+            raise unittest.SkipTest('No pulp consumer system found -- skipping test')
         utils.pulp_admin_login(cls.cfg)
         cls.repo_id = utils.uuid4()
         cls.client = cli.Client(cls.cfg)
         cls.consumer_id = utils.uuid4()
         cls.sudo = () if is_root(config.get_config()) else ('sudo',)
         cls.pulp_auth = config.get_config().pulp_auth
-
-        if consumer_not_enabled():
-            return
 
         # quietly try and unregister pulp-consumer
         cli.Client(config.get_config(), cli.echo_handler).run(
@@ -110,9 +97,6 @@ class ScheduleRPMInstallTestCase(_BaseTestCase):
         """Test whether single scheduled RPM install works."""
         if selectors.bug_is_untestable(2680, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2680')
-
-        if consumer_not_enabled():
-            return
 
         # Bind the consumer.
         self.client.run(
