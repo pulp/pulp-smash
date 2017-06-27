@@ -74,7 +74,7 @@ from pulp_smash.tests.rpm.api_v2.utils import (
     get_dists_by_type_id,
     set_pulp_manage_rsync,
 )
-from pulp_smash.tests.rpm.utils import set_up_module
+from pulp_smash.tests.rpm.utils import check_issue_2844, set_up_module
 
 
 def _split_path(path):
@@ -684,6 +684,8 @@ class PublishTwiceTestCase(
         cfg = config.get_config()
         if selectors.bug_is_untestable(2666, cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2666')
+        if check_issue_2844(cfg):
+            self.skipTest('https://pulp.plan.io/issues/2844')
 
         # Create a user and a repository.
         ssh_user, priv_key = self.make_user(cfg)
