@@ -1,6 +1,7 @@
 # coding=utf-8
 """Values usable by multiple test modules."""
 from urllib.parse import quote_plus, urljoin
+from types import MappingProxyType  # used to form an immutable dictionary
 
 PULP_FIXTURES_BASE_URL = 'https://repos.fedorapeople.org/pulp/pulp/fixtures/'
 """A URL at which generated `pulp fixtures`_ are hosted.
@@ -344,10 +345,76 @@ REPOSITORY_PATH = '/pulp/api/v2/repositories/'
     https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/index.html
 """
 
-RPM = 'bear-4.1-1.noarch.rpm'
+RPM_DATA = MappingProxyType({
+    'name': 'bear',
+    'epoch': '0',
+    'version': '4.1',
+    'release': '1',
+    'arch': 'noarch',
+    'vendor': None,
+    'metadata': {
+        'release': '1',
+        'license': 'GPLv2',
+        'description': 'A dummy package of bear',
+        'files': {'dir': [], 'file': ['/tmp/bear.txt']},
+        'group': 'Internet/Applications',
+        'size': '42',
+        'sourcerpm': 'bear-4.1-1.src.rpm',
+        'summary': 'A dummy package of bear',
+    },
+})
+"""Metadata for an RPM with an associated erratum.
+
+The metadata tags that may be present in an RPM may be printed with:
+
+.. code-block:: sh
+
+    rpm --querytags
+
+Metadata for an RPM can be printed with a command like the following:
+
+.. code-block:: sh
+
+    for tag in name epoch version release arch vendor; do
+        echo "$(rpm -qp bear-4.1-1.noarch.rpm --qf "%{$tag}")"
+    done
+"""
+
+RPM = '{}-{}{}-{}.{}.rpm'.format(
+    RPM_DATA['name'],
+    RPM_DATA['epoch'] + '!' if RPM_DATA['epoch'] != '0' else '',
+    RPM_DATA['version'],
+    RPM_DATA['release'],
+    RPM_DATA['arch'],
+)
 """The name of an RPM file. See :data:`pulp_smash.constants.RPM_SIGNED_URL`."""
 
-RPM2 = 'camel-0.1-1.noarch.rpm'
+RPM2_DATA = MappingProxyType({
+    'name': 'camel',
+    'epoch': '0',
+    'version': '0.1',
+    'release': '1',
+    'arch': 'noarch',
+    'vendor': None,
+    'metadata': {
+        'release': '1',
+        'license': 'GPLv2',
+        'description': 'A dummy package of camel',
+        'files': {'dir': [], 'file': ['/tmp/camel.txt']},
+        'group': 'Internet/Applications',
+        'size': '42',
+        'sourcerpm': 'camel-0.1-1.src.rpm',
+        'summary': 'A dummy package of camel',
+    },
+})
+
+RPM2 = '{}-{}{}-{}.{}.rpm'.format(
+    RPM2_DATA['name'],
+    RPM2_DATA['epoch'] + '!' if RPM_DATA['epoch'] != '0' else '',
+    RPM2_DATA['version'],
+    RPM2_DATA['release'],
+    RPM2_DATA['arch'],
+)
 """The name of an RPM. See :data:`pulp_smash.constants.RPM2_UNSIGNED_URL`."""
 
 RPM_ALT_LAYOUT_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-alt-layout/')

@@ -17,44 +17,30 @@ from pulp_smash.constants import (
     CONSUMERS_PATH,
     REPOSITORY_PATH,
     RPM_UNSIGNED_FEED_URL,
+    RPM_DATA,
+    RPM2_DATA,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 # MappingProxyType is used to make an immutable dict.
 RPM_WITH_ERRATUM_METADATA = MappingProxyType({
-    'name': 'bear',
-    'epoch': None,
-    'version': '4.1',
-    'release': 1,
-    'arch': 'noarch',
-    'vendor': None,
+    'name': RPM_DATA['name'],
+    'epoch': RPM_DATA['epoch'],
+    'version': RPM_DATA['version'],
+    'release': int(RPM_DATA['release']),
+    'arch': RPM_DATA['arch'],
+    'vendor': RPM_DATA['vendor'],
 })
-"""Metadata for an RPM with an associated erratum.
-
-The metadata tags that may be present in an RPM may be printed with:
-
-.. code-block:: sh
-
-    rpm --querytags
-
-Metadata for an RPM can be printed with a command like the following:
-
-.. code-block:: sh
-
-    for tag in name epoch version release arch vendor; do
-        echo "$(rpm -qp bear-4.1-1.noarch.rpm --qf "%{$tag}")"
-    done
-
-"""
+"""Metadata for an RPM with an associated erratum."""
 
 RPM_WITHOUT_ERRATUM_METADATA = MappingProxyType({
-    'name': 'camel',
-    'epoch': None,
-    'version': '0.1',
-    'release': 1,
-    'arch': 'noarch',
-    'vendor': None,
+    'name': RPM2_DATA['name'],
+    'epoch': RPM2_DATA['epoch'],
+    'version': RPM2_DATA['version'],
+    'release': int(RPM2_DATA['release']),
+    'arch': RPM2_DATA['arch'],
+    'vendor': RPM2_DATA['vendor'],
 })
 """Metadata for an RPM without an associated erratum."""
 
