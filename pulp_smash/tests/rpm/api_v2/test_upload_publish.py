@@ -19,6 +19,7 @@ from pulp_smash.constants import (
     ORPHANS_PATH,
     REPOSITORY_PATH,
     RPM,
+    RPM_DATA,
     RPM_UNSIGNED_URL,
     SRPM,
     SRPM_UNSIGNED_URL,
@@ -210,26 +211,35 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
         with self.subTest():
             self.assertEqual(units[0]['metadata']['filename'], RPM)
         with self.subTest():
-            self.assertEqual(units[0]['metadata']['epoch'], '0')
+            self.assertEqual(units[0]['metadata']['epoch'], RPM_DATA['epoch'])
         with self.subTest():
-            self.assertEqual(units[0]['metadata']['name'], 'bear')
+            self.assertEqual(units[0]['metadata']['name'], RPM_DATA['name'])
         with self.subTest():
-            self.assertEqual(units[0]['metadata']['version'], '4.1')
+            self.assertEqual(
+                units[0]['metadata']['version'],
+                RPM_DATA['version']
+            )
         with self.subTest():
-            self.assertEqual(units[0]['metadata']['release'], '1')
+            self.assertEqual(
+                units[0]['metadata']['release'],
+                RPM_DATA['release']
+            )
 
         # other attributes
         with self.subTest():
-            self.assertEqual(units[0]['metadata']['license'], 'GPLv2')
+            self.assertEqual(
+                units[0]['metadata']['license'],
+                RPM_DATA['metadata']['license']
+            )
         with self.subTest():
             self.assertEqual(
                 units[0]['metadata']['description'],
-                'A dummy package of bear',
+                RPM_DATA['metadata']['description'],
             )
         with self.subTest():
             self.assertEqual(
                 units[0]['metadata']['files'],
-                {'dir': [], 'file': ['/tmp/bear.txt']},
+                RPM_DATA['metadata']['files'],
             )
 
     def verify_repo_download(self, repo):
