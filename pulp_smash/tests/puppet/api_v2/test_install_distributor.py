@@ -6,7 +6,9 @@ For more information check `puppet_install_distributor`_
 .. _puppet_install_distributor:
     http://docs.pulpproject.org/plugins/pulp_puppet/tech-reference/plugin_conf.html?#install-distributor
 """
-from pulp_smash import api, cli, utils
+from requests.exceptions import HTTPError
+
+from pulp_smash import api, cli, utils, selectors
 from pulp_smash.constants import (
     PUPPET_MODULE_1,
     PUPPET_MODULE_URL_1,
@@ -67,3 +69,30 @@ class InstallDistributorTestCase(utils.BaseAPITestCase):
             'ls -1 {}'.format(install_path), '-', 'apache'
         ))
         self.assertIn(PUPPET_MODULE_1['name'], proc.stdout.split('\n'), proc)
+
+
+class InstallDistributorThrowsOnErrorTestCase(utils.BaseAPITestCase):
+    """Test Puppet install distributor."""
+
+    def test_all(self):
+        """Creating a repo with an invalid distributor should throw an error.
+
+        This test targets `Pulp #1237 <https://pulp.plan.io/issues/1237>`_.
+        Do the following:
+
+        1. Create a puppet repo
+        2. Make an API call to create a distributor WITHOUT non-optional
+            install_path
+        3. Assert that an error is thrown
+        4. Assert that no repo is created
+        """
+        if selectors.bug_is_untestable(1237, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/1237')
+        distributor = gen_install_distributor()
+        distributor['distributor_config']['install_path'] = ''
+        body = gen_repo()
+        body['distributors'] = [distributor]
+        client = api.Client(self.cfg, api.json_handler)
+        with self.assertRaises(HTTPError):
+            repo = client.post(REPOSITORY_PATH, body)
+            self.addCleanup(client.delete, repo['_href'])
