@@ -94,6 +94,32 @@ class RemoveUnitsTestCase(unittest.TestCase):
         }
         self.assertEqual(removed_ids & remaining_ids, set())
 
+    def test_03_last_unit_removed(self):
+        """Assert that ``last_unit_removed`` timestamp was not updated.
+
+        Whenever disassociate_units is called ``last_unit_removed`` should not
+        be updated even if that call does not remove units.
+
+        Do the following:
+
+        1. Note the repository's ``last_unit_removed`` field.
+        2. Sleep for at least one second.
+        3. Attempt to remove a non defined ``unit_id_name`` .
+        4. Note the repository's ``last_unit_removed`` field.
+        """
+        lur_before = self.get_repo_last_unit_removed()
+        time.sleep(1)  # ensure last_unit_removed increments
+
+        # Select an unit and mess it up
+        unit = random.choice(self.initial_units).copy()
+        unit_id_name, _ = _get_unit_id(unit)
+        unit['metadata'][unit_id_name] = utils.uuid4()
+
+        # Remove the non-existent unit
+        _remove_unit(self.cfg, self.repo, unit)
+        lur_after = self.get_repo_last_unit_removed()
+        self.assertEqual(lur_before, lur_after)
+
     def do_remove_unit(self, type_id):
         """Remove a content unit from the repository.
 
