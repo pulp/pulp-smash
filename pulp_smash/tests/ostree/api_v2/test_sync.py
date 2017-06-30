@@ -33,14 +33,14 @@ from pulp_smash.tests.ostree.utils import set_up_module as setUpModule  # noqa p
 def _sync_repo(server_config, href):
     """Sync a repository and wait for the sync to complete.
 
-    Verify only the call report's status code. Do not verify each individual
-    task, as the default response handler does. Return ``call_report, tasks``.
+    Verify only the HTTP status codes of Pulp's responses. Don't verify
+    response contents, as the default response handler does. Return ``call
+    report, tasks``.
     """
-    response = api.Client(server_config, api.echo_handler).post(
+    response = api.Client(server_config, api.code_handler).post(
         urljoin(href, 'actions/sync/'),
         {'override_config': {}},
     )
-    response.raise_for_status()
     tasks = tuple(api.poll_spawned_tasks(server_config, response.json()))
     return response, tasks
 

@@ -169,9 +169,8 @@ class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
 
-        client.response_handler = api.echo_handler
+        client.response_handler = api.code_handler
         report = client.post(urljoin(repo['_href'], 'actions/sync/'))
-        report.raise_for_status()
         self.tasks.extend(list(
             api.poll_spawned_tasks(self.cfg, report.json())
         ))

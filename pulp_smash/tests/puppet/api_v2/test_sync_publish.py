@@ -210,9 +210,8 @@ class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
         cls.resources.add(repo['_href'])
 
         # Trigger a repository sync and collect completed tasks.
-        client.response_handler = api.echo_handler
+        client.response_handler = api.code_handler
         cls.report = client.post(urljoin(repo['_href'], 'actions/sync/'))
-        cls.report.raise_for_status()
         cls.tasks = list(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
 
     def test_status_code(self):
