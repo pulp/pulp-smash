@@ -202,7 +202,8 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
 
         Verify that only one content unit is in ``repo``, and that several of
         its metadata attributes are correct. This test targets `Pulp #2365
-        <https://pulp.plan.io/issues/2365>`_.
+        <https://pulp.plan.io/issues/2365>`_ and `Pulp #2754
+        <https://pulp.plan.io/issues/2754>`_
         """
         units = utils.search_units(self.cfg, repo)
         self.assertEqual(len(units), 1)
@@ -241,6 +242,31 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
                 units[0]['metadata']['files'],
                 RPM_DATA['metadata']['files'],
             )
+
+        if selectors.bug_is_testable(2754, self.cfg.version):
+            # Test that additional fields are available.
+            # Affected by Pulp issue #2754
+
+            with self.subTest():
+                self.assertEqual(
+                    units[0]['metadata']['group'],
+                    RPM_DATA['metadata']['group'],
+                )
+            with self.subTest():
+                self.assertEqual(
+                    units[0]['metadata']['summary'],
+                    RPM_DATA['metadata']['summary'],
+                )
+            with self.subTest():
+                self.assertEqual(
+                    units[0]['metadata']['size'],
+                    RPM_DATA['metadata']['size'],
+                )
+            with self.subTest():
+                self.assertEqual(
+                    units[0]['metadata']['sourcerpm'],
+                    RPM_DATA['metadata']['sourcerpm'],
+                )
 
     def verify_repo_download(self, repo):
         """Download :data:`pulp_smash.constants.RPM` from the given ``repo``.
