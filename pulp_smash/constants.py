@@ -456,6 +456,15 @@ RPM_ERRATUM_URL = (
 RPM_ERRATUM_COUNT = 4
 """The number of errata listed in :data:`RPM_ERRATUM_URL`."""
 
+RPM_MIRRORLIST_LARGE = (
+    'https://mirrors.fedoraproject.org/metalink?repo=epel-7&arch=x86_64'
+)
+"""A mirrorlist referencing a large RPM repository.
+
+.. NOTE: The mirrors referenced by this mirrorlist are not operated by Pulp QE.
+    They're public resources and should be sparingly used.
+"""
+
 RPM_MIRRORLIST_BAD = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-mirrorlist-bad')
 """The URL to a mirrorlist file containing only invalid entries."""
 

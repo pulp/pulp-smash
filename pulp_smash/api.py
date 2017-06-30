@@ -89,6 +89,19 @@ def echo_handler(server_config, response):  # pylint:disable=unused-argument
     return response
 
 
+def code_handler(server_config, response):  # pylint:disable=unused-argument
+    """Check the response status code, and return the response.
+
+    Unlike :meth:`safe_handler`, this method doesn't wait for asynchronous
+    tasks to complete if ``response`` has an HTTP 202 status code.
+
+    :raises: ``requests.exceptions.HTTPError`` if the response status code is
+        in the 4XX or 5XX range.
+    """
+    response.raise_for_status()
+    return response
+
+
 def safe_handler(server_config, response):
     """Check status code, wait for tasks to complete, and check tasks.
 

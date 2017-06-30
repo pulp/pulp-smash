@@ -28,6 +28,28 @@ class EchoHandlerTestCase(unittest.TestCase):
         self.assertEqual(handle_202.call_count, 0)
 
 
+class CodeHandlerTestCase(unittest.TestCase):
+    """Tests for :func:`pulp_smash.api.code_handler`."""
+
+    def test_return(self):
+        """Assert the passed-in ``response`` is returned."""
+        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        self.assertIs(kwargs['response'], api.code_handler(**kwargs))
+
+    def test_raise_for_status(self):
+        """Assert ``response.raise_for_status()`` is called."""
+        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        api.code_handler(**kwargs)
+        self.assertEqual(kwargs['response'].raise_for_status.call_count, 1)
+
+    def test_202_check_skipped(self):
+        """Assert HTTP 202 responses are not treated specially."""
+        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        with mock.patch.object(api, '_handle_202') as handle_202:
+            api.code_handler(**kwargs)
+        self.assertEqual(handle_202.call_count, 0)
+
+
 class SafeHandlerTestCase(unittest.TestCase):
     """Tests for :func:`pulp_smash.api.safe_handler`."""
 

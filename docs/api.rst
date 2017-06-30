@@ -94,6 +94,7 @@ developers, not a gospel.
     api/pulp_smash.tests.rpm.api_v2.test_schedule_publish
     api/pulp_smash.tests.rpm.api_v2.test_schedule_sync
     api/pulp_smash.tests.rpm.api_v2.test_search
+    api/pulp_smash.tests.rpm.api_v2.test_service_resiliency
     api/pulp_smash.tests.rpm.api_v2.test_signatures_checked_for_copies
     api/pulp_smash.tests.rpm.api_v2.test_signatures_checked_for_syncs
     api/pulp_smash.tests.rpm.api_v2.test_signatures_checked_for_uploads
