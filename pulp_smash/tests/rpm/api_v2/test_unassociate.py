@@ -97,8 +97,8 @@ class RemoveUnitsTestCase(unittest.TestCase):
     def test_03_last_unit_removed(self):
         """Assert that ``last_unit_removed`` timestamp was not updated.
 
-        Whenever disassociate_units is called ``last_unit_removed`` should not
-        be updated even if that call does not remove units.
+        If ``disassociate_units`` is called and no units are removed,
+        ``last_unit_removed`` should not update.
 
         Do the following:
 
@@ -107,6 +107,8 @@ class RemoveUnitsTestCase(unittest.TestCase):
         3. Attempt to remove a non defined ``unit_id_name`` .
         4. Note the repository's ``last_unit_removed`` field.
         """
+        if selectors.bug_is_untestable(2630, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2630')
         lur_before = self.get_repo_last_unit_removed()
         time.sleep(1)  # ensure last_unit_removed increments
 
