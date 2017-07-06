@@ -49,6 +49,7 @@ from pulp_smash.constants import (
     ORPHANS_PATH,
     REPOSITORY_PATH,
     RPM,
+    RPM_DATA,
     RPM_ERRATUM_ID,
     RPM_ERRATUM_RPM_NAME,
     RPM_NAMESPACES,
@@ -98,17 +99,17 @@ def _gen_errata():
             'name': 'pkglist-name',
             # This package is present in Pulp Fixtures.
             'packages': [{
-                'arch': 'noarch',
-                'epoch': '0',
-                'filename': 'bear-4.1-1.noarch.rpm',
-                'name': 'bear',
-                'release': '1',
+                'arch': RPM_DATA['arch'],
+                'epoch': RPM_DATA['epoch'],
+                'filename': RPM,
+                'name': RPM_DATA['name'],
+                'release': RPM_DATA['release'],
                 'sum': [
                     'sha256',
                     ('ceb0f0bb58be244393cc565e8ee5ef0ad36884d8ba8eec74542ff47'
                      'd299a34c1')
                 ],
-                'version': '4.1',
+                'version': RPM_DATA['version'],
             }],
         }],
         'references': [{
