@@ -76,6 +76,57 @@ class UploadDrpmTestCase(utils.BaseAPITestCase):
         )
 
 
+class UploadDrpmTestCaseWithCheckSumType(utils.BaseAPITestCase):
+    """Test whether one can upload a DRPM into a repository.
+
+    `Pulp issue #2627 <https://https://pulp.plan.io/issues/2627>`_ caused
+    uploading to fail when "checksumtype" was specified.
+
+    This test case targets `Pulp Smash #585
+    <https://github.com/PulpQE/pulp-smash/issues/585>`_
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Import a DRPM into a repository and search it for content units.
+
+        Specifically, this method does the following:
+
+        1. Create a yum repository.
+        2. Upload a DRPM into the repository with "checksumtype" set to
+            "sha256"
+        3. Search for all content units in the repository.
+        """
+        super(UploadDrpmTestCaseWithCheckSumType, cls).setUpClass()
+
+    def test_all(self):
+        """Test that uploading DRPM with checksumtype specified works."""
+        if selectors.bug_is_untestable(1806, self.cfg.version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1806')
+        if selectors.bug_is_untestable(2627, self.cfg.version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2627')
+        client = api.Client(self.cfg)
+        repo = client.post(REPOSITORY_PATH, gen_repo()).json()
+        self.addCleanup(client.delete, repo['_href'])
+        drpm = utils.http_get(DRPM_UNSIGNED_URL)
+        utils.upload_import_unit(
+            self.cfg,
+            drpm,
+            {
+                'unit_type_id': 'drpm',
+                'unit_metadata': {'checksumtype': 'sha256'},
+            },
+            repo,
+        )
+        units = utils.search_units(self.cfg, repo, {})
+        self.assertEqual(len(units), 1, units)
+        # Test if DRPM extracted correct metadata for creating filename.
+        self.assertEqual(
+            units[0]['metadata']['filename'],
+            DRPM,
+        )
+
+
 class UploadSrpmTestCase(utils.BaseAPITestCase):
     """Test whether one can upload a SRPM into a repository.
 
