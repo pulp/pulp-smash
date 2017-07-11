@@ -52,6 +52,7 @@ files will be laid out as follows::
         ┆
 """
 import os
+import time
 import unittest
 from urllib.parse import urljoin, urlparse
 
@@ -706,6 +707,9 @@ class PublishTwiceTestCase(
                 repo
             )
         dists = get_dists_by_type_id(cfg, repo)
+
+        # See https://pulp.plan.io/issues/2844#note-11
+        time.sleep(2)
 
         # Publish with yum and rsync.
         for dist in 'yum_distributor', 'rpm_rsync_distributor':
