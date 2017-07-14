@@ -202,6 +202,11 @@ OSTREE_FEED = (
     http://docs.pulpproject.org/plugins/pulp_ostree/tech-reference/importer.html
 """
 
+OSTREE_FEED_SMALL = (
+    'https://repos.fedorapeople.org/pulp/pulp/fixtures/ostree/small/'
+)
+"""The URL to a URL of OSTree branches with small content units."""
+
 PLUGIN_TYPES_PATH = '/pulp/api/v2/plugins/types/'
 """See: `Retrieve All Content Unit Types`_.
 
