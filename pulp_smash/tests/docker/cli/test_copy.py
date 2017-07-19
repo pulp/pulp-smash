@@ -172,7 +172,13 @@ class CopyAllManifestsTestCase(_BaseTestCase, _CopyMixin):
         )
         n_search_digests = len(re.findall('Digest: ', proc.stdout))
 
-        # Before Pulp 2.13, stdout is in this form:
+        # In Pulp 2.13, stdout is in this form:
+        #
+        #     Copied:
+        #       docker_blob: 45
+        #       docker_manifest: 75
+        #
+        # In other versions of Pulp, stdout is in this form:
         #
         #     Copied:
         #      docker_blob:
@@ -182,20 +188,15 @@ class CopyAllManifestsTestCase(_BaseTestCase, _CopyMixin):
         #       sha256:01cecc256987d4305fb0b72df9df8440441c4da17036f63c85d5fa89399df53d
         #       …
         #
-        # Starting with Pulp 2.13, stdout is more concise:
-        #
-        #     Copied:
-        #       docker_blob: 45
-        #       docker_manifest: 75
-        #
-        if self.cfg.version < Version('2.13'):
-            n_copy_digests = self.copy.stdout.split('docker_manifest:')[1]
-            n_copy_digests = len(re.findall(r'  (\w*:\w*)', n_copy_digests))
-        else:
+        if (self.cfg.version >= Version('2.13') and
+                self.cfg.version < Version('2.14')):
             n_copy_digests = int(re.search(
                 r'docker_manifest: (\d+)',
                 self.copy.stdout
             ).group(1))
+        else:
+            n_copy_digests = self.copy.stdout.split('docker_manifest:')[1]
+            n_copy_digests = len(re.findall(r'  (\w*:\w*)', n_copy_digests))
 
         self.assertEqual(n_search_digests, n_copy_digests)
 
