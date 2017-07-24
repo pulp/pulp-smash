@@ -25,7 +25,7 @@ import unittest
 from urllib.parse import urljoin
 
 from pulp_smash import api, selectors, utils
-from pulp_smash.constants import OSTREE_FEED, OSTREE_BRANCH, REPOSITORY_PATH
+from pulp_smash.constants import OSTREE_FEED, OSTREE_BRANCHES, REPOSITORY_PATH
 from pulp_smash.tests.ostree.utils import gen_repo
 from pulp_smash.tests.ostree.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
@@ -114,7 +114,7 @@ class SyncTestCase(_SyncMixin, utils.BaseAPITestCase):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1934')
         body = gen_repo()
         body['importer_config']['feed'] = OSTREE_FEED
-        body['importer_config']['branches'] = [OSTREE_BRANCH]
+        body['importer_config']['branches'] = OSTREE_BRANCHES
         repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
         cls.resources.add(repo['_href'])
         cls.report = utils.sync_repo(cls.cfg, repo)
@@ -142,7 +142,7 @@ class SyncInvalidFeedTestCase(
         client = api.Client(cls.cfg)
         body = gen_repo()
         body['importer_config']['feed'] = utils.uuid4()
-        body['importer_config']['branches'] = [OSTREE_BRANCH]
+        body['importer_config']['branches'] = OSTREE_BRANCHES
         repo_href = client.post(REPOSITORY_PATH, body).json()['_href']
         cls.resources.add(repo_href)
         cls.report, cls.tasks = _sync_repo(cls.cfg, repo_href)
