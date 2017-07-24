@@ -86,6 +86,17 @@ DOCKER_IMAGE_URL = urljoin(PULP_FIXTURES_BASE_URL, 'docker/busybox:latest.tar')
 DOCKER_UPSTREAM_NAME = 'library/busybox'
 """The name of a repository present in each of the two docker feeds."""
 
+DOCKER_UPSTREAM_NAME_MANIFEST_LIST = 'dmage/manifest-list-test'
+"""The name of a docker v2 repository with a manifest list.
+
+One can verify that this repository has a manifest list by executing:
+
+.. code-block:: sh
+
+    curl -s https://registry.hub.docker.com/v2/repositories/$this_constant \
+    | python -m json.tool
+"""
+
 DOCKER_V1_FEED_URL = 'https://index.docker.io'
 """The URL to a V1 Docker registry.
 

@@ -8,6 +8,7 @@ from packaging.version import Version
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
     DOCKER_UPSTREAM_NAME,
+    DOCKER_UPSTREAM_NAME_MANIFEST_LIST,
     DOCKER_V1_FEED_URL,
     DOCKER_V2_FEED_URL,
 )
@@ -112,6 +113,50 @@ MANIFEST_V2 = {
     },
 }
 """A schema for docker v2 image manifests, schema 2."""
+
+# Variable name derived from HTTP content-type.
+MANIFEST_LIST_V2 = {
+    '$schema': 'http://json-schema.org/schema#',
+    'title': 'Image Manifest List',
+    'description': (
+        'Derived from: '
+        'https://docs.docker.com/registry/spec/manifest-v2-2/#manifest-list'
+    ),
+    'type': 'object',
+    'properties': {
+        'schemaVersion': {'type': 'integer'},
+        'mediaType': {'type': 'string'},
+        'manifests': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'mediaType': {'type': 'string'},
+                    'size': {'type': 'integer'},
+                    'digest': {'type': 'string'},
+                    'platform': {
+                        'type': 'object',
+                        'properties': {
+                            'architecture': {'type': 'string'},
+                            'os': {'type': 'string'},
+                            'os.version': {'type': 'string'},
+                            'os.features': {
+                                'type': 'array',
+                                'items': {'type': 'string'},
+                            },
+                            'variant': {'type': 'string'},
+                            'features': {
+                                'type': 'array',
+                                'items': {'type': 'string'},
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+"""A schema for docker manifest lists."""
 
 
 def setUpModule():  # pylint:disable=invalid-name
@@ -368,6 +413,111 @@ class SyncPublishV2TestCase(SyncPublishMixin, utils.BaseAPITestCase):
         )
         manifest = client.get('/v2/{}/manifests/latest'.format(self.repo_id))
         validate(manifest, MANIFEST_V1)
+
+
+class ManifestListTestCase(SyncPublishMixin, utils.BaseAPITestCase):
+    """Test whether manifest lists can be used."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Maybe skip this test case, and create class-wide variables."""
+        super().setUpClass()
+        if selectors.bug_is_untestable(2384, cls.cfg.version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2384')
+        cls.repo_id = None
+
+    @classmethod
+    def tearDownClass(cls):
+        """Destroy resources created by this test case."""
+        if cls.repo_id:
+            docker_utils.repo_delete(cls.cfg, cls.repo_id)
+        super().tearDownClass()
+
+    def test_01_set_up(self):
+        """Create, sync and publish a docker repository.
+
+        Ensure the docker repository's feed references a docker image that has
+        a manifest list.
+        """
+        repo_id = utils.uuid4()
+        proc = docker_utils.repo_create(
+            self.cfg,
+            enable_v1='false',
+            enable_v2='true',
+            feed=DOCKER_V2_FEED_URL,
+            repo_id=repo_id,
+            upstream_name=DOCKER_UPSTREAM_NAME_MANIFEST_LIST,
+        )
+        type(self).repo_id = repo_id  # schedule clean-up
+        self.assertNotIn('Task Failed', proc.stdout)
+        self.verify_proc(docker_utils.repo_sync(self.cfg, repo_id))
+        self.verify_proc(docker_utils.repo_publish(self.cfg, repo_id))
+
+        # Make Crane read the metadata. (Now!)
+        cli.GlobalServiceManager(self.cfg).restart(('httpd',))
+
+    def test_02_get_manifest_v1(self):
+        """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
+
+        Pass a header of
+        ``accept:application/vnd.docker.distribution.manifest.v1+json``.
+        Assert that the response body matches :data:`MANIFEST_V1`.
+        """
+        client = api.Client(self.cfg, api.json_handler, {'headers': {
+            'accept': 'application/vnd.docker.distribution.manifest.v1+json'
+        }})
+        client.request_kwargs['url'] = self.adjust_url(
+            client.request_kwargs['url']
+        )
+        manifest = client.get('/v2/{}/manifests/latest'.format(self.repo_id))
+        validate(manifest, MANIFEST_V1)
+
+    def test_02_get_manifest_v2(self):
+        """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
+
+        Pass a header of
+        ``accept:application/vnd.docker.distribution.manifest.v1+json``.
+        Assert that the response body matches :data:`MANIFEST_V2`.
+        """
+        client = api.Client(self.cfg, api.json_handler, {'headers': {
+            'accept': 'application/vnd.docker.distribution.manifest.v2+json'
+        }})
+        client.request_kwargs['url'] = self.adjust_url(
+            client.request_kwargs['url']
+        )
+        manifest = client.get('/v2/{}/manifests/latest'.format(self.repo_id))
+        validate(manifest, MANIFEST_V2)
+
+    def test_02_get_manifest_list(self):
+        """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
+
+        Pass a header of
+        ``accept:application/vnd.docker.distribution.manifest.list.v2+json``
+        Assert that:
+
+        * The response body matches :data:`MANIFEST_LIST_V2`.
+        * The response has a content-type equal to what was requested.
+          (According to Docker's `backward compatiblity` specification, if a
+          registry is asked for a manifest list but doesn't have a manifest
+          list, it may return a mainfest instead. But this test targets
+          manifest lists, and it will fail if that happens.)
+
+        .. _backward compatibility:
+            https://docs.docker.com/registry/spec/manifest-v2-2/
+            #backward-compatibility
+        """
+        content_type = (
+            'application/vnd.docker.distribution.manifest.list.v2+json'
+        )
+        client = api.Client(self.cfg, request_kwargs={'headers': {
+            'accept': content_type
+        }})
+        client.request_kwargs['url'] = self.adjust_url(
+            client.request_kwargs['url']
+        )
+        response = client.get('/v2/{}/manifests/latest'.format(self.repo_id))
+        self.assertEqual(response.headers['content-type'], content_type)
+        validate(response.json(), MANIFEST_LIST_V2)
 
 
 class SyncNonNamespacedV2TestCase(SyncPublishMixin, utils.BaseAPITestCase):
