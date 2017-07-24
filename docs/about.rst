@@ -137,13 +137,22 @@ Issue Type: Discussion
     outlines a specific solution and has a label of "Issue Type: Plan".
 
 Issue Type: Plan
-    This label denotes an issue that outlines a specific, concrete plan of
-    action for improving Pulp Smash. Open-ended discussions (including feature
-    requests) should go into issues labeled "Issue Type: Discussion."
+    This label denotes an issue that outlines a specific, concrete
+    plan of action for improving Pulp Smash. This may include plans for new
+    utilities or refactors of existing tests or other tools. Open-ended
+    discussions (including feature requests) should go into issues labeled
+    "Issue Type:Discussion."
 
 Issue Type: Test Case
     This label indicates that an issue is asking for a test case to be
     automated. (Issues with this label are a special type of plan.)
+
+Pulp Version: 3
+    This label serves to differentiate issues, that otherwise should belong
+    to one of the above issue types, as being related to creation of automated
+    tests or utilities for for Pulp 3. This label is meant to aid
+    pulp-smash developers in filtering issues by major version, as Pulp 3
+    introduces many breaking changes.
 
 .. [1] Portable software cannot make assumptions about its environment. It
     cannot reference ``/etc/pki/tls/certs/ca-bundle.crt``  or call ``yum``.
