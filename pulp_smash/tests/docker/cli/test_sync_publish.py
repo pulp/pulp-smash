@@ -16,11 +16,13 @@ from pulp_smash.tests.docker.utils import set_up_module
 
 from jsonschema import validate
 
-IMAGE_MANIFEST_V2_SCHEMA_1 = {
+# Variable name derived from HTTP content-type.
+MANIFEST_V1 = {
     '$schema': 'http://json-schema.org/schema#',
     'title': 'Image Manifest Version 2, Schema 1',
     'description': (
-        'Derived from: https://docs.docker.com/registry/spec/manifest-v2-1/'
+        'Derived from: '
+        'https://docs.docker.com/registry/spec/manifest-v2-1/'
     ),
     'type': 'object',
     'properties': {
@@ -72,11 +74,13 @@ IMAGE_MANIFEST_V2_SCHEMA_1 = {
 }
 """A schema for docker v2 image manifests, schema 1."""
 
-IMAGE_MANIFEST_V2_SCHEMA_2 = {
+# Variable name derived from HTTP content-type.
+MANIFEST_V2 = {
     '$schema': 'http://json-schema.org/schema#',
     'title': 'Image Manifest Version 2, Schema 2',
     'description': (
-        'Derived from: https://docs.docker.com/registry/spec/manifest-v2-2/'
+        'Derived from: '
+        'https://docs.docker.com/registry/spec/manifest-v2-2/#image-manifest'
     ),
     'type': 'object',
     'properties': {
@@ -341,7 +345,7 @@ class SyncPublishV2TestCase(SyncPublishMixin, utils.BaseAPITestCase):
                     '/v2/{}/manifests/latest'.format(self.repo_id),
                     headers=headers,
                 )
-                validate(manifest, IMAGE_MANIFEST_V2_SCHEMA_1)
+                validate(manifest, MANIFEST_V1)
 
     @selectors.skip_if(bool, 'repo_id', False)
     def test_02_get_manifest_v2(self):
@@ -363,7 +367,7 @@ class SyncPublishV2TestCase(SyncPublishMixin, utils.BaseAPITestCase):
             client.request_kwargs['url']
         )
         manifest = client.get('/v2/{}/manifests/latest'.format(self.repo_id))
-        validate(manifest, IMAGE_MANIFEST_V2_SCHEMA_2)
+        validate(manifest, MANIFEST_V1)
 
 
 class SyncNonNamespacedV2TestCase(SyncPublishMixin, utils.BaseAPITestCase):
