@@ -6,14 +6,17 @@ import unittest
 from packaging.version import Version
 
 from pulp_smash import config, selectors, utils
-from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
+from pulp_smash.constants import (
+    DOCKER_UPSTREAM_NAME,
+    DOCKER_V1_FEED_URL,
+    DOCKER_V2_FEED_URL,
+)
 from pulp_smash.tests.docker.cli import utils as docker_utils
 from pulp_smash.tests.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _IMAGE_ID_RE = r'(?:Image Id:)\s*(.*)'
 _NAME_RE = r'(?:Name:)\s*(.*)'
 _UNIT_ID_RE = r'(?:Unit Id:)\s*(.*)'
-_UPSTREAM_NAME = 'library/busybox'
 
 
 def _get_unit_ids(server_config, repo_id, unit_type, regex):
@@ -92,7 +95,7 @@ class CopyAllImagesTestCase(_BaseTestCase, _CopyMixin):
             enable_v2='false',
             feed=DOCKER_V1_FEED_URL,
             repo_id=cls.repo_ids[0],
-            upstream_name=_UPSTREAM_NAME,
+            upstream_name=DOCKER_UPSTREAM_NAME,
         )
         docker_utils.repo_create(cls.cfg, repo_id=cls.repo_ids[1])
 
@@ -146,7 +149,7 @@ class CopyAllManifestsTestCase(_BaseTestCase, _CopyMixin):
             enable_v2='true',
             feed=DOCKER_V2_FEED_URL,
             repo_id=cls.repo_ids[0],
-            upstream_name=_UPSTREAM_NAME,
+            upstream_name=DOCKER_UPSTREAM_NAME,
         )
         docker_utils.repo_create(cls.cfg, repo_id=cls.repo_ids[1])
 
@@ -226,7 +229,7 @@ class CopyAllTagsTestCase(_BaseTestCase, _CopyMixin):
             enable_v2='true',
             feed=DOCKER_V2_FEED_URL,
             repo_id=cls.repo_ids[0],
-            upstream_name=_UPSTREAM_NAME,
+            upstream_name=DOCKER_UPSTREAM_NAME,
         )
         docker_utils.repo_create(cls.cfg, repo_id=cls.repo_ids[1])
 
