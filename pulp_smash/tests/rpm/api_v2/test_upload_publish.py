@@ -311,7 +311,7 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
             with self.subTest():
                 self.assertEqual(
                     units[0]['metadata']['size'],
-                    RPM_DATA['metadata']['size'],
+                    RPM_DATA['metadata']['size']['package'],
                 )
             with self.subTest():
                 self.assertEqual(

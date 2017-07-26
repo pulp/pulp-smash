@@ -356,7 +356,7 @@ RPM_DATA = MappingProxyType({
         'description': 'A dummy package of bear',
         'files': {'dir': [], 'file': ['/tmp/bear.txt']},
         'group': 'Internet/Applications',
-        'size': '42',
+        'size': {'installed': 42, 'package': 1846},
         'sourcerpm': 'bear-4.1-1.src.rpm',
         'summary': 'A dummy package of bear',
     },
@@ -376,6 +376,18 @@ Metadata for an RPM can be printed with a command like the following:
     for tag in name epoch version release arch vendor; do
         echo "$(rpm -qp bear-4.1-1.noarch.rpm --qf "%{$tag}")"
     done
+
+There are three ways to measure the size of an RPM:
+
+installed size
+    The size of all the regular files in the payload.
+archive size
+    The uncompressed size of the payload, including necessary CPIO headers.
+package size
+    The actual size of an RPM file, as returned by ``stat --format='%s' …``.
+
+For more information, see the Fedora documentation on `RPM headers
+<https://docs.fedoraproject.org/en-US/Fedora_Draft_Documentation/0.1/html/RPM_Guide/ch-package-structure.html#id623000>`_.
 """
 
 RPM = '{}-{}{}-{}.{}.rpm'.format(
