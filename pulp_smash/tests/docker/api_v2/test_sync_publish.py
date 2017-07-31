@@ -494,6 +494,162 @@ class NonNamespacedImageTestCase(SyncPublishMixin, unittest.TestCase):
             self.assertFalse(repos[repo_id]['protected'])
 
 
+class NoAmd64LinuxTestCase(SyncPublishMixin, unittest.TestCase):
+    """Sync a Docker image with no amd64/linux build.
+
+    A manifest list lets a single Docker repository contain multiple images.
+    This is useful in the case where an image contains platform-specific code,
+    and an image must be built for each each supported architecture, OS, etc.
+
+    When a modern Docker client fetches an image, it does the following:
+
+    1. Get a manifest list.
+    2. Look through the list of available images.
+    3. Pick out an image that functions on the current host's platform.
+    4. Get a manifest for that image.
+    5. Use the information in the manifest to get the image layers.
+
+    Older Docker clients aren't aware of manifest lists, and when they go to
+    fetch an image, they just ask for any old manifest from a repository. When
+    a Docker registry receives such a request, it does the following:
+
+    1. Look through the list of available images.
+    2. If an image with an ``architecture`` of ``amd64`` and an ``os`` of
+       ``linux`` is available, return its manifest. Otherwise, return an HTTP
+       404.
+
+    This test case verifies Pulp's behaviour in the case where an upstream
+    Docker repository has content described by a manifest list.
+
+    This test case doesn't verify Pulp's behaviour in the case where an
+    upstream Docker repository has content described by a v2 manifest or v1
+    manifest. In these cases, the correct behaviour of a Docker registry is not
+    well defined. See the `backward compatibility`_ documentation.
+
+    .. _backward compatibility:
+        https://docs.docker.com/registry/spec/manifest-v2-2/#backward-compatibility
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables."""
+        super().setUpClass()
+        cls.cfg = config.get_config()
+        cls.repo = {}
+        if selectors.bug_is_untestable(2384, cls.cfg.version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2384')
+
+    @classmethod
+    def tearDownClass(cls):
+        """Clean up resources."""
+        if cls.repo:
+            api.Client(cls.cfg).delete(cls.repo['_href'])
+        super().tearDownClass()
+
+    def test_01_set_up(self):
+        """Create, sync and publish a Docker repository.
+
+        Specifically, do the following:
+
+        1. Create, sync and publish a Docker repository. Let the repository's
+           upstream name reference a repository that has an image with a
+           manifest list and no amd64/linux build.
+        2. Make Crane immediately re-read the metadata files published by Pulp.
+           (Restart Apache.)
+        """
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config'].update({
+            'enable_v1': False,
+            'enable_v2': True,
+            'feed': DOCKER_V2_FEED_URL,
+            # DOCKER_UPSTREAM_NAME has an image without any amd64/linux build.
+            # However, it has a v1 manifest.
+            'upstream_name': 'dmage/busybox',
+        })
+        body['distributors'] = [gen_distributor()]
+        type(self).repo = client.post(REPOSITORY_PATH, body)
+        type(self).repo = client.get(
+            self.repo['_href'],
+            params={'details': True}
+        )
+        utils.sync_repo(self.cfg, self.repo)
+        utils.publish_repo(self.cfg, self.repo)
+
+        # Make Crane read metadata. (Now!)
+        cli.GlobalServiceManager(self.cfg).restart(('httpd',))
+
+    @selectors.skip_if(bool, 'repo', False)
+    def test_02_get_manifest_list(self):
+        """Get a manifest list.
+
+        Assert that:
+
+        * The response headers include a content-type of
+          ``accept:application/vnd.docker.distribution.manifest.list.v2+json``.
+          (See :meth:`test_02_get_manifest_list`.
+        * The response body matches :data:`MANIFEST_LIST_V2`.
+        * The returned manifest list doesn't include any entry where
+          ``architecture`` of ``amd64`` and ``os`` is ``linux``.
+        """
+        # get a manifest list
+        content_type = (
+            'application/vnd.docker.distribution.manifest.list.v2+json'
+        )
+        client = api.Client(self.cfg, request_kwargs={
+            'headers': {'accept': content_type}
+        })
+        client.request_kwargs['url'] = self.adjust_url(
+            client.request_kwargs['url']
+        )
+        response = client.get(
+            '/v2/{}/manifests/fake-arm-only'.format(self.repo['id'])
+        )
+
+        # perform assertions
+        self.assertEqual(
+            response.headers['content-type'],
+            content_type,
+            response.headers
+        )
+        manifest_list = response.json()
+        validate(manifest_list, MANIFEST_LIST_V2)
+        for manifest in manifest_list['manifests']:
+            self.assertFalse(
+                manifest['platform'].get('architecture') == 'amd64' and
+                manifest['platform'].get('os') == 'linux',
+                manifest_list
+            )
+
+    @selectors.skip_if(bool, 'repo', False)
+    def test_02_get_manifest_v2(self):
+        """Get a v2 manifest. Assert that an HTTP 404 is returned."""
+        client = api.Client(self.cfg, api.echo_handler, {'headers': {
+            'accept': 'application/vnd.docker.distribution.manifest.v2+json'
+        }})
+        client.request_kwargs['url'] = self.adjust_url(
+            client.request_kwargs['url']
+        )
+        response = client.get(
+            '/v2/{}/manifests/fake-arm-only'.format(self.repo['id'])
+        )
+        self.assertEqual(response.status_code, 404, response.content)
+
+    @selectors.skip_if(bool, 'repo', False)
+    def test_02_get_manifest_v1(self):
+        """Get a v1 manifest. Assert that an HTTP 404 is returned."""
+        client = api.Client(self.cfg, api.echo_handler, {'headers': {
+            'accept': 'application/vnd.docker.distribution.manifest.v1+json'
+        }})
+        client.request_kwargs['url'] = self.adjust_url(
+            client.request_kwargs['url']
+        )
+        response = client.get(
+            '/v2/{}/manifests/fake-arm-only'.format(self.repo['id'])
+        )
+        self.assertEqual(response.status_code, 404, response.content)
+
+
 class RepoRegistryIdTestCase(SyncPublishMixin, unittest.TestCase):
     """Show Pulp can publish repos with varying ``repo_registry_id`` values."""
 
