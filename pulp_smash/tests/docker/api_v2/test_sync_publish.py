@@ -304,8 +304,11 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         super().setUpClass()
         cls.cfg = config.get_config()
         cls.repo = {}
-        if selectors.bug_is_untestable(2287, cls.cfg.version):
-            raise unittest.SkipTest('https://pulp.plan.io/issues/2287')
+        for issue_id in (2287, 2384):
+            if selectors.bug_is_untestable(issue_id, cls.cfg.version):
+                raise unittest.SkipTest(
+                    'https://pulp.plan.io/issues/{}'.format(issue_id)
+                )
 
     @classmethod
     def tearDownClass(cls):
@@ -320,7 +323,8 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         Specifically, do the following:
 
         1. Create, sync and publish a Docker repository. Let the repository's
-           feed reference a v2 Docker registry.
+           feed reference a v2 Docker registry, and let the repository's
+           upstream name reference an image with a manifest list.
         2. Make Crane immediately re-read the metadata files published by Pulp.
            (Restart Apache.)
         """
@@ -330,7 +334,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
             'enable_v1': False,
             'enable_v2': True,
             'feed': DOCKER_V2_FEED_URL,
-            'upstream_name': DOCKER_UPSTREAM_NAME,
+            'upstream_name': DOCKER_UPSTREAM_NAME_MANIFEST_LIST,
         })
         body['distributors'] = [gen_distributor()]
         type(self).repo = client.post(REPOSITORY_PATH, body)
@@ -398,96 +402,12 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
 
         Pass a header of
         ``accept:application/vnd.docker.distribution.manifest.v2+json``. Assert
-        the response matches :data:`MANIFEST_V2`.
+        that the response body matches :data:`MANIFEST_V2`.
 
         This test targets `Pulp #2336 <https://pulp.plan.io/issues/2336>`_.
         """
         if selectors.bug_is_untestable(2336, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2336')
-        client = api.Client(self.cfg, api.json_handler, {'headers': {
-            'accept': 'application/vnd.docker.distribution.manifest.v2+json'
-        }})
-        client.request_kwargs['url'] = self.adjust_url(
-            client.request_kwargs['url']
-        )
-        manifest = client.get(
-            '/v2/{}/manifests/latest'.format(self.repo['id'])
-        )
-        validate(manifest, MANIFEST_V1)
-
-
-class ManifestListTestCase(SyncPublishMixin, unittest.TestCase):
-    """Test whether manifest lists can be used."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        super().setUpClass()
-        cls.cfg = config.get_config()
-        cls.repo = {}
-        if selectors.bug_is_untestable(2384, cls.cfg.version):
-            raise unittest.SkipTest('https://pulp.plan.io/issues/2384')
-
-    @classmethod
-    def tearDownClass(cls):
-        """Clean up resources."""
-        if cls.repo:
-            api.Client(cls.cfg).delete(cls.repo['_href'])
-        super().tearDownClass()
-
-    def test_01_set_up(self):
-        """Create, sync and publish a Docker repository.
-
-        Ensure the Docker repository's feed references a docker image that has
-        a manifest list.
-        """
-        client = api.Client(self.cfg, api.json_handler)
-        body = gen_repo()
-        body['importer_config'].update({
-            'enable_v1': False,
-            'enable_v2': True,
-            'feed': DOCKER_V2_FEED_URL,
-            'upstream_name': DOCKER_UPSTREAM_NAME_MANIFEST_LIST,
-        })
-        body['distributors'] = [gen_distributor()]
-        type(self).repo = client.post(REPOSITORY_PATH, body)
-        type(self).repo = client.get(
-            self.repo['_href'],
-            params={'details': True}
-        )
-        utils.sync_repo(self.cfg, self.repo)
-        utils.publish_repo(self.cfg, self.repo)
-
-        # Make Crane read the metadata. (Now!)
-        cli.GlobalServiceManager(self.cfg).restart(('httpd',))
-
-    @selectors.skip_if(bool, 'repo', False)
-    def test_02_get_manifest_v1(self):
-        """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
-
-        Pass a header of
-        ``accept:application/vnd.docker.distribution.manifest.v1+json``.
-        Assert that the response body matches :data:`MANIFEST_V1`.
-        """
-        client = api.Client(self.cfg, api.json_handler, {'headers': {
-            'accept': 'application/vnd.docker.distribution.manifest.v1+json'
-        }})
-        client.request_kwargs['url'] = self.adjust_url(
-            client.request_kwargs['url']
-        )
-        manifest = client.get(
-            '/v2/{}/manifests/latest'.format(self.repo['id'])
-        )
-        validate(manifest, MANIFEST_V1)
-
-    @selectors.skip_if(bool, 'repo', False)
-    def test_02_get_manifest_v2(self):
-        """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
-
-        Pass a header of
-        ``accept:application/vnd.docker.distribution.manifest.v1+json``.
-        Assert that the response body matches :data:`MANIFEST_V2`.
-        """
         client = api.Client(self.cfg, api.json_handler, {'headers': {
             'accept': 'application/vnd.docker.distribution.manifest.v2+json'
         }})
