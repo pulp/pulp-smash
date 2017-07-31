@@ -83,17 +83,30 @@ CONTENT_UPLOAD_PATH = '/pulp/api/v2/content/uploads/'
 DOCKER_IMAGE_URL = urljoin(PULP_FIXTURES_BASE_URL, 'docker/busybox:latest.tar')
 """The URL to a Docker image as created by ``docker save``."""
 
-DOCKER_UPSTREAM_NAME = 'library/busybox'
-"""The name of a repository present in each of the two docker feeds."""
+DOCKER_UPSTREAM_NAME = 'dmage/manifest-list-test'
+"""The name of a Docker repository.
 
-DOCKER_UPSTREAM_NAME_MANIFEST_LIST = 'dmage/manifest-list-test'
-"""The name of a docker v2 repository with a manifest list.
+This repository has several desireable properties:
 
-One can verify that this repository has a manifest list by executing:
+* It is available via both :data:`DOCKER_V1_FEED_URL` and
+  :data:`DOCKER_V2_FEED_URL`.
+* It has a manifest list, where one entry has an architecture of amd64 and an
+  os of linux. (The "latest" tag offers this.)
+* It is relatively small.
+
+There are also several ways in which this repository is lacking:
+
+* This repository isn't an official repository. It's less trustworthy, and may
+  be more likely to change with little or no notice.
+* It doesn't have a manifest list, where no entries have an architecture of
+  amd64 and an os of linux. (The "arm32v7" tag provides schema v1 content.)
+
+One can get a high-level view of the content in this repository by executing:
 
 .. code-block:: sh
 
-    curl -s https://registry.hub.docker.com/v2/repositories/$this_constant \
+    curl --location --silent \
+    https://registry.hub.docker.com/v2/repositories/$this_constant/tags \
     | python -m json.tool
 """
 

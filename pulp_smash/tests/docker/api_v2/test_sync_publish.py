@@ -9,7 +9,6 @@ from packaging.version import Version
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
     DOCKER_UPSTREAM_NAME,
-    DOCKER_UPSTREAM_NAME_MANIFEST_LIST,
     DOCKER_V1_FEED_URL,
     DOCKER_V2_FEED_URL,
     REPOSITORY_PATH,
@@ -334,7 +333,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
             'enable_v1': False,
             'enable_v2': True,
             'feed': DOCKER_V2_FEED_URL,
-            'upstream_name': DOCKER_UPSTREAM_NAME_MANIFEST_LIST,
+            'upstream_name': DOCKER_UPSTREAM_NAME,
         })
         body['distributors'] = [gen_distributor()]
         type(self).repo = client.post(REPOSITORY_PATH, body)
@@ -473,7 +472,7 @@ class NonNamespacedImageTestCase(SyncPublishMixin, unittest.TestCase):
             'enable_v1': False,
             'enable_v2': True,
             'feed': DOCKER_V2_FEED_URL,
-            'upstream_name': DOCKER_UPSTREAM_NAME.split('/')[-1],
+            'upstream_name': 'busybox',
         })
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)

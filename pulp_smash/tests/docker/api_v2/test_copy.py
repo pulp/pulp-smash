@@ -6,7 +6,6 @@ from urllib.parse import urljoin
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
     DOCKER_UPSTREAM_NAME,
-    DOCKER_UPSTREAM_NAME_MANIFEST_LIST,
     DOCKER_V1_FEED_URL,
     DOCKER_V2_FEED_URL,
     REPOSITORY_PATH,
@@ -94,7 +93,7 @@ class CopyV2ContentTestCase(unittest.TestCase):
             'enable_v1': False,
             'enable_v2': True,
             'feed': DOCKER_V2_FEED_URL,
-            'upstream_name': DOCKER_UPSTREAM_NAME_MANIFEST_LIST,
+            'upstream_name': DOCKER_UPSTREAM_NAME,
         })
         type(self).repo = client.post(REPOSITORY_PATH, body)
         utils.sync_repo(self.cfg, self.repo)
