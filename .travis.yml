@@ -6,7 +6,9 @@ python:
     - 3.6
 install:
     - ./setup.py test; git clean -dfx
-    - pip install -r requirements.txt -r requirements-dev.txt
+    # Old versions of pip can't handle extras_require in setup.py.
+    - pip install --upgrade pip
+    - pip install .[dev]
 script:
     - make all
 after_success:

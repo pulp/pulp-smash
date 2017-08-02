@@ -47,6 +47,25 @@ setup(
         'pyxdg',
         'requests',
     ],
+    extras_require={
+        'dev': [
+            # For `make lint`
+            'flake8',
+            'flake8-docstrings',
+            'flake8-quotes',
+            'pydocstyle',
+            'pylint',
+            'astroid',
+            # For `make test-coverage`
+            'coveralls',
+            # For `make docs-html` and `make docs-clean`
+            'sphinx',
+            # For `make package`
+            'wheel',
+            # For `make publish`
+            'twine',
+        ],
+    },
     entry_points={
         'console_scripts': ['pulp-smash=pulp_smash.pulp_smash_cli:pulp_smash'],
     },

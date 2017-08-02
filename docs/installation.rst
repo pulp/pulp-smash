@@ -26,13 +26,15 @@ To install Pulp Smash from source (`GitHub`_):
     pip install .
 
 Pulp Smash can also be installed from source in "develop mode," where changes to
-source code are reflected in the working environment:
+source code are reflected in the working environment. The ``--editable`` flag
+does this. Also, development dependencies can be installed by requiring the
+extra "dev" group.
 
 .. code-block:: sh
 
     git clone https://github.com/PulpQE/pulp-smash.git
     cd pulp-smash
-    pip install -r requirements.txt -r requirements-dev.txt
+    pip install --editable .[dev]
 
 For an explanation of key concepts and more installation strategies, see
 `Installing Python Modules`_.
