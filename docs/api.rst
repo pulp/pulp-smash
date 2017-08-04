@@ -35,6 +35,7 @@ developers, not a gospel.
     api/pulp_smash.tests.docker.utils
     api/pulp_smash.tests.ostree
     api/pulp_smash.tests.ostree.api_v2
+    api/pulp_smash.tests.ostree.api_v2.test_copy
     api/pulp_smash.tests.ostree.api_v2.test_crud
     api/pulp_smash.tests.ostree.api_v2.test_publish
     api/pulp_smash.tests.ostree.api_v2.test_sync
