@@ -103,6 +103,7 @@ developers, not a gospel.
     api/pulp_smash.tests.rpm.api_v2.test_signatures_saved_for_packages
     api/pulp_smash.tests.rpm.api_v2.test_sync_publish
     api/pulp_smash.tests.rpm.api_v2.test_unassociate
+    api/pulp_smash.tests.rpm.api_v2.test_unavailable_checksum
     api/pulp_smash.tests.rpm.api_v2.test_updateinfo
     api/pulp_smash.tests.rpm.api_v2.test_upload_publish
     api/pulp_smash.tests.rpm.api_v2.utils
