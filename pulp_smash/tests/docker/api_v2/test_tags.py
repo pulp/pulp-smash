@@ -11,14 +11,13 @@ from packaging.version import Version
 from pulp_smash import api, config, utils
 from pulp_smash.constants import (
     CONTENT_UPLOAD_PATH,
-    DOCKER_UPSTREAM_NAME,
     DOCKER_V1_FEED_URL,
     DOCKER_V2_FEED_URL,
     REPOSITORY_PATH,
 )
 from pulp_smash.exceptions import TaskReportError
 from pulp_smash.tests.docker.api_v2.utils import gen_repo
-from pulp_smash.tests.docker.utils import set_up_module
+from pulp_smash.tests.docker.utils import get_upstream_name, set_up_module
 
 
 def setUpModule():  # pylint:disable=invalid-name
@@ -78,7 +77,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
     def setUp(self):
         """Create and sync a docker repository."""
         super().setUp()
-        self.repo = create_docker_repo(self.cfg, DOCKER_UPSTREAM_NAME)
+        self.repo = create_docker_repo(self.cfg, get_upstream_name(self.cfg))
         self.addCleanup(api.Client(self.cfg).delete, self.repo['_href'])
         utils.sync_repo(self.cfg, self.repo)
         self.repo = api.Client(self.cfg, api.json_handler).get(

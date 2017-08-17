@@ -8,12 +8,12 @@ from packaging.version import Version
 
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
-    DOCKER_UPSTREAM_NAME,
     DOCKER_V1_FEED_URL,
     DOCKER_V2_FEED_URL,
     REPOSITORY_PATH,
 )
 from pulp_smash.tests.docker.api_v2.utils import gen_distributor, gen_repo
+from pulp_smash.tests.docker.utils import get_upstream_name
 from pulp_smash.tests.docker.utils import set_up_module  # noqa pylint:disable=unused-import
 
 # Variable name derived from HTTP content-type.
@@ -243,7 +243,7 @@ class V1RegistryTestCase(SyncPublishMixin, unittest.TestCase):
             'enable_v1': True,
             'enable_v2': False,
             'feed': DOCKER_V1_FEED_URL,
-            'upstream_name': DOCKER_UPSTREAM_NAME,
+            'upstream_name': get_upstream_name(self.cfg),
         })
         body['distributors'] = [gen_distributor()]
         type(self).repo = client.post(REPOSITORY_PATH, body)
@@ -333,7 +333,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
             'enable_v1': False,
             'enable_v2': True,
             'feed': DOCKER_V2_FEED_URL,
-            'upstream_name': DOCKER_UPSTREAM_NAME,
+            'upstream_name': get_upstream_name(self.cfg),
         })
         body['distributors'] = [gen_distributor()]
         type(self).repo = client.post(REPOSITORY_PATH, body)
@@ -563,8 +563,8 @@ class NoAmd64LinuxTestCase(SyncPublishMixin, unittest.TestCase):
             'enable_v1': False,
             'enable_v2': True,
             'feed': DOCKER_V2_FEED_URL,
-            # DOCKER_UPSTREAM_NAME has an image without any amd64/linux build.
-            # However, it has a v1 manifest.
+            # DOCKER_UPSTREAM_NAME (dmage/manifest-list-test) has an image
+            # without any amd64/linux build. However, it has a v1 manifest.
             'upstream_name': 'dmage/busybox',
         })
         body['distributors'] = [gen_distributor()]
@@ -686,7 +686,7 @@ class RepoRegistryIdTestCase(SyncPublishMixin, unittest.TestCase):
             'enable_v1': False,
             'enable_v2': True,
             'feed': DOCKER_V2_FEED_URL,
-            'upstream_name': DOCKER_UPSTREAM_NAME,
+            'upstream_name': get_upstream_name(cfg),
         })
         body['distributors'] = [gen_distributor()]
         body['distributors'][0]['distributor_config']['repo-registry-id'] = (

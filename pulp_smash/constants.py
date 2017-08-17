@@ -83,6 +83,21 @@ CONTENT_UPLOAD_PATH = '/pulp/api/v2/content/uploads/'
 DOCKER_IMAGE_URL = urljoin(PULP_FIXTURES_BASE_URL, 'docker/busybox:latest.tar')
 """The URL to a Docker image as created by ``docker save``."""
 
+DOCKER_UPSTREAM_NAME_NOLIST = 'library/busybox'
+"""The name of a Docker repository without a manifest list.
+
+:data:`DOCKER_UPSTREAM_NAME` should be used when possible. However, this
+constant is useful for backward compatibility. If Pulp is asked to sync a
+repository, and:
+
+* Pulp older than 2.14 is under test.
+* The repository is configured to sync schema v2 content.
+* The upstream repository has a manifest list.
+
+…then Pulp will break when syncing. See `Pulp #2384
+<https://pulp.plan.io/issues/2384>`_.
+"""
+
 DOCKER_UPSTREAM_NAME = 'dmage/manifest-list-test'
 """The name of a Docker repository.
 
@@ -94,11 +109,11 @@ This repository has several desireable properties:
   os of linux. (The "latest" tag offers this.)
 * It is relatively small.
 
-There are also several ways in which this repository is lacking:
+This repository also has several shortcomings:
 
 * This repository isn't an official repository. It's less trustworthy, and may
   be more likely to change with little or no notice.
-* It doesn't have a manifest list, where no entries have an architecture of
+* It doesn't have a manifest list where no list entries have an architecture of
   amd64 and an os of linux. (The "arm32v7" tag provides schema v1 content.)
 
 One can get a high-level view of the content in this repository by executing:

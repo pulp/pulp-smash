@@ -1,9 +1,8 @@
 # coding=utf-8
 """Tests for syncing and publishing docker repositories."""
 from pulp_smash import cli, config, selectors, utils
-from pulp_smash.constants import DOCKER_UPSTREAM_NAME
 from pulp_smash.tests.docker.cli.utils import repo_create, repo_delete
-from pulp_smash.tests.docker.utils import set_up_module
+from pulp_smash.tests.docker.utils import get_upstream_name, set_up_module
 
 
 def setUpModule():  # pylint:disable=invalid-name
@@ -22,7 +21,7 @@ class InvalidFeedTestCase(utils.BaseAPITestCase):
             self.cfg,
             feed='https://docker.example.com',
             repo_id=repo_id,
-            upstream_name=DOCKER_UPSTREAM_NAME,
+            upstream_name=get_upstream_name(self.cfg),
         ).stdout)
         self.addCleanup(repo_delete, self.cfg, repo_id)
         client = cli.Client(self.cfg, cli.echo_handler)

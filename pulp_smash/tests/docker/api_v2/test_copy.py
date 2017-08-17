@@ -5,12 +5,12 @@ from urllib.parse import urljoin
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
-    DOCKER_UPSTREAM_NAME,
     DOCKER_V1_FEED_URL,
     DOCKER_V2_FEED_URL,
     REPOSITORY_PATH,
 )
 from pulp_smash.tests.docker.api_v2.utils import gen_repo
+from pulp_smash.tests.docker.utils import get_upstream_name
 from pulp_smash.tests.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -32,14 +32,14 @@ class CopyV1ContentTestCase(unittest.TestCase):
         super().tearDownClass()
 
     def test_01_set_up(self):
-        """Create a repository and populate with with schema v2 content."""
+        """Create a repository and populate with with schema v1 content."""
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config'].update({
             'enable_v1': True,
             'enable_v2': False,
             'feed': DOCKER_V1_FEED_URL,
-            'upstream_name': DOCKER_UPSTREAM_NAME,
+            'upstream_name': get_upstream_name(self.cfg),
         })
         type(self).repo = client.post(REPOSITORY_PATH, body)
         utils.sync_repo(self.cfg, self.repo)
@@ -93,7 +93,7 @@ class CopyV2ContentTestCase(unittest.TestCase):
             'enable_v1': False,
             'enable_v2': True,
             'feed': DOCKER_V2_FEED_URL,
-            'upstream_name': DOCKER_UPSTREAM_NAME,
+            'upstream_name': get_upstream_name(self.cfg),
         })
         type(self).repo = client.post(REPOSITORY_PATH, body)
         utils.sync_repo(self.cfg, self.repo)

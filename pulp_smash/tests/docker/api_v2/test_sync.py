@@ -7,13 +7,12 @@ from packaging.version import Version
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
-    DOCKER_UPSTREAM_NAME,
     DOCKER_V1_FEED_URL,
     DOCKER_V2_FEED_URL,
     REPOSITORY_PATH,
 )
 from pulp_smash.tests.docker.api_v2.utils import gen_repo
-from pulp_smash.tests.docker.utils import set_up_module
+from pulp_smash.tests.docker.utils import get_upstream_name, set_up_module
 
 
 def setUpModule():  # pylint:disable=invalid-name
@@ -37,7 +36,7 @@ class UpstreamNameTestsMixin(object):
         """
         api.Client(self.cfg).post(
             urljoin(self.repo_href, 'actions/sync/'),
-            {'override_config': {'upstream_name': DOCKER_UPSTREAM_NAME}},
+            {'override_config': {'upstream_name': get_upstream_name(self.cfg)}}
         )
 
     def test_invalid_upstream_name(self):
@@ -47,7 +46,7 @@ class UpstreamNameTestsMixin(object):
         """
         if selectors.bug_is_untestable(2230, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2230')
-        docker_upstream_name = DOCKER_UPSTREAM_NAME.replace('/', ' ')
+        docker_upstream_name = get_upstream_name(self.cfg).replace('/', ' ')
         response = api.Client(self.cfg, api.echo_handler).post(
             urljoin(self.repo_href, 'actions/sync/'),
             {'override_config': {'upstream_name': docker_upstream_name}},
