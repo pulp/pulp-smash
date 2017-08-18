@@ -20,6 +20,9 @@ from pulp_smash.constants import (
     REPOSITORY_PATH,
     RPM,
     RPM_DATA,
+    RPM_WITH_VENDOR_URL,
+    RPM_WITH_VENDOR_DATA,
+    RPM_WITH_VENDOR,
     RPM_UNSIGNED_URL,
     SRPM,
     SRPM_UNSIGNED_URL,
@@ -254,7 +257,8 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
         Verify that only one content unit is in ``repo``, and that several of
         its metadata attributes are correct. This test targets `Pulp #2365
         <https://pulp.plan.io/issues/2365>`_ and `Pulp #2754
-        <https://pulp.plan.io/issues/2754>`_
+        <https://pulp.plan.io/issues/2754>`_ and `Pulp #2781
+        <https://pulp.plan.io/issues/2781>`_
         """
         units = utils.search_units(self.cfg, repo)
         self.assertEqual(len(units), 1)
@@ -332,3 +336,82 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
             )
         with self.subTest():
             self.assertEqual(self.rpm, response.content)
+
+
+class UploadRetainsVendorData(utils.BaseAPITestCase):
+    """Test whether one can upload, associate and publish RPMs.
+
+    The test procedure is as follows:
+
+    1. Create a repository.
+    2. Upload an RPM to the first repository, and publish it.
+    3. Test that RPM metadata includes all available fields, including vendor.
+    """
+
+    def test_all(self):
+        """Create a pair of RPM repositories."""
+        if selectors.bug_is_untestable(2781, self.cfg.version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2781')
+        rpm = utils.http_get(RPM_WITH_VENDOR_URL)
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(REPOSITORY_PATH, body)
+
+        # Info about repo distributors is needed when publishing.
+        repo = client.get(repo['_href'], params={'details': True})
+        self.addCleanup(client.delete, repo['_href'])
+        self.addCleanup(client.delete, ORPHANS_PATH)
+        utils.upload_import_unit(
+            self.cfg,
+            rpm,
+            {'unit_type_id': 'rpm'},
+            repo,
+        )
+        utils.publish_repo(self.cfg, repo)
+        units = utils.search_units(self.cfg, repo)
+        with self.subTest(comment='Vendor info present and correct'):
+            self.assertEqual(
+                units[0]['metadata']['vendor'],
+                RPM_WITH_VENDOR_DATA['metadata']['vendor'],
+            )
+        # filename and derived attributes
+        with self.subTest(comment='Filename present and correct'):
+            self.assertEqual(units[0]['metadata']['filename'], RPM_WITH_VENDOR)
+        with self.subTest(comment='Epoch present and correct'):
+            self.assertEqual(
+                units[0]['metadata']['epoch'],
+                RPM_WITH_VENDOR_DATA['epoch']
+            )
+        with self.subTest(comment='Name present and correct'):
+            self.assertEqual(
+                units[0]['metadata']['name'],
+                RPM_WITH_VENDOR_DATA['name']
+            )
+        with self.subTest(comment='Version present and correct'):
+            self.assertEqual(
+                units[0]['metadata']['version'],
+                RPM_WITH_VENDOR_DATA['version']
+            )
+        with self.subTest(comment='Release present and correct'):
+            self.assertEqual(
+                units[0]['metadata']['release'],
+                RPM_WITH_VENDOR_DATA['release']
+            )
+
+        # other attributes
+        with self.subTest(comment='License present and correct'):
+            self.assertEqual(
+                units[0]['metadata']['license'],
+                RPM_WITH_VENDOR_DATA['metadata']['license']
+            )
+        with self.subTest(comment='Description present and correct'):
+            self.assertEqual(
+                units[0]['metadata']['description'],
+                RPM_WITH_VENDOR_DATA['metadata']['description'],
+            )
+        with self.subTest(comment='File info present and correct'):
+            self.assertEqual(
+                units[0]['metadata']['files'],
+                RPM_WITH_VENDOR_DATA['metadata']['files'],
+            )
