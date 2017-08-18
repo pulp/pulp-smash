@@ -388,7 +388,6 @@ RPM_DATA = MappingProxyType({
     'version': '4.1',
     'release': '1',
     'arch': 'noarch',
-    'vendor': None,
     'metadata': {
         'release': '1',
         'license': 'GPLv2',
@@ -398,6 +397,7 @@ RPM_DATA = MappingProxyType({
         'size': {'installed': 42, 'package': 1846},
         'sourcerpm': 'bear-4.1-1.src.rpm',
         'summary': 'A dummy package of bear',
+        'vendor': None,
     },
 })
 """Metadata for an RPM with an associated erratum.
@@ -444,7 +444,6 @@ RPM2_DATA = MappingProxyType({
     'version': '0.1',
     'release': '1',
     'arch': 'noarch',
-    'vendor': None,
     'metadata': {
         'release': '1',
         'license': 'GPLv2',
@@ -454,6 +453,7 @@ RPM2_DATA = MappingProxyType({
         'size': '42',
         'sourcerpm': 'camel-0.1-1.src.rpm',
         'summary': 'A dummy package of camel',
+        'vendor': None,
     },
 })
 
@@ -465,6 +465,34 @@ RPM2 = '{}-{}{}-{}.{}.rpm'.format(
     RPM2_DATA['arch'],
 )
 """The name of an RPM. See :data:`pulp_smash.constants.RPM2_UNSIGNED_URL`."""
+
+RPM_WITH_VENDOR_DATA = MappingProxyType({
+    'name': 'rpm-with-vendor',
+    'epoch': '0',
+    'version': '1',
+    'release': '1.fc25',
+    'arch': 'noarch',
+    'metadata': {
+        'release': '1',
+        'license': 'Public Domain',
+        'description': 'This RPM has a vendor',
+        'files': {'dir': [], 'file': []},
+        'group': None,
+        'size': None,
+        'sourcerpm': None,
+        'summary': None,
+        'vendor': 'Pulp Fixtures',
+    },
+})
+
+RPM_WITH_VENDOR = '{}-{}{}-{}.{}.rpm'.format(
+    RPM_WITH_VENDOR_DATA['name'],
+    RPM_WITH_VENDOR_DATA['epoch'] + '!' if RPM_DATA['epoch'] != '0' else '',
+    RPM_WITH_VENDOR_DATA['version'],
+    RPM_WITH_VENDOR_DATA['release'],
+    RPM_WITH_VENDOR_DATA['arch'],
+)
+"""The name of an RPM. See :data:`pulp_smash.constants.RPM_WITH_VENDOR_URL`."""
 
 RPM_ALT_LAYOUT_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-alt-layout/')
 """The URL to a signed RPM repository. See :data:`RPM_SIGNED_URL`."""
@@ -612,6 +640,12 @@ RPM_WITH_NON_UTF_8_URL = urljoin(
     'rpm-with-non-utf-8/rpm-with-non-utf-8-1-1.fc25.noarch.rpm'
 )
 """The URL to an RPM with non-UTF-8 metadata in its header."""
+
+RPM_WITH_VENDOR_URL = urljoin(
+    PULP_FIXTURES_BASE_URL,
+    'rpm-with-vendor/rpm-with-vendor-1-1.fc25.noarch.rpm'
+)
+"""The URL of an RPM with a specified vendor in its header."""
 
 SRPM = 'test-srpm02-1.0-1.src.rpm'
 """An SRPM file at :data:`pulp_smash.constants.SRPM_SIGNED_FEED_URL`."""

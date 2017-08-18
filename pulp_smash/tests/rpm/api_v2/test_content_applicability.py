@@ -30,7 +30,7 @@ RPM_WITH_ERRATUM_METADATA = MappingProxyType({
     'version': RPM_DATA['version'],
     'release': int(RPM_DATA['release']),
     'arch': RPM_DATA['arch'],
-    'vendor': RPM_DATA['vendor'],
+    'vendor': RPM_DATA['metadata']['vendor'],
 })
 """Metadata for an RPM with an associated erratum."""
 
@@ -40,7 +40,7 @@ RPM_WITHOUT_ERRATUM_METADATA = MappingProxyType({
     'version': RPM2_DATA['version'],
     'release': int(RPM2_DATA['release']),
     'arch': RPM2_DATA['arch'],
-    'vendor': RPM2_DATA['vendor'],
+    'vendor': RPM2_DATA['metadata']['vendor'],
 })
 """Metadata for an RPM without an associated erratum."""
 
