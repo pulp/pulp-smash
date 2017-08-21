@@ -127,53 +127,41 @@ class UploadDrpmTestCaseWithCheckSumType(utils.BaseAPITestCase):
         )
 
 
-class UploadDrpmInconsistentChecksumTestCase(unittest.TestCase):
-    """Test whether the checksum value is consistent with the checksum type.
-
-    `Pulp issue #2774 <https://pulp.plan.io/issues/2774>`_ caused
-    checksum value is not according to checksum type that was specified.
-
-    This test case targets `Pulp Smash #663
-    <https://github.com/PulpQE/pulp-smash/issues/663>`_
-    """
+class UploadedDrpmChecksumTypeTestCase(unittest.TestCase):
+    """Verify uploaded DRPMs have checksums of the requested type."""
 
     def test_all(self):
-        """Verify that checksum value is according to specified checksum type.
+        """Verify uploaded DRPMs have checksums of the requested type.
 
         Specifically, this method does the following:
 
         1. Create a yum repository.
         2. Upload a DRPM into the repository with "checksumtype" set to
-           "md5"
+           "md5".
         3. Assert that "checksumtype" was set to "md5".
         4. Assert that checksum value was calculated according to "md5".
+
+        This test targets:
+
+        * `Pulp #2774 <https://pulp.plan.io/issues/2774>`_
+        * `Pulp Smash #663 <https://github.com/PulpQE/pulp-smash/issues/663>`_
         """
         cfg = config.get_config()
-        if selectors.bug_is_untestable(1806, cfg.version):
-            raise unittest.SkipTest('https://pulp.plan.io/issues/1806')
-        if selectors.bug_is_untestable(2627, cfg.version):
-            raise unittest.SkipTest('https://pulp.plan.io/issues/2627')
         client = api.Client(cfg, api.json_handler)
         repo = client.post(REPOSITORY_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
         drpm = utils.http_get(DRPM_UNSIGNED_URL)
-        utils.upload_import_unit(
-            cfg,
-            drpm,
-            {
-                'unit_type_id': 'drpm',
-                'unit_metadata': {'checksumtype': 'md5'},
-            },
-            repo,
-        )
+        utils.upload_import_unit(cfg, drpm, {
+            'unit_metadata': {'checksumtype': 'md5'},
+            'unit_type_id': 'drpm',
+        }, repo)
         units = utils.search_units(cfg, repo)
-        # Perform Assertions
-        with self.subTest(comment='verify checksumtype set'):
-            self.assertEqual(
-                units[0]['metadata']['checksum'],
-                'md5'
-            )
-        with self.subTest(comment='verify checksum value'):
+
+        with self.subTest(comment='verify checksumtype'):
+            self.assertEqual(units[0]['metadata']['checksumtype'], 'md5')
+        with self.subTest(comment='verify checksum'):
+            if selectors.bug_is_untestable(2774, cfg.version):
+                self.skipTest('https://pulp.plan.io/issues/2774')
             self.assertEqual(
                 units[0]['metadata']['checksum'],
                 units[0]['metadata']['checksums']['md5']
