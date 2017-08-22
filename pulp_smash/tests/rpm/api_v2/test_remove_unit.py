@@ -13,6 +13,7 @@ from pulp_smash.constants import (
     ORPHANS_PATH,
     REPOSITORY_PATH,
     RPM_SIGNED_FEED_URL,
+    RPM_UNSIGNED_FEED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import check_issue_2277, check_issue_2620
@@ -177,7 +178,7 @@ class RemoveMissingTestCase(unittest.TestCase):
 
 
 class RemoveCountTestCase(unittest.TestCase):
-    """Re-sync a child repository with the `remove_missing` enabled.
+    """Re-sync a child repository with the ``remove_missing`` enabled.
 
     After removing an arbitrary number of units from the parent repository.
 
@@ -185,29 +186,30 @@ class RemoveCountTestCase(unittest.TestCase):
 
     1. Create 1st repository with, feed, sync and publish it.
     2. Create 2nd repository with feed pointed to 1st repository, and
-       `remove_missing` enabled, sync.
+       ``remove_missing`` enabled, sync.
     3. Remove an arbitrary number of units from 1st repository, re-publish it.
-    4. Re-sync the 2nd repository. Assert that `removed_count` is equal to
+    4. Re-sync the 2nd repository. Assert that ``removed_count`` is equal to
        number of removed units.
 
-    `Pulp issue #2616 <https://pulp.plan.io/issues/2616>`_ caused
-    after sync with remove_missing option the next publish is no-op.
+    `Pulp issue #2616 <https://pulp.plan.io/issues/2616>`_ caused after sync
+    with remove_missing option the next publish is no-op.
     """
 
     def test_all(self):
-        """Re-sync a child repository with the `remove_missing` enabled."""
+        """Re-sync a child repository with the ``remove_missing`` enabled."""
         repos = []
         cfg = config.get_config()
         if selectors.bug_is_untestable(2616, cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2616')
+
         # Create 1st repo, sync and publish it.
         client = api.Client(cfg, api.json_handler)
         body = gen_repo()
-        body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
+        body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
         body['distributors'] = [gen_distributor()]
         repos.append(client.post(REPOSITORY_PATH, body))
         self.addCleanup(client.delete, repos[0]['_href'])
-        repos[0] = (_get_details(cfg, repos[0]))
+        repos[0] = _get_details(cfg, repos[0])
         utils.sync_repo(cfg, repos[0])
         utils.publish_repo(cfg, repos[0])
 
@@ -221,28 +223,30 @@ class RemoveCountTestCase(unittest.TestCase):
         body['importer_config']['remove_missing'] = True
         repos.append(client.post(REPOSITORY_PATH, body))
         self.addCleanup(client.delete, repos[1]['_href'])
-        repos[1] = (_get_details(cfg, repos[1]))
+        repos[1] = _get_details(cfg, repos[1])
         utils.sync_repo(cfg, repos[1])
 
-        # Arbitrary number of units to be removed.
-        units_removed = random.randint(1, len(_get_rpms(cfg, repos[0])))
-        # Remove an arbitrary number of units from 1 st repo , re-publish it.
-        units = random.sample(_get_rpms(cfg, repos[0]), units_removed)
-        for unit in units:
+        # Remove an arbitrary number of units from 1st repo, re-publish it.
+        units = _get_rpms(cfg, repos[0])
+        marked_units = random.sample(units, random.randint(1, len(units)))
+        for marked_unit in marked_units:
             criteria = {
-                'filters': {'unit': {'name': unit['metadata']['name']}},
-                'type_ids': [unit['unit_type_id']],
+                'filters': {'unit': {'name': marked_unit['metadata']['name']}},
+                'type_ids': [marked_unit['unit_type_id']],
             }
             client.post(
                 urljoin(repos[0]['_href'], 'actions/unassociate/'),
-                {'criteria': criteria}
+                {'criteria': criteria},
             )
         utils.publish_repo(cfg, repos[0])
 
         # Re-sync 2nd repo.
         report = utils.sync_repo(cfg, repos[1])
         tasks = tuple(api.poll_spawned_tasks(cfg, report.json()))
-        self.assertEqual(tasks[0]['result']['removed_count'], units_removed)
+        self.assertEqual(
+            tasks[0]['result']['removed_count'],
+            len(marked_units),
+        )
 
 
 def _get_rpms(cfg, repo):
