@@ -33,47 +33,36 @@ from pulp_smash.tests.rpm.utils import check_issue_2620
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
-class UploadDrpmTestCase(utils.BaseAPITestCase):
+class UploadDrpmTestCase(unittest.TestCase):
     """Test whether one can upload a DRPM into a repository.
+
+    Specifically, this method does the following:
+
+    1. Create a yum repository.
+    2. Upload a DRPM into the repository.
+    3. Search for all content units in the repository.
 
     This test case targets `Pulp Smash #336
     <https://github.com/PulpQE/pulp-smash/issues/336>`_
     """
 
-    @classmethod
-    def setUpClass(cls):
-        """Import a DRPM into a repository and search it for content units.
-
-        Specifically, this method does the following:
-
-        1. Create a yum repository.
-        2. Upload a DRPM into the repository.
-        3. Search for all content units in the repository.
-        """
-        super(UploadDrpmTestCase, cls).setUpClass()
-        if selectors.bug_is_untestable(1806, cls.cfg.version):
-            raise unittest.SkipTest('https://pulp.plan.io/issues/1806')
-        client = api.Client(cls.cfg)
+    def test_all(self):
+        """Import a DRPM into a repository and search it for content units."""
+        cfg = config.get_config()
+        if selectors.bug_is_untestable(1806, cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/1806')
+        client = api.Client(cfg)
         repo = client.post(REPOSITORY_PATH, gen_repo()).json()
-        cls.resources.add(repo['_href'])
+        self.addCleanup(client.delete, repo['_href'])
         drpm = utils.http_get(DRPM_UNSIGNED_URL)
-        utils.upload_import_unit(cls.cfg, drpm, {'unit_type_id': 'drpm'}, repo)
-        cls.units = utils.search_units(cls.cfg, repo, {}, api.safe_handler)
+        utils.upload_import_unit(cfg, drpm, {'unit_type_id': 'drpm'}, repo)
+        units = utils.search_units(cfg, repo)
 
-    def test_status_code_units(self):
-        """Verify the HTTP status code for repo units response."""
-        self.assertEqual(self.units.status_code, 200)
+        # Test if DRPM has been uploaded successfully
+        self.assertEqual(len(units), 1)
 
-    def test_drpm_uploaded_successfully(self):
-        """Test if DRPM has been uploaded successfully."""
-        self.assertEqual(len(self.units.json()), 1)
-
-    def test_drpm_file_name_is_correct(self):
-        """Test if DRPM extracted correct metadata for creating filename."""
-        self.assertEqual(
-            self.units.json()[0]['metadata']['filename'],
-            DRPM,
-        )
+        # Test if DRPM extracted correct metadata for creating filename
+        self.assertEqual(units[0]['metadata']['filename'], DRPM)
 
 
 class UploadDrpmTestCaseWithCheckSumType(utils.BaseAPITestCase):
