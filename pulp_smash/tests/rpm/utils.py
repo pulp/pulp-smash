@@ -76,17 +76,6 @@ def check_issue_2798(cfg):
             selectors.bug_is_untestable(2798, cfg.version))
 
 
-def check_issue_1282(cfg):
-    """Return true if `Pulp #1282`_ affects the targeted Pulp system.
-
-    :param pulp_smash.config.PulpSmashConfig cfg: The Pulp system under test.
-
-    .. _Pulp #1282: https://pulp.plan.io/issues/1282
-    """
-    return (cfg.version < Version('2.14') or
-            selectors.bug_is_untestable(1282, cfg.version))
-
-
 def check_issue_2844(cfg):
     """Return true if `Pulp #2844`_ affects the targeted Pulp system.
 

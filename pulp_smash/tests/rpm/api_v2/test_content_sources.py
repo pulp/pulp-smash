@@ -9,12 +9,11 @@ import unittest
 from io import StringIO
 from urllib.parse import urlsplit, urlunsplit
 
-from pulp_smash import api, cli, config, utils
+from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
     CONTENT_SOURCES_PATH,
     PULP_FIXTURES_BASE_URL,
 )
-from pulp_smash.tests.rpm.utils import check_issue_1282
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _HEADERS = {'X-RHUI-ID', 'X-CSRF-TOKEN'}
@@ -23,13 +22,18 @@ _HEADERS = {'X-RHUI-ID', 'X-CSRF-TOKEN'}
 class ValidHeadersTestCase(unittest.TestCase):
     """Define a content source with valid headers.
 
-    See: `Pulp Smash #643 <https://github.com/PulpQE/pulp-smash/issues/643>`_.
+    See:
+
+    * `Pulp #1282 <https://pulp.plan.io/issues/1282>`_
+    * `Pulp Smash #643 <https://github.com/PulpQE/pulp-smash/issues/643>`_
     """
 
     @classmethod
     def setUpClass(cls):
         """Create a content source with valid headers."""
         cls.cfg = config.get_config()
+        if selectors.bug_is_untestable(1282, cls.cfg.version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/1282')
         cls.cs_kwargs = {
             'source_id': utils.uuid4(),
             'headers': ' '.join(
@@ -76,14 +80,17 @@ class ValidHeadersTestCase(unittest.TestCase):
 class InvalidHeadersTestCase(unittest.TestCase):
     """Define a content source with invalid headers.
 
-    See: `Pulp Smash #643 <https://github.com/PulpQE/pulp-smash/issues/643>`_.
+    See:
+
+    * `Pulp #1282 <https://pulp.plan.io/issues/1282>`_
+    * `Pulp Smash #643 <https://github.com/PulpQE/pulp-smash/issues/643>`_
     """
 
     @classmethod
     def setUpClass(cls):
         """Create a content source with invalid headers."""
         cls.cfg = config.get_config()
-        if check_issue_1282(cls.cfg):
+        if selectors.bug_is_untestable(1282, cls.cfg.version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1282')
         cls.cs_kwargs = {
             'source_id': utils.uuid4(),
