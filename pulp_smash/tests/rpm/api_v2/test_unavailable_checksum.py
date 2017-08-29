@@ -8,16 +8,14 @@ from pulp_smash.constants import (
     REPOSITORY_PATH,
     RPM_NAMESPACES,
     RPM_UNSIGNED_FEED_URL,
-    SRPM_UNSIGNED_FEED_URL
+    SRPM_UNSIGNED_FEED_URL,
 )
-
 from pulp_smash.exceptions import TaskReportError
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
-    get_repodata
+    get_repodata,
 )
-
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -87,12 +85,12 @@ class UpdatedChecksumTestCase(unittest.TestCase):
 
     1. Create, sync and publish a repository with checksum type "sha256".
     2. Assert that the checksum type is the only one present on the
-       ``primary.xml``
-    3. Update the checksum type to "sha1", and use option ``force_full``
-       set as True.``force_full`` will force a complete re-publish to happen.
+       ``primary.xml``.
+    3. Update the checksum type to "sha1", and use option ``force_full`` set as
+       True. ``force_full`` will force a complete re-publish to happen.
        Re-publish the repository.
-    4. Assert that the updated checksum type is the only checksum type
-       present on ``primary.xml``.
+    4. Assert that the updated checksum type is the only checksum type present
+       on ``primary.xml``.
 
     This test targets `Pulp Smash #286
     <https://github.com/PulpQE/pulp-smash/issues/286>`_.
@@ -124,54 +122,27 @@ class UpdatedChecksumTestCase(unittest.TestCase):
         utils.sync_repo(cfg, repo)
         repo = client.get(repo['_href'], params={'details': True})
 
-        # Update checksum_type to be "sha256".
+        # Update checksum type to be "sha256" and publish the repository.
         client.put(repo['distributors'][0]['_href'], {
             'distributor_config': {'checksum_type': 'sha256'}
         })
         utils.publish_repo(cfg, repo)
-        checksum_type = self.get_checksum_type(
-            get_repodata(cfg, repo['distributors'][0], 'primary'))
+        self.verify_primary_xml(cfg, repo['distributors'][0], 'sha256')
 
-        # Assert that the specified checksum type "sha256"
-        # is the only one present in primary.xml.
-        with self.subTest(comment='checksum not found in primary.xml'):
-            self.assertIn('sha256', checksum_type)
-
-        # Assert that others checksum types are not present in primary.xml.
-        checksums = {'md5', 'sha1'}
-        for checksum in checksums:
-            with self.subTest(
-                comment='checksum found in primary.xml',
-                checksum=checksum
-            ):
-                self.assertNotIn(checksum, checksum_type)
-
-        # Updating the checksum type to "sha1", and re-publishing repository.
+        # Update the checksum type to "sha1", and re-publish the repository.
         client.put(repo['distributors'][0]['_href'], {
-            'distributor_config': {
-                'checksum_type': 'sha1',
-                'force_full': True
-            }
+            'distributor_config': {'checksum_type': 'sha1', 'force_full': True}
         })
         utils.publish_repo(cfg, repo)
-        checksum_type = self.get_checksum_type(
-            get_repodata(cfg, repo['distributors'][0], 'primary'))
+        self.verify_primary_xml(cfg, repo['distributors'][0], 'sha1')
 
-        with self.subTest(comment='checksum not found in primary.xml'):
-            self.assertIn('sha1', checksum_type)
-
-        checksums = {'md5', 'sha256'}
-        for checksum in checksums:
-            with self.subTest(
-                comment='checksum found in primary.xml',
-                checksum=checksum
-            ):
-                self.assertNotIn(checksum, checksum_type)
-
-    @staticmethod
-    def get_checksum_type(primary_xml):
-        """Parse ``primary.xml`` and return a list of checksum types."""
+    def verify_primary_xml(self, cfg, distributor, checksum_type):
+        """Verify a published repo's primary.xml uses the given checksum."""
+        primary_xml = get_repodata(cfg, distributor, 'primary')
         xpath = '{{{}}}package'.format(RPM_NAMESPACES['metadata/common'])
         packages = primary_xml.findall(xpath)
         xpath = '{{{}}}checksum'.format(RPM_NAMESPACES['metadata/common'])
-        return [package.find(xpath).get('type') for package in packages]
+        checksum_types = {
+            package.find(xpath).get('type') for package in packages
+        }
+        self.assertEqual(checksum_types, {checksum_type})
