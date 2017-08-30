@@ -84,13 +84,30 @@ class UpdatedChecksumTestCase(unittest.TestCase):
     Do the following:
 
     1. Create, sync and publish a repository with checksum type "sha256".
-    2. Assert that the checksum type is the only one present on the
-       ``primary.xml``.
+
+    2. After that several XML files - part of repodata will be inspected.
+
+       ``primary.xml``
+           Assert that the given checksum type is the only one present.
+
+       ``filelists.xml`` and ``other.xml``
+           Assert that the length of ``pkgid`` is according to the given
+           checksum type.
+
+       ``prestodelta.xml``
+           Assert that the given checksum type is the only one present.
+
+    For ``sha256`` the length of ``pkgid`` should be 64 hex digits, and
+    for ``sha1`` the length should be 40 hex digits.
+    For DRPM repositories the ``prestodelta.xml`` will be inspected as
+    well.
+
     3. Update the checksum type to "sha1", and use option ``force_full`` set as
-       True. ``force_full`` will force a complete re-publish to happen.
-       Re-publish the repository.
-    4. Assert that the updated checksum type is the only checksum type present
-       on ``primary.xml``.
+    True. ``force_full`` will force a complete re-publish to happen.
+    Re-publish the repository.
+
+    4. All aforementioned assertions performed on the step 2 will be executed
+    again to assure that new checksum type was updating properly.
 
     This test targets `Pulp Smash #286
     <https://github.com/PulpQE/pulp-smash/issues/286>`_.
@@ -127,14 +144,32 @@ class UpdatedChecksumTestCase(unittest.TestCase):
             'distributor_config': {'checksum_type': 'sha256'}
         })
         utils.publish_repo(cfg, repo)
-        self.verify_primary_xml(cfg, repo['distributors'][0], 'sha256')
+        with self.subTest(comment='primary.xml'):
+            self.verify_primary_xml(cfg, repo['distributors'][0], 'sha256')
+        with self.subTest(comment='filelists.xml'):
+            self.verify_filelists_xml(cfg, repo['distributors'][0], 'sha256')
+        with self.subTest(comment='other.xml'):
+            self.verify_other_xml(cfg, repo['distributors'][0], 'sha256')
+        if feed == DRPM_UNSIGNED_FEED_URL:
+            with self.subTest(comment='prestodelta.xml'):
+                self.verify_presto_delta_xml(
+                    cfg, repo['distributors'][0], 'sha256')
 
         # Update the checksum type to "sha1", and re-publish the repository.
         client.put(repo['distributors'][0]['_href'], {
             'distributor_config': {'checksum_type': 'sha1', 'force_full': True}
         })
         utils.publish_repo(cfg, repo)
-        self.verify_primary_xml(cfg, repo['distributors'][0], 'sha1')
+        with self.subTest(comment='primary.xml'):
+            self.verify_primary_xml(cfg, repo['distributors'][0], 'sha1')
+        with self.subTest(comment='filelists.xml'):
+            self.verify_filelists_xml(cfg, repo['distributors'][0], 'sha1')
+        with self.subTest(comment='other.xml'):
+            self.verify_other_xml(cfg, repo['distributors'][0], 'sha1')
+        if feed == DRPM_UNSIGNED_FEED_URL:
+            with self.subTest(comment='prestodelta.xml'):
+                self.verify_presto_delta_xml(
+                    cfg, repo['distributors'][0], 'sha1')
 
     def verify_primary_xml(self, cfg, distributor, checksum_type):
         """Verify a published repo's primary.xml uses the given checksum."""
@@ -144,5 +179,43 @@ class UpdatedChecksumTestCase(unittest.TestCase):
         xpath = '{{{}}}checksum'.format(RPM_NAMESPACES['metadata/common'])
         checksum_types = {
             package.find(xpath).get('type') for package in packages
+        }
+        self.assertEqual(checksum_types, {checksum_type})
+
+    def verify_filelists_xml(self, cfg, distributor, checksum_type):
+        """Verify a published repo's filelists.xml uses the given checksum."""
+        filelist_xml = get_repodata(cfg, distributor, 'filelists')
+        xpath = '{{{}}}package'.format(RPM_NAMESPACES['metadata/filelists'])
+        packages = filelist_xml.findall(xpath)
+        pkgids_len = {len(package.get('pkgid')) for package in packages}
+        self.verify_pkgid_len(pkgids_len, checksum_type)
+
+    def verify_other_xml(self, cfg, distributor, checksum_type):
+        """Verify a published repo's other.xml uses the given checksum."""
+        other_xml = get_repodata(cfg, distributor, 'other')
+        xpath = '{{{}}}package'.format(RPM_NAMESPACES['metadata/other'])
+        packages = other_xml.findall(xpath)
+        pkgids_len = {len(package.get('pkgid')) for package in packages}
+        self.verify_pkgid_len(pkgids_len, checksum_type)
+
+    def verify_pkgid_len(self, pkgid_len, checksum_type):
+        """Perform assertion based on the given checksum type.
+
+        Based on the checksum type provided different assertions will
+        be performed over the length of ``pkgid``.
+        """
+        if checksum_type == 'sha256':
+            # 256 bits / (4 bits / 1 hex digit) = 64 hex digits.
+            self.assertEqual(pkgid_len, {64})
+        if checksum_type == 'sha1':
+            # 160 bits / (4 bits / 1 hex digit) = 40 hex digits.
+            self.assertEqual(pkgid_len, {40})
+
+    def verify_presto_delta_xml(self, cfg, distributor, checksum_type):
+        """Verify a published repo's prestodelta.xml uses given checksum."""
+        presto_delta_xml = get_repodata(cfg, distributor, 'prestodelta')
+        checksum_types = {
+            node.attrib.get('type')
+            for node in presto_delta_xml.iter('checksum')
         }
         self.assertEqual(checksum_types, {checksum_type})
