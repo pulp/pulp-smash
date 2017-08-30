@@ -571,6 +571,8 @@ RPM_MISSING_PRIMARY_FEED_URL = urljoin(
 
 RPM_NAMESPACES = {
     'metadata/common': 'http://linux.duke.edu/metadata/common',
+    'metadata/filelists': 'http://linux.duke.edu/metadata/filelists',
+    'metadata/other': 'http://linux.duke.edu/metadata/other',
     'metadata/repo': 'http://linux.duke.edu/metadata/repo',
     'metadata/rpm': 'http://linux.duke.edu/metadata/rpm',
 }
@@ -581,6 +583,12 @@ namespaces. Some of the files that use these namespaces are listed below:
 
 metadata/common
     Used by ``repodata/primary.xml``.
+
+metadata/filelists
+    Used by ``repodata/filelists.xml``.
+
+metadata/other
+    Used by ``repodata/other.xml``.
 
 metadata/repo
     Used by ``repodata/repomd.xml``.
