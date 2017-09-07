@@ -84,30 +84,25 @@ class UpdatedChecksumTestCase(unittest.TestCase):
     Do the following:
 
     1. Create, sync and publish a repository with checksum type "sha256".
-
     2. After that several XML files - part of repodata will be inspected.
 
        ``primary.xml``
            Assert that the given checksum type is the only one present.
-
        ``filelists.xml`` and ``other.xml``
            Assert that the length of ``pkgid`` is according to the given
            checksum type.
-
        ``prestodelta.xml``
            Assert that the given checksum type is the only one present.
 
-    For ``sha256`` the length of ``pkgid`` should be 64 hex digits, and
-    for ``sha1`` the length should be 40 hex digits.
-    For DRPM repositories the ``prestodelta.xml`` will be inspected as
-    well.
+       For ``sha256`` the length of ``pkgid`` should be 64 hex digits, and for
+       ``sha1`` the length should be 40 hex digits. For DRPM repositories the
+       ``prestodelta.xml`` will be inspected as well.
 
     3. Update the checksum type to "sha1", and use option ``force_full`` set as
-    True. ``force_full`` will force a complete re-publish to happen.
-    Re-publish the repository.
-
+       True. ``force_full`` will force a complete re-publish to happen.
+       Re-publish the repository.
     4. All aforementioned assertions performed on the step 2 will be executed
-    again to assure that new checksum type was updating properly.
+       again to assure that new checksum type was updating properly.
 
     This test targets `Pulp Smash #286
     <https://github.com/PulpQE/pulp-smash/issues/286>`_.
@@ -138,38 +133,37 @@ class UpdatedChecksumTestCase(unittest.TestCase):
         self.addCleanup(client.delete, repo['_href'])
         utils.sync_repo(cfg, repo)
         repo = client.get(repo['_href'], params={'details': True})
+        distributor = repo['distributors'][0]
 
         # Update checksum type to be "sha256" and publish the repository.
-        client.put(repo['distributors'][0]['_href'], {
+        client.put(distributor['_href'], {
             'distributor_config': {'checksum_type': 'sha256'}
         })
         utils.publish_repo(cfg, repo)
         with self.subTest(comment='primary.xml'):
-            self.verify_primary_xml(cfg, repo['distributors'][0], 'sha256')
+            self.verify_primary_xml(cfg, distributor, 'sha256')
         with self.subTest(comment='filelists.xml'):
-            self.verify_filelists_xml(cfg, repo['distributors'][0], 'sha256')
+            self.verify_filelists_xml(cfg, distributor, 'sha256')
         with self.subTest(comment='other.xml'):
-            self.verify_other_xml(cfg, repo['distributors'][0], 'sha256')
+            self.verify_other_xml(cfg, distributor, 'sha256')
         if feed == DRPM_UNSIGNED_FEED_URL:
             with self.subTest(comment='prestodelta.xml'):
-                self.verify_presto_delta_xml(
-                    cfg, repo['distributors'][0], 'sha256')
+                self.verify_presto_delta_xml(cfg, distributor, 'sha256')
 
         # Update the checksum type to "sha1", and re-publish the repository.
-        client.put(repo['distributors'][0]['_href'], {
+        client.put(distributor['_href'], {
             'distributor_config': {'checksum_type': 'sha1', 'force_full': True}
         })
         utils.publish_repo(cfg, repo)
         with self.subTest(comment='primary.xml'):
-            self.verify_primary_xml(cfg, repo['distributors'][0], 'sha1')
+            self.verify_primary_xml(cfg, distributor, 'sha1')
         with self.subTest(comment='filelists.xml'):
-            self.verify_filelists_xml(cfg, repo['distributors'][0], 'sha1')
+            self.verify_filelists_xml(cfg, distributor, 'sha1')
         with self.subTest(comment='other.xml'):
-            self.verify_other_xml(cfg, repo['distributors'][0], 'sha1')
+            self.verify_other_xml(cfg, distributor, 'sha1')
         if feed == DRPM_UNSIGNED_FEED_URL:
             with self.subTest(comment='prestodelta.xml'):
-                self.verify_presto_delta_xml(
-                    cfg, repo['distributors'][0], 'sha1')
+                self.verify_presto_delta_xml(cfg, distributor, 'sha1')
 
     def verify_primary_xml(self, cfg, distributor, checksum_type):
         """Verify a published repo's primary.xml uses the given checksum."""
