@@ -5,23 +5,29 @@ help:
 	@echo "Please use \`make <target>' where <target> is one of:"
 	@echo "  help           to show this message"
 	@echo "  all            to to execute all following targets (except \`test')"
+	@echo "  dist           to generate installable Python packages"
+	@echo "  dist-clean     to remove generated Python packages"
 	@echo "  docs-html      to generate HTML documentation"
 	@echo "  docs-clean     to remove documentation"
 	@echo "  lint           to run all linters"
 	@echo "  lint-flake8    to run the flake8 linter"
 	@echo "  lint-pylint    to run the pylint linter"
+	@echo "  publish        to upload dist/* to PyPi"
 	@echo "  test           to run unit tests"
 	@echo "  test-coverage  to run unit tests and measure test coverage"
-	@echo "  package        to generate installable Python packages"
-	@echo "  package-clean  to remove generated Python packages"
-	@echo "  publish        to upload dist/* to PyPi"
 
 # Edit with caution! Travis CI uses this target. ¶ We run docs-clean before
 # docs-html to ensure a complete build. (Warnings are emitted only when a file
 # is compiled, and Sphinx does not needlessly recompile.) More broadly, we
 # order dependencies by execution time and (anecdotal) likelihood of finding
 # issues. ¶ `test-coverage` is a functional superset of `test`. Why keep both?
-all: test-coverage lint docs-clean docs-html package-clean package
+all: test-coverage lint docs-clean docs-html dist-clean dist
+
+dist:
+	./setup.py --quiet sdist bdist_wheel --universal
+
+dist-clean:
+	rm -rf build dist pulp_smash.egg-info
 
 docs-html:
 	@cd docs; $(MAKE) html
@@ -51,6 +57,9 @@ lint-pylint:
 
 lint: lint-flake8 lint-pylint
 
+publish: dist
+	twine upload dist/*
+
 test:
 	python3 $(TEST_OPTIONS)
 
@@ -58,14 +67,5 @@ test-coverage:
 	coverage run --source pulp_smash.api,pulp_smash.cli,pulp_smash.config,pulp_smash.exceptions,pulp_smash.pulp_smash_cli,pulp_smash.selectors,pulp_smash.utils \
 	$(TEST_OPTIONS)
 
-package:
-	./setup.py --quiet sdist bdist_wheel --universal
-
-package-clean:
-	rm -rf build dist pulp_smash.egg-info
-
-publish: package
-	twine upload dist/*
-
 .PHONY: help all docs-html docs-clean lint-flake8 lint-pylint lint test \
-    test-coverage package package-clean publish
+    test-coverage dist-clean publish

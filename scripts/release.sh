@@ -24,8 +24,8 @@ fi
 # Bump version number
 echo "${NEW_VERSION}" > VERSION
 
-# Generate the package
-make package-clean package
+# Generate package(s)
+make dist-clean dist
 
 # Sanity check Pulp Smash packages on Python 3
 venv="$(mktemp --directory)"
