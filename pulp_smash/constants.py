@@ -688,6 +688,13 @@ SRPM_UNSIGNED_URL = urljoin(SRPM_UNSIGNED_FEED_URL, SRPM)
 Built from :data:`SRPM_UNSIGNED_FEED_URL` and :data:`SRPM`.
 """
 
+TASKS_PATH = '/pulp/api/v2/tasks/'
+"""See: `Tasks APIs`_.
+
+.. _Tasks APIs:
+    https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/tasks.html
+"""
+
 USER_PATH = '/pulp/api/v2/users/'
 """See: `User APIs`_.
 
