@@ -627,6 +627,12 @@ RPM_UNSIGNED_URL = urljoin(RPM_UNSIGNED_FEED_URL, RPM)
 Built from :data:`RPM_UNSIGNED_FEED_URL` and :data:`RPM`.
 """
 
+RPM_UPDATED_INFO_FEED_URL = urljoin(
+    PULP_FIXTURES_BASE_URL,
+    'rpm-updated-updateinfo/'
+)
+"""A repository whose updateinfo file has an errata section."""
+
 RPM2_UNSIGNED_URL = urljoin(RPM_UNSIGNED_FEED_URL, RPM2)
 """The URL to an unsigned RPM file.
 
