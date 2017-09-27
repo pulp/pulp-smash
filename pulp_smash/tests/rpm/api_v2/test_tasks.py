@@ -1,26 +1,24 @@
 # coding=utf-8
 """Verify that operations can be performed over Tasks.
 
-For information on tasks operations, see `REST API Task Management`_
-and `Admin Client Tasks`_.
+For information on tasks operations, see `REST API Task Management`_ and `Admin
+Client Tasks`_.
 
 .. _REST API Task Management:
     https://docs.pulpproject.org/dev-guide/integration/rest-api/tasks.html
 .. _Admin Client Tasks:
     https://docs.pulpproject.org/user-guide/admin-client/tasks.html
 """
-
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, config, selectors, utils, cli
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
     REPOSITORY_PATH,
     RPM_SIGNED_FEED_URL,
     TASKS_PATH,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
-
 from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -37,8 +35,7 @@ class TasksOperationsTestCase(unittest.TestCase):
     """
 
     def test_all(self):
-        """
-        Perform different operation over tasks.
+        """Perform different operation over tasks.
 
         Do the following:
 
@@ -57,50 +54,43 @@ class TasksOperationsTestCase(unittest.TestCase):
         if selectors.bug_is_untestable(1664, cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1664')
 
-        client = api.Client(cfg, api.safe_handler)
-
         # Create, sync and publish a repository.
+        client = api.Client(cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         body['distributors'] = [gen_distributor()]
-        repo = client.post(REPOSITORY_PATH, body).json()
+        repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        repo = client.get(repo['_href'], params={'details': True}).json()
+        repo = client.get(repo['_href'], params={'details': True})
         utils.sync_repo(cfg, repo)
         utils.publish_repo(cfg, repo)
 
-        with self.subTest('listing tasks'):
+        with self.subTest('list tasks'):
             client.get(TASKS_PATH)
 
         with self.subTest('search tasks'):
-            client.post(urljoin(TASKS_PATH, 'search/'), {
-                'criteria':
-                    {'fields': [
-                        'tags',
-                        'task_id',
-                        'state',
-                        'start_time',
-                        'finish_time'
-                    ]}
+            report = client.post(urljoin(TASKS_PATH, 'search/'), {
+                'criteria': {'fields': [
+                    'tags',
+                    'task_id',
+                    'state',
+                    'start_time',
+                    'finish_time'
+                ]}
             })
 
-        with self.subTest('polling task progress'):
-            report = client.post(urljoin(TASKS_PATH, 'search/'), {
-                'criteria':
-                    {'fields': [
-                        'tags',
-                        'task_id',
-                        'state',
-                        'start_time',
-                        'finish_time'
-                    ]}
-            }).json()
+        with self.subTest('poll task progress'):
+            try:
+                report
+            except NameError:
+                self.skipTest("Previous test failed, can't run this one.")
             client.post((urljoin(TASKS_PATH, report[0]['task_id'])))
 
-        with self.subTest('delete finished tasks'):
+        client.response_handler = api.safe_handler
+        with self.subTest('delete (purge) finished tasks'):
             client.delete(TASKS_PATH, params={'state': 'finished'})
 
-        cli_client = cli.Client(cfg, cli.code_handler)
-        with self.subTest('purge all tasks'):
-            cmd = ('pulp-admin', 'tasks', 'purge', '--all')
-            cli_client.run(cmd)
+        with self.subTest('delete (purge) all tasks'):
+            client.delete(TASKS_PATH, params={
+                'state': ['finished', 'skipped', 'error'],
+            })
