@@ -8,12 +8,15 @@ tasks. This module has tests for Pulp's resilience in the face of such issues.
 import unittest
 from urllib.parse import urljoin
 
+from requests.exceptions import HTTPError
+
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
     PULP_SERVICES,
     REPOSITORY_PATH,
     RPM_MIRRORLIST_LARGE,
     RPM_UNSIGNED_FEED_URL,
+    TASKS_PATH,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 
@@ -84,3 +87,68 @@ class MissingWorkersTestCase(unittest.TestCase):
         # Delete last line from file.
         cli.Client(self.cfg).run(sudo + ('sed', '-i', '$d', _PULP_WORKERS_CFG))
         utils.reset_pulp(self.cfg)
+
+
+class TaskDispatchTestCase(unittest.TestCase):
+    """Test whether ``httpd`` dispatches a task while the broker is down."""
+
+    def setUp(self):
+        """Provide a server configuration and stop the broker.
+
+        Delete Pulp tasks to assure that no tasks are running.
+        """
+        self.cfg = config.get_config()
+        if selectors.bug_is_untestable(2770, self.cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2770')
+        self.broker = [utils.get_broker(self.cfg)]
+        self.system = self.cfg.get_systems('amqp broker')[0]
+        self.svc_mgr = cli.ServiceManager(self.cfg, pulp_system=self.system)
+        self.svc_mgr.stop(self.broker)
+        client = api.Client(self.cfg)
+        client.delete(
+            TASKS_PATH,
+            params={'state': ['finished', 'skipped', 'error']}
+        )
+
+    def tearDown(self):
+        """Start broker."""
+        self.svc_mgr.start(self.broker)
+
+    def test_all(self):
+        """Test whether ``httpd`` dispatches a task while the broker is down.
+
+        This test targets the following issues:
+
+        * `Pulp Smash #650 <https://github.com/PulpQE/pulp-smash/issues/650>`_
+        * `Pulp #2770 <https://pulp.plan.io/issues/2770>`_
+
+        Do the following:
+
+        With a Pulp system with no tasks executing, and AMP broker stopped.
+
+        1. Create, and sync a repository.
+        2. Check for status of created task. It should not have any task in
+           the ``waiting`` state.
+        """
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
+        try:
+            utils.sync_repo(self.cfg, repo)
+        except HTTPError:
+            pass
+        tasks = client.post(urljoin(TASKS_PATH, 'search/'), {
+            'criteria': {'fields': [
+                'tags',
+                'task_id',
+                'state',
+                'start_time',
+                'finish_time'
+            ]}
+        })
+        for task in tasks:
+            self.assertNotEqual(task['state'].lower(), 'waiting')
