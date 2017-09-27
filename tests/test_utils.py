@@ -280,3 +280,21 @@ class SearchUnitsTestCase(unittest.TestCase):
             client.return_value.post.call_args[0][1],
             {'criteria': {}},
         )
+
+
+class OsIsF26TestCase(unittest.TestCase):
+    """Test :func:`pulp_smash.utils.os_is_f26`."""
+
+    def test_returncode_zero(self):
+        """Assert true is returned if the CLI command returns zero."""
+        with mock.patch.object(cli, 'Client') as client:
+            client.return_value.run.return_value.returncode = 0
+            response = utils.os_is_f26(mock.Mock())
+        self.assertTrue(response)
+
+    def test_returncode_nonzero(self):
+        """Assert false is returned if the CLI command returns non-zero."""
+        with mock.patch.object(cli, 'Client') as client:
+            client.return_value.run.return_value.returncode = 1
+            response = utils.os_is_f26(mock.Mock())
+        self.assertFalse(response)

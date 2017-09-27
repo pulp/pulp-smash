@@ -219,6 +219,9 @@ class V1RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         super().setUpClass()
         cls.cfg = config.get_config()
         cls.repo = {}
+        if (utils.os_is_f26(cls.cfg) and
+                selectors.bug_is_untestable(3036, cls.cfg.version)):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3036')
 
     @classmethod
     def tearDownClass(cls):
@@ -303,6 +306,9 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         super().setUpClass()
         cls.cfg = config.get_config()
         cls.repo = {}
+        if (utils.os_is_f26(cls.cfg) and
+                selectors.bug_is_untestable(3036, cls.cfg.version)):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3036')
         for issue_id in (2287, 2384):
             if selectors.bug_is_untestable(issue_id, cls.cfg.version):
                 raise unittest.SkipTest(
@@ -536,6 +542,9 @@ class NoAmd64LinuxTestCase(SyncPublishMixin, unittest.TestCase):
         super().setUpClass()
         cls.cfg = config.get_config()
         cls.repo = {}
+        if (utils.os_is_f26(cls.cfg) and
+                selectors.bug_is_untestable(3036, cls.cfg.version)):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3036')
         if selectors.bug_is_untestable(2384, cls.cfg.version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2384')
 

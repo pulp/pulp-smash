@@ -550,3 +550,21 @@ def search_units(cfg, repo, criteria=None, response_handler=None):
         urljoin(repo['_href'], 'search/units/'),
         {'criteria': criteria},
     )
+
+
+def os_is_f26(cfg, pulp_system=None):
+    """Return ``True`` if the server runs Fedora 26, or ``False`` otherwise.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the system
+        being targeted.
+    :param pulp_system: A :class:`pulp_smash.config.PulpSystem` to target,
+        instead of the default chosen by :class:`pulp_smash.cli.Client`.
+    :returns: True or false.
+    """
+    response = cli.Client(cfg, cli.echo_handler, pulp_system).run((
+        'grep',
+        '-i',
+        'fedora release 26',
+        '/etc/redhat-release',
+    ))
+    return response.returncode == 0

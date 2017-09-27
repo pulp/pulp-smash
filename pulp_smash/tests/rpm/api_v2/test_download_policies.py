@@ -37,6 +37,9 @@ def setUpModule():  # pylint:disable=invalid-name
     cfg = config.get_config()
     if cfg.version < Version('2.8'):
         raise unittest.SkipTest('This module requires Pulp 2.8 or greater.')
+    if (utils.os_is_f26(cfg) and
+            selectors.bug_is_untestable(3036, cfg.version)):
+        raise unittest.SkipTest('https://pulp.plan.io/issues/3036')
     if check_issue_2798(cfg):
         raise unittest.SkipTest('https://pulp.plan.io/issues/2798')
     if check_issue_2387(cfg):
