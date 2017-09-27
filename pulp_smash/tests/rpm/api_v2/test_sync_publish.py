@@ -33,6 +33,7 @@ from pulp_smash.constants import (
     RPM_UNSIGNED_FEED_URL,
     RPM_UNSIGNED_URL,
     SRPM_SIGNED_FEED_URL,
+    TASKS_PATH,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
@@ -407,3 +408,58 @@ class SyncInParallelTestCase(unittest.TestCase):
                     repo['content_unit_counts']['erratum'],
                     RPM_ERRATUM_COUNT,
                 )
+
+
+class ErrorReportTestCase(unittest.TestCase):
+    """Test whether error report is according to error cause.
+
+    This test targets the following issues:
+
+    * `Pulp Smash #525 <https://github.com/PulpQE/pulp-smash/issues/525>`_
+    * `Pulp issue #1376 <https://pulp.plan.io/issues/1376>`_
+    """
+
+    def test_all(self):
+        """Test whether error report is according to error cause.
+
+        Do the following:
+
+        1. Create, and sync a repository using an invalid feed URL.
+        2. Read the related task.
+        3. Assert that error report is according to error cause.
+        """
+        cfg = config.get_config()
+        if selectors.bug_is_untestable(1376, cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/1376')
+        client = api.Client(cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = utils.uuid4()
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
+        try:
+            utils.sync_repo(cfg, repo)
+        except exceptions.TaskReportError:
+            pass
+        task = client.get(TASKS_PATH)[-1]
+
+        with self.subTest('verify error description'):
+            self.assertNotEqual(
+                self.verify_error_description(task['error']['description']),
+                -1
+            )
+
+        with self.subTest('verify traceback description'):
+            self.assertNotEqual(
+                self.verify_error_description(task['traceback']),
+                -1
+            )
+
+    @staticmethod
+    def verify_error_description(error_description):
+        """Verify that certain keywords are present on error description."""
+        errors = ['invalid', 'feed', 'url']
+        find_error = 0
+        for error in errors:
+            find_error = error_description.lower().find(error)
+        return find_error
