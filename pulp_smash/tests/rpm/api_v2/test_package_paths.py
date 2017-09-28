@@ -31,7 +31,7 @@ situations.
 """
 import unittest
 
-from pulp_smash import api, config, utils
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
     REPOSITORY_PATH,
     RPM,
@@ -75,6 +75,13 @@ class ReuseContentTestCase(unittest.TestCase):
             self.skipTest('https://pulp.plan.io/issues/2798')
         if check_issue_2354(cfg):
             self.skipTest('https://pulp.plan.io/issues/2354')
+        if (utils.os_is_f26(cfg) and
+                selectors.bug_is_untestable(3036, cfg.version)):
+            # Here, the calls to get_unit() cause pulp_streamer.service to die
+            # without logging out anything. In Pulp #3036, certain actions
+            # cause pulp_streamer.service to die while logging out a core dump.
+            # Thus, this test failure might be unrelated to Pulp #3036.
+            self.skipTest('https://pulp.plan.io/issues/3036')
         repos = [
             self.create_repo(cfg, feed, 'on_demand')
             for feed in (RPM_ALT_LAYOUT_FEED_URL, RPM_UNSIGNED_FEED_URL)
