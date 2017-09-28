@@ -33,7 +33,6 @@ from pulp_smash.constants import (
     RPM_UNSIGNED_FEED_URL,
     RPM_UNSIGNED_URL,
     SRPM_SIGNED_FEED_URL,
-    TASKS_PATH,
 )
 from pulp_smash.tests.rpm.api_v2.utils import (
     gen_distributor,
@@ -148,64 +147,6 @@ class SyncSrpmRepoTestCase(SyncRepoBaseTestCase):
     def get_feed_url():
         """Return an SRPM repository feed URL."""
         return SRPM_SIGNED_FEED_URL
-
-
-class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
-    """Create and sync an RPM repository with an invalid feed.
-
-    The sync should complete with errors reported.
-    """
-
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        super(SyncInvalidFeedTestCase, cls).setUpClass()
-        cls.tasks = []
-
-    def test_01_set_up(self):
-        """Create and sync an RPM repository with an invalid feed."""
-        client = api.Client(self.cfg, api.json_handler)
-        body = gen_repo()
-        body['importer_config']['feed'] = utils.uuid4()
-        repo = client.post(REPOSITORY_PATH, body)
-        self.addCleanup(client.delete, repo['_href'])
-
-        client.response_handler = api.code_handler
-        report = client.post(urljoin(repo['_href'], 'actions/sync/'))
-        self.tasks.extend(list(
-            api.poll_spawned_tasks(self.cfg, report.json())
-        ))
-        with self.subTest(comment='verify call report status code'):
-            self.assertEqual(report.status_code, 202)
-        with self.subTest(comment='verify the number of spawned tasks'):
-            self.assertEqual(len(self.tasks), 1, self.tasks)
-
-    @selectors.skip_if(len, 'tasks', 0)
-    def test_02_task_traceback(self):
-        """Assert each task's "traceback" field is non-null."""
-        if selectors.bug_is_untestable(1455, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/1455')
-        for i, task in enumerate(self.tasks):
-            with self.subTest(i=i):
-                self.assertIsNotNone(task['traceback'], task)
-
-    @selectors.skip_if(len, 'tasks', 0)
-    def test_02_task_error(self):
-        """Assert each task's "error" field is non-null.
-
-        Also, assert each error has a useful "description" field. For each
-        error that is present, its "description" field should not be the
-        (vague) string "Unsupported scheme: ". This test targets `Pulp #1376
-        <https://pulp.plan.io/issues/1376>`_.
-        """
-        for id_ in (1376, 1455):
-            if selectors.bug_is_untestable(id_, self.cfg.version):
-                self.skipTest('https://pulp.plan.io/issues/{}'.format(id_))
-        for i, task in enumerate(self.tasks):
-            with self.subTest(i=i):
-                self.assertIsNotNone(task['error'], task)
-                self.assertNotEqual(
-                    task['error']['description'], 'Unsupported scheme: ', task)
 
 
 class SyncInvalidMetadataTestCase(unittest.TestCase):
@@ -411,55 +352,45 @@ class SyncInParallelTestCase(unittest.TestCase):
 
 
 class ErrorReportTestCase(unittest.TestCase):
-    """Test whether error report is according to error cause.
-
-    This test targets the following issues:
-
-    * `Pulp Smash #525 <https://github.com/PulpQE/pulp-smash/issues/525>`_
-    * `Pulp issue #1376 <https://pulp.plan.io/issues/1376>`_
-    """
+    """Test whether an error report contains sufficient information."""
 
     def test_all(self):
-        """Test whether error report is according to error cause.
+        """Test whether an error report contains sufficient information.
 
         Do the following:
 
-        1. Create, and sync a repository using an invalid feed URL.
-        2. Read the related task.
-        3. Assert that error report is according to error cause.
+        1. Create and sync a repository using an invalid feed URL.
+        2. Get a reference to the task containing error information.
+        3. Assert that:
+
+           * The error description is sufficiently verbose. See `Pulp #1376`_
+             and `Pulp Smash #525`_.
+           * The traceback is non-null. See `Pulp #1455`_.
+
+        .. _Pulp #1376: https://pulp.plan.io/issues/1376
+        .. _Pulp #1455: https://pulp.plan.io/issues/1455
+        .. _Pulp Smash #525: https://github.com/PulpQE/pulp-smash/issues/525
         """
         cfg = config.get_config()
-        if selectors.bug_is_untestable(1376, cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/1376')
         client = api.Client(cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = utils.uuid4()
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        try:
+
+        with self.assertRaises(exceptions.TaskReportError) as context:
             utils.sync_repo(cfg, repo)
-        except exceptions.TaskReportError:
-            pass
-        task = client.get(TASKS_PATH)[-1]
+        task = context.exception.task
 
-        with self.subTest('verify error description'):
+        with self.subTest(comment='check task error description'):
+            if selectors.bug_is_untestable(1376, cfg.version):
+                self.skipTest('https://pulp.plan.io/issues/1376')
             self.assertNotEqual(
-                self.verify_error_description(task['error']['description']),
-                -1
+                'Unsupported scheme: ',
+                task['error']['description']
             )
-
-        with self.subTest('verify traceback description'):
-            self.assertNotEqual(
-                self.verify_error_description(task['traceback']),
-                -1
-            )
-
-    @staticmethod
-    def verify_error_description(error_description):
-        """Verify that certain keywords are present on error description."""
-        errors = ['invalid', 'feed', 'url']
-        find_error = 0
-        for error in errors:
-            find_error = error_description.lower().find(error)
-        return find_error
+        with self.subTest(comment='check task traceback'):
+            if selectors.bug_is_untestable(1455, cfg.version):
+                self.skipTest('https://pulp.plan.io/issues/1455')
+            self.assertIsNotNone(task['traceback'], task)
