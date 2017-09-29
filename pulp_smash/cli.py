@@ -269,7 +269,7 @@ class BaseServiceManager(metaclass=ABCMeta):
 
     Subclasses should take advantage of the helper methods offered by this
     class in order to manage services and check the proper service manager
-    softeare available on a system.
+    software available on a system.
 
     This base class also offers a context manager to temporary disable SELinux.
     It is useful when managing services on RHEL systems earlier than 7 which
@@ -394,9 +394,114 @@ class BaseServiceManager(metaclass=ABCMeta):
 class GlobalServiceManager(BaseServiceManager):
     """A service manager that manage services across all Pulp systems.
 
+    Pulp can be deployed in **different ways**.
+
+    A default Pulp install is an **all-in-one** style setup with everything
+    running on one machine. However, Pulp supports a **clustered
+    deployment** across multiple machines. In this context each instance of
+    Pulp will be referred as Pulp system.
+
+    This last scenario is the one that ``GlobalServiceManager`` will be used.
+
+    Another relevant info about multiple machines is that the
+    :class:`pulp_smash.config.PulpSmashConfig` object can have multiple
+    sessions related to different machines - Pulp systems.
+
+    Example of ``PulpSmashConfig`` with one single Pulp system:
+
+    .. code-block:: json
+
+        {
+          "pulp": {
+            "auth": [
+              "admin",
+              "admin"
+            ],
+            "version": "2.14"
+          },
+          "systems": [
+            {
+              "hostname": "rhel7-p214",
+              "roles": {
+                "amqp broker": {
+                  "service": "qpidd"
+                },
+                "api": {
+                  "scheme": "https",
+                  "verify": false
+                },
+                "mongod": {},
+                "pulp celerybeat": {},
+                "pulp cli": {},
+                "pulp resource manager": {},
+                "pulp workers": {},
+                "shell": {
+                  "transport": "ssh"
+                },
+                "squid": {}
+              }
+            }
+          ]
+        }
+
+    Example ``PulpSmashConfig`` with more than one Pulp system:
+
+    .. code-block:: json
+
+
+        {
+          "pulp": {
+            "auth": [
+              "admin",
+              "admin"
+            ],
+            "version": "2.14"
+          },
+          "systems": [
+            {
+              "hostname": "rhel7-p214",
+              "roles": {
+                "amqp broker": {
+                  "service": "qpidd"
+                },
+                "api": {
+                  "scheme": "https",
+                  "verify": false
+                },
+                "mongod": {},
+                "pulp celerybeat": {},
+                "pulp cli": {},
+                "pulp resource manager": {},
+                "pulp workers": {},
+                "shell": {
+                  "transport": "ssh"
+                },
+                "squid": {}
+              }
+            }
+            {
+              "hostname": "rhel7-p214-db",
+              "roles": {
+                "api": {
+                  "scheme": "https",
+                  "verify": false
+                },
+                "mongod": {},
+                "shell": {
+                  "transport": "ssh"
+                },
+              }
+            }
+          ]
+        }
+
     Each instance of this class will manage services on all Pulp systems
     available on the :class:`pulp_smash.config.PulpSmashConfig` object
     provided.
+
+    Another important point is that every individual Pulp system can have
+    different roles. This will be very important to figure out what system
+    or even what action can be performed over a certain system.
 
     This means that asking this service manager, for example, to start
     ``httpd`` it will iterate over all the available systems and will start the
@@ -405,7 +510,7 @@ class GlobalServiceManager(BaseServiceManager):
 
     >>> from pulp_smash import cli, config
     >>> svc_mgr = cli.GlobalServiceManager(config.get_config())
-    >>> svc_manager.start(['httpd'])
+    >>> svc_mgr.start(['httpd'])
 
     The :class:`GlobalServiceManager` object will create clients and check if
     is running as root on demand for every system when managing services. If on
@@ -533,13 +638,21 @@ class GlobalServiceManager(BaseServiceManager):
 class ServiceManager(BaseServiceManager):
     """A service manager on a system.
 
-    Each instance of this class represents the service manager on a system. An
-    example may help to clarify this idea:
+    Each instance of this class represents the service manager on a single
+    system. It has to be created a ``pulp_system`` variable. This variable
+    will contain info about one specific Pulp system.
 
-    from pulp_smash import cli, config
-    >>> svc_mgr = cli.ServiceManager(config.get_config(), pulp_system)
-    >>> completed_process_list = svc_manager.stop(['httpd'])
-    >>> completed_process_list = svc_manager.start(['httpd'])
+    For more info about about different Pulp deployments.
+    See: :class:`GlobalServiceManager`
+
+    An example may help to clarify this idea:
+
+    >>> from pulp_smash import cli, config
+    >>> cfg = config.get_config()
+    >>> system = cfg.get_systems('shell')[0]
+    >>> svc_mgr = cli.ServiceManager(cfg, pulp_system=system)
+    >>> svc_mgr.stop(['httpd'])
+    >>> svc_mgr.start(['httpd'])
 
     In the example above, the ``svc_mgr`` object represents the service manager
     on the host referenced by ``pulp_system``.
