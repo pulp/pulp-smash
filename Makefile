@@ -36,7 +36,7 @@ docs-clean:
 	@cd docs; $(MAKE) clean
 
 lint-flake8:
-	flake8 . --ignore D203
+	flake8 . --ignore D203 --exclude docs/_build
 
 lint-pylint:
 	pylint -j $(CPU_COUNT) --reports=n --disable=I \
