@@ -14,6 +14,11 @@ from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pyli
 class DuplicateUploadsTestCase(unittest.TestCase):
     """Test how well Pulp can deal with duplicate unit uploads."""
 
+    @classmethod
+    def setUpClass(cls):
+        """Set a class-wide variable."""
+        cls.cfg = config.get_config()
+
     def test_rpm(self):
         """Upload duplicate RPM content.See :meth:`do_test`.
 
@@ -22,11 +27,9 @@ class DuplicateUploadsTestCase(unittest.TestCase):
         * `Pulp Smash #81 <https://github.com/PulpQE/pulp-smash/issues/81>`_
         * `Pulp #1406 <https://pulp.plan.io/issues/1406>`_
         """
-        cfg = config.get_config()
-        if selectors.bug_is_untestable(1406, cfg.version):
+        if selectors.bug_is_untestable(1406, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1406')
-        body = gen_repo()
-        self.do_test(RPM_UNSIGNED_URL, 'rpm', body)
+        self.do_test(RPM_UNSIGNED_URL, 'rpm', gen_repo())
 
     def test_iso(self):
         """Upload duplicate ISO content. See :meth:`do_test`.
@@ -36,8 +39,7 @@ class DuplicateUploadsTestCase(unittest.TestCase):
         * `Pulp Smash #582 <https://github.com/PulpQE/pulp-smash/issues/582>`_
         * `Pulp #2274 <https://pulp.plan.io/issues/2274>`_
         """
-        cfg = config.get_config()
-        if selectors.bug_is_untestable(2274, cfg.version):
+        if selectors.bug_is_untestable(2274, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2274')
         body = {
             'id': utils.uuid4(),
@@ -49,10 +51,9 @@ class DuplicateUploadsTestCase(unittest.TestCase):
             }],
         }
         iso = utils.http_get(FILE_URL)
-        iso_name = os.path.basename(urlsplit(FILE_URL).path)
         unit_key = {
             'checksum': hashlib.sha256(iso).hexdigest(),
-            'name': iso_name,
+            'name': os.path.basename(urlsplit(FILE_URL).path),
             'size': len(iso),
         }
         self.do_test(FILE_URL, 'iso', body, unit_key)
@@ -63,22 +64,21 @@ class DuplicateUploadsTestCase(unittest.TestCase):
         Do the following:
 
         1. Create a new feed-less repository.
-        2. Upload content and import it into the repository. Assert the
-           upload and import was successful.
+        2. Upload content and import it into the repository. Assert the upload
+           and import was successful.
         3. Upload identical content and import it into the repository.
 
-        The second upload should silently fail for all Pulp releases in the
-        2.x series.
+        The second upload should silently fail for all Pulp releases in the 2.x
+        series.
         """
-        cfg = config.get_config()
-        client = api.Client(cfg, api.json_handler)
+        if unit_key is None:
+            unit_key = {}
+        client = api.Client(self.cfg, api.json_handler)
         unit = utils.http_get(feed)
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        if unit_key is None:
-            unit_key = {}
-        for _ in range(0, 2):
-            call_report = utils.upload_import_unit(cfg, unit, {
+        for _ in range(2):
+            call_report = utils.upload_import_unit(self.cfg, unit, {
                 'unit_type_id': type_id,
                 'unit_key': unit_key
             }, repo)
