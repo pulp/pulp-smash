@@ -15,6 +15,7 @@ from threading import Thread
 from urllib.parse import urljoin
 
 from packaging.version import Version
+from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, exceptions, selectors, utils
 from pulp_smash.constants import (
@@ -394,3 +395,32 @@ class ErrorReportTestCase(unittest.TestCase):
             if selectors.bug_is_untestable(1455, cfg.version):
                 self.skipTest('https://pulp.plan.io/issues/1455')
             self.assertIsNotNone(task['traceback'], task)
+
+
+class FailureScenariosTestCase(unittest.TestCase):
+    """Test actions over a non-existent repository.
+
+    This test targets the failures scenarios of the following issue:
+
+    * `Pulp Smash #157 <https://github.com/PulpQE/pulp-smash/issues/157>`_
+    """
+
+    def test_all(self):
+        """Test actions over a non-existent repository.
+
+        Do the following:
+
+        1. Attempt to sync a non-existent repository.
+        2. Attempt to publish a non-existent repository.
+        """
+        cfg = config.get_config()
+        repo = {'_href': urljoin(REPOSITORY_PATH, utils.uuid4())}
+
+        with self.subTest('sync'):
+            with self.assertRaises(HTTPError):
+                utils.sync_repo(cfg, repo)
+
+        with self.subTest('publish'):
+            with self.assertRaises(HTTPError):
+                json = {'id': utils.uuid4()}
+                utils.publish_repo(cfg, repo, json=json)

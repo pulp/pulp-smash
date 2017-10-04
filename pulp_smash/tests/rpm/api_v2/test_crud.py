@@ -9,10 +9,11 @@ import os
 import unittest
 from urllib.parse import urljoin
 
-import requests
 from packaging import version
+import requests
+from requests.exceptions import HTTPError
 
-from pulp_smash import api, cli, selectors, utils
+from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
     REPOSITORY_GROUP_PATH,
     REPOSITORY_PATH,
@@ -197,7 +198,7 @@ class RepositoryGroupCrudTestCase(utils.BaseAPITestCase):
                 self.assertEqual(received[key], value)
 
 
-class RPMDistributorTestCase(utils.BaseAPITestCase):
+class RPMDistributorTestCase(unittest.TestCase):
     """RPM distributor tests."""
 
     def test_update_checksum_type(self):
@@ -205,9 +206,10 @@ class RPMDistributorTestCase(utils.BaseAPITestCase):
 
         See: https://pulp.plan.io/issues/2134.
         """
-        if self.cfg.version < version.Version('2.9'):
+        cfg = config.get_config()
+        if cfg.version < version.Version('2.9'):
             raise unittest.SkipTest('This test requires Pulp 2.9 or above.')
-        client = api.Client(self.cfg, api.json_handler)
+        client = api.Client(cfg, api.json_handler)
         distributor = gen_distributor()
         body = gen_repo()
         body['distributors'] = [distributor]
@@ -222,8 +224,10 @@ class RPMDistributorTestCase(utils.BaseAPITestCase):
                 }
             })
             repo = client.get(repo['_href'], params={'details': True})
-            config = repo['distributors'][0]['config']
-            self.assertEqual(config.get('checksum_type'), checksum_type)
+            self.assertEqual(
+                repo['distributors'][0]['config'].get('checksum_type'),
+                checksum_type
+            )
 
 
 class LastUnitAddedTestCase(utils.BaseAPITestCase):
@@ -301,3 +305,32 @@ class LastUnitAddedTestCase(utils.BaseAPITestCase):
         repo2 = self.client.get(repo2['_href'], params={'details': True})
         with self.subTest(comment='after repository publish'):
             self.assertIsNotNone(repo2['last_unit_added'], repo2)
+
+
+class FailureScenariosTestCase(unittest.TestCase):
+    """Test actions over a non-existent repository.
+
+    This test targets the failures scenarios of the following issue:
+
+    * `Pulp Smash #157 <https://github.com/PulpQE/pulp-smash/issues/157>`_
+    """
+
+    def test_all(self):
+        """Test actions over a non-existent repository.
+
+        Do the following:
+
+        1. Attempt to delete a non existent repository.
+        2. Attempt to update a non existent repository.
+        """
+        cfg = config.get_config()
+        client = api.Client(cfg)
+        repo = urljoin(REPOSITORY_PATH, utils.uuid4())
+
+        with self.subTest('delete'):
+            with self.assertRaises(HTTPError):
+                client.delete(repo)
+
+        with self.subTest('update'):
+            with self.assertRaises(HTTPError):
+                client.put(repo, {'delta': {'display_name': utils.uuid4()}})
