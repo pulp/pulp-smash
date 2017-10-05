@@ -9,9 +9,11 @@ import os
 import unittest
 from urllib.parse import urljoin
 
-from packaging import version
+# pylint:disable=ungrouped-imports
 import requests
+from packaging import version
 from requests.exceptions import HTTPError
+# pylint:enable=ungrouped-imports
 
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
@@ -307,30 +309,26 @@ class LastUnitAddedTestCase(utils.BaseAPITestCase):
             self.assertIsNotNone(repo2['last_unit_added'], repo2)
 
 
-class FailureScenariosTestCase(unittest.TestCase):
-    """Test actions over a non-existent repository.
+class NonExistentRepoTestCase(unittest.TestCase):
+    """Perform actions on non-existent repositories.
 
-    This test targets the failures scenarios of the following issue:
-
-    * `Pulp Smash #157 <https://github.com/PulpQE/pulp-smash/issues/157>`_
+    This test targets `Pulp Smash #157
+    <https://github.com/PulpQE/pulp-smash/issues/157>`_.
     """
 
-    def test_all(self):
-        """Test actions over a non-existent repository.
+    def setUp(self):
+        """Set variables used by each test case."""
+        self.client = api.Client(config.get_config())
+        self.href = urljoin(REPOSITORY_PATH, utils.uuid4())
 
-        Do the following:
+    def test_delete(self):
+        """Delete a non-existent repository."""
+        with self.assertRaises(HTTPError):
+            self.client.delete(self.href)
 
-        1. Attempt to delete a non existent repository.
-        2. Attempt to update a non existent repository.
-        """
-        cfg = config.get_config()
-        client = api.Client(cfg)
-        repo = urljoin(REPOSITORY_PATH, utils.uuid4())
-
-        with self.subTest('delete'):
-            with self.assertRaises(HTTPError):
-                client.delete(repo)
-
-        with self.subTest('update'):
-            with self.assertRaises(HTTPError):
-                client.put(repo, {'delta': {'display_name': utils.uuid4()}})
+    def test_update(self):
+        """Update a non-existent repository."""
+        with self.assertRaises(HTTPError):
+            self.client.put(self.href, {
+                'delta': {'display_name': utils.uuid4()}
+            })

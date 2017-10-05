@@ -397,30 +397,24 @@ class ErrorReportTestCase(unittest.TestCase):
             self.assertIsNotNone(task['traceback'], task)
 
 
-class FailureScenariosTestCase(unittest.TestCase):
-    """Test actions over a non-existent repository.
+class NonExistentRepoTestCase(unittest.TestCase):
+    """Perform actions on non-existent repositories.
 
-    This test targets the failures scenarios of the following issue:
-
-    * `Pulp Smash #157 <https://github.com/PulpQE/pulp-smash/issues/157>`_
+    This test targets `Pulp Smash #157
+    <https://github.com/PulpQE/pulp-smash/issues/157>`_.
     """
 
-    def test_all(self):
-        """Test actions over a non-existent repository.
+    def setUp(self):
+        """Set variables used by each test case."""
+        self.cfg = config.get_config()
+        self.repo = {'_href': urljoin(REPOSITORY_PATH, utils.uuid4())}
 
-        Do the following:
+    def test_sync(self):
+        """Sync a non-existent repository."""
+        with self.assertRaises(HTTPError):
+            utils.sync_repo(self.cfg, self.repo)
 
-        1. Attempt to sync a non-existent repository.
-        2. Attempt to publish a non-existent repository.
-        """
-        cfg = config.get_config()
-        repo = {'_href': urljoin(REPOSITORY_PATH, utils.uuid4())}
-
-        with self.subTest('sync'):
-            with self.assertRaises(HTTPError):
-                utils.sync_repo(cfg, repo)
-
-        with self.subTest('publish'):
-            with self.assertRaises(HTTPError):
-                json = {'id': utils.uuid4()}
-                utils.publish_repo(cfg, repo, json=json)
+    def test_publish(self):
+        """Publish a non-existent repository."""
+        with self.assertRaises(HTTPError):
+            utils.publish_repo(self.cfg, self.repo, {'id': utils.uuid4()})
