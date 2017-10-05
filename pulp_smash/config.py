@@ -1,11 +1,11 @@
 # coding=utf-8
-"""Tools for managing information about test systems.
+"""Tools for managing information about hosts under test.
 
-Pulp Smash needs to know what servers it can talk to and how to talk to those
-systems. For example, it needs to know the protocol, hostname and port of a
-Pulp server (e.g. 'https://example.com:250') and how to authenticate with that
-server. :class:`pulp_smash.config.PulpSmashConfig` eases the task of managing
-that information.
+Pulp Smash needs to know about the Pulp application under test and the hosts
+that comprise that application. For example, it might need to know which
+username and password to use when communicating with a Pulp application, or it
+might need to know which host is hosting the squid service, if any. This module
+eases the task of managing that information.
 """
 import collections
 import itertools
@@ -36,21 +36,20 @@ REQUIRED_ROLES = {
     'pulp workers',
     'shell',
 }
-"""Set of roles that are required on a Pulp deployment."""
+"""The set of roles that must be present in a functional Pulp application."""
 
 OPTIONAL_ROLES = {
     'pulp cli',
     'squid',
 }
-"""Set of roles that can be present or not on a Pulp deployment."""
+"""Additional roles that can be present in a Pulp application."""
 
 ROLES = REQUIRED_ROLES.union(OPTIONAL_ROLES)
-"""Set of all available roles on a Pulp deployment."""
+"""The set of all roles that may be present in a Pulp application."""
 
 AMQP_SERVICES = {'qpidd', 'rabbitmq'}
-"""Set of expected amqp services."""
+"""The set of services that can fulfill the ``amqp broker`` role."""
 
-# Config file JSON schema
 CONFIG_JSON_SCHEMA = {
     'additionalProperties': False,
     'required': ['pulp', 'systems'],
@@ -65,7 +64,7 @@ CONFIG_JSON_SCHEMA = {
                 'version': {'type': 'string'},
             }
         },
-        'systems': {
+        'systems': {  # A misnomer. Think "hosts," not "systems."
             'type': 'array',
             'minItems': 1,
             'items': {'$ref': '#/definitions/system'},
@@ -142,6 +141,7 @@ CONFIG_JSON_SCHEMA = {
         }
     },
 }
+"""The schema for Pulp Smash's configuration file."""
 
 
 def _public_attrs(obj):
@@ -210,7 +210,10 @@ def convert_old_config(config_dict):
 
 
 def validate_config(config_dict):
-    """Validate the config file schema.
+    """Validate an in-memory configuration file.
+
+    Given an in-memory configuration file, verify its sanity by validating it
+    against a schema and performing several semantic checks.
 
     :param config_dict: A dictionary returned by ``json.load`` or
         ``json.loads`` after reading the config file.
@@ -261,61 +264,87 @@ PulpSystem = collections.namedtuple('PulpSystem', 'hostname roles')
 
 
 class PulpSmashConfig(object):
-    """Information about a Pulp deployment.
+    """Information about a Pulp application.
 
-    This object stores a set of information about a Pulp deployment and its
-    systems. A typical usage of this object is as follows:
+    This object stores information about Pulp application and its constituent
+    hosts. A single Pulp application may have its services spread across
+    several hosts. For example, one host might run Qpid, another might run
+    MongoDB, and so on. Here's how to model a multi-host deployment where
+    Apache runs on one host, and the remaining components run on another host:
 
     >>> import requests
     >>> from pulp_smash.config import PulpSmashConfig
     >>> cfg = PulpSmashConfig(
     ...     pulp_auth=('username', 'password'),
     ...     pulp_version='2.12.2',
-    ...     systems=[
+    ...     systems=[  # A misnomer. Think "hosts," not "systems."
+    ...         PulpSystem(
+    ...             hostname='pulp1.example.com',
+    ...             roles={'api': {'scheme': 'https'}},
+    ...         ),
     ...         PulpSystem(
     ...             hostname='pulp.example.com',
     ...             roles={
     ...                 'amqp broker': {'service': 'qpidd'},
-    ...                 'api': {
-    ...                     'scheme': 'https',
-    ...                     'verify': False,  # Disable SSL verification
-    ...                 },
+    ...                 'mongod': {},
+    ...                 'pulp celerybeat': {},
+    ...                 'pulp resource manager': {},
+    ...                 'pulp workers': {},
+    ...                 'shell': {'transport': 'ssh'},
+    ...             },
+    ...         )
+    ...     ]
+    ... )
+
+    In the simplest case, all of the services that comprise a Pulp applicaiton
+    run on a single host. Here's an example of how this object might model a
+    single-host deployment:
+
+    >>> import requests
+    >>> from pulp_smash.config import PulpSmashConfig
+    >>> cfg = PulpSmashConfig(
+    ...     pulp_auth=('username', 'password'),
+    ...     pulp_version='2.12.2',
+    ...     systems=[  # A misnomer. Think "hosts," not "systems."
+    ...         PulpSystem(
+    ...             hostname='pulp.example.com',
+    ...             roles={
+    ...                 'amqp broker': {'service': 'qpidd'},
+    ...                 'api': {'scheme': 'https'},
     ...                 'mongod': {},
     ...                 'pulp cli': {},
     ...                 'pulp celerybeat': {},
     ...                 'pulp resource manager': {},
     ...                 'pulp workers': {},
-    ...                 'shell': {
-    ...                     'transport': 'ssh',
-    ...                 },
+    ...                 'shell': {'transport': 'ssh'},
     ...             },
     ...         )
     ...     ]
     ... )
-    >>> response = requests.post(
-    ...     cfg.base_url + '/pulp/api/v2/actions/login/',
-    ...     **cfg.get_requests_kwargs()
-    ... )
 
-    All methods dealing with files obey the `XDG Base Directory Specification
-    <http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_.
-    Please read the specification for insight into the logic of those methods.
+    In the simplest case, Pulp Smash's configuration file resides at
+    ``~/.config/pulp_smash/settings.json``. However, there are several ways to
+    alter this path. Pulp Smash obeys the `XDG Base Directory Specification`_.
+    In addition, Pulp Smash responds to the ``PULP_SMASH_CONFIG_FILE``
+    environment variable. This variable is a relative path, and it defaults to
+    ``settings.json``.
 
-    In addition, the file-facing methods respect the ``PULP_SMASH_CONFIG_FILE``
-    environment variable. By default, the methods work with a file named
-    ``settings.json``, but the environment variable overrides that default. If
-    set, the environment variable should be a file name like ``settings2.json``
-    (or a relative path), *not* an absolute path.
+    Configuration files contain JSON data structured in a way that resembles
+    what is accepted by this class's constructor. For exact details on the
+    structure of configuration files, see
+    :data:`pulp_smash.config.CONFIG_JSON_SCHEMA`.
 
     :param pulp_auth: A two-tuple. Credentials to use when communicating with
         the server. For example: ``('username', 'password')``.
     :param pulp_version: A string, such as '1.2' or '0.8.rc3'. Defaults to
         '1!0' (epoch 1, version 0). Must be compatible with the `packaging`_
         library's ``packaging.version.Version`` class.
-    :param systems: A list of `pulp_smash.config.PulpSystem`. Mapping every
-        system on a given Pulp deployment.
+    :param pulp_smash.config.PulpSystem systems: A list of the hosts comprising
+        a Pulp application.
 
     .. _packaging: https://packaging.pypa.io/en/latest/
+    .. _XDG Base Directory Specification:
+        http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
     """
 
     def __init__(self, pulp_auth=None, pulp_version=None, systems=None):
@@ -366,8 +395,7 @@ class PulpSmashConfig(object):
             current object is not modified by this method.
         :rtype: PulpSmashConfig
         :raises: ``warnings.DecprecationWarning`` if the configuration file
-            uses the old format instead of the new system with roles based
-            format.
+            uses the old format instead of the new role-based format.
         """
         # Read the configuration file.
         if xdg_config_file is None:
@@ -383,12 +411,11 @@ class PulpSmashConfig(object):
             # files harder to grep.
             warnings.warn(
                 (
-                    'Pulp Smash configuration file should follow the systems '
-                    'with roles format. But the configuration file at "{0}" '
-                    'appears to be following the old configuration file '
-                    'format. Consider updating the configuration file to the '
-                    'new system with roles format, run python3 -m pulp_smash '
-                    'for more information.'
+                    'Pulp Smash\'s configuration file should use a role-based '
+                    'format. However, the configuration file at "{0}" '
+                    'appears to use the old configuration file format. '
+                    'Consider updating the configuration file. Run `python3 '
+                    '-m pulp_smash for more information.'
                     .format(path)
                 ),
                 DeprecationWarning
@@ -404,9 +431,9 @@ class PulpSmashConfig(object):
         return PulpSmashConfig(pulp_auth, pulp_version, systems)
 
     def get_systems(self, role):
-        """Return a list of systems fulfilling the given role.
+        """Return a list of hosts fulfilling the given role.
 
-        :param role: The role to filter the available systems, see
+        :param role: The role to filter the available hosts, see
             `pulp_smash.config.ROLES` for more information.
         """
         if role not in ROLES:
@@ -441,7 +468,7 @@ class PulpSmashConfig(object):
 
     @property
     def base_url(self):
-        """Map old config base_url to the system with api role."""
+        """Map old config base_url to the new format with api role."""
         api_system = self.get_systems('api')[0]
         return '{}://{}/'.format(
             api_system.roles['api']['scheme'], api_system.hostname)
@@ -449,7 +476,7 @@ class PulpSmashConfig(object):
     def get_base_url(self, pulp_system=None):
         """Generate the base URL for a given ``pulp_sytem``.
 
-        If ``pulp_system`` is ``None`` then the first system found with the
+        If ``pulp_system`` is ``None`` then the first host found with the
         ``api`` role will be chosen.
         """
         if not pulp_system:
@@ -466,12 +493,12 @@ class PulpSmashConfig(object):
 
     @property
     def cli_transport(self):
-        """Map old config cli_transport to the system with shell role."""
+        """Map old config cli_transport to the new format with shell role."""
         return self.get_systems('shell')[0].roles['shell']['transport']
 
     @property
     def verify(self):
-        """Map old config verify to the system with api role."""
+        """Map old config verify to the new format with api role."""
         return self.get_systems('api')[0].roles['api'].get('verify')
 
     def get_requests_kwargs(self, pulp_system=None):
@@ -495,7 +522,7 @@ class PulpSmashConfig(object):
         ... )
 
         But this latter approach is more fragile. The user must remember to get
-        a system with api role to check for the verify config, then convert
+        a host with api role to check for the verify config, then convert
         ``pulp_auth`` config to a tuple, and it will require maintenance if
         ``cfg`` gains or loses attributes.
         """
@@ -512,8 +539,8 @@ def _get_config_file_path(xdg_config_dir, xdg_config_file):
 
     Search each of the standard XDG configuration directories for a
     configuration file. Return as soon as a configuration file is found. Beware
-    that by the time client code attempts to open the file, it may be gone or
-    otherwise inaccessible.
+    of race conditions. By the time client code attempts to open the file, it
+    may be gone or otherwise inaccessible.
 
     :param xdg_config_dir: A string. The name of the directory that is suffixed
         to the end of each of the ``XDG_CONFIG_DIRS`` paths.

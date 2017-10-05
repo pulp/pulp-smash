@@ -1,5 +1,5 @@
 # coding=utf-8
-"""A client for working with Pulp systems via their CLI."""
+"""A client for working with Pulp hosts via their CLI."""
 import contextlib
 import os
 import socket
@@ -55,13 +55,12 @@ def _get_hostname(urlstring):
 
 
 def _is_root(cfg, pulp_system=None):
-    """Tell if we are root on the target system.
+    """Tell if we are root on the target host.
 
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the target
-        system.
-    :param pulp_system: A :class:`pulp_smash.config.PulpSystem` object that
-        should be targeted instead of choosing the first system found with the
-        ``pulp cli`` role.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+        application.
+    :param pulp_smash.config.PulpSystem pulp_system: A specific host to target,
+        instead of the first host with the ``pulp cli`` role.
     :returns: Either ``True`` or ``False``.
     """
     result = Client(cfg, pulp_system=pulp_system).run(('id', '-u'))
@@ -164,7 +163,7 @@ class Client(object):  # pylint:disable=too-few-public-methods
     """A convenience object for working with a CLI.
 
     This class provides the ability to execute shell commands on either the
-    local system or a remote system. Here is a pedagogic usage example:
+    local host or a remote host. Here is a pedagogic usage example:
 
     >>> from pulp_smash import cli, config
     >>> system = (
@@ -199,17 +198,16 @@ class Client(object):  # pylint:disable=too-few-public-methods
     ``machine`` will be set so that commands run locally or over SSH,
     respectively. If ``pulp_system.roles['shell']['transport']`` is ``None``,
     the constructor will guess how to set ``machine`` by comparing the hostname
-    embedded in ``pulp_system.hostname`` against the current system's hostname.
+    embedded in ``pulp_system.hostname`` against the current host's hostname.
     If they match, ``machine`` is set to execute commands locally; and vice
     versa.
 
     :param pulp_smash.config.PulpSmashConfig server_config: Information about
-        the system on which commands will be executed.
+        the host on which commands will be executed.
     :param response_handler: A callback function. Defaults to
         :func:`pulp_smash.cli.code_handler`.
-    :param pulp_system: A :class:`pulp_smash.config.PulpSystem` object that
-        should be targeted instead of choosing the first system found with the
-        ``pulp cli`` role.
+    :param pulp_smash.config.PulpSystem pulp_system: A specific host to target,
+        instead of the first host with the ``pulp cli`` role.
 
     .. _Plumbum: http://plumbum.readthedocs.io/en/latest/index.html
     """
@@ -265,15 +263,15 @@ class BaseServiceManager(metaclass=ABCMeta):
     """A base service manager.
 
     Each subclass must implement the abstract methods to provide the service
-    management on a single or multiple systems.
+    management on a single or multiple hosts.
 
     Subclasses should take advantage of the helper methods offered by this
     class in order to manage services and check the proper service manager
-    softeare available on a system.
+    software available on a host.
 
     This base class also offers a context manager to temporary disable SELinux.
-    It is useful when managing services on RHEL systems earlier than 7 which
-    has SELinux issues when running on Jenkins.
+    It is useful when managing services on hosts running RHEL 6 and earlier,
+    which has SELinux issues when running on Jenkins.
 
     Make sure to call this class ``__init__`` method on the subclass
     ``__init__`` method to ensure the helper methods functionality.
@@ -285,7 +283,7 @@ class BaseServiceManager(metaclass=ABCMeta):
 
     @staticmethod
     def _get_service_manager(cfg, pulp_system):
-        """Talk to the target system and determine the type of service manager.
+        """Talk to the target host and determine the type of service manager.
 
         Return "systemd" or "sysv" if the service manager appears to be one of
         those. Raise an exception otherwise.
@@ -392,33 +390,37 @@ class BaseServiceManager(metaclass=ABCMeta):
 
 
 class GlobalServiceManager(BaseServiceManager):
-    """A service manager that manage services across all Pulp systems.
+    """A service manager that manages services on all Pulp hosts.
 
-    Each instance of this class will manage services on all Pulp systems
-    available on the :class:`pulp_smash.config.PulpSmashConfig` object
-    provided.
-
-    This means that asking this service manager, for example, to start
-    ``httpd`` it will iterate over all the available systems and will start the
-    service on every system that has the ``api`` role. The example below
-    illustrate this:
+    Each instance of this class manages a single service. When a method like
+    :meth:`start` is executed, it will start a service on all hosts that are
+    declared as running that service. For example, imagine that the following
+    is executed:
 
     >>> from pulp_smash import cli, config
-    >>> svc_mgr = cli.GlobalServiceManager(config.get_config())
+    >>> cfg = config.get_config()
+    >>> svc_mgr = cli.GlobalServiceManager(cfg)
     >>> svc_manager.start(['httpd'])
 
-    The :class:`GlobalServiceManager` object will create clients and check if
-    is running as root on demand for every system when managing services. If on
-    a given deployment it has 4 systems and only 2 have the related services
-    available then a connection will be done to those 2 an not on all 4.
+    In this case, the service manager will iterate over all hosts in ``cfg``.
+    For each host that is declared as fulfilling the ``api`` role, Apache
+    (httpd) will be restarted.
 
-    Also, the :class:`GlobalServiceManager` object will try to cache as much
-    information as possible to avoid doing many connections.
+    When asked to perform an action, this object may talk to each target host
+    and determines whether it is running as root. If not root, all commands are
+    prefixed with "sudo". Please ensure that Pulp Smash can either execute
+    commands as root or can successfully execute ``sudo``. You may need to edit
+    your ``~/.ssh/config`` file.
+
+    For conceptual information on why both a
+    :class:`pulp_smash.cli.ServiceManager` and a
+    :class:`pulp_smash.cli.GlobalServiceManager` are necessary, see
+    :class:`pulp_smash.config.PulpSmashConfig`.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
         deployment.
     :raises pulp_smash.exceptions.NoKnownServiceManagerError: If unable to find
-        any service manager on one of the target systems.
+        any service manager on one of the target hosts.
     """
 
     def __init__(self, cfg):
@@ -428,7 +430,7 @@ class GlobalServiceManager(BaseServiceManager):
         self._is_root_cache = {}
 
     def _check_root(self, pulp_system):
-        """Tell if we are root on the target system.
+        """Tell if we are root on the target host.
 
         Use the cache if the information is already available.
         """
@@ -442,11 +444,11 @@ class GlobalServiceManager(BaseServiceManager):
         return is_root
 
     def start(self, services):
-        """Start the services on every system that has the services.
+        """Start the services on every host that has the services.
 
         :param services: An iterable of service names.
-        :return: A dict mapping the affected systems' hostnames with a list of
-            :class:`pulp_smash.cli.CompletedProcess` objects.
+        :return: A dict mapping the affected hosts' hostnames with a list of
+           :class:`pulp_smash.cli.CompletedProcess` objects.
         """
         services = set(services)
         result = {}
@@ -472,10 +474,10 @@ class GlobalServiceManager(BaseServiceManager):
         return result
 
     def stop(self, services):
-        """Stop the services on every system that has the services.
+        """Stop the services on every host that has the services.
 
         :param services: An iterable of service names.
-        :return: A dict mapping the affected systems' hostnames with a list of
+        :return: A dict mapping the affected hosts' hostnames with a list of
             :class:`pulp_smash.cli.CompletedProcess` objects.
         """
         services = set(services)
@@ -501,10 +503,10 @@ class GlobalServiceManager(BaseServiceManager):
         return result
 
     def restart(self, services):
-        """Restart the services on every system that has the services.
+        """Restart the services on every host that has the services.
 
         :param services: An iterable of service names.
-        :return: A dict mapping the affected systems' hostnames with a list of
+        :return: A dict mapping the affected hosts' hostnames with a list of
             :class:`pulp_smash.cli.CompletedProcess` objects.
         """
         services = set(services)
@@ -531,36 +533,40 @@ class GlobalServiceManager(BaseServiceManager):
 
 
 class ServiceManager(BaseServiceManager):
-    """A service manager on a system.
+    """A service manager on a host.
 
-    Each instance of this class represents the service manager on a system. An
+    Each instance of this class represents the service manager on a host. An
     example may help to clarify this idea:
 
-    from pulp_smash import cli, config
-    >>> svc_mgr = cli.ServiceManager(config.get_config(), pulp_system)
+    >>> from pulp_smash import cli, config
+    >>> cfg = config.get_config()
+    >>> pulp_system = cfg.get_services_for_roles(('api',))[0]
+    >>> svc_mgr = cli.ServiceManager(cfg, pulp_system)
     >>> completed_process_list = svc_manager.stop(['httpd'])
     >>> completed_process_list = svc_manager.start(['httpd'])
 
-    In the example above, the ``svc_mgr`` object represents the service manager
-    on the host referenced by ``pulp_system``.
+    In the example above, ``svc_mgr`` represents the service manager (such as
+    SysV or systemd) on a host. Upon instantiation, a :class:`ServiceManager`
+    object talks to its target host and uses simple heuristics to determine
+    which service manager is available. As a result, it's possible to manage
+    services on heterogeneous hosts with homogeneous commands.
 
-    Upon instantiation, a :class:`ServiceManager` object talks to its target
-    system and uses simple heuristics to determine which service manager is
-    available. As a result, it's possible to manage services on heterogeneous
-    systems with homogeneous commands.
+    Upon instantiation, this object talks to the target host and determines
+    whether it is running as root. If not root, all commands are prefixed with
+    "sudo". Please ensure that Pulp Smash can either execute commands as root
+    or can successfully execute ``sudo``. You may need to edit your
+    ``~/.ssh/config`` file.
 
-    Upon instantiation, a :class:`ServiceManager` object also talks to its
-    target system and determines whether it is running as root. If not root,
-    all commands are prefixed with "sudo". Please ensure that Pulp Smash can
-    either execute commands as root or can successfully execute ``sudo``. You
-    may need to edit your ``~/.ssh/config`` file.
+    For conceptual information on why both a
+    :class:`pulp_smash.cli.ServiceManager` and a
+    :class:`pulp_smash.cli.GlobalServiceManager` are necessary, see
+    :class:`pulp_smash.config.PulpSmashConfig`.
 
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the target
-        system.
-    :param pulp_system: A :class:`pulp_smash.config.PulpSystem` object to be
-        targeted.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+        application.
+    :param pulp_smash.config.PulpSystem pulp_system: The host to target.
     :raises pulp_smash.exceptions.NoKnownServiceManagerError: If unable to find
-        any service manager on the target system.
+        any service manager on the target host.
     """
 
     def __init__(self, cfg, pulp_system):
@@ -623,9 +629,9 @@ class ServiceManager(BaseServiceManager):
 
 
 class PackageManager(object):
-    """A package manager on a system.
+    """A package manager on a host.
 
-    Each instance of this class represents the package manager on a system. An
+    Each instance of this class represents the package manager on a host. An
     example may help to clarify this idea:
 
     >>> from pulp_smash import cli, config
@@ -637,20 +643,20 @@ class PackageManager(object):
     on the host referenced by :func:`pulp_smash.config.get_config`.
 
     Upon instantiation, a :class:`PackageManager` object talks to its target
-    system and uses simple heuristics to determine which package manager is
-    used. As a result, it's possible to manage packages on heterogeneous
-    systems with homogeneous commands.
+    host and uses simple heuristics to determine which package manager is used.
+    As a result, it's possible to manage packages on heterogeneous host with
+    homogeneous commands.
 
-    Upon instantiation, a :class:`PackageManager` object also talks to its
-    target system and determines whether it is running as root. If not root,
-    all commands are prefixed with "sudo". Please ensure that Pulp Smash can
-    either execute commands as root or can successfully execute ``sudo``. You
-    may need to edit your ``~/.ssh/config`` file.
+    Upon instantiation, this object talks to the target host and determines
+    whether it is running as root. If not root, all commands are prefixed with
+    "sudo". Please ensure that Pulp Smash can either execute commands as root
+    or can successfully execute ``sudo``. You may need to edit your
+    ``~/.ssh/config`` file.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the target
-        system.
+        host.
     :raises pulp_smash.exceptions.NoKnownPackageManagerError: If unable to find
-        any package manager on the target system.
+        any package manager on the target host.
     """
 
     def __init__(self, cfg):
@@ -661,7 +667,7 @@ class PackageManager(object):
 
     @staticmethod
     def _get_package_manager(cfg):
-        """Talk to the target system and determine the package manager.
+        """Talk to the target host and determine the package manager.
 
         Return "dnf" or "yum" if the package manager appears to be one of
         those. Raise an exception otherwise.
