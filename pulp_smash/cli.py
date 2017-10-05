@@ -448,7 +448,7 @@ class GlobalServiceManager(BaseServiceManager):
 
         :param services: An iterable of service names.
         :return: A dict mapping the affected hosts' hostnames with a list of
-           :class:`pulp_smash.cli.CompletedProcess` objects.
+            :class:`pulp_smash.cli.CompletedProcess` objects.
         """
         services = set(services)
         result = {}
