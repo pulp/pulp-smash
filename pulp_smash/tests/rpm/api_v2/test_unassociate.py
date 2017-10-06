@@ -18,12 +18,14 @@ from packaging.version import Version
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
+    DRPM_UNSIGNED_FEED_URL,
     ORPHANS_PATH,
     REPOSITORY_PATH,
     RPM,
     RPM_UNSIGNED_FEED_COUNT,
     RPM_UNSIGNED_FEED_URL,
     RPM_UNSIGNED_URL,
+    SRPM_UNSIGNED_FEED_URL,
 )
 from pulp_smash.tests.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.rpm.utils import check_issue_2620
@@ -38,91 +40,81 @@ def setUpModule():  # pylint:disable=invalid-name
 
 
 class RemoveUnitsTestCase(unittest.TestCase):
-    """Remove units of various types from a synced RPM repository.
+    """Remove units of various types from a synced repository."""
 
-    At a high level, this test case does the following:
+    def setUp(self):
+        """Set variables used by each test case."""
+        self.cfg = config.get_config()
+        self.initial_units = []
+        self.removed_units = []
 
-    1. Create and sync an RPM repository.
-    2. For each of several different types of content, remove a content unit of
-       that type from the repository.
-    """
+    def test_drpm(self):
+        """Un-associate units from a DRPM repo. See :meth:`do_test`."""
+        self.do_test(DRPM_UNSIGNED_FEED_URL, ['drpm'])
 
-    @classmethod
-    def setUpClass(cls):
-        """Create and sync a repository."""
-        cls.cfg = config.get_config()
-        client = api.Client(cls.cfg)
-        body = gen_repo()
-        body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
-        cls.repo = client.post(REPOSITORY_PATH, body).json()
-        try:
-            utils.sync_repo(cls.cfg, cls.repo)
-            cls.initial_units = utils.search_units(cls.cfg, cls.repo)
-        except:
-            cls.tearDownClass()
-            raise
-        cls.removed_units = []  # Units removed from the repository.
+    def test_rpm(self):
+        """Un-associate units from a RPM repo. See :meth:`do_test`."""
+        self.do_test(
+            RPM_UNSIGNED_FEED_URL,
+            ['erratum', 'package_category', 'package_group', 'rpm']
+        )
 
-    @classmethod
-    def tearDownClass(cls):
-        """Remove the created repository and any orphans."""
-        client = api.Client(cls.cfg)
-        client.delete(cls.repo['_href'])
-        client.delete(ORPHANS_PATH)
+    def test_srpm(self):
+        """Un-associate units from a SRPM repo. See :meth:`do_test`."""
+        self.do_test(SRPM_UNSIGNED_FEED_URL, ['srpm'])
 
-    def test_01_remove_units(self):
-        """Remove several types of content units from the repository.
-
-        Each removal is wrapped in a subTest. See :meth:`do_remove_unit`.
-        """
-        type_ids = ['erratum', 'package_category', 'package_group', 'rpm']
-        random.shuffle(type_ids)
-        for type_id in type_ids:
-            with self.subTest(type_id=type_id):
-                self.do_remove_unit(type_id)
-
-    def test_02_remaining_units(self):
-        """Assert the correct units are still in the repository.
-
-        The repository should have all the units that were originally synced
-        into the repository, minus those that have been removed.
-        """
-        removed_ids = {_get_unit_id(unit) for unit in self.removed_units}
-        remaining_ids = {
-            _get_unit_id(unit)
-            for unit in utils.search_units(self.cfg, self.repo)
-        }
-        self.assertEqual(removed_ids & remaining_ids, set())
-
-    def test_03_last_unit_removed(self):
-        """Assert that ``last_unit_removed`` timestamp was not updated.
-
-        If ``disassociate_units`` is called and no units are removed,
-        ``last_unit_removed`` should not update.
+    def do_test(self, feed, type_ids):
+        """Remove units from a repo and make assertions about it.
 
         Do the following:
 
-        1. Note the repository's ``last_unit_removed`` field.
-        2. Sleep for at least one second.
-        3. Attempt to remove a non defined ``unit_id_name`` .
-        4. Note the repository's ``last_unit_removed`` field.
+        1. Create and syn a repository of type ``type_id`` and with the given
+           ``feed``.
+        2. For each of several different types of content, remove a content
+           unit of that type from the repository.
+        3. Assert the correct units are still in the repository.
+           The repository should have all the units that were originally
+           synced into the repository, minus those that have been removed.
+        4. Assert that ``last_unit_removed`` timestamp was not updated.
+           If ``disassociate_units`` is called and no units are removed,
+           ``last_unit_removed`` should not update.
         """
-        if selectors.bug_is_untestable(2630, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/2630')
-        lur_before = self.get_repo_last_unit_removed()
-        time.sleep(1)  # ensure last_unit_removed increments
+        body = gen_repo()
+        body['importer_config']['feed'] = feed
+        client = api.Client(self.cfg, api.json_handler)
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
+        utils.sync_repo(self.cfg, repo)
+        self.initial_units = utils.search_units(self.cfg, repo)
 
-        # Select an unit and mess it up
-        unit = random.choice(self.initial_units).copy()
-        unit_id_name, _ = _get_unit_id(unit)
-        unit['metadata'][unit_id_name] = utils.uuid4()
+        for type_id in type_ids:
+            with self.subTest(type_id=type_id):
+                self.do_remove_unit(type_id, repo)
 
-        # Remove the non-existent unit
-        _remove_unit(self.cfg, self.repo, unit)
-        lur_after = self.get_repo_last_unit_removed()
-        self.assertEqual(lur_before, lur_after)
+        with self.subTest('remaining units'):
+            removed_ids = {_get_unit_id(unit) for unit in self.removed_units}
+            remaining_ids = {
+                _get_unit_id(unit)
+                for unit in utils.search_units(self.cfg, repo)
+            }
+            self.assertEqual(removed_ids & remaining_ids, set())
 
-    def do_remove_unit(self, type_id):
+        with self.subTest('last removed unit'):
+            if selectors.bug_is_untestable(2630, self.cfg.version):
+                self.skipTest('https://pulp.plan.io/issues/2630')
+                lur_before = self.get_repo_last_unit_removed(repo)
+                time.sleep(1)  # ensure last_unit_removed increments
+                # Select an unit and mess it up
+                unit = random.choice(self.initial_units).copy()
+                unit_id_name, _ = _get_unit_id(unit)
+                unit['metadata'][unit_id_name] = utils.uuid4()
+                # Remove the non-existent unit
+                _remove_unit(self.cfg, repo, unit)
+                lur_after = self.get_repo_last_unit_removed(repo)
+                self.assertEqual(lur_before, lur_after)
+
+    def do_remove_unit(self, type_id, repo):
         """Remove a content unit from the repository.
 
         Do the following:
@@ -136,24 +128,24 @@ class RemoveUnitsTestCase(unittest.TestCase):
         changes from null to a non-null value. When each subsequent unit is
         removed, assert that ``last_unit_removed`` increments.
         """
-        lur_before = self.get_repo_last_unit_removed()
+        lur_before = self.get_repo_last_unit_removed(repo)
         time.sleep(1)  # ensure last_unit_removed increments
         unit = random.choice(_get_units_by_type(self.initial_units, type_id))
         self.removed_units.append(unit)
-        _remove_unit(self.cfg, self.repo, unit)
-        lur_after = self.get_repo_last_unit_removed()
+        _remove_unit(self.cfg, repo, unit)
+        lur_after = self.get_repo_last_unit_removed(repo)
         if len(self.removed_units) <= 1:
             self.assertIsNone(lur_before)
             self.assertIsNotNone(lur_after)
         else:
             self.assertGreater(parse(lur_after), parse(lur_before))
 
-    def get_repo_last_unit_removed(self):
+    def get_repo_last_unit_removed(self, repo):
         """Get the repository's ``last_unit_removed`` attribute."""
         return (
             api
             .Client(self.cfg)
-            .get(self.repo['_href'])
+            .get(repo['_href'])
             .json()['last_unit_removed'])
 
 
@@ -273,7 +265,7 @@ def _get_unit_id(unit):
     Based on the content type of the given content unit, this function returns
     — hopefully — the name and value of a unique identifier.
     """
-    if unit['unit_type_id'] in ('package_langpacks', 'rpm'):
+    if unit['unit_type_id'] in ('package_langpacks', 'rpm', 'srpm', 'drpm'):
         key = '_id'
     else:
         key = 'id'
