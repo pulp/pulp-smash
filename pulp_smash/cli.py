@@ -400,7 +400,7 @@ class GlobalServiceManager(BaseServiceManager):
     >>> from pulp_smash import cli, config
     >>> cfg = config.get_config()
     >>> svc_mgr = cli.GlobalServiceManager(cfg)
-    >>> svc_manager.start(['httpd'])
+    >>> svc_mgr.start(['httpd'])
 
     In this case, the service manager will iterate over all hosts in ``cfg``.
     For each host that is declared as fulfilling the ``api`` role, Apache
@@ -542,8 +542,8 @@ class ServiceManager(BaseServiceManager):
     >>> cfg = config.get_config()
     >>> pulp_system = cfg.get_services_for_roles(('api',))[0]
     >>> svc_mgr = cli.ServiceManager(cfg, pulp_system)
-    >>> completed_process_list = svc_manager.stop(['httpd'])
-    >>> completed_process_list = svc_manager.start(['httpd'])
+    >>> completed_process_list = svc_mgr.stop(['httpd'])
+    >>> completed_process_list = svc_mgr.start(['httpd'])
 
     In the example above, ``svc_mgr`` represents the service manager (such as
     SysV or systemd) on a host. Upon instantiation, a :class:`ServiceManager`
