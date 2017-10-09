@@ -68,16 +68,14 @@ class RemoveUnitsTestCase(unittest.TestCase):
 
         Do the following:
 
-        1. Create and syn a repository of type ``type_id`` and with the given
-           ``feed``.
-        2. For each of several different types of content, remove a content
-           unit of that type from the repository.
-        3. Assert the correct units are still in the repository.
-           The repository should have all the units that were originally
-           synced into the repository, minus those that have been removed.
-        4. Assert that ``last_unit_removed`` timestamp was not updated.
-           If ``disassociate_units`` is called and no units are removed,
-           ``last_unit_removed`` should not update.
+        1. Create and sync a repository with the given ``feed``.
+        2. For each type ID in ``type_ids``, remove a content unit of that type
+           from the repository. See :meth:`do_remove_unit`.
+        3. Assert the correct units are still in the repository. The repository
+           should have all the units that were originally synced into the
+           repository, minus those that have been removed.
+        4. Remove a non-existent unit from the repository. Assert that the
+           ``last_unit_removed`` timestamp was not updated.
         """
         body = gen_repo()
         body['importer_config']['feed'] = feed
@@ -100,9 +98,8 @@ class RemoveUnitsTestCase(unittest.TestCase):
             }
             self.assertEqual(removed_ids & remaining_ids, set())
 
-        with self.subTest('last removed unit'):
-            if selectors.bug_is_untestable(2630, self.cfg.version):
-                self.skipTest('https://pulp.plan.io/issues/2630')
+        if selectors.bug_is_testable(2630, self.cfg.version):
+            with self.subTest('last removed unit'):
                 lur_before = self.get_repo_last_unit_removed(repo)
                 time.sleep(1)  # ensure last_unit_removed increments
                 # Select an unit and mess it up
