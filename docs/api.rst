@@ -76,6 +76,7 @@ developers, not a gospel.
     api/pulp_smash.tests.rpm.api_v2.test_content_applicability
     api/pulp_smash.tests.rpm.api_v2.test_content_sources
     api/pulp_smash.tests.rpm.api_v2.test_copy
+    api/pulp_smash.tests.rpm.api_v2.test_copy_mtime
     api/pulp_smash.tests.rpm.api_v2.test_crud
     api/pulp_smash.tests.rpm.api_v2.test_download_policies
     api/pulp_smash.tests.rpm.api_v2.test_duplicate_uploads
