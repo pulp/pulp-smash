@@ -85,8 +85,10 @@ def pulp_admin_login(server_config):
     :return: The completed process.
     :rtype: pulp_smash.cli.CompletedProcess
     """
-    cmd = 'pulp-admin login -u {} -p {}'.format(*server_config.pulp_auth)
-    return cli.Client(server_config).run(cmd.split())
+    return cli.Client(server_config).run((
+        'pulp-admin', 'login', '-u', server_config.pulp_auth[0],
+        '-p', server_config.pulp_auth[1]
+    ))
 
 
 def reset_pulp(server_config):
