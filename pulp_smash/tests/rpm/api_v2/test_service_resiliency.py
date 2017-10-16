@@ -92,28 +92,6 @@ class MissingWorkersTestCase(unittest.TestCase):
 class TaskDispatchTestCase(unittest.TestCase):
     """Test whether ``httpd`` dispatches a task while the broker is down."""
 
-    def setUp(self):
-        """Provide a server configuration and stop the broker.
-
-        Delete Pulp tasks to assure that no tasks are running.
-        """
-        self.cfg = config.get_config()
-        if selectors.bug_is_untestable(2770, self.cfg.version):
-            self.skipTest('https://pulp.plan.io/issues/2770')
-        self.broker = [utils.get_broker(self.cfg)]
-        self.system = self.cfg.get_systems('amqp broker')[0]
-        self.svc_mgr = cli.ServiceManager(self.cfg, pulp_system=self.system)
-        self.svc_mgr.stop(self.broker)
-        client = api.Client(self.cfg)
-        client.delete(
-            TASKS_PATH,
-            params={'state': ['finished', 'skipped', 'error']}
-        )
-
-    def tearDown(self):
-        """Start broker."""
-        self.svc_mgr.start(self.broker)
-
     def test_all(self):
         """Test whether ``httpd`` dispatches a task while the broker is down.
 
@@ -122,33 +100,46 @@ class TaskDispatchTestCase(unittest.TestCase):
         * `Pulp Smash #650 <https://github.com/PulpQE/pulp-smash/issues/650>`_
         * `Pulp #2770 <https://pulp.plan.io/issues/2770>`_
 
-        Do the following:
+        This test does the following:
 
-        With a Pulp system with no tasks executing, and AMP broker stopped.
-
-        1. Create, and sync a repository.
-        2. Check for status of created task. It should not have any task in
-           the ``waiting`` state.
+        1. Create a repository.
+        2. Stop the AMQP broker. (Also, schedule it to be re-started later!)
+        3. Sync the repository, ignore any errors that are returned when doing
+           so, and assert that no tasks are left in the ``waiting`` state.
         """
-        client = api.Client(self.cfg, api.json_handler)
+        cfg = config.get_config()
+        if selectors.bug_is_untestable(2770, cfg.version):
+            self.skipTest('https://pulp.plan.io/issues/2770')
+
+        # Create a repository.
+        client = api.Client(cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
-        body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        repo = client.get(repo['_href'], params={'details': True})
+
+        # Stop the AMQP broker.
+        broker = [utils.get_broker(cfg)]
+        svc_mgr = cli.GlobalServiceManager(cfg)
+        svc_mgr.stop(broker)
+        self.addCleanup(svc_mgr.start, broker)
+
+        # Sync the repo, and assert no tasks are left in the waiting state.
         try:
-            utils.sync_repo(self.cfg, repo)
+            utils.sync_repo(cfg, repo)
         except HTTPError:
             pass
-        tasks = client.post(urljoin(TASKS_PATH, 'search/'), {
-            'criteria': {'fields': [
-                'tags',
-                'task_id',
-                'state',
-                'start_time',
-                'finish_time'
-            ]}
-        })
-        for task in tasks:
-            self.assertNotEqual(task['state'].lower(), 'waiting')
+        tasks = client.post(
+            urljoin(TASKS_PATH, 'search/'),
+            {'criteria': {
+                'fields': [
+                    'finish_time',
+                    'start_time',
+                    'state',
+                    'tags',
+                    'task_id',
+                ],
+                'filters': {'state': {'$in': ['waiting']}},
+            }}
+        )
+        self.assertEqual(len(tasks), 0, tasks)
