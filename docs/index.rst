@@ -7,8 +7,9 @@ this:
 .. code-block:: sh
 
     pip install pulp-smash
-    pulp-smash settings create  # generate a settings file
-    python3 -m unittest discover pulp_smash.tests  # run the tests
+    pulp-smash settings create  # generate a pulp2 settings file
+    python3 -m unittest discover pulp_smash.pulp2.tests  # run the pulp2 tests
+
 
 Pulp Smash is a GPL-licensed Python library, but no knowledge of Python is
 required to execute the tests. Just install the application, run it, and follow
