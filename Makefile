@@ -53,7 +53,7 @@ lint-pylint:
 		pulp_smash/pulp_smash_cli.py \
 		pulp_smash/selectors.py \
 		pulp_smash/utils.py
-	pylint -j $(CPU_COUNT) --reports=n --disable=I,duplicate-code pulp_smash/tests/
+	pylint -j $(CPU_COUNT) --reports=n --disable=I,duplicate-code pulp_smash/pulp2/tests
 
 lint: lint-flake8 lint-pylint
 
