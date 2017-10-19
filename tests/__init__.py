@@ -4,5 +4,6 @@
 This package and its sub-packages contain tests for Pulp Smash. These tests
 verify that Pulp Smash's internal functions and libraries function correctly.
 
-These tests are entirely different from the tests in :mod:`pulp_smash.tests`.
+These tests are entirely different from the tests in
+:mod:`pulp_smash.pulp2.tests`.
 """
