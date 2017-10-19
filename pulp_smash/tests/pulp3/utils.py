@@ -1,18 +1,19 @@
 # coding=utf-8
-"""Utility functions for Pulp3 tests."""
-from urllib.parse import urljoin, urlsplit, urlunsplit
+"""Utility functions for Pulp 3 tests."""
+import unittest
+from urllib.parse import urlsplit, urlunsplit
 
+from packaging.version import Version
 from requests.auth import AuthBase
 
 from pulp_smash import config
 
 
-class JWTAuth(AuthBase):
-    """An extender of requests ``AuthBase`` class.
+class JWTAuth(AuthBase):  # pylint:disable=too-few-public-methods
+    """A class that enables JWT authentication with the Requests library.
 
-    See:
-
-    ``Custom Authentication`` Requests library. See `example
+    For more information, see the Requests documentation on `custom
+    authentication
     <http://docs.python-requests.org/en/latest/user/advanced/#custom-authentication>`_.
     """
 
@@ -23,9 +24,10 @@ class JWTAuth(AuthBase):
 
     def __call__(self, request):
         """Modify header and return request."""
-        request.headers['Authorization'] = (
-            self.header_format + ' ' + self.token
-        )
+        request.headers['Authorization'] = ' '.join((
+            self.header_format,
+            self.token,
+        ))
         return request
 
 
@@ -37,11 +39,6 @@ def get_base_url():
         pulp_system.roles['api'].get('scheme', 'https'),
         pulp_system.hostname
     )
-
-
-def get_url(base_url, path):
-    """Return joined base_url and path."""
-    return urljoin(base_url, path)
 
 
 def adjust_url(url):
@@ -57,4 +54,12 @@ def adjust_url(url):
     netloc = parse_result[1].partition(':')[0] + ':8000'
     return urlunsplit(('http', netloc) + parse_result[2:])
 
-# TODO create function to verify Pulp Version
+
+def set_up_module():
+    """Skip tests if Pulp 3 isn't under test."""
+    cfg = config.get_config()
+    if cfg.version < Version('3'):
+        raise unittest.SkipTest(
+            'These tests are for Pulp 3 or newer, but Pulp {} is under test.'
+            .format(cfg.version)
+        )

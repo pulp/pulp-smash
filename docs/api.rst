@@ -18,12 +18,6 @@ developers, not a gospel.
     api/pulp_smash.exceptions
     api/pulp_smash.pulp_smash_cli
     api/pulp_smash.selectors
-    api/pulp_smash.pulp3
-    api/pulp_smash.pulp3.constants
-    api/pulp_smash.pulp3.tests
-    api/pulp_smash.pulp3.utils
-    api/pulp_smash.pulp3.tests.platform
-    api/pulp_smash.pulp3.tests.platform.test_auth
     api/pulp_smash.tests
     api/pulp_smash.tests.docker
     api/pulp_smash.tests.docker.api_v2
@@ -57,6 +51,12 @@ developers, not a gospel.
     api/pulp_smash.tests.platform.cli
     api/pulp_smash.tests.platform.cli.test_pulp_manage_db
     api/pulp_smash.tests.platform.cli.test_selinux
+    api/pulp_smash.tests.pulp3
+    api/pulp_smash.tests.pulp3
+    api/pulp_smash.tests.pulp3.constants
+    api/pulp_smash.tests.pulp3.pulpcore
+    api/pulp_smash.tests.pulp3.pulpcore.test_auth
+    api/pulp_smash.tests.pulp3.utils
     api/pulp_smash.tests.puppet
     api/pulp_smash.tests.puppet.api_v2
     api/pulp_smash.tests.puppet.api_v2.test_crud
