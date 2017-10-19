@@ -5,6 +5,7 @@ import unittest
 from collections import namedtuple
 
 from pulp_smash import cli, config, selectors, utils
+from pulp_smash.tests.platform.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
 CELERY_LABEL = ':system_r:celery_t:s0'

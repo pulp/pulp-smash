@@ -51,6 +51,7 @@ developers, not a gospel.
     api/pulp_smash.tests.platform.cli
     api/pulp_smash.tests.platform.cli.test_pulp_manage_db
     api/pulp_smash.tests.platform.cli.test_selinux
+    api/pulp_smash.tests.platform.utils
     api/pulp_smash.tests.pulp3
     api/pulp_smash.tests.pulp3
     api/pulp_smash.tests.pulp3.constants

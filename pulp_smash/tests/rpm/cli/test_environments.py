@@ -8,6 +8,7 @@ from packaging.version import Version
 
 from pulp_smash import cli, config, utils
 from pulp_smash.constants import RPM_SIGNED_FEED_URL
+from pulp_smash.tests.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
 class UploadPackageEnvTestCase(unittest.TestCase):

@@ -15,6 +15,7 @@ The assumptions explored in this module have the following dependencies::
 """
 from pulp_smash import api, utils
 from pulp_smash.constants import LOGIN_PATH, USER_PATH
+from pulp_smash.tests.platform.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
 def _logins(search_response):

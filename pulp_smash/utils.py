@@ -570,3 +570,13 @@ def os_is_f26(cfg, pulp_system=None):
         '/etc/redhat-release',
     ))
     return response.returncode == 0
+
+
+def set_up_module():
+    """Skip tests if Pulp 2 isn't under test."""
+    cfg = config.get_config()
+    if cfg.version >= Version('3'):
+        raise unittest.SkipTest(
+            'These tests are for Pulp 2, but Pulp {} is under test.'
+            .format(cfg.version)
+        )

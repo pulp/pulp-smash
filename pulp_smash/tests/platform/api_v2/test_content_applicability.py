@@ -20,6 +20,7 @@ from packaging.version import Version
 
 from pulp_smash import api, config
 from pulp_smash.constants import CALL_REPORT_KEYS, GROUP_CALL_REPORT_KEYS
+from pulp_smash.tests.platform.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _PATHS = {
     'consumer': '/pulp/api/v2/consumers/actions/content/regenerate_applicability/',  # noqa

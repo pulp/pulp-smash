@@ -31,6 +31,7 @@ import unittest
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import USER_PATH
+from pulp_smash.tests.platform.utils import set_up_module
 from pulp_smash.utils import uuid4
 
 
@@ -44,6 +45,7 @@ def setUpModule():  # pylint:disable=invalid-name
     Test cases may search for these users or otherwise perform non-destructive
     actions on them. Test cases should **not** change these users.
     """
+    set_up_module()
     client = api.Client(config.get_config(), api.json_handler)
     del _USERS[:]  # Ensure idempotence
     for _ in range(3):

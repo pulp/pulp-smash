@@ -8,4 +8,5 @@ def set_up_module():
 
     See :mod:`pulp_smash.tests` for more information.
     """
+    utils.set_up_module()
     utils.skip_if_type_is_unsupported('puppet_module')

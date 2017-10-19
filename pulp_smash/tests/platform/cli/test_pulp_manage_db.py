@@ -11,6 +11,7 @@ import inspect
 import unittest
 
 from pulp_smash import cli, config, exceptions, selectors, utils
+from pulp_smash.tests.platform.utils import set_up_module
 
 REQUIRED_SERVICES = frozenset(('mongod',))
 """If any of these services are stopped, ``pulp-manage-db`` will abort."""
@@ -25,6 +26,7 @@ CONFLICTING_SERVICES = frozenset((
 
 def setUpModule():  # pylint:disable=invalid-name
     """Log in."""
+    set_up_module()
     utils.pulp_admin_login(config.get_config())
 
 
