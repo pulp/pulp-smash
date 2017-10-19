@@ -163,12 +163,12 @@ variables to select an alternate settings file.
 Running the tests
 -----------------
 
-All tests can be run by running the command below::
+All tests related to Pulp2 can be run by running the command below::
 
-    python3 -m unittest discover pulp_smash.tests
+    python3 -m unittest discover pulp_smash.pulp2.tests
 
 Any subset of tests may also be selected. For example, you may also run
-``python3 -m unittest pulp_smash.tests.platform.api_v2.test_login``. Consult
+``python3 -m unittest pulp_smash.pulp2.tests.platform.api_v2.test_login``. Consult
 the unittest documentation for test selection syntax, and consult the
 :doc:`/api` to see which test modules are available, check the tests under the
 ``pulp_smash.tests.*`` namespace.
