@@ -1,12 +1,14 @@
 # coding=utf-8
 """Utility functions for Pulp 3 tests."""
+import random
 import unittest
 from urllib.parse import urlsplit, urlunsplit
 
 from packaging.version import Version
-from requests.auth import AuthBase
+from requests.auth import AuthBase, HTTPBasicAuth
 
-from pulp_smash import config
+from pulp_smash import api, config
+from pulp_smash.tests.pulp3.constants import JWT_PATH
 
 
 class JWTAuth(AuthBase):  # pylint:disable=too-few-public-methods
@@ -63,3 +65,46 @@ def set_up_module():
             'These tests are for Pulp 3 or newer, but Pulp {} is under test.'
             .format(cfg.version)
         )
+
+
+def get_auth():
+    """Return a **random** authentication method.
+
+    The use of this function will avoid the need to duplicate tests to cover
+    the different methods of authentication. Since this function will return
+    a random authentication method chosen between **Basic Auth** and **JWT**.
+
+    As an example of basic usage, let`s say that you`d like to create a user.
+
+    >>> from pulp_smash.api import Client
+    >>> from pulp_smash.config import get_config
+    >>> from pulp_smash.tests.pulp3.utils import get_auth
+    >>> from pulp_smash.tests.pulp3.constants import USER_PATH
+    >>> cfg = config.get_config()
+    >>> client = api.Client(cfg, api.json_handler)
+    >>> client.post(USER_PATH, {
+    >>>     'username': 'superuser',
+    >>>     'password': 'admin',
+    >>>     'is_superuser': True
+    >>>     },
+    >>>    auth=get_auth()
+    >>> )
+
+    In case of need to use a specific ``auth`` method, just use the regular
+    methods.
+
+    :returns: A random authentication method.
+    """
+    cfg = config.get_config()
+    url = adjust_url(get_base_url())
+    client = api.Client(cfg, api.json_handler)
+    client.request_kwargs['url'] = url
+    token = client.post(JWT_PATH, {
+        'username': cfg.pulp_auth[0],
+        'password': cfg.pulp_auth[1],
+    })
+
+    jwt_auth = JWTAuth(token['token'], 'JWT')
+    basic_auth = HTTPBasicAuth(cfg.pulp_auth[0], cfg.pulp_auth[1])
+
+    return random.choice([jwt_auth, basic_auth])
