@@ -182,7 +182,7 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
             cls.updates_element = (
                 get_repodata(cls.cfg, repo['distributors'][0], 'updateinfo')
             )
-        except:
+        except:  # noqa:E722
             cls.tearDownClass()
             raise
 
@@ -346,7 +346,7 @@ class UpdateRepoTestCase(utils.BaseAPITestCase):
             repo = client.post(REPOSITORY_PATH, body)
             cls.resources.add(repo['_href'])
             cls.repo = client.get(repo['_href'], params={'details': True})
-        except:
+        except:  # noqa:E722
             cls.tearDownClass()
             raise
 
@@ -487,7 +487,7 @@ class CleanUpTestCase(unittest.TestCase):
         cls.repo = client.post(REPOSITORY_PATH, body)
         try:
             cls.repo = client.get(cls.repo['_href'], params={'details': True})
-        except:
+        except:  # noqa:E722
             cls.tearDownClass()
             raise
         cls.updateinfo_xml_hrefs = []

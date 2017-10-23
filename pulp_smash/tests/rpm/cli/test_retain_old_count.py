@@ -51,7 +51,7 @@ class RetainOldCountTestCase(unittest.TestCase):
                 'pulp-admin', 'rpm', 'repo', 'content', 'rpm', '--repo-id',
                 cls.repo_id
             )).stdout
-        except:
+        except:  # noqa:E722
             cls.tearDownClass()
             raise
 

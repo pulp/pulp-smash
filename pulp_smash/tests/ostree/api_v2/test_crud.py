@@ -99,7 +99,7 @@ class CreateDistributorsTestCase(utils.BaseAPITestCase):
                 cls.repos.append(
                     client.get(repo['_href'], params={'details': True})
                 )
-        except:
+        except:  # noqa:E722
             cls.tearDownClass()
             raise
 
@@ -212,7 +212,7 @@ class UpdateDistributorsTestCase(utils.BaseAPITestCase):
                 cls.repos.append(
                     client.get(repo['_href'], params={'details': True})
                 )
-        except:
+        except:  # noqa:E722
             cls.tearDownClass()
             raise
 

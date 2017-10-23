@@ -38,7 +38,7 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
             utils.sync_repo(cls.cfg, cls.repo)
             utils.publish_repo(cls.cfg, cls.repo)
             cls.repo = client.get(cls.repo['_href'], params={'details': True})
-        except:
+        except:  # noqa:E722
             cls.tearDownClass()
             raise
 

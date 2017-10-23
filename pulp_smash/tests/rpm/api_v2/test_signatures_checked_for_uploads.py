@@ -90,7 +90,7 @@ def setUpModule():  # pylint:disable=invalid-name
         if selectors.bug_is_testable(1806, cfg.version):
             _SIGNED_PACKAGES['drpm'] = utils.http_get(DRPM_SIGNED_URL)
             _UNSIGNED_PACKAGES['drpm'] = utils.http_get(DRPM_UNSIGNED_URL)
-    except:
+    except:  # noqa:E722
         _SIGNED_PACKAGES.clear()
         _UNSIGNED_PACKAGES.clear()
         raise

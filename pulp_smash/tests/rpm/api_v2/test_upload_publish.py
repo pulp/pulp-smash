@@ -228,7 +228,7 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
                 # Info about repo distributors is needed when publishing.
                 repo = client.get(repo['_href'], params={'details': True})
                 cls.repos[-1] = repo
-        except:
+        except:  # noqa:E722
             cls.tearDownClass()
             raise
 

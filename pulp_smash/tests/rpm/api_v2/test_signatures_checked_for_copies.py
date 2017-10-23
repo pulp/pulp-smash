@@ -74,7 +74,7 @@ def setUpModule():  # pylint:disable=invalid-name
         _REPOS['unsigned'] = repo
         for type_id, pkg in _UNSIGNED_PACKAGES.items():
             utils.upload_import_unit(cfg, pkg, {'unit_type_id': type_id}, repo)
-    except:
+    except:  # noqa:E722
         _SIGNED_PACKAGES.clear()
         _UNSIGNED_PACKAGES.clear()
         for _ in range(len(_REPOS)):
