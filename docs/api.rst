@@ -127,6 +127,8 @@ developers, not a gospel.
     api/pulp_smash.tests.pulp3.constants
     api/pulp_smash.tests.pulp3.pulpcore
     api/pulp_smash.tests.pulp3.pulpcore.test_auth
+    api/pulp_smash.tests.pulp3.pulpcore.test_crud_repos
+    api/pulp_smash.tests.pulp3.pulpcore.utils
     api/pulp_smash.tests.pulp3.utils
     api/pulp_smash.utils
     api/tests
