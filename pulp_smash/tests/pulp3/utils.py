@@ -70,9 +70,12 @@ def set_up_module():
 def get_auth():
     """Return a **random** authentication method.
 
-    The use of this function will avoid the need to duplicate tests to cover
-    the different methods of authentication. Since this function will return
-    a random authentication method chosen between **Basic Auth** and **JWT**.
+    By default, :class:`pulp_smash.api.Client` uses the same authentication
+    method (HTTP BASIC) for every request. While this is a sane default, it
+    doesn't let tests exercise other authentication methods, such as JWT. This
+    function returns a random authentication token. This ensures that test
+    authors don't need to duplicate test cases to cover each different
+    authentiation method.
 
     As an example of basic usage, let`s say that you`d like to create a user.
 
@@ -82,29 +85,29 @@ def get_auth():
     >>> from pulp_smash.tests.pulp3.constants import USER_PATH
     >>> cfg = config.get_config()
     >>> client = api.Client(cfg, api.json_handler)
+    >>> client.request_kwargs['auth'] = get_auth()
     >>> client.post(USER_PATH, {
     >>>     'username': 'superuser',
     >>>     'password': 'admin',
     >>>     'is_superuser': True
-    >>>     },
-    >>>    auth=get_auth()
-    >>> )
-
-    In case of need to use a specific ``auth`` method, just use the regular
-    methods.
+    >>> })
 
     :returns: A random authentication method.
     """
-    cfg = config.get_config()
-    url = adjust_url(get_base_url())
+    return random.choice((_get_basic_auth, _get_jwt_auth))(config.get_config())
+
+
+def _get_basic_auth(cfg):
+    """Return an object for HTTP basic authentication."""
+    return HTTPBasicAuth(cfg.pulp_auth[0], cfg.pulp_auth[1])
+
+
+def _get_jwt_auth(cfg):
+    """Return an object for JWT authentication."""
     client = api.Client(cfg, api.json_handler)
-    client.request_kwargs['url'] = url
+    client.request_kwargs['url'] = adjust_url(get_base_url())
     token = client.post(JWT_PATH, {
         'username': cfg.pulp_auth[0],
         'password': cfg.pulp_auth[1],
     })
-
-    jwt_auth = JWTAuth(token['token'], 'JWT')
-    basic_auth = HTTPBasicAuth(cfg.pulp_auth[0], cfg.pulp_auth[1])
-
-    return random.choice([jwt_auth, basic_auth])
+    return JWTAuth(token['token'], 'JWT')
