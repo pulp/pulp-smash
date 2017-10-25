@@ -105,7 +105,8 @@ class MtimeTestCase(unittest.TestCase):
 
         # Get the mtime of the sqlite files.
         cli_client = cli.Client(cfg, cli.echo_handler)
-        cmd = "stat --format %Y '{}'/*".format(os.path.join(
+        cmd = '' if utils.is_root(cfg) else 'sudo '
+        cmd += "stat --format %Y '{}'/*".format(os.path.join(
             _PATH,
             repo['distributors'][0]['config']['relative_url'],
             'repodata',
