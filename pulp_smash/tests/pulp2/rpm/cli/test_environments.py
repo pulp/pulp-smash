@@ -2,7 +2,6 @@
 """Tests for RPM package environments."""
 import subprocess
 import unittest
-import uuid
 
 from packaging.version import Version
 
@@ -62,8 +61,8 @@ class UploadPackageEnvTestCase(unittest.TestCase):
 
     def test_upload_environment(self):
         """Test if package environments can be uploaded."""
-        rpm_env_name = str(uuid.uuid4())
-        rpm_env_desc = str(uuid.uuid4())
+        rpm_env_name = utils.uuid4()
+        rpm_env_desc = utils.uuid4()
         result = self.client.run(
             'pulp-admin rpm repo uploads environment --repo-id {0} '
             '--environment-id {1} --name {2} --description {3}'

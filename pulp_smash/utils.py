@@ -28,8 +28,8 @@ _CHECKSUM_CACHE = {}
 
 
 def uuid4():
-    """Return a random UUID, as a unicode string."""
-    return type('')(uuid.uuid4())
+    """Return a random UUID4 as a string."""
+    return str(uuid.uuid4())
 
 
 # See design discussion at: https://github.com/PulpQE/pulp-smash/issues/31

@@ -32,7 +32,6 @@ import unittest
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import USER_PATH
 from pulp_smash.tests.pulp2.platform.utils import set_up_module
-from pulp_smash.utils import uuid4
 
 
 _SEARCH_PATH = USER_PATH + 'search/'
@@ -49,7 +48,7 @@ def setUpModule():  # pylint:disable=invalid-name
     client = api.Client(config.get_config(), api.json_handler)
     del _USERS[:]  # Ensure idempotence
     for _ in range(3):
-        _USERS.append(client.post(USER_PATH, {'login': uuid4()}))
+        _USERS.append(client.post(USER_PATH, {'login': utils.uuid4()}))
 
 
 def tearDownModule():  # pylint:disable=invalid-name

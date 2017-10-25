@@ -3,7 +3,6 @@
 import hashlib
 import random
 import unittest
-import uuid
 from urllib.parse import urljoin
 
 from packaging.version import Version
@@ -96,7 +95,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
 
     def test_create_tag(self):
         """Check if a tag can be created."""
-        tag_name = str(uuid.uuid4())
+        tag_name = utils.uuid4()
         random_manifest = random.choice(utils.search_units(
             self.cfg, self.repo, {'type_ids': ['docker_manifest']}))
         # Create the tag
@@ -185,9 +184,9 @@ class DockerTagTestCase(utils.BaseAPITestCase):
 
     def test_update_tag_invalid_manifest(self):  # pylint:disable=invalid-name
         """Check if tagging fail for a invalid manifest."""
-        tag_name = str(uuid.uuid4())
+        tag_name = utils.uuid4()
         manifest_digest = 'sha256:{}'.format(hashlib.sha256(
-            bytes(str(uuid.uuid4()), encoding='utf-8')).hexdigest())
+            bytes(utils.uuid4(), encoding='utf-8')).hexdigest())
         # Create the tag
         with self.assertRaises(TaskReportError) as context:
             import_upload(self.cfg, self.repo, {
@@ -217,7 +216,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
             other['_href'], params={'details': True})
         other_manifest = random.choice(utils.search_units(
             self.cfg, other, {'type_ids': ['docker_manifest']}))
-        tag_name = str(uuid.uuid4())
+        tag_name = utils.uuid4()
         with self.assertRaises(TaskReportError) as context:
             import_upload(self.cfg, self.repo, {
                 'unit_type_id': 'docker_tag',
