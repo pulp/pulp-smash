@@ -13,6 +13,7 @@ from pulp_smash.tests.pulp2.rpm.cli.utils import count_langpacks
 from pulp_smash.tests.pulp2.rpm.utils import (
     check_issue_2277,
     check_issue_2620,
+    check_issue_3104,
     set_up_module,
 )
 from pulp_smash.utils import is_root
@@ -261,6 +262,8 @@ class UpdateRpmTestCase(UtilsMixin, unittest.TestCase):
     def test_all(self):
         """Update an RPM in a repository and on a host."""
         cfg = config.get_config()
+        if check_issue_3104(cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         if check_issue_2277(cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
         if check_issue_2620(cfg):

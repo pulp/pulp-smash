@@ -88,6 +88,17 @@ def check_issue_2844(cfg):
             selectors.bug_is_untestable(2844, cfg.version))
 
 
+def check_issue_3104(cfg):
+    """Return true if `Pulp #3104`_ affects the targeted Pulp system.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: The Pulp system under test.
+
+    .. _Pulp #3104: https://pulp.plan.io/issues/3104
+    """
+    return (cfg.version >= Version('2.15') and
+            selectors.bug_is_untestable(3104, cfg.version))
+
+
 def os_is_rhel6(cfg):
     """Return ``True`` if the server runs RHEL 6, or ``False`` otherwise.
 

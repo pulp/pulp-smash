@@ -24,7 +24,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_repo,
     get_repodata,
 )
-from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277
+from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277, check_issue_3104
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module
 
 
@@ -129,6 +129,8 @@ class SyncRepoTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create, sync and publish a repository. Fetch its ``comps.xml``."""
         super(SyncRepoTestCase, cls).setUpClass()
+        if check_issue_3104(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         client = api.Client(cls.cfg, api.json_handler)
 
         # Create a repo.
@@ -193,6 +195,8 @@ class UploadPackageGroupsTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create an RPM repository, upload package groups, and publish."""
         super(UploadPackageGroupsTestCase, cls).setUpClass()
+        if check_issue_3104(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
 
         # Create a repository and add a distributor to it.
         client = api.Client(cls.cfg, api.json_handler)
@@ -450,6 +454,8 @@ class UploadTwiceTestCase(unittest.TestCase):
     def test_all(self):
         """Upload a package group to a repository twice."""
         cfg = config.get_config()
+        if check_issue_3104(cfg):
+            self.skipTest('https://pulp.plan.io/issues/3104')
         client = api.Client(cfg, api.json_handler)
         self.addCleanup(client.delete, ORPHANS_PATH)
 

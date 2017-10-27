@@ -16,6 +16,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_repo,
     get_repodata,
 )
+from pulp_smash.tests.pulp2.rpm.utils import check_issue_3104
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -123,6 +124,8 @@ class UpdatedChecksumTestCase(unittest.TestCase):
     def do_test(self, feed):
         """Verify ``checksum_type`` is updated on the repo metadata."""
         cfg = config.get_config()
+        if check_issue_3104(cfg):
+            self.skipTest('https://pulp.plan.io/issues/3104')
         client = api.Client(cfg, api.json_handler)
 
         # Create and sync a repository.

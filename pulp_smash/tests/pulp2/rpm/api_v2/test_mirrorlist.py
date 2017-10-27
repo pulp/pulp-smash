@@ -33,7 +33,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_repo,
     get_unit,
 )
-from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277
+from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277, check_issue_3104
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -127,6 +127,8 @@ class GoodMirrorlistTestCase(UtilsMixin, unittest.TestCase):
     def test_all(self):
         """Execute the test case business logic."""
         cfg = config.get_config()
+        if check_issue_3104(cfg):
+            self.skipTest('https://pulp.plan.io/issues/3104')
         self.check_issue_2277(cfg)
         self.check_issue_2326(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_GOOD)
@@ -143,6 +145,8 @@ class GoodRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
     def test_all(self):
         """Execute the test case business logic."""
         cfg = config.get_config()
+        if check_issue_3104(cfg):
+            self.skipTest('https://pulp.plan.io/issues/3104')
         self.check_issue_2277(cfg)
         self.check_issue_2326(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_GOOD, _gen_rel_url())
@@ -165,6 +169,8 @@ class MixedMirrorlistTestCase(UtilsMixin, unittest.TestCase):
     def test_all(self):
         """Execute the test case business logic."""
         cfg = config.get_config()
+        if check_issue_3104(cfg):
+            self.skipTest('https://pulp.plan.io/issues/3104')
         self.check_issue_2277(cfg)
         self.check_issue_2321(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_MIXED)
@@ -181,6 +187,8 @@ class MixedRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
     def test_all(self):
         """Execute the test case business logic."""
         cfg = config.get_config()
+        if check_issue_3104(cfg):
+            self.skipTest('https://pulp.plan.io/issues/3104')
         self.check_issue_2277(cfg)
         self.check_issue_2321(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_MIXED, _gen_rel_url())

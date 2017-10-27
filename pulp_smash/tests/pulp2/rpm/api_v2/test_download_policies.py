@@ -26,6 +26,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
 from pulp_smash.tests.pulp2.rpm.utils import (
     check_issue_2387,
     check_issue_2798,
+    check_issue_3104,
     os_is_rhel6,
     set_up_module,
 )
@@ -81,6 +82,8 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         4. Download an RPM from the repository.
         """
         super(BackgroundTestCase, cls).setUpClass()
+        if check_issue_3104(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         if (selectors.bug_is_untestable(1905, cls.cfg.version) and
                 os_is_rhel6(cls.cfg)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1905')
@@ -156,6 +159,8 @@ class OnDemandTestCase(utils.BaseAPITestCase):
         5. Download the same RPM to ensure it is served by the cache.
         """
         super(OnDemandTestCase, cls).setUpClass()
+        if check_issue_3104(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
 
         # Ensure `locally_stored_units` is 0 before we start.
         utils.reset_squid(cls.cfg)
@@ -371,6 +376,8 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
 
     def setUp(self):
         """Make sure Pulp and Squid are reset."""
+        if check_issue_3104(self.cfg):
+            self.skipTest('https://pulp.plan.io/issues/3104')
         # Required to ensure content is actually downloaded.
         utils.reset_squid(self.cfg)
         utils.reset_pulp(self.cfg)

@@ -30,7 +30,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_repo,
     xml_handler,
 )
-from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277
+from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277, check_issue_3104
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -112,6 +112,8 @@ class RepositoryLayoutTestCase(utils.BaseAPITestCase):
         ``repodata`` directory, and it may be changed by setting the
         distributor's ``relative_url``.)
         """
+        if check_issue_3104(self.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         if check_issue_2277(self.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
         client = api.Client(self.cfg, api.json_handler)

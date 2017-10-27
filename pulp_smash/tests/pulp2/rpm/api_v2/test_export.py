@@ -29,7 +29,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_repo,
     gen_repo_group,
 )
-from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277
+from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277, check_issue_3104
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module
 
 
@@ -306,6 +306,8 @@ class ExportChecksumTypeTestCase(BaseExportChecksumTypeTestCase):
         Each distributor is configured with a valid checksum type.
         """
         super(ExportChecksumTypeTestCase, cls).setUpClass()
+        if check_issue_3104(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         cls.distributors = [
             _create_distributor(
                 cls.cfg, cls.repo['_href'],
@@ -357,6 +359,8 @@ class RepoGroupExportChecksumTypeTestCase(BaseExportChecksumTypeTestCase):
            valid checksum type.
         """
         super(RepoGroupExportChecksumTypeTestCase, cls).setUpClass()
+        if check_issue_3104(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         body = gen_repo_group()
         body['repo_ids'] = [cls.repo['id']]
         cls.repo_group = api.Client(cls.cfg).post(

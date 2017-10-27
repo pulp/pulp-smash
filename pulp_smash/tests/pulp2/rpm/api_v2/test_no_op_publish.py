@@ -37,7 +37,7 @@ from pulp_smash.constants import (
     RPM_SIGNED_FEED_URL,
 )
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
-from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277
+from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277, check_issue_3104
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module
 
 
@@ -209,6 +209,8 @@ class ChangeRepoTestCase(BaseTestCase):
     def setUpClass(cls):
         """Publish a repository, change it, and publish it again."""
         super(ChangeRepoTestCase, cls).setUpClass()
+        if check_issue_3104(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         client = api.Client(cls.cfg)
         relative_url = cls.repo['distributors'][0]['config']['relative_url']
 

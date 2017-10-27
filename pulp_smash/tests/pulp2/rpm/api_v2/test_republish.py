@@ -21,7 +21,11 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_repo,
     get_unit,
 )
-from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277, check_issue_2620
+from pulp_smash.tests.pulp2.rpm.utils import (
+    check_issue_2277,
+    check_issue_2620,
+    check_issue_3104,
+)
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 _PUBLISH_DIR = 'pulp/repos/'
@@ -42,6 +46,8 @@ class RepublishTestCase(unittest.TestCase):
            it can't be downloaded.
         """
         cfg = config.get_config()
+        if check_issue_3104(cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         if check_issue_2277(cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
         if check_issue_2620(cfg):

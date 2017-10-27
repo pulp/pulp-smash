@@ -29,7 +29,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_repo,
     get_unit,
 )
-from pulp_smash.tests.pulp2.rpm.utils import check_issue_2620
+from pulp_smash.tests.pulp2.rpm.utils import check_issue_2620, check_issue_3104
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -214,6 +214,8 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create a pair of RPM repositories."""
         cls.cfg = config.get_config()
+        if check_issue_3104(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         if check_issue_2620(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2620')
         cls.rpm = utils.http_get(RPM_UNSIGNED_URL)

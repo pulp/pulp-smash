@@ -40,6 +40,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_repo,
     get_unit,
 )
+from pulp_smash.tests.pulp2.rpm.utils import check_issue_3104
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -219,6 +220,9 @@ class ChangeFeedTestCase(utils.BaseAPITestCase):
 
     def test_all(self):
         """Sync a repository, change its feed, and sync it again."""
+        if check_issue_3104(self.cfg):
+            self.skipTest('https://pulp.plan.io/issues/3104')
+
         # Create, sync and publish repositories A and B.
         repos = []
         for _ in range(2):

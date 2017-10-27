@@ -67,6 +67,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
 from pulp_smash.tests.pulp2.rpm.utils import (
     check_issue_2277,
     check_issue_2620,
+    check_issue_3104,
     set_up_module,
 )
 
@@ -153,6 +154,8 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
         3. Publish the repository Fetch and parse its ``updateinfo.xml`` file.
         """
         super(UpdateInfoTestCase, cls).setUpClass()
+        if check_issue_3104(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         cls.errata = {key: _gen_errata() for key in ('full', 'partial')}
         del cls.errata['partial']['pkglist']
         cls.tasks = {}
@@ -338,6 +341,8 @@ class UpdateRepoTestCase(utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create an RPM repository with a feed and distributor."""
         super().setUpClass()
+        if check_issue_3104(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
@@ -423,6 +428,8 @@ class PkglistsTestCase(unittest.TestCase):
         ``<collection>`` elements. Assertions are not made about these details.
         """
         cfg = config.get_config()
+        if check_issue_3104(cfg):
+            self.skipTest('https://pulp.plan.io/issues/3104')
         if selectors.bug_is_untestable(2227, cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2277')
 
@@ -478,6 +485,8 @@ class CleanUpTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Create and sync a repository."""
         cls.cfg = config.get_config()
+        if check_issue_3104(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         if check_issue_2620(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2620')
         client = api.Client(cls.cfg, api.json_handler)

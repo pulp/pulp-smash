@@ -9,11 +9,13 @@ one sync a limited number of outdated RPMs.
 .. _retain_old_count:
     https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/yum-plugins.html
 """
+import unittest
 from urllib.parse import urljoin
 
 from pulp_smash import api, utils
 from pulp_smash.constants import REPOSITORY_PATH, RPM_UNSIGNED_FEED_URL
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
+from pulp_smash.tests.pulp2.rpm.utils import check_issue_3104
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
@@ -27,6 +29,8 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
         Ensure at least two versions of an RPM are present in the repository.
         """
         super().setUpClass()
+        if check_issue_3104(cls.cfg):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
