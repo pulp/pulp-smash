@@ -56,7 +56,7 @@ class CRUDRepoTestCase(unittest.TestCase):
     @selectors.skip_if(bool, 'repo', False)
     def test_03_fully_update_name(self):
         """Update a repository's name using HTTP PUT."""
-        if selectors.bug_is_untestable(3101, self.cfg.version):
+        if selectors.bug_is_untestable(3101, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/3101')
         self.do_fully_update_attr('name')
 
@@ -84,7 +84,7 @@ class CRUDRepoTestCase(unittest.TestCase):
     @selectors.skip_if(bool, 'repo', False)
     def test_03_partially_update_name(self):
         """Update a repository's name using HTTP PATCH."""
-        if selectors.bug_is_untestable(3101, self.cfg.version):
+        if selectors.bug_is_untestable(3101, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/3101')
         self.do_partially_update_attr('name')
 

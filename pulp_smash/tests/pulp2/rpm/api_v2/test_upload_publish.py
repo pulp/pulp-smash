@@ -49,7 +49,7 @@ class UploadDrpmTestCase(unittest.TestCase):
     def test_all(self):
         """Import a DRPM into a repository and search it for content units."""
         cfg = config.get_config()
-        if selectors.bug_is_untestable(1806, cfg.version):
+        if selectors.bug_is_untestable(1806, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1806')
         client = api.Client(cfg)
         repo = client.post(REPOSITORY_PATH, gen_repo()).json()
@@ -90,9 +90,9 @@ class UploadDrpmTestCaseWithCheckSumType(utils.BaseAPITestCase):
 
     def test_all(self):
         """Test that uploading DRPM with checksumtype specified works."""
-        if selectors.bug_is_untestable(1806, self.cfg.version):
+        if selectors.bug_is_untestable(1806, self.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1806')
-        if selectors.bug_is_untestable(2627, self.cfg.version):
+        if selectors.bug_is_untestable(2627, self.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2627')
         client = api.Client(self.cfg)
         repo = client.post(REPOSITORY_PATH, gen_repo()).json()
@@ -149,7 +149,7 @@ class UploadedDrpmChecksumTypeTestCase(unittest.TestCase):
         with self.subTest(comment='verify checksumtype'):
             self.assertEqual(units[0]['metadata']['checksumtype'], 'md5')
         with self.subTest(comment='verify checksum'):
-            if selectors.bug_is_untestable(2774, cfg.version):
+            if selectors.bug_is_untestable(2774, cfg.pulp_version):
                 self.skipTest('https://pulp.plan.io/issues/2774')
             self.assertEqual(
                 units[0]['metadata']['checksum'],
@@ -326,7 +326,7 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
                 RPM_DATA['metadata']['files'],
             )
 
-        if selectors.bug_is_testable(2754, self.cfg.version):
+        if selectors.bug_is_testable(2754, self.cfg.pulp_version):
             # Test that additional fields are available.
             # Affected by Pulp issue #2754
 

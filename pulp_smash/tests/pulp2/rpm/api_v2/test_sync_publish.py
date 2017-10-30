@@ -113,7 +113,8 @@ class SyncRpmRepoTestCase(SyncRepoBaseTestCase):
             'package_group': 2,
             'package_category': 1,
         }
-        if self.cfg.version >= Version('2.9'):  # langpack support added in 2.9
+        # langpack support was added in 2.9
+        if self.cfg.pulp_version >= Version('2.9'):
             content_unit_counts['package_langpacks'] = 1
         repo = api.Client(self.cfg).get(self.repo['_href']).json()
         self.assertEqual(repo['content_unit_counts'], content_unit_counts)
@@ -389,14 +390,14 @@ class ErrorReportTestCase(unittest.TestCase):
         task = context.exception.task
 
         with self.subTest(comment='check task error description'):
-            if selectors.bug_is_untestable(1376, cfg.version):
+            if selectors.bug_is_untestable(1376, cfg.pulp_version):
                 self.skipTest('https://pulp.plan.io/issues/1376')
             self.assertNotEqual(
                 'Unsupported scheme: ',
                 task['error']['description']
             )
         with self.subTest(comment='check task traceback'):
-            if selectors.bug_is_untestable(1455, cfg.version):
+            if selectors.bug_is_untestable(1455, cfg.pulp_version):
                 self.skipTest('https://pulp.plan.io/issues/1455')
             self.assertIsNotNone(task['traceback'], task)
 

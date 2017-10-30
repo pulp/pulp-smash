@@ -121,8 +121,8 @@ class CreateDistributorsTestCase(utils.BaseAPITestCase):
         Re-use the same relative path. For example, if an existing relative
         path is ``foo/bar``, then this relative path would be ``foo/bar``.
         """
-        if (self.cfg.version >= Version('2.14') and
-                selectors.bug_is_untestable(2769, self.cfg.version)):
+        if (self.cfg.pulp_version >= Version('2.14') and
+                selectors.bug_is_untestable(2769, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2769')
         client = api.Client(self.cfg, api.json_handler)
         path = urljoin(self.repos[1]['_href'], 'distributors/')
@@ -138,8 +138,8 @@ class CreateDistributorsTestCase(utils.BaseAPITestCase):
         Extend an existing relative path. For example, if an existing relative
         path is ``foo/bar``, then this relative path would be ``foo/bar/biz``.
         """
-        if (self.cfg.version >= Version('2.14') and
-                selectors.bug_is_untestable(2769, self.cfg.version)):
+        if (self.cfg.pulp_version >= Version('2.14') and
+                selectors.bug_is_untestable(2769, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2769')
         client = api.Client(self.cfg, api.json_handler)
         path = urljoin(self.repos[1]['_href'], 'distributors/')
@@ -157,8 +157,8 @@ class CreateDistributorsTestCase(utils.BaseAPITestCase):
         existing relative path is ``foo/bar``, then this relative path would be
         ``/foo/bar``.
         """
-        if (self.cfg.version >= Version('2.14') and
-                selectors.bug_is_untestable(2769, self.cfg.version)):
+        if (self.cfg.pulp_version >= Version('2.14') and
+                selectors.bug_is_untestable(2769, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2769')
         client = api.Client(self.cfg, api.json_handler)
         path = urljoin(self.repos[1]['_href'], 'distributors/')
@@ -249,8 +249,8 @@ class UpdateDistributorsTestCase(utils.BaseAPITestCase):
         Re-use an existing relative path. For example, if an existing relative
         path is ``foo/bar``, then this relative path would be ``foo/bar``.
         """
-        if (self.cfg.version >= Version('2.14') and
-                selectors.bug_is_untestable(2769, self.cfg.version)):
+        if (self.cfg.pulp_version >= Version('2.14') and
+                selectors.bug_is_untestable(2769, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2769')
 
         # update
@@ -275,8 +275,8 @@ class UpdateDistributorsTestCase(utils.BaseAPITestCase):
         Extend an existing relative path. For example, if an existing relative
         path is ``foo/bar``, then this relative path would be ``foo/bar/biz``.
         """
-        if (self.cfg.version >= Version('2.14') and
-                selectors.bug_is_untestable(2769, self.cfg.version)):
+        if (self.cfg.pulp_version >= Version('2.14') and
+                selectors.bug_is_untestable(2769, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2769')
 
         # update
@@ -305,8 +305,8 @@ class UpdateDistributorsTestCase(utils.BaseAPITestCase):
         existing relative path is ``foo/bar``, then this relative path would be
         ``/foo/bar``.
         """
-        if (self.cfg.version >= Version('2.14') and
-                selectors.bug_is_untestable(2769, self.cfg.version)):
+        if (self.cfg.pulp_version >= Version('2.14') and
+                selectors.bug_is_untestable(2769, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2769')
 
         # update

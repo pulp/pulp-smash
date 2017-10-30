@@ -160,7 +160,7 @@ class SyncRepoTestCase(utils.BaseAPITestCase):
         have = [child.tag for child in self.root_element]
         have.sort()
         want = ['category', 'group', 'group']
-        if self.cfg.version >= Version('2.9'):
+        if self.cfg.pulp_version >= Version('2.9'):
             want.append('langpacks')
         self.assertEqual(have, want)
 
@@ -170,7 +170,7 @@ class SyncRepoTestCase(utils.BaseAPITestCase):
         Support for package langpacks has been added in Pulp 2.9. Consequently,
         this test is skipped on earlier versions of Pulp.
         """
-        if self.cfg.version < Version('2.9'):
+        if self.cfg.pulp_version < Version('2.9'):
             self.skipTest('This test requires Pulp 2.9 or greater.')
         langpacks_elements = self.root_element.findall('langpacks')
         self.assertEqual(len(langpacks_elements), 1, self.xml_as_str)
@@ -327,7 +327,7 @@ class UploadPackageGroupsTestCase(utils.BaseAPITestCase):
 
     def test_display_order_occurences(self):
         """Assert ``display_order`` occurs once if omitted from the unit."""
-        if selectors.bug_is_untestable(1787, self.cfg.version):
+        if selectors.bug_is_untestable(1787, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1787')
         input_id = self.package_groups['minimal']['id']
         output = _get_groups_by_id(self.root_element)[input_id]
@@ -339,7 +339,7 @@ class UploadPackageGroupsTestCase(utils.BaseAPITestCase):
         This test may be skipped if `Pulp #1787
         <https://pulp.plan.io/issues/1787>`_ is open.
         """
-        if selectors.bug_is_untestable(1787, self.cfg.version):
+        if selectors.bug_is_untestable(1787, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1787')
         input_id = self.package_groups['minimal']['id']
         output = _get_groups_by_id(self.root_element)[input_id]

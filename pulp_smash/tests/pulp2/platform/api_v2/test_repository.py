@@ -135,7 +135,7 @@ class CreateFailureTestCase(utils.BaseAPITestCase):
         for body, response, status_code in zip(
                 self.bodies, self.responses, self.status_codes):
             if (body == ['Incorrect data type'] and
-                    self.cfg.version < Version('2.8')):
+                    self.cfg.pulp_version < Version('2.8')):
                 continue  # https://pulp.plan.io/issues/1356
             with self.subTest(body=body):
                 self.assertEqual(response.status_code, status_code)
@@ -145,7 +145,7 @@ class CreateFailureTestCase(utils.BaseAPITestCase):
         for body, response, status_code in zip(
                 self.bodies, self.responses, self.status_codes):
             if (body == ['Incorrect data type'] and
-                    self.cfg.version < Version('2.8')):
+                    self.cfg.pulp_version < Version('2.8')):
                 continue  # https://pulp.plan.io/issues/1356
             with self.subTest(body=body):
                 self.assertEqual(response.json()['http_status'], status_code)
@@ -160,7 +160,7 @@ class CreateFailureTestCase(utils.BaseAPITestCase):
         """Assert the JSON body returned contains the correct keys."""
         for body, response in zip(self.bodies, self.responses):
             with self.subTest(body=body):
-                if bug_is_untestable(1413, self.cfg.version):
+                if bug_is_untestable(1413, self.cfg.pulp_version):
                     self.skipTest('https://pulp.plan.io/issues/1413')
                 response_keys = frozenset(response.json().keys())
                 self.assertEqual(response_keys, ERROR_KEYS)

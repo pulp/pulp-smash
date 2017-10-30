@@ -62,7 +62,7 @@ def setUpModule():  # pylint:disable=invalid-name
     """
     set_up_module()
     cfg = config.get_config()
-    if cfg.version < Version('2.9'):
+    if cfg.pulp_version < Version('2.9'):
         raise unittest.SkipTest('This module requires Pulp 2.9 or greater.')
     if check_issue_2277(cfg):
         raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
@@ -144,7 +144,7 @@ class NoOpPublishMixin(object):
         call_report = self.call_reports[1]
         last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
 
-        if hasattr(self, 'cfg') and self.cfg.version < Version('2.10'):
+        if hasattr(self, 'cfg') and self.cfg.pulp_version < Version('2.10'):
             summary = 'Skipped. Nothing changed since last publish'
         else:
             summary = (

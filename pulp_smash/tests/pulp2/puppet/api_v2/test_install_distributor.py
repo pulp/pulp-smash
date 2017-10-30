@@ -86,7 +86,7 @@ class InstallDistributorThrowsOnErrorTestCase(utils.BaseAPITestCase):
         3. Assert that an error is thrown
         4. Assert that no repo is created
         """
-        if selectors.bug_is_untestable(1237, self.cfg.version):
+        if selectors.bug_is_untestable(1237, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1237')
         distributor = gen_install_distributor()
         distributor['distributor_config']['install_path'] = ''

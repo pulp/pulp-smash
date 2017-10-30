@@ -134,7 +134,7 @@ class RepositoryLayoutTestCase(utils.BaseAPITestCase):
         for package_href in package_hrefs:
             with self.subTest(package_href=package_href):
                 dirname = os.path.dirname(package_href)
-                if self.cfg.version < Version('2.12'):
+                if self.cfg.pulp_version < Version('2.12'):
                     self.assertEqual(dirname, '')
                 else:
                     # e.g. 'Packages/a'[:-1] == 'Packages/'

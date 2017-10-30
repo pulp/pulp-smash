@@ -98,7 +98,7 @@ def setUpModule():  # pylint:disable=invalid-name
     """
     set_up_module()
     cfg = config.get_config()
-    if selectors.bug_is_untestable(1759, cfg.version):
+    if selectors.bug_is_untestable(1759, cfg.pulp_version):
         raise unittest.SkipTest('https://pulp.plan.io/issues/1759')
     set_pulp_manage_rsync(cfg, True)
 
@@ -246,7 +246,7 @@ class PublishBeforeYumDistTestCase(
     def test_all(self):
         """Publish the rpm rsync distributor before the yum distributor."""
         cfg = config.get_config()
-        if selectors.bug_is_untestable(2187, cfg.version):
+        if selectors.bug_is_untestable(2187, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2187')
 
         # Create a user and a repository.
@@ -271,7 +271,7 @@ class PublishBeforeYumDistTestCase(
         self.assertNotIn('content', dirs)
 
         # Publish with the rsync distributor again, and verify again.
-        if selectors.bug_is_testable(2722, cfg.version):
+        if selectors.bug_is_testable(2722, cfg.pulp_version):
             self.verify_publish_is_skip(cfg, utils.publish_repo(*args).json())
             dirs = set(cli.Client(cfg).run(cmd).stdout.strip().split('\n'))
             self.assertNotIn('content', dirs)
@@ -349,7 +349,7 @@ class ForceFullTestCase(
 
         # Publish the repo with ``force_full`` set to true. Verify that the RPM
         # rsync distributor placed files.
-        if selectors.bug_is_untestable(2202, cfg.version):
+        if selectors.bug_is_untestable(2202, cfg.pulp_version):
             return
         utils.publish_repo(cfg, repo, {
             'id': distribs['rpm_rsync_distributor']['id'],
@@ -411,7 +411,7 @@ class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest.TestCase):
 
     def test_predistributor_id(self):
         """Pass a bogus ID as the ``predistributor_id`` config option."""
-        if selectors.bug_is_untestable(2191, self.cfg.version):
+        if selectors.bug_is_untestable(2191, self.cfg.pulp_version):
             raise self.skipTest('https://pulp.plan.io/issues/2191')
         api_client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
@@ -434,7 +434,7 @@ class VerifyOptionsTestCase(_RsyncDistUtilsMixin, unittest.TestCase):
 
     def test_root(self):
         """Pass a relative path to the ``root`` configuration option."""
-        if selectors.bug_is_untestable(2192, self.cfg.version):
+        if selectors.bug_is_untestable(2192, self.cfg.pulp_version):
             raise self.skipTest('https://pulp.plan.io/issues/2192')
         remote = self.remote.copy()
         remote['root'] = remote['root'][1:]
@@ -533,7 +533,7 @@ class DeleteTestCase(
     def test_all(self):
         """Use the ``delete`` RPM rsync distributor option."""
         cfg = config.get_config()
-        if selectors.bug_is_untestable(2221, cfg.version):
+        if selectors.bug_is_untestable(2221, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2221')
         api_client = api.Client(cfg)
 
@@ -629,7 +629,7 @@ class AddUnitTestCase(
     def test_all(self):
         """Add a content unit to a repo in the middle of several publishes."""
         cfg = config.get_config()
-        if selectors.bug_is_untestable(2532, cfg.version):
+        if selectors.bug_is_untestable(2532, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2532')
         rpms = (
             utils.http_get(RPM_UNSIGNED_URL), utils.http_get(RPM2_UNSIGNED_URL)
@@ -683,7 +683,7 @@ class PublishTwiceTestCase(
     def test_all(self):
         """Publish with a yum and rsync distributor twice."""
         cfg = config.get_config()
-        if selectors.bug_is_untestable(2666, cfg.version):
+        if selectors.bug_is_untestable(2666, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2666')
         if check_issue_2844(cfg):
             self.skipTest('https://pulp.plan.io/issues/2844')

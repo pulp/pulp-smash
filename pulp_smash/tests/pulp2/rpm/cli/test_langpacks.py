@@ -27,7 +27,7 @@ class UploadAndRemoveLangpacksTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Create a repository."""
         cls.cfg = config.get_config()
-        if cls.cfg.version < Version('2.9'):
+        if cls.cfg.pulp_version < Version('2.9'):
             raise unittest.SkipTest('This test requires Pulp 2.9 or greater.')
         cls.client = cli.Client(cls.cfg)
         cls.repo_id = utils.uuid4()

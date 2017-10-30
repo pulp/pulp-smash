@@ -94,7 +94,7 @@ class RemoveUnitsTestCase(unittest.TestCase):
             }
             self.assertEqual(removed_ids & remaining_ids, set())
 
-        if selectors.bug_is_testable(2630, self.cfg.version):
+        if selectors.bug_is_testable(2630, self.cfg.pulp_version):
             with self.subTest('last removed unit'):
                 lur_before = self.get_repo_last_unit_removed(repo)
                 time.sleep(1)  # ensure last_unit_removed increments
@@ -188,7 +188,7 @@ class RepublishTestCase(utils.BaseAPITestCase):
         utils.publish_repo(self.cfg, repo_before)
         repo_after = self.get_repo()
         with self.subTest(comment='last_unit_added'):
-            if selectors.bug_is_untestable(1847, self.cfg.version):
+            if selectors.bug_is_untestable(1847, self.cfg.pulp_version):
                 self.skipTest('https://pulp.plan.io/issues/1847')
             pre = repo_before['last_unit_added']
             post = repo_after['last_unit_added']
@@ -221,7 +221,7 @@ class RepublishTestCase(utils.BaseAPITestCase):
         utils.publish_repo(self.cfg, repo_before)
         repo_after = self.get_repo()
         with self.subTest(comment='last_unit_added'):
-            if selectors.bug_is_untestable(1847, self.cfg.version):
+            if selectors.bug_is_untestable(1847, self.cfg.pulp_version):
                 self.skipTest('https://pulp.plan.io/issues/1847')
             pre = parse(repo_before['last_unit_added'])
             post = parse(repo_after['last_unit_added'])
@@ -299,7 +299,7 @@ class SelectiveAssociateTestCase(utils.BaseAPITestCase):
 
     def test_all(self):
         """Check if Pulp only associate missing repo content."""
-        if self.cfg.version < Version('2.11'):
+        if self.cfg.pulp_version < Version('2.11'):
             self.skipTest(
                 'Selective association is available on Pulp 2.11+ see Pulp '
                 '#2457 for more information'
