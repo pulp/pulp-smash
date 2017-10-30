@@ -253,7 +253,7 @@ class PublishBeforeYumDistTestCase(
         ssh_user, priv_key = self.make_user(cfg)
         ssh_identity_file = self.write_private_key(cfg, priv_key)
         repo = self.make_repo(cfg, {'remote': {
-            'host': urlparse(cfg.base_url).netloc,
+            'host': urlparse(cfg.get_base_url()).hostname,
             'root': '/home/' + ssh_user,
             'ssh_identity_file': ssh_identity_file,
             'ssh_user': ssh_user,
@@ -319,7 +319,7 @@ class ForceFullTestCase(
         ssh_user, priv_key = self.make_user(cfg)
         ssh_identity_file = self.write_private_key(cfg, priv_key)
         repo = self.make_repo(cfg, {'remote': {
-            'host': urlparse(cfg.base_url).netloc,
+            'host': urlparse(cfg.get_base_url()).hostname,
             'root': '/home/' + ssh_user,
             'ssh_identity_file': ssh_identity_file,
             'ssh_user': ssh_user,
@@ -485,7 +485,7 @@ class RemoteUnitsPathTestCase(
         ssh_identity_file = self.write_private_key(cfg, priv_key)
         repo = self.make_repo(cfg, {
             'remote': {
-                'host': urlparse(cfg.base_url).netloc,
+                'host': urlparse(cfg.get_base_url()).hostname,
                 'root': '/home/' + ssh_user,
                 'ssh_identity_file': ssh_identity_file,
                 'ssh_user': ssh_user,
@@ -541,7 +541,7 @@ class DeleteTestCase(
         ssh_user, priv_key = self.make_user(cfg)
         ssh_identity_file = self.write_private_key(cfg, priv_key)
         repo = self.make_repo(cfg, {'remote': {
-            'host': urlparse(cfg.base_url).netloc,
+            'host': urlparse(cfg.get_base_url()).hostname,
             'root': '/home/' + ssh_user,
             'ssh_identity_file': ssh_identity_file,
             'ssh_user': ssh_user,
@@ -639,7 +639,7 @@ class AddUnitTestCase(
         ssh_user, priv_key = self.make_user(cfg)
         ssh_identity_file = self.write_private_key(cfg, priv_key)
         repo = self.make_repo(cfg, {'remote': {
-            'host': urlparse(cfg.base_url).netloc,
+            'host': urlparse(cfg.get_base_url()).hostname,
             'root': '/home/' + ssh_user,
             'ssh_identity_file': ssh_identity_file,
             'ssh_user': ssh_user,
@@ -692,7 +692,7 @@ class PublishTwiceTestCase(
         ssh_user, priv_key = self.make_user(cfg)
         ssh_identity_file = self.write_private_key(cfg, priv_key)
         repo = self.make_repo(cfg, {'remote': {
-            'host': urlparse(cfg.base_url).netloc,
+            'host': urlparse(cfg.get_base_url()).hostname,
             'root': '/home/' + ssh_user,
             'ssh_identity_file': ssh_identity_file,
             'ssh_user': ssh_user,

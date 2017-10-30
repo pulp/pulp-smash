@@ -80,7 +80,7 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = urljoin(
-            self.cfg.base_url,
+            self.cfg.get_base_url(),
             'pulp/repos/' +
             self.repo['distributors'][0]['config']['relative_url'],
         )

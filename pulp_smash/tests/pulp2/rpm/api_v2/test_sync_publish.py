@@ -279,7 +279,7 @@ class ChangeFeedTestCase(utils.BaseAPITestCase):
 
     def get_feed(self, repo):
         """Build the feed to an RPM repository's distributor."""
-        feed = urljoin(self.cfg.base_url, 'pulp/repos/')
+        feed = urljoin(self.cfg.get_base_url(), 'pulp/repos/')
         return urljoin(feed, repo['distributors'][0]['config']['relative_url'])
 
 

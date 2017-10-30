@@ -189,7 +189,7 @@ def get_details(cfg, repo):
 
 def get_repo_path(cfg, repo):
     """Return the root path to a published Python repository."""
-    path = cfg.base_url
+    path = cfg.get_base_url()
     path = urljoin(path, '/pulp/python/web/')
     path = urljoin(path, repo['id'])
     path += '/'

@@ -285,7 +285,7 @@ class UpdateRpmTestCase(UtilsMixin, unittest.TestCase):
         # Install the RPM on a host.
         repo_path = gen_yum_config_file(
             cfg,
-            baseurl=urljoin(cfg.base_url, 'pulp/repos/' + repo_id),
+            baseurl=urljoin(cfg.get_base_url(), 'pulp/repos/' + repo_id),
             enabled=1,
             gpgcheck=0,
             metadata_expire=0,  # force metadata to load every time

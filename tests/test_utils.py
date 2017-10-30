@@ -39,10 +39,12 @@ class GetBrokerTestCase(unittest.TestCase):
         Assert that :class:`pulp_smash.exceptions.NoKnownBrokerError` is raised
         if the function cannot find a broker.
         """
+        cfg = mock.Mock()
+        cfg.get_base_url.return_value = 'http://example.com'
         with mock.patch.object(cli, 'Client') as client:
             client.return_value.run.return_value.returncode = 1
             with self.assertRaises(exceptions.NoKnownBrokerError):
-                utils.get_broker(mock.Mock())
+                utils.get_broker(cfg)
 
 
 class BaseAPITestCase(unittest.TestCase):

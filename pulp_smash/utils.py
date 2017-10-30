@@ -59,7 +59,7 @@ def get_broker(server_config):
     raise exceptions.NoKnownBrokerError(
         'Unable to determine the AMQP broker used by {}. It does not appear '
         'to be any of {}.'
-        .format(server_config.base_url, executables)
+        .format(urlparse(server_config.get_base_url()).hostname, executables)
     )
 
 

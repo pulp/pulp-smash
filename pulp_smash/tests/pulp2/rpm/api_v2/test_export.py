@@ -67,7 +67,7 @@ def _get_iso_url(cfg, entity, entity_type, distributor):
     path = '/pulp/exports/{}/'.format(entity_type)
     path = urljoin(path, distributor['config']['relative_url'])
     iso_path = urljoin(path, iso_name)
-    return urljoin(cfg.base_url, iso_path)
+    return urljoin(cfg.get_base_url(), iso_path)
 
 
 class ExportDirMixin(DisableSELinuxMixin):

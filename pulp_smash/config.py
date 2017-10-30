@@ -471,11 +471,6 @@ class PulpSmashConfig(object):
                 continue
         return set(services)
 
-    @property
-    def base_url(self):
-        """Map old config base_url to the new format with api role."""
-        return self.get_base_url()
-
     def get_base_url(self, pulp_system=None):
         """Generate the base URL for a given ``pulp_sytem``.
 
@@ -515,7 +510,7 @@ class PulpSmashConfig(object):
         as kwargs via the ``**`` operator. For example:
 
         >>> cfg = PulpSmashConfig().read()
-        >>> requests.get(cfg.base_url + '…', **cfg.get_requests_kwargs())
+        >>> requests.get(cfg.get_base_url() + '…', **cfg.get_requests_kwargs())
 
         This method is useful because client code may not know which attributes
         should be passed from a ``PulpSmashConfig`` object to Requests.
@@ -523,7 +518,7 @@ class PulpSmashConfig(object):
 
         >>> cfg = PulpSmashConfig().get()
         >>> requests.get(
-        ...     cfg.base_url + '…',
+        ...     cfg.get_base_url() + '…',
         ...     auth=tuple(cfg.pulp_auth),
         ...     verify=cfg.get_systems('api')[0].roles['api']['verify'],
         ... )

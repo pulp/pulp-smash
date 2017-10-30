@@ -92,7 +92,7 @@ class RemoveMissingTestCase(unittest.TestCase):
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = urljoin(
-            self.cfg.base_url,
+            self.cfg.get_base_url(),
             _PUBLISH_DIR +
             self.repos['root']['distributors'][0]['config']['relative_url'],
         )
@@ -121,7 +121,7 @@ class RemoveMissingTestCase(unittest.TestCase):
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = urljoin(
-            self.cfg.base_url,
+            self.cfg.get_base_url(),
             _PUBLISH_DIR +
             self.repos['root']['distributors'][0]['config']['relative_url'],
         )
@@ -222,7 +222,7 @@ class RemoveCountTestCase(unittest.TestCase):
         # Create 2nd repo, sync.
         body = gen_repo()
         body['importer_config']['feed'] = urljoin(
-            cfg.base_url,
+            cfg.get_base_url(),
             _PUBLISH_DIR +
             repos[0]['distributors'][0]['config']['relative_url'],
         )

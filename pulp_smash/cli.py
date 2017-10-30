@@ -4,7 +4,7 @@ import contextlib
 import os
 import socket
 from abc import ABCMeta, abstractmethod
-from urllib.parse import urlparse
+from urllib.parse import urlsplit
 
 import plumbum
 
@@ -20,38 +20,6 @@ _SERVICE_MANAGERS = {}
 #
 # For example: {'old.example.com': 'yum', 'new.example.com', 'yum'}
 _PACKAGE_MANAGERS = {}
-
-
-def _get_hostname(urlstring):
-    """Get the hostname from a URL string.
-
-    ``urlparse`` follows RFC 1808 and requires that network locations be
-    prefixed with "//". This function is a thin wrapper. It treats the leading
-    "//" as optional::
-
-    >>> urls = ('ftp://localhost', '//localhost', 'localhost', 'localhost:123')
-    >>> for url in urls:
-    ...     print((_get_hostname(url), urlparse(url).hostname))
-    ('localhost', 'localhost')
-    ('localhost', 'localhost')
-    ('localhost', None)
-    ('localhost', None)
-
-    Usage::
-
-        if server_config is None:
-            server_config = get_config()
-        hostname = _get_hostname(server_config.base_url)
-
-    :param urlstring: A string such as "localhost:3000", "pulp.example.com" or
-        "https://pulp.example.com".
-    :returns: A hostname, such as "localhost" or "pulp.example.com".
-
-    """
-    parts = urlparse(urlstring)
-    if parts.hostname is None:
-        return _get_hostname('//' + parts.path)
-    return parts.hostname
 
 
 def _is_root(cfg, pulp_system=None):
@@ -672,7 +640,7 @@ class PackageManager(object):
         Return "dnf" or "yum" if the package manager appears to be one of
         those. Raise an exception otherwise.
         """
-        hostname = _get_hostname(cfg.base_url)
+        hostname = urlsplit(cfg.get_base_url()).hostname
         try:
             return _PACKAGE_MANAGERS[hostname]
         except KeyError:

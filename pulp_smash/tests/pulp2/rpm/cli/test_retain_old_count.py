@@ -99,7 +99,10 @@ class RetainOldCountTestCase(unittest.TestCase):
         """
         client = cli.Client(self.cfg)
         repo_id = utils.uuid4()
-        feed = urljoin(self.cfg.base_url, 'pulp/repos/' + self.relative_url)
+        feed = urljoin(
+            self.cfg.get_base_url(),
+            'pulp/repos/' + self.relative_url,
+        )
         client.run((
             'pulp-admin', 'rpm', 'repo', 'create', '--repo-id', repo_id,
             '--feed', feed, '--retain-old-count', str(retain_old_count),

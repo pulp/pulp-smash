@@ -76,7 +76,7 @@ class ServeHttpsFalseTestCase(TemporaryUserMixin, unittest.TestCase):
             'distributor_config': {
                 'predistributor_id': body['distributors'][0]['distributor_id'],
                 'remote': {
-                    'host': urlparse(self.cfg.base_url).netloc,
+                    'host': urlparse(self.cfg.get_base_url()).hostname,
                     'root': '/home/' + ssh_user,
                     'ssh_identity_file': ssh_identity_file,
                     'ssh_user': ssh_user,

@@ -9,27 +9,6 @@ from plumbum.machines.local import LocalMachine
 from pulp_smash import cli, config, exceptions, utils
 
 
-class GetHostnameTestCase(unittest.TestCase):
-    """Tests for ``pulp_smash.cli._get_hostname``."""
-
-    def test_parsing(self):
-        """Assert the function extracts hostnames as shown in its docstring."""
-        hostname = utils.uuid4()
-        urlstrings = (
-            '//' + hostname,
-            'ftp://' + hostname,
-            hostname + ':123',
-            hostname,
-        )
-        outputs = [
-            cli._get_hostname(urlstring)  # pylint:disable=protected-access
-            for urlstring in urlstrings
-        ]
-        for urlstring, output in zip(urlstrings, outputs):
-            with self.subTest(urlstring=urlstring):
-                self.assertEqual(output, hostname)
-
-
 class EchoHandlerTestCase(unittest.TestCase):
     """Tests for :func:`pulp_smash.cli.echo_handler`."""
 
