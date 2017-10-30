@@ -45,9 +45,9 @@ from pulp_smash.tests.pulp2.rpm.utils import set_up_module
 
 def setUpModule():  # pylint:disable=invalid-name
     """Conditionally skip tests."""
-    if selectors.bug_is_untestable(1991, config.get_config().version):
+    if selectors.bug_is_untestable(1991, config.get_config().pulp_version):
         raise unittest.SkipTest('https://pulp.plan.io/issues/1991')
-    if selectors.bug_is_untestable(2242, config.get_config().version):
+    if selectors.bug_is_untestable(2242, config.get_config().pulp_version):
         raise unittest.SkipTest('https://pulp.plan.io/issues/2242')
     set_up_module()
 

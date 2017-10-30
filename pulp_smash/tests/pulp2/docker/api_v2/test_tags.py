@@ -25,7 +25,7 @@ from pulp_smash.tests.pulp2.docker.utils import (
 def setUpModule():  # pylint:disable=invalid-name
     """Skip tests on Pulp versions lower than 2.12."""
     set_up_module()
-    if config.get_config().version < Version('2.12'):
+    if config.get_config().pulp_version < Version('2.12'):
         raise unittest.SkipTest('These tests require at least Pulp 2.12.')
 
 
@@ -252,7 +252,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
             'filters': {'unit': {'name': 'latest'}},
             'type_ids': ['docker_tag'],
         }
-        if self.cfg.version >= Version('2.13'):
+        if self.cfg.pulp_version >= Version('2.13'):
             criteria['filters']['unit']['schema_version'] = 1
         return utils.search_units(self.cfg, self.repo, criteria)
 
@@ -263,6 +263,6 @@ class DockerTagTestCase(utils.BaseAPITestCase):
         schema v1 manifests. See :meth:`get_latest_tags`.
         """
         criteria = {'type_ids': ['docker_manifest']}
-        if self.cfg.version >= Version('2.13'):
+        if self.cfg.pulp_version >= Version('2.13'):
             criteria['filters'] = {'unit': {'schema_version': 1}}
         return utils.search_units(self.cfg, self.repo, criteria)

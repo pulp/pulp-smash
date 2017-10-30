@@ -30,7 +30,7 @@ class UploadPackageEnvTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Create and sync a repository."""
         cls.cfg = config.get_config()
-        if cls.cfg.version < Version('2.9'):
+        if cls.cfg.pulp_version < Version('2.9'):
             raise unittest.SkipTest('These tests require Pulp 2.9 or above.')
         utils.pulp_admin_login(cls.cfg)
         cls.repo_id = utils.uuid4()

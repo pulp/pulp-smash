@@ -18,7 +18,7 @@ from pulp_smash.tests.pulp2.docker.utils import set_up_module
 def setUpModule():  # pylint:disable=invalid-name
     """Skip tests on Pulp versions lower than 2.8."""
     set_up_module()
-    if config.get_config().version < Version('2.8'):
+    if config.get_config().pulp_version < Version('2.8'):
         raise unittest.SkipTest('These tests require at least Pulp 2.8.')
 
 

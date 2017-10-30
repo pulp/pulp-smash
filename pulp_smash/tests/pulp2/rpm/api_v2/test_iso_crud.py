@@ -203,8 +203,8 @@ class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
 
     def test_read_distributors(self):
         """Assert each read w/distributors contains info about distributors."""
-        if (self.cfg.version < Version('2.8') and
-                selectors.bug_is_untestable(1452, self.cfg.version)):
+        if (self.cfg.pulp_version < Version('2.8') and
+                selectors.bug_is_untestable(1452, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/1452')
         for key in {'read_distributors', 'read_details'}:
             with self.subTest(key=key):
@@ -242,8 +242,8 @@ class AddImporterDistributorTestCase(utils.BaseAPITestCase):
         4. Re-read the repository's importers and distributors.
         """
         super(AddImporterDistributorTestCase, cls).setUpClass()
-        if (cls.cfg.version >= Version('2.10') and
-                selectors.bug_is_untestable(2082, cls.cfg.version)):
+        if (cls.cfg.pulp_version >= Version('2.10') and
+                selectors.bug_is_untestable(2082, cls.cfg.pulp_version)):
             raise SkipTest('https://pulp.plan.io/issues/2082')
 
         # Steps 1 and 2.
@@ -334,7 +334,7 @@ class PulpManifestTestCase(utils.BaseAPITestCase):
         Assert that the sync fails with the information that some units were
         not available.
         """
-        if self.cfg.version < Version('2.11'):
+        if self.cfg.pulp_version < Version('2.11'):
             self.skipTest(
                 'Pulp reports 404 for ISO repos only on 2.11 or greater.')
         pulp_manifest = self.parse_pulp_manifest(FILE_MIXED_FEED_URL)

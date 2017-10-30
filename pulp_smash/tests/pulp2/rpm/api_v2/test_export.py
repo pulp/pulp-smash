@@ -176,7 +176,7 @@ class BaseExportChecksumTypeTestCase(ExportDirMixin, utils.BaseAPITestCase):
         if inspect.getmro(cls)[0] == BaseExportChecksumTypeTestCase:
             raise unittest.SkipTest('Abstract base class.')
         super(BaseExportChecksumTypeTestCase, cls).setUpClass()
-        if cls.cfg.version < Version('2.9'):
+        if cls.cfg.pulp_version < Version('2.9'):
             raise unittest.SkipTest('This test requires Pulp 2.9 or newer')
         body = gen_repo()
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
@@ -422,8 +422,8 @@ class ExportDistributorTestCase(ExportDirMixin, utils.BaseAPITestCase):
         cls.repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
         cls.resources.add(cls.repo['_href'])
         utils.sync_repo(cls.cfg, cls.repo)
-        if (cls.cfg.version >= Version('2.9') and
-                selectors.bug_is_untestable(1928, cls.cfg.version)):
+        if (cls.cfg.pulp_version >= Version('2.9') and
+                selectors.bug_is_untestable(1928, cls.cfg.pulp_version)):
             cls.distributor = None
         else:
             cls.distributor = _create_distributor(
@@ -478,7 +478,7 @@ class ExportDistributorTestCase(ExportDirMixin, utils.BaseAPITestCase):
             export_dir,
             self.distributor['config']['relative_url'],
         )
-        if self.cfg.version >= Version('2.12'):
+        if self.cfg.pulp_version >= Version('2.12'):
             path = os.path.join(path, 'Packages', RPM[0], RPM)
         else:
             path = os.path.join(path, RPM)

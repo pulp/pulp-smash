@@ -35,7 +35,7 @@ class UploadDrpmTestCase(unittest.TestCase):
            ``--skip-existing`` flag during the upload. Verify that Pulp skips
            the upload.
         """
-        if selectors.bug_is_untestable(1806, config.get_config().version):
+        if selectors.bug_is_untestable(1806, config.get_config().pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1806')
 
         # Create a repository
@@ -91,7 +91,7 @@ class UploadDrpmTestCase(unittest.TestCase):
            ``--skip-existing`` flag during the upload. Verify that Pulp skips
            the upload.
         """
-        if selectors.bug_is_untestable(2627, config.get_config().version):
+        if selectors.bug_is_untestable(2627, config.get_config().pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2627')
 
         # Create a repository

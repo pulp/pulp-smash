@@ -95,7 +95,7 @@ class SyncTestCase(_SyncMixin, utils.BaseAPITestCase):
     def setUpClass(cls):
         """Create an OSTree repository with a valid feed and branch."""
         super(SyncTestCase, cls).setUpClass()
-        if selectors.bug_is_untestable(1934, cls.cfg.version):
+        if selectors.bug_is_untestable(1934, cls.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1934')
         body = gen_repo()
         body['importer_config']['feed'] = OSTREE_FEED

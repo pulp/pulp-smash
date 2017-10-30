@@ -21,7 +21,7 @@ from pulp_smash.tests.pulp2.docker.utils import (
 def setUpModule():  # pylint:disable=invalid-name
     """Skip tests on Pulp versions lower than 2.8."""
     set_up_module()
-    if config.get_config().version < Version('2.8'):
+    if config.get_config().pulp_version < Version('2.8'):
         raise unittest.SkipTest('These tests require at least Pulp 2.8.')
 
 
@@ -47,7 +47,7 @@ class UpstreamNameTestsMixin(object):
 
         Verify the sync request is rejected with an HTTP 400 status code.
         """
-        if selectors.bug_is_untestable(2230, self.cfg.version):
+        if selectors.bug_is_untestable(2230, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2230')
         docker_upstream_name = get_upstream_name(self.cfg).replace('/', ' ')
         response = api.Client(self.cfg, api.echo_handler).post(

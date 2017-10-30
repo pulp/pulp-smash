@@ -35,7 +35,7 @@ class RepoviewTestCase(unittest.TestCase):
     def test_all(self):
         """Publish a repository with the repoview feature on and off."""
         cfg = config.get_config()
-        if cfg.version < Version('2.9'):
+        if cfg.pulp_version < Version('2.9'):
             self.skipTest('https://pulp.plan.io/issues/189')
 
         # Create a repo, and add content
@@ -74,7 +74,7 @@ class RepoviewTestCase(unittest.TestCase):
             )
 
         # Publish the repo a third time
-        if selectors.bug_is_untestable(2349, cfg.version):
+        if selectors.bug_is_untestable(2349, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2349')
         utils.publish_repo(cfg, repo)
         response = client.get(pub_path)

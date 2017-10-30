@@ -34,7 +34,7 @@ class BaseTestCase(unittest.TestCase):
         cls.repos = []
         if inspect.getmro(cls)[0] == BaseTestCase:
             raise unittest.SkipTest('Abstract base class.')
-        if cls.cfg.version < Version('2.12'):
+        if cls.cfg.pulp_version < Version('2.12'):
             raise unittest.SkipTest('This test requires Pulp 2.12 or newer.')
 
     @classmethod
@@ -65,8 +65,8 @@ class BaseTestCase(unittest.TestCase):
         should be created wherein one Pulp application syncs from another
         completely independent Pulp application.
         """
-        if (self.cfg.version < Version('2.13') or
-                selectors.bug_is_untestable(140, self.cfg.version)):
+        if (self.cfg.pulp_version < Version('2.13') or
+                selectors.bug_is_untestable(140, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/140')
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
@@ -120,8 +120,8 @@ class SyncTestCase(BaseTestCase):
         * `Pulp #135 <https://pulp.plan.io/issues/135>`_
         * `Pulp Smash #494 <https://github.com/PulpQE/pulp-smash/issues/494>`_
         """
-        if (self.cfg.version < Version('2.13') or
-                selectors.bug_is_untestable(135, self.cfg.version)):
+        if (self.cfg.pulp_version < Version('2.13') or
+                selectors.bug_is_untestable(135, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/135')
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
@@ -153,8 +153,8 @@ class UploadTestCase(BaseTestCase):
         * `Pulp #2334 <https://pulp.plan.io/issues/2334>`_
         * `Pulp Smash #492 <https://github.com/PulpQE/pulp-smash/issues/492>`_
         """
-        if (self.cfg.version < Version('2.13') or
-                selectors.bug_is_untestable(136, self.cfg.version)):
+        if (self.cfg.pulp_version < Version('2.13') or
+                selectors.bug_is_untestable(136, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/136')
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()

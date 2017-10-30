@@ -32,7 +32,7 @@ class ValidHeadersTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Create a content source with valid headers."""
         cls.cfg = config.get_config()
-        if selectors.bug_is_untestable(1282, cls.cfg.version):
+        if selectors.bug_is_untestable(1282, cls.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1282')
         cls.cs_kwargs = {
             'source_id': utils.uuid4(),
@@ -90,7 +90,7 @@ class InvalidHeadersTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Create a content source with invalid headers."""
         cls.cfg = config.get_config()
-        if selectors.bug_is_untestable(1282, cls.cfg.version):
+        if selectors.bug_is_untestable(1282, cls.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1282')
         cls.cs_kwargs = {
             'source_id': utils.uuid4(),

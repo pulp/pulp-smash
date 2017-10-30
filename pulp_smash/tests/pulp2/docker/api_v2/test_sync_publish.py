@@ -223,7 +223,7 @@ class V1RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         cls.cfg = config.get_config()
         cls.repo = {}
         if (utils.os_is_f26(cls.cfg) and
-                selectors.bug_is_untestable(3036, cls.cfg.version)):
+                selectors.bug_is_untestable(3036, cls.cfg.pulp_version)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3036')
 
     @classmethod
@@ -282,8 +282,8 @@ class V1RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         Assert that the response is as described by `Crane Admin
         <http://docs.pulpproject.org/plugins/crane/index.html#crane-admin>`_.
         """
-        if (self.cfg.version < Version('2.14') or
-                selectors.bug_is_untestable(2723, self.cfg.version)):
+        if (self.cfg.pulp_version < Version('2.14') or
+                selectors.bug_is_untestable(2723, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2723')
         repo_id = self.repo['id']
         repos = self.make_crane_client(self.cfg).get('/crane/repositories/v1')
@@ -310,10 +310,10 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         cls.cfg = config.get_config()
         cls.repo = {}
         if (utils.os_is_f26(cls.cfg) and
-                selectors.bug_is_untestable(3036, cls.cfg.version)):
+                selectors.bug_is_untestable(3036, cls.cfg.pulp_version)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3036')
         for issue_id in (2287, 2384):
-            if selectors.bug_is_untestable(issue_id, cls.cfg.version):
+            if selectors.bug_is_untestable(issue_id, cls.cfg.pulp_version):
                 raise unittest.SkipTest(
                     'https://pulp.plan.io/issues/{}'.format(issue_id)
                 )
@@ -363,8 +363,8 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         Assert that the response is as described by `Crane Admin
         <http://docs.pulpproject.org/plugins/crane/index.html#crane-admin>`_.
         """
-        if (self.cfg.version < Version('2.14') or
-                selectors.bug_is_untestable(2723, self.cfg.version)):
+        if (self.cfg.pulp_version < Version('2.14') or
+                selectors.bug_is_untestable(2723, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2723')
         repo_id = self.repo['id']
         repos = self.make_crane_client(self.cfg).get('/crane/repositories/v2')
@@ -385,7 +385,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
 
         This test targets `Pulp #2336 <https://pulp.plan.io/issues/2336>`_.
         """
-        if selectors.bug_is_untestable(2336, self.cfg.version):
+        if selectors.bug_is_untestable(2336, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2336')
         client = api.Client(self.cfg, api.json_handler)
         client.request_kwargs['url'] = self.adjust_url(
@@ -414,7 +414,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
 
         This test targets `Pulp #2336 <https://pulp.plan.io/issues/2336>`_.
         """
-        if selectors.bug_is_untestable(2336, self.cfg.version):
+        if selectors.bug_is_untestable(2336, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2336')
         client = api.Client(self.cfg, api.json_handler, {'headers': {
             'accept': 'application/vnd.docker.distribution.manifest.v2+json'
@@ -494,8 +494,8 @@ class NonNamespacedImageTestCase(SyncPublishMixin, unittest.TestCase):
         cli.GlobalServiceManager(cfg).restart(('httpd',))
 
         # Get and inspect /crane/repositories/v2.
-        if (cfg.version >= Version('2.14') and
-                selectors.bug_is_testable(2723, cfg.version)):
+        if (cfg.pulp_version >= Version('2.14') and
+                selectors.bug_is_testable(2723, cfg.pulp_version)):
             client = self.make_crane_client(cfg)
             repo_id = repo['id']
             repos = client.get('/crane/repositories/v2')
@@ -546,9 +546,9 @@ class NoAmd64LinuxTestCase(SyncPublishMixin, unittest.TestCase):
         cls.cfg = config.get_config()
         cls.repo = {}
         if (utils.os_is_f26(cls.cfg) and
-                selectors.bug_is_untestable(3036, cls.cfg.version)):
+                selectors.bug_is_untestable(3036, cls.cfg.pulp_version)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3036')
-        if selectors.bug_is_untestable(2384, cls.cfg.version):
+        if selectors.bug_is_untestable(2384, cls.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2384')
 
     @classmethod
@@ -681,8 +681,8 @@ class RepoRegistryIdTestCase(SyncPublishMixin, unittest.TestCase):
         .. _Pulp #2723: https://pulp.plan.io/issues/2723
         """
         cfg = config.get_config()
-        if (cfg.version < Version('2.14') or
-                selectors.bug_is_untestable(2723, cfg.version)):
+        if (cfg.pulp_version < Version('2.14') or
+                selectors.bug_is_untestable(2723, cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2723')
         for i in range(1, 4):
             repo_registry_id = '/'.join(utils.uuid4() for _ in range(i))
