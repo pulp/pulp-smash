@@ -494,11 +494,6 @@ class PulpSmashConfig(object):
         return self.pulp_version
 
     @property
-    def cli_transport(self):
-        """Map old config cli_transport to the new format with shell role."""
-        return self.get_systems('shell')[0].roles['shell']['transport']
-
-    @property
     def verify(self):
         """Map old config verify to the new format with api role."""
         return self.get_systems('api')[0].roles['api'].get('verify')
