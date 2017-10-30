@@ -44,7 +44,9 @@ def settings_create(ctx):
     """Create a settings file."""
     path = ctx.obj['cfg_path']
     if path:
-        click.echo('Settings file already exist, continuing will override it.')
+        click.echo(
+            'A settings file already exists. Continuing will override it.'
+        )
         click.confirm('Do you want to continue?', abort=True)
     else:
         path = ctx.obj['default_cfg_path']
@@ -53,7 +55,7 @@ def settings_create(ctx):
     pulp_version = click.prompt('Pulp version')
     system_hostname = click.prompt('System hostname')
     if click.confirm(
-            'Is Pulp API available over HTTPS (no for HTTP)?', default=True):
+            "Is Pulp's API available over HTTPS (no for HTTP)?", default=True):
         system_api_scheme = 'https'
     else:
         system_api_scheme = 'http'
@@ -67,6 +69,15 @@ def settings_create(ctx):
             system_api_verify = certificate_path
     else:
         system_api_verify = False
+
+    click.echo(
+        "By default, Pulp Smash will communicate with Pulp's API on the port "
+        "number implied by the scheme. For example, if Pulp's API is "
+        'available over HTTPS, then Pulp Smash will communicate on port 443.'
+        "If Pulp's API is avaialable on a non-standard port, like 8000, then "
+        'Pulp Smash needs to know about that.'
+    )
+    system_api_port = click.prompt('Pulp API port number', type=int, default=0)
 
     if click.confirm(
             'Is Pulp\'s message broker Qpid (no for RabbitMQ)?', default=True):
@@ -119,6 +130,8 @@ def settings_create(ctx):
             }
         }]
     }
+    if system_api_port:
+        config_dict['systems'][0]['roles']['api']['port'] = system_api_port
     with open(path, 'w') as handler:
         handler.write(json.dumps(config_dict, indent=2, sort_keys=True))
     click.echo(

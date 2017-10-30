@@ -125,6 +125,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             'pulp.example.com\n'  # system hostname
             '\n'  # published via HTTPS
             '\n'  # verify HTTPS
+            '\n'  # API port
             '\n'  # using qpidd
             '\n'  # running on Pulp system
         )
@@ -142,6 +143,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             'pulp.example.com\n'  # system hostname
             '\n'  # published via HTTPS
             '\n'  # verify HTTPS
+            '\n'  # API port
             '\n'  # using qpidd
             '\n'  # running on Pulp system
         )
@@ -160,6 +162,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             '\n'  # published via HTTPS
             'y\n'  # verify HTTPS
             '/path/to/ssl/certificate\n'  # SSL certificate path
+            '\n'  # API port
             '\n'  # using qpidd
             '\n'  # running on Pulp system
         )
@@ -178,6 +181,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             '2.13\n'  # pulp version
             'pulp.example.com\n'  # system hostname
             'n\n'  # published via HTTPS
+            '\n'  # API port
             'n\n'  # using qpidd
             'y\n'  # running on Pulp system
         )

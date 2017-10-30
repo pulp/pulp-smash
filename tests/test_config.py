@@ -23,7 +23,7 @@ PULP_SMASH_CONFIG = """
             "hostname": "first.example.com",
             "roles": {
                 "amqp broker": {"service": "qpidd"},
-                "api": {"scheme": "https", "verify": true},
+                "api": {"port": 1234, "scheme": "https", "verify": true},
                 "mongod": {},
                 "pulp cli": {},
                 "pulp celerybeat": {},
@@ -36,7 +36,7 @@ PULP_SMASH_CONFIG = """
         {
             "hostname": "second.example.com",
             "roles": {
-                "api": {"scheme": "https", "verify": false},
+                "api": {"port": 2345, "scheme": "https", "verify": false},
                 "pulp celerybeat": {},
                 "pulp resource manager": {},
                 "pulp workers": {},
@@ -80,6 +80,7 @@ def _gen_attrs():
                 roles={
                     'amqp broker': {'service': 'qpidd'},
                     'api': {
+                        'port': random.randint(1, 65535),
                         'scheme': 'https',
                         'verify': True
                     },
@@ -248,6 +249,7 @@ class ReadTestCase(unittest.TestCase):
                         roles={
                             'amqp broker': {'service': 'qpidd'},
                             'api': {
+                                'port': 1234,
                                 'scheme': 'https',
                                 'verify': True,
                             },
@@ -264,6 +266,7 @@ class ReadTestCase(unittest.TestCase):
                         hostname='second.example.com',
                         roles={
                             'api': {
+                                'port': 2345,
                                 'scheme': 'https',
                                 'verify': False,
                             },

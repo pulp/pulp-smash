@@ -13,7 +13,7 @@ import json
 import os
 import warnings
 from copy import deepcopy
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunsplit
 
 import jsonschema
 from packaging.version import Version
@@ -99,6 +99,11 @@ CONFIG_JSON_SCHEMA = {
                             'required': ['scheme'],
                             'type': 'object',
                             'properties': {
+                                'port': {
+                                    'type': 'integer',
+                                    'minimum': 0,
+                                    'maximum': 65535,
+                                },
                                 'scheme': {
                                     'enum': ['http', 'https'],
                                     'type': 'string',
@@ -469,22 +474,24 @@ class PulpSmashConfig(object):
     @property
     def base_url(self):
         """Map old config base_url to the new format with api role."""
-        api_system = self.get_systems('api')[0]
-        return '{}://{}/'.format(
-            api_system.roles['api']['scheme'], api_system.hostname)
+        return self.get_base_url()
 
     def get_base_url(self, pulp_system=None):
         """Generate the base URL for a given ``pulp_sytem``.
 
-        If ``pulp_system`` is ``None`` then the first host found with the
-        ``api`` role will be chosen.
+        :param pulp_smash.config.PulpSystem pulp_system: One of the hosts that
+            comprises a Pulp application. Defaults to the first host with the
+            ``api`` role.
         """
-        if not pulp_system:
+        if pulp_system is None:
             pulp_system = self.get_systems('api')[0]
-        return '{}://{}/'.format(
-            pulp_system.roles['api'].get('scheme', 'https'),
-            pulp_system.hostname
-        )
+        scheme = pulp_system.roles['api']['scheme']
+        netloc = pulp_system.hostname
+        try:
+            netloc += ':' + str(pulp_system.roles['api']['port'])
+        except KeyError:
+            pass
+        return urlunsplit((scheme, netloc, '', '', ''))
 
     @property
     def version(self):
@@ -530,7 +537,8 @@ class PulpSmashConfig(object):
             pulp_system = self.get_systems('api')[0]
         kwargs = deepcopy(pulp_system.roles['api'])
         kwargs['auth'] = tuple(self.pulp_auth)
-        kwargs.pop('scheme', None)
+        for key in ('port', 'scheme'):
+            kwargs.pop(key, None)
         return kwargs
 
 

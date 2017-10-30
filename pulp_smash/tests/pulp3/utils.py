@@ -2,7 +2,6 @@
 """Utility functions for Pulp 3 tests."""
 import random
 import unittest
-from urllib.parse import urlsplit, urlunsplit
 
 from packaging.version import Version
 from requests.auth import AuthBase, HTTPBasicAuth
@@ -31,30 +30,6 @@ class JWTAuth(AuthBase):  # pylint:disable=too-few-public-methods
             self.token,
         ))
         return request
-
-
-def get_base_url():
-    """Return the base url from settings."""
-    cfg = config.get_config()
-    pulp_system = cfg.get_systems('api')[0]
-    return '{}://{}/'.format(
-        pulp_system.roles['api'].get('scheme', 'https'),
-        pulp_system.hostname
-    )
-
-
-def adjust_url(url):
-    """Return a URL that can be used for talking in a certain port.
-
-    The URL returned is the same as ``url``, except that the scheme is set
-    to HTTP, and the port is set to 8000.
-
-    :param url: A string, such as ``https://pulp.example.com/foo``.
-    :returns: A string, such as ``http://pulp.example.com:8000/foo``.
-    """
-    parse_result = urlsplit(url)
-    netloc = parse_result[1].partition(':')[0] + ':8000'
-    return urlunsplit(('http', netloc) + parse_result[2:])
 
 
 def set_up_module():
@@ -104,9 +79,7 @@ def _get_basic_auth(cfg):
 
 def _get_jwt_auth(cfg):
     """Return an object for JWT authentication."""
-    client = api.Client(cfg, api.json_handler)
-    client.request_kwargs['url'] = adjust_url(get_base_url())
-    token = client.post(JWT_PATH, {
+    token = api.Client(cfg, api.json_handler).post(JWT_PATH, {
         'username': cfg.pulp_auth[0],
         'password': cfg.pulp_auth[1],
     })
