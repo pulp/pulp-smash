@@ -271,6 +271,7 @@ class UpdateRpmTestCase(UtilsMixin, unittest.TestCase):
         client = cli.Client(cfg)
         pkg_mgr = cli.PackageManager(cfg)
         sudo = '' if is_root(cfg) else 'sudo '
+        verify = cfg.get_systems('api')[0].roles['api'].get('verify')
 
         # Create the second repository.
         repo_id = self.create_repo(cfg)
@@ -290,7 +291,7 @@ class UpdateRpmTestCase(UtilsMixin, unittest.TestCase):
             gpgcheck=0,
             metadata_expire=0,  # force metadata to load every time
             repositoryid=repo_id,
-            sslverify='yes' if cfg.verify else 'no',
+            sslverify='yes' if verify else 'no',
         )
         self.addCleanup(
             client.run,

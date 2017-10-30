@@ -493,11 +493,6 @@ class PulpSmashConfig(object):
         """Map old config version to the pulp_version."""
         return self.pulp_version
 
-    @property
-    def verify(self):
-        """Map old config verify to the new format with api role."""
-        return self.get_systems('api')[0].roles['api'].get('verify')
-
     def get_requests_kwargs(self, pulp_system=None):
         """Get kwargs for use by the Requests functions.
 
