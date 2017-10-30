@@ -81,6 +81,7 @@ developers, not a gospel.
     api/pulp_smash.tests.pulp2.rpm.api_v2.test_crud
     api/pulp_smash.tests.pulp2.rpm.api_v2.test_download_policies
     api/pulp_smash.tests.pulp2.rpm.api_v2.test_duplicate_uploads
+    api/pulp_smash.tests.pulp2.rpm.api_v2.test_errata
     api/pulp_smash.tests.pulp2.rpm.api_v2.test_export
     api/pulp_smash.tests.pulp2.rpm.api_v2.test_force_full
     api/pulp_smash.tests.pulp2.rpm.api_v2.test_iso_crud

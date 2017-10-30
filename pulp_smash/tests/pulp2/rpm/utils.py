@@ -1,8 +1,12 @@
 # coding=utf-8
 """Utilities for RPM tests."""
+import os
+from io import StringIO
+
 from packaging.version import Version
 
 from pulp_smash import cli, selectors, utils
+from pulp_smash.utils import is_root
 
 
 def set_up_module():
@@ -113,3 +117,58 @@ def os_is_rhel6(cfg):
         '/etc/redhat-release',
     ))
     return response.returncode == 0
+
+
+def gen_yum_config_file(cfg, repositoryid, **kwargs):
+    """Generate a yum configuration file and write it to ``/etc/yum.repos.d/``.
+
+    Generate a yum configuration file containing a single repository section,
+    and write it to ``/etc/yum.repos.d/{repositoryid}.repo``.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: The system on which to create
+        a yum configuration file.
+    :param repositoryid: The section's ``repositoryid``. Used when naming the
+        configuration file and populating the brackets at the head of the file.
+        For details, see yum.conf(5).
+    :param kwargs: Section options. Each kwarg corresponds to one option. For
+        details, see yum.conf(5).
+    :returns: The path to the yum configuration file.
+    """
+    path = os.path.join('/etc/yum.repos.d/', repositoryid + '.repo')
+    with StringIO() as section:
+        section.write('[{}]\n'.format(repositoryid))
+        for key, value in kwargs.items():
+            section.write('{}: {}\n'.format(key, value))
+        cli.Client(cfg).machine.session().run(
+            'echo "{}" | {}tee {} > /dev/null'
+            .format(section.getvalue(), '' if is_root(cfg) else 'sudo ', path)
+        )
+    return path
+
+
+def get_rpm_names_versions(server_config, repo_id):
+    """Get a dict of repo's RPMs with names as keys, mapping to version lists.
+
+    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+        the Pulp deployment being targeted.
+    :param repo_id: A RPM repository ID.
+    :returns: The name and versions of each package in the repository, with the
+        versions sorted in ascending order. For example: ``{'walrus': ['0.71',
+        '5.21']}``.
+    """
+    keyword = 'Filename:'
+    completed_proc = cli.Client(server_config).run(
+        'pulp-admin rpm repo content rpm --repo-id {}'.format(repo_id).split()
+    )
+    rpms = {}
+    for line in completed_proc.stdout.splitlines():
+        if keyword not in line:
+            continue
+        # e.g. 'Filename: my-walrus-0.71-1.noarch.rpm ' → ['my-walrus', '0.71']
+        filename_parts = line.lstrip(keyword).strip().split('-')[:-1]
+        name = '-'.join(filename_parts[:-1])
+        version = filename_parts[-1]
+        rpms.setdefault(name, []).append(version)
+    for rpm in rpms:
+        rpms[rpm] = sorted(rpms[rpm], key=Version)
+    return rpms
