@@ -1,12 +1,8 @@
 # coding=utf-8
 """Tests that copy units from one repository to another."""
-import os
 import subprocess
 import unittest
-from io import StringIO
 from urllib.parse import urljoin
-
-from packaging.version import Version
 
 from pulp_smash import cli, config, constants, selectors, utils
 from pulp_smash.tests.pulp2.rpm.cli.utils import count_langpacks
@@ -14,6 +10,8 @@ from pulp_smash.tests.pulp2.rpm.utils import (
     check_issue_2277,
     check_issue_2620,
     check_issue_3104,
+    gen_yum_config_file,
+    get_rpm_names_versions,
     set_up_module,
 )
 from pulp_smash.utils import is_root
@@ -88,61 +86,6 @@ class UtilsMixin(object):  # pylint:disable=too-few-public-methods
         return repo_id
 
 
-def gen_yum_config_file(cfg, repositoryid, **kwargs):
-    """Generate a yum configuration file and write it to ``/etc/yum.repos.d/``.
-
-    Generate a yum configuration file containing a single repository section,
-    and write it to ``/etc/yum.repos.d/{repositoryid}.repo``.
-
-    :param pulp_smash.config.PulpSmashConfig cfg: The system on which to create
-        a yum configuration file.
-    :param repositoryid: The section's ``repositoryid``. Used when naming the
-        configuration file and populating the brackets at the head of the file.
-        For details, see yum.conf(5).
-    :param kwargs: Section options. Each kwarg corresponds to one option. For
-        details, see yum.conf(5).
-    :returns: The path to the yum configuration file.
-    """
-    path = os.path.join('/etc/yum.repos.d/', repositoryid + '.repo')
-    with StringIO() as section:
-        section.write('[{}]\n'.format(repositoryid))
-        for key, value in kwargs.items():
-            section.write('{}: {}\n'.format(key, value))
-        cli.Client(cfg).machine.session().run(
-            'echo "{}" | {}tee {} > /dev/null'
-            .format(section.getvalue(), '' if is_root(cfg) else 'sudo ', path)
-        )
-    return path
-
-
-def _get_rpm_names_versions(server_config, repo_id):
-    """Get a dict of repo's RPMs with names as keys, mapping to version lists.
-
-    :param pulp_smash.config.PulpSmashConfig server_config: Information about
-        the Pulp deployment being targeted.
-    :param repo_id: A RPM repository ID.
-    :returns: The name and versions of each package in the repository, with the
-        versions sorted in ascending order. For example: ``{'walrus': ['0.71',
-        '5.21']}``.
-    """
-    keyword = 'Filename:'
-    completed_proc = cli.Client(server_config).run(
-        'pulp-admin rpm repo content rpm --repo-id {}'.format(repo_id).split()
-    )
-    rpms = {}
-    for line in completed_proc.stdout.splitlines():
-        if keyword not in line:
-            continue
-        # e.g. 'Filename: my-walrus-0.71-1.noarch.rpm ' → ['my-walrus', '0.71']
-        filename_parts = line.lstrip(keyword).strip().split('-')[:-1]
-        name = '-'.join(filename_parts[:-1])
-        version = filename_parts[-1]
-        rpms.setdefault(name, []).append(version)
-    for rpm in rpms:
-        rpms[rpm] = sorted(rpms[rpm], key=Version)
-    return rpms
-
-
 class CopyTestCase(UtilsMixin, unittest.TestCase):
     """Copy a "chimpanzee" unit from one repository to another.
 
@@ -163,7 +106,7 @@ class CopyTestCase(UtilsMixin, unittest.TestCase):
             'pulp-admin rpm repo copy rpm --from-repo-id {} --to-repo-id {} '
             '--str-eq name=chimpanzee'.format(_REPO_ID, repo_id).split()
         )
-        rpms = _get_rpm_names_versions(cfg, repo_id)
+        rpms = get_rpm_names_versions(cfg, repo_id)
         self.assertEqual(list(rpms.keys()), ['chimpanzee'])
         self.assertEqual(len(rpms['chimpanzee']), 1, rpms)
 
@@ -197,12 +140,12 @@ class CopyRecursiveTestCase(UtilsMixin, unittest.TestCase):
         )
 
         # Verify only one "walrus" unit has been copied
-        dst_rpms = _get_rpm_names_versions(cfg, repo_id)
+        dst_rpms = get_rpm_names_versions(cfg, repo_id)
         self.assertIn('walrus', dst_rpms)
         self.assertEqual(len(dst_rpms['walrus']), 1, dst_rpms)
 
         # Verify the version of the "walrus" unit
-        src_rpms = _get_rpm_names_versions(cfg, _REPO_ID)
+        src_rpms = get_rpm_names_versions(cfg, _REPO_ID)
         self.assertEqual(src_rpms['walrus'][-1], dst_rpms['walrus'][0])
 
 
@@ -278,7 +221,7 @@ class UpdateRpmTestCase(UtilsMixin, unittest.TestCase):
 
         # Pick an RPM with two versions.
         rpm_name = 'walrus'
-        rpm_versions = _get_rpm_names_versions(cfg, _REPO_ID)[rpm_name]
+        rpm_versions = get_rpm_names_versions(cfg, _REPO_ID)[rpm_name]
 
         # Copy the older RPM to the second repository, and publish it.
         self._copy_and_publish(cfg, rpm_name, rpm_versions[0], repo_id)
