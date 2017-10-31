@@ -21,6 +21,9 @@ from pulp_smash.constants import (
     RPM,
     RPM_DATA,
     RPM_UNSIGNED_URL,
+    RPM_WITH_VENDOR_DATA,
+    RPM_WITH_VENDOR_FEED_URL,
+    RPM_WITH_VENDOR_URL,
     SRPM,
     SRPM_UNSIGNED_URL,
 )
@@ -364,3 +367,63 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
             )
         with self.subTest():
             self.assertEqual(self.rpm, response.content)
+
+
+class VendorInfoTestCase(unittest.TestCase):
+    """Test whether the vendor info is present in case of sync and upload.
+
+    This tests case targets the following issues:
+
+    * `Pulp Smash #680 <https://github.com/PulpQE/pulp-smash/issues/680>`_
+    * `Pulp #2781 <https://pulp.plan.io/issues/2781>`_
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables."""
+        cls.cfg = config.get_config()
+        if selectors.bug_is_untestable(2781, cls.cfg.pulp_version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/2781')
+
+    def test_upload(self):
+        """Test whether vendor info is available in case of upload.
+
+        Do the following:
+
+        1. Create a repository then upload content with **vendor information**
+           to this repository.
+        2. Assert that vendor information is present and according to the data
+           that was uploaded.
+        """
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        rpm = utils.http_get(RPM_WITH_VENDOR_URL)
+        utils.upload_import_unit(self.cfg, rpm, {'unit_type_id': 'rpm'}, repo)
+        units = utils.search_units(self.cfg, repo)
+        self.assertIn(
+            RPM_WITH_VENDOR_DATA['metadata']['vendor'],
+            units[0]['metadata']['repodata']['primary'],
+        )
+
+    def test_sync(self):
+        """Test whether vendor info is available in case of sync.
+
+        Do the following:
+
+        1. Create a repository then sync content with **vendor information**
+           to this repository.
+        2. Assert that vendor information is present and according to feed URL.
+        """
+        client = api.Client(self.cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_WITH_VENDOR_FEED_URL
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        utils.sync_repo(self.cfg, repo)
+        units = utils.search_units(self.cfg, repo, {'type_ids': 'rpm'})
+        self.assertIn(
+            RPM_WITH_VENDOR_DATA['metadata']['vendor'],
+            units[0]['metadata']['repodata']['primary']
+        )

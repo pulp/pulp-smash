@@ -655,9 +655,15 @@ RPM_WITH_NON_UTF_8_URL = urljoin(
 )
 """The URL to an RPM with non-UTF-8 metadata in its header."""
 
-RPM_WITH_VENDOR_URL = urljoin(
+RPM_WITH_VENDOR_FEED_URL = urljoin(
     PULP_FIXTURES_BASE_URL,
-    'rpm-with-vendor/rpm-with-vendor-1-1.fc25.noarch.rpm'
+    'rpm-with-vendor/'
+)
+"""A repository whose primary.xml file has an vendor section."""
+
+RPM_WITH_VENDOR_URL = urljoin(
+    RPM_WITH_VENDOR_FEED_URL,
+    'rpm-with-vendor-1-1.fc25.noarch.rpm'
 )
 """The URL of an RPM with a specified vendor in its header."""
 
