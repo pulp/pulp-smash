@@ -63,7 +63,7 @@ class FeedURLUnquoteTestCase(utils.BaseAPITestCase):
 
     def test_all(self):
         """Ensure Pulp unquote feed URLs."""
-        if self.cfg.pulp_version < version.Version('2.11'):
+        if self.cfg.version < version.Version('2.11'):
             self.skipTest('Feed URL unquoting is available on Pulp 2.11+')
         client = api.Client(self.cfg, api.json_handler)
         body = CrudTestCase.create_body()
@@ -86,7 +86,7 @@ class PulpDistributionTestCase(utils.BaseAPITestCase):
 
     def test_all(self):
         """Check for content synced from a feed with PULP_DISTRIBUTION.xml."""
-        if self.cfg.pulp_version < version.Version('2.11.2'):
+        if self.cfg.version < version.Version('2.11.2'):
             self.skipTest(
                 'PULP_DISTRIBUTION.xml improved parsing is available on Pulp '
                 '2.11.2+'
@@ -209,7 +209,7 @@ class RPMDistributorTestCase(unittest.TestCase):
         See: https://pulp.plan.io/issues/2134.
         """
         cfg = config.get_config()
-        if cfg.pulp_version < version.Version('2.9'):
+        if cfg.version < version.Version('2.9'):
             raise unittest.SkipTest('This test requires Pulp 2.9 or above.')
         client = api.Client(cfg, api.json_handler)
         distributor = gen_distributor()
@@ -273,7 +273,7 @@ class LastUnitAddedTestCase(utils.BaseAPITestCase):
         4. Publish the second repository. Assert its ``last_unit_added``
            attribute is non-null.
         """
-        if selectors.bug_is_untestable(2688, self.cfg.pulp_version):
+        if selectors.bug_is_untestable(2688, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2688')
 
         # create a repo with a feed and sync it

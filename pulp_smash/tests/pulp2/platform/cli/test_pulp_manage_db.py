@@ -44,7 +44,7 @@ class BaseTestCase(unittest.TestCase):
         if inspect.getmro(cls)[0] == BaseTestCase:
             raise unittest.SkipTest('Abstract base class.')
         cls.cfg = config.get_config()
-        if selectors.bug_is_untestable(2186, cls.cfg.pulp_version):
+        if selectors.bug_is_untestable(2186, cls.cfg.version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2186')
         cls.cmd = () if utils.is_root(cls.cfg) else ('sudo',)
         cls.cmd += (
@@ -73,7 +73,7 @@ class PositiveTestCase(BaseTestCase):
 
     def test_dry_run(self):
         """Make sure pulp-manage-db runs if --dry-run is passed."""
-        if selectors.bug_is_untestable(2776, self.cfg.pulp_version):
+        if selectors.bug_is_untestable(2776, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2776')
         cmd = () if utils.is_root(self.cfg) else ('sudo',)
         cmd += (
@@ -107,7 +107,7 @@ class NegativeTestCase(BaseTestCase):
 
         This test targets `Pulp #2684 <https://pulp.plan.io/issues/2684>`_.
         """
-        if selectors.bug_is_untestable(2684, self.cfg.pulp_version):
+        if selectors.bug_is_untestable(2684, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2684')
         cli.GlobalServiceManager(config.get_config()).stop((
             CONFLICTING_SERVICES.difference(('pulp_resource_manager',))
@@ -119,7 +119,7 @@ class NegativeTestCase(BaseTestCase):
 
         This test targets `Pulp #2684 <https://pulp.plan.io/issues/2684>`_.
         """
-        if selectors.bug_is_untestable(2684, self.cfg.pulp_version):
+        if selectors.bug_is_untestable(2684, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2684')
         cli.GlobalServiceManager(config.get_config()).stop((
             CONFLICTING_SERVICES.difference(('pulp_workers',))

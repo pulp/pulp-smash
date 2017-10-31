@@ -207,12 +207,12 @@ def require(version_string):
         @wraps(test_method)
         def new_test_method(self, *args, **kwargs):
             """Wrap a (unittest test) method."""
-            if self.cfg.pulp_version < min_version:
+            if self.cfg.version < min_version:
                 self.skipTest(
                     'This test requires Pulp {} or later, but Pulp {} is '
                     'being tested. If this seems wrong, try checking the '
                     '"settings" option in the Pulp Smash configuration file.'
-                    .format(version_string, self.cfg.pulp_version)
+                    .format(version_string, self.cfg.version)
                 )
             return test_method(self, *args, **kwargs)
         return new_test_method

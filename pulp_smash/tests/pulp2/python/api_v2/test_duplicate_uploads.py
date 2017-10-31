@@ -33,8 +33,8 @@ class DuplicateUploadsTestCase(
     def setUpClass(cls):
         """Create a Python repo. Upload a Python package into it twice."""
         super(DuplicateUploadsTestCase, cls).setUpClass()
-        if (cls.cfg.pulp_version >= Version('2.11') and
-                selectors.bug_is_untestable(2334, cls.cfg.pulp_version)):
+        if (cls.cfg.version >= Version('2.11') and
+                selectors.bug_is_untestable(2334, cls.cfg.version)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2334')
         unit = utils.http_get(PYTHON_EGG_URL)
         import_params = {'unit_type_id': 'python_package'}

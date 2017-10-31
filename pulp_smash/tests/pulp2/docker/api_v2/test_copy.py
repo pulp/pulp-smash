@@ -151,7 +151,7 @@ class CopyV2ContentTestCase(unittest.TestCase):
         * `Pulp #2385 <https://pulp.plan.io/issues/2385>`_
         """
         for issue_id in (2384, 2385):
-            if selectors.bug_is_untestable(issue_id, self.cfg.pulp_version):
+            if selectors.bug_is_untestable(issue_id, self.cfg.version):
                 self.skipTest(
                     'https://pulp.plan.io/issues/{}'.format(issue_id)
                 )

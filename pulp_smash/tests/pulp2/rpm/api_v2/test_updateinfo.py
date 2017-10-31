@@ -79,7 +79,7 @@ def setUpModule():  # pylint:disable=invalid-name
     """
     set_up_module()
     cfg = config.get_config()
-    if cfg.pulp_version < Version('2.11') and check_issue_2277(cfg):
+    if cfg.version < Version('2.11') and check_issue_2277(cfg):
         raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
 
 
@@ -239,7 +239,7 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
         .. _Pulp #1782: https://pulp.plan.io/issues/1782
         .. _Pulp #2032: https://pulp.plan.io/issues/2032
         """
-        if selectors.bug_is_untestable(2032, self.cfg.pulp_version):
+        if selectors.bug_is_untestable(2032, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2032')
         erratum = self.errata['full']
         update_element = (
@@ -430,7 +430,7 @@ class PkglistsTestCase(unittest.TestCase):
         cfg = config.get_config()
         if check_issue_3104(cfg):
             self.skipTest('https://pulp.plan.io/issues/3104')
-        if selectors.bug_is_untestable(2227, cfg.pulp_version):
+        if selectors.bug_is_untestable(2227, cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2277')
 
         # Create, sync and publish a repository.

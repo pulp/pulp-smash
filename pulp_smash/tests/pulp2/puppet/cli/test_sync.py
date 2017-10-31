@@ -71,7 +71,7 @@ class SyncDownloadedContentTestCase(unittest.TestCase):
         non-zero content unit counts.
         """
         cfg = config.get_config()
-        if selectors.bug_is_untestable(1937, cfg.pulp_version):
+        if selectors.bug_is_untestable(1937, cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1937')
         utils.pulp_admin_login(cfg)
 

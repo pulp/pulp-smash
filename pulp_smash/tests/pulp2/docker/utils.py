@@ -26,6 +26,6 @@ def get_upstream_name(cfg):
     :data:`pulp_smash.constants.DOCKER_UPSTREAM_NAME`. See the documentation
     for those constants for more information.
     """
-    if cfg.pulp_version < Version('2.14'):
+    if cfg.version < Version('2.14'):
         return DOCKER_UPSTREAM_NAME_NOLIST
     return DOCKER_UPSTREAM_NAME

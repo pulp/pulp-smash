@@ -36,18 +36,18 @@ def setUpModule():  # pylint:disable=invalid-name
     """Skip tests if the RPM plugin is not installed."""
     set_up_module()
     cfg = config.get_config()
-    if cfg.pulp_version < Version('2.8'):
+    if cfg.version < Version('2.8'):
         raise unittest.SkipTest('This module requires Pulp 2.8 or greater.')
     if (utils.os_is_f26(cfg) and
-            selectors.bug_is_untestable(3036, cfg.pulp_version)):
+            selectors.bug_is_untestable(3036, cfg.version)):
         raise unittest.SkipTest('https://pulp.plan.io/issues/3036')
     if check_issue_2798(cfg):
         raise unittest.SkipTest('https://pulp.plan.io/issues/2798')
     if check_issue_2387(cfg):
         raise unittest.SkipTest('https://pulp.plan.io/issues/2387')
-    if selectors.bug_is_untestable(2272, cfg.pulp_version):
+    if selectors.bug_is_untestable(2272, cfg.version):
         raise unittest.SkipTest('https://pulp.plan.io/issues/2272')
-    if selectors.bug_is_untestable(2144, cfg.pulp_version):
+    if selectors.bug_is_untestable(2144, cfg.version):
         raise unittest.SkipTest('https://pulp.plan.io/issues/2144')
 
 
@@ -84,7 +84,7 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         super(BackgroundTestCase, cls).setUpClass()
         if check_issue_3104(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
-        if (selectors.bug_is_untestable(1905, cls.cfg.pulp_version) and
+        if (selectors.bug_is_untestable(1905, cls.cfg.version) and
                 os_is_rhel6(cls.cfg)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1905')
 
@@ -212,7 +212,7 @@ class OnDemandTestCase(utils.BaseAPITestCase):
 
     def test_rpm_cache_control_header(self):
         """Assert the request has the Cache-Control header set."""
-        if selectors.bug_is_untestable(2587, self.cfg.pulp_version):
+        if selectors.bug_is_untestable(2587, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2587')
         key = 'Cache-Control'
         headers = self.rpm.headers
@@ -231,7 +231,7 @@ class OnDemandTestCase(utils.BaseAPITestCase):
 
     def test_same_rpm_cache_header(self):
         """Assert the second request resulted in a cache hit from Squid."""
-        if selectors.bug_is_untestable(2587, self.cfg.pulp_version):
+        if selectors.bug_is_untestable(2587, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2587')
         headers = self.same_rpm.headers
         self.assertIn('HIT', headers['X-Cache-Lookup'], headers)
@@ -255,7 +255,7 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
         7. Trigger a repository download, with unit verification.
         """
         super(FixFileCorruptionTestCase, cls).setUpClass()
-        if (selectors.bug_is_untestable(1905, cls.cfg.pulp_version) and
+        if (selectors.bug_is_untestable(1905, cls.cfg.version) and
                 os_is_rhel6(cls.cfg)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1905')
 
@@ -316,7 +316,7 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
         # Support for package langpacks has been added in Pulp 2.9. In earlier
         # versions, langpacks are ignored.
         locally_stored_units = 39  # See repo['content_unit_counts']
-        if self.cfg.pulp_version >= Version('2.9'):
+        if self.cfg.version >= Version('2.9'):
             locally_stored_units += 1
         self.assertEqual(
             self.repo_post_download['locally_stored_units'],
@@ -511,7 +511,7 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
 
     def test_background_to_on_demand(self):
         """Check if switching from background to on_demand works."""
-        if selectors.bug_is_untestable(2587, self.cfg.pulp_version):
+        if selectors.bug_is_untestable(2587, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2587')
         repo, _ = self.repository_setup('background', 'on_demand')
         self.assert_on_demand(repo)
@@ -523,7 +523,7 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
 
     def test_immediate_to_on_demand(self):
         """Check if switching from immediate to on_demand works."""
-        if selectors.bug_is_untestable(2587, self.cfg.pulp_version):
+        if selectors.bug_is_untestable(2587, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2587')
         repo, _ = self.repository_setup('immediate', 'on_demand')
         self.assert_on_demand(repo)

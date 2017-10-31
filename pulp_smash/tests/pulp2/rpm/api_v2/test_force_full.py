@@ -74,8 +74,8 @@ class ForceFullTestCase(utils.BaseAPITestCase):
 
         .. _Pulp #1966: https://pulp.plan.io/issues/1966
         """
-        if (self.cfg.pulp_version >= Version('2.9') and
-                selectors.bug_is_untestable(1966, self.cfg.pulp_version)):
+        if (self.cfg.version >= Version('2.9') and
+                selectors.bug_is_untestable(1966, self.cfg.version)):
             self.skipTest('https://pulp.plan.io/issues/1966')
         call_report = utils.publish_repo(self.cfg, self.repo).json()
         last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
@@ -92,7 +92,7 @@ class ForceFullTestCase(utils.BaseAPITestCase):
 
         .. _Pulp #1938: https://pulp.plan.io/issues/1938
         """
-        if self.cfg.pulp_version < Version('2.9'):
+        if self.cfg.version < Version('2.9'):
             self.skipTest(
                 'This test requires Pulp 2.9. See: '
                 'https://pulp.plan.io/issues/1938'

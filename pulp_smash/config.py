@@ -488,6 +488,11 @@ class PulpSmashConfig(object):
             pass
         return urlunsplit((scheme, netloc, '', '', ''))
 
+    @property
+    def version(self):
+        """Map old config version to the pulp_version."""
+        return self.pulp_version
+
     def get_requests_kwargs(self, pulp_system=None):
         """Get kwargs for use by the Requests functions.
 

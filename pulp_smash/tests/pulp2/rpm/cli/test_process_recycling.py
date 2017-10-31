@@ -69,7 +69,7 @@ class MaxTasksPerChildTestCase(unittest.TestCase):
     def test_all(self):
         """Test Pulp's handling of its ``PULP_MAX_TASKS_PER_CHILD`` setting."""
         cfg = config.get_config()
-        if selectors.bug_is_untestable(2172, cfg.pulp_version):
+        if selectors.bug_is_untestable(2172, cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2172')
         set_opt = [
             'sed', '-i', '-e',

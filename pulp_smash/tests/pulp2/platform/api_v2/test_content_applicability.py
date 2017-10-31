@@ -87,7 +87,7 @@ class ParallelTestCase(_SuccessTestCase):
     def setUp(self):
         """Ensure this test only runs on Pulp 2.8 and later."""
         min_ver = '2.8'
-        ver = self.cfg.pulp_version
+        ver = self.cfg.version
         if ver < Version(min_ver):
             self.skipTest(
                 'This test requires Pulp {} or later, but Pulp {} is being '

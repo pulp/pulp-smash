@@ -82,7 +82,7 @@ class ReuseContentTestCase(unittest.TestCase):
         if check_issue_2354(cfg):
             self.skipTest('https://pulp.plan.io/issues/2354')
         if (utils.os_is_f26(cfg) and
-                selectors.bug_is_untestable(3036, cfg.pulp_version)):
+                selectors.bug_is_untestable(3036, cfg.version)):
             # Here, the calls to get_unit() cause pulp_streamer.service to die
             # without logging out anything. In Pulp #3036, certain actions
             # cause pulp_streamer.service to die while logging out a core dump.

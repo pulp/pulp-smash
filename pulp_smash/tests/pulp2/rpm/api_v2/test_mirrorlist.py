@@ -82,7 +82,7 @@ class UtilsMixin(object):
 
         .. _issue #2277: https://pulp.plan.io/issues/2277
         """
-        if cfg.pulp_version < Version('2.11') and check_issue_2277(cfg):
+        if cfg.version < Version('2.11') and check_issue_2277(cfg):
             self.skipTest('https://pulp.plan.io/issues/2277')
 
     def check_issue_2321(self, cfg):
@@ -90,8 +90,8 @@ class UtilsMixin(object):
 
         .. _issue #2321: https://pulp.plan.io/issues/2321
         """
-        if (cfg.pulp_version >= Version('2.11') and
-                selectors.bug_is_untestable(2321, cfg.pulp_version)):
+        if (cfg.version >= Version('2.11') and
+                selectors.bug_is_untestable(2321, cfg.version)):
             self.skipTest('https://pulp.plan.io/issues/2321')
 
     def check_issue_2326(self, cfg):
@@ -99,8 +99,8 @@ class UtilsMixin(object):
 
         .. _issue #2326: https://pulp.plan.io/issues/2326
         """
-        if (cfg.pulp_version >= Version('2.11') and
-                selectors.bug_is_untestable(2326, cfg.pulp_version)):
+        if (cfg.version >= Version('2.11') and
+                selectors.bug_is_untestable(2326, cfg.version)):
             self.skipTest('https://pulp.plan.io/issues/2326')
 
     def check_issue_2363(self, cfg):
@@ -108,8 +108,8 @@ class UtilsMixin(object):
 
         .. _issue #2363: https://pulp.plan.io/issues/2363
         """
-        if (cfg.pulp_version >= Version('2.11') and
-                selectors.bug_is_untestable(2363, cfg.pulp_version)):
+        if (cfg.version >= Version('2.11') and
+                selectors.bug_is_untestable(2363, cfg.version)):
             self.skipTest('https://pulp.plan.io/issues/2363')
 
 

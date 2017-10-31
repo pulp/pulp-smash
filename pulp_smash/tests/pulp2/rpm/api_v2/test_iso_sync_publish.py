@@ -50,7 +50,7 @@ class ServeHttpsFalseTestCase(TemporaryUserMixin, unittest.TestCase):
 
     def test_all(self):
         """Publish w/an rsync distributor when ``serve_https`` is false."""
-        if selectors.bug_is_untestable(2657, self.cfg.pulp_version):
+        if selectors.bug_is_untestable(2657, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/2657')
 
         # Create a user with which to rsync files

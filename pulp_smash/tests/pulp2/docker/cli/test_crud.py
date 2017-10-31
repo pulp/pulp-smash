@@ -81,7 +81,7 @@ class DeleteV2TestCase(unittest.TestCase):
         """Provide a server config and a repository ID."""
         cls.cfg = config.get_config()
 
-        if cls.cfg.pulp_version < version.Version('2.8'):
+        if cls.cfg.version < version.Version('2.8'):
             raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
 
         utils.pulp_admin_login(cls.cfg)
@@ -125,9 +125,9 @@ class UpdateEnableV1TestCase(unittest.TestCase):
         """Provide a server config and a repository ID."""
         cls.cfg = config.get_config()
 
-        if cls.cfg.pulp_version < version.Version('2.8'):
+        if cls.cfg.version < version.Version('2.8'):
             raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
-        if selectors.bug_is_untestable(1710, cls.cfg.pulp_version):
+        if selectors.bug_is_untestable(1710, cls.cfg.version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1710')
 
         utils.pulp_admin_login(cls.cfg)
@@ -179,9 +179,9 @@ class UpdateEnableV2TestCase(unittest.TestCase):
         """Provide a server config and a repository ID."""
         cls.cfg = config.get_config()
 
-        if cls.cfg.pulp_version < version.Version('2.8'):
+        if cls.cfg.version < version.Version('2.8'):
             raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
-        if selectors.bug_is_untestable(1710, cls.cfg.pulp_version):
+        if selectors.bug_is_untestable(1710, cls.cfg.version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1710')
 
         utils.pulp_admin_login(cls.cfg)
@@ -233,9 +233,9 @@ class UpdateDistributorTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Provide a server config and a repository ID."""
         cls.cfg = config.get_config()
-        if cls.cfg.pulp_version < version.Version('2.8'):
+        if cls.cfg.version < version.Version('2.8'):
             raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
-        if selectors.bug_is_untestable(1710, cls.cfg.pulp_version):
+        if selectors.bug_is_untestable(1710, cls.cfg.version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1710')
 
         utils.pulp_admin_login(cls.cfg)

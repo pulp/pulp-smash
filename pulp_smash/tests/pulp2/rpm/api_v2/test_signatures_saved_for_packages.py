@@ -68,7 +68,7 @@ class _BaseTestCase(unittest.TestCase):
         if inspect.getmro(cls)[0] == _BaseTestCase:
             raise unittest.SkipTest('Abstract base class.')
         cls.cfg = config.get_config()
-        if selectors.bug_is_untestable(1156, cls.cfg.pulp_version):
+        if selectors.bug_is_untestable(1156, cls.cfg.version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1156')
         cls.client = api.Client(cls.cfg, api.json_handler)
 
@@ -129,7 +129,7 @@ class UploadPackageTestCase(_BaseTestCase):
 
     def test_signed_drpm(self):
         """Import a signed DRPM into Pulp. Verify its signature."""
-        if selectors.bug_is_untestable(1806, self.cfg.pulp_version):
+        if selectors.bug_is_untestable(1806, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1806')
         repo_href = self._create_repo_import_unit(DRPM_SIGNED_URL)
         unit = self._find_unit(repo_href, DRPM_SIGNED_URL)
@@ -153,7 +153,7 @@ class UploadPackageTestCase(_BaseTestCase):
 
     def test_unsigned_drpm(self):
         """Import an unsigned DRPM into Pulp. Verify it has no signature."""
-        if selectors.bug_is_untestable(1806, self.cfg.pulp_version):
+        if selectors.bug_is_untestable(1806, self.cfg.version):
             self.skipTest('https://pulp.plan.io/issues/1806')
         repo_href = self._create_repo_import_unit(DRPM_UNSIGNED_URL)
         unit = self._find_unit(repo_href, DRPM_UNSIGNED_URL)
