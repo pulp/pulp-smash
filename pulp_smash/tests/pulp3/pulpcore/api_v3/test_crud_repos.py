@@ -18,14 +18,13 @@ class CRUDRepoTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Create class-wide variables."""
-        cls.auth = get_auth()
         cls.cfg = config.get_config()
         cls.repo = {}
 
     def setUp(self):
         """Create an API client."""
         self.client = api.Client(self.cfg, api.code_handler)
-        self.client.request_kwargs['auth'] = self.auth
+        self.client.request_kwargs['auth'] = get_auth()
 
     def test_01_create_repo(self):
         """Create repository."""

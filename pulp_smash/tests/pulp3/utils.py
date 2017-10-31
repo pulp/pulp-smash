@@ -2,12 +2,19 @@
 """Utility functions for Pulp 3 tests."""
 import random
 import unittest
+from copy import deepcopy
 
 from packaging.version import Version
 from requests.auth import AuthBase, HTTPBasicAuth
 
 from pulp_smash import api, config
 from pulp_smash.tests.pulp3.constants import JWT_PATH
+
+
+# _get_jwt_auth() uses this as a cache. It is intentionally a global. This
+# design lets us do interesting things like flush the cache at run time or
+# completely avoid a config file by fetching values from the UI.
+_JWT_AUTH = None
 
 
 class JWTAuth(AuthBase):  # pylint:disable=too-few-public-methods
@@ -42,17 +49,14 @@ def set_up_module():
         )
 
 
-def get_auth():
-    """Return a **random** authentication method.
+def get_auth(cfg=None):
+    """Return a random authentication object.
 
     By default, :class:`pulp_smash.api.Client` uses the same authentication
     method (HTTP BASIC) for every request. While this is a sane default, it
-    doesn't let tests exercise other authentication methods, such as JWT. This
-    function returns a random authentication token. This ensures that test
-    authors don't need to duplicate test cases to cover each different
-    authentiation method.
-
-    As an example of basic usage, let`s say that you`d like to create a user.
+    doesn't let tests exercise other authentication procedures. This function
+    returns a random authentication object. To demonstrate how this object can
+    be used, here's an example showing how to create a user:
 
     >>> from pulp_smash.api import Client
     >>> from pulp_smash.config import get_config
@@ -67,9 +71,20 @@ def get_auth():
     >>>     'is_superuser': True
     >>> })
 
-    :returns: A random authentication method.
+    The returned object can also be used directly with `Requests`_. For more
+    information, see the For more information, see the `Requests
+    Authentication`_ documentation.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp app.
+    :returns: A random authentication object.
+
+    .. _Requests Authentication:
+        http://docs.python-requests.org/en/master/user/authentication/
+    .. _Requests: http://docs.python-requests.org/en/master/
     """
-    return random.choice((_get_basic_auth, _get_jwt_auth))(config.get_config())
+    if not cfg:
+        cfg = config.get_config()
+    return random.choice((_get_basic_auth, _get_jwt_auth))(cfg)
 
 
 def _get_basic_auth(cfg):
@@ -78,9 +93,18 @@ def _get_basic_auth(cfg):
 
 
 def _get_jwt_auth(cfg):
-    """Return an object for JWT authentication."""
-    token = api.Client(cfg, api.json_handler).post(JWT_PATH, {
-        'username': cfg.pulp_auth[0],
-        'password': cfg.pulp_auth[1],
-    })
-    return JWTAuth(token['token'], 'JWT')
+    """Return an object for JWT authentication.
+
+    This function makes use of a cache. If possible, this cache will return a
+    copy of an already-generated JWT authentication object. This can be
+    problematic if, say, Pulp is reset and old authentication tokens are
+    invalidated. To flush the cache, set the cache to ``None``.
+    """
+    global _JWT_AUTH  # pylint:disable=global-statement
+    if not _JWT_AUTH:
+        token = api.Client(cfg, api.json_handler).post(JWT_PATH, {
+            'username': cfg.pulp_auth[0],
+            'password': cfg.pulp_auth[1],
+        })
+        _JWT_AUTH = JWTAuth(token['token'], 'JWT')
+    return deepcopy(_JWT_AUTH)
