@@ -106,5 +106,5 @@ def _get_jwt_auth(cfg):
             'username': cfg.pulp_auth[0],
             'password': cfg.pulp_auth[1],
         })
-        _JWT_AUTH = JWTAuth(token['token'], 'JWT')
+        _JWT_AUTH = JWTAuth(token['token'])
     return deepcopy(_JWT_AUTH)

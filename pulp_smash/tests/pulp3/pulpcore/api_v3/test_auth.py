@@ -54,7 +54,7 @@ class AuthTestCase(unittest.TestCase):
             'username': self.cfg.pulp_auth[0],
             'password': self.cfg.pulp_auth[1],
         })
-        client.get(BASE_PATH, auth=JWTAuth(token['token'], 'JWT'))
+        client.get(BASE_PATH, auth=JWTAuth(token['token']))
 
     def test_jwt_failure(self):
         """Perform JWT authentication with invalid credentials.
