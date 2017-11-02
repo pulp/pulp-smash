@@ -386,35 +386,23 @@ class VendorInfoTestCase(unittest.TestCase):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2781')
 
     def test_upload(self):
-        """Test whether vendor info is available in case of upload.
+        """Test whether Pulp recognizes an uploaded RPM's vendor information.
 
-        Do the following:
-
-        1. Create a repository then upload content with **vendor information**
-           to this repository.
-        2. Assert that vendor information is present and according to the data
-           that was uploaded.
+        Create a repository, upload an RPM with a non-null vendor, and perform
+        several checks. See :meth:`do_test`.
         """
         client = api.Client(self.cfg, api.json_handler)
-        body = gen_repo()
-        repo = client.post(REPOSITORY_PATH, body)
+        repo = client.post(REPOSITORY_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
         rpm = utils.http_get(RPM_WITH_VENDOR_URL)
         utils.upload_import_unit(self.cfg, rpm, {'unit_type_id': 'rpm'}, repo)
-        units = utils.search_units(self.cfg, repo)
-        self.assertIn(
-            RPM_WITH_VENDOR_DATA['metadata']['vendor'],
-            units[0]['metadata']['repodata']['primary'],
-        )
+        self.do_test(repo)
 
     def test_sync(self):
-        """Test whether vendor info is available in case of sync.
+        """Test whether Pulp recognizes a synced RPM's vendor information.
 
-        Do the following:
-
-        1. Create a repository then sync content with **vendor information**
-           to this repository.
-        2. Assert that vendor information is present and according to feed URL.
+        Create a repository, sync in an RPM with a non-null vendor, and perform
+        several checks. See :meth:`do_test`.
         """
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
@@ -422,8 +410,62 @@ class VendorInfoTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         utils.sync_repo(self.cfg, repo)
-        units = utils.search_units(self.cfg, repo, {'type_ids': 'rpm'})
-        self.assertIn(
+        self.do_test(repo)
+
+    def do_test(self, repo):
+        """Verify that the given ``repo`` has an RPM with vendor data.
+
+        Perform the following checks:
+
+        * Search ``repo`` for RPMs and filter with a valid unit license. Assert
+          that one search result is returned, and that it has vendor metadata.
+        * Search ``repo`` for RPMs and filter with a valid unit vendor. Assert
+          that one search result is returned, and that it has vendor metadata.
+        * Search ``repo`` for RPMs and filter with an invalid unit license.
+          Assert that no search results are returned.
+        * Search ``repo`` for RPMs and filter with an invalid unit vendor.
+          Assert that no search results are returned.
+
+        The license-based searches serve as a sanity check. They show that the
+        search syntax is correct.
+        """
+        with self.subTest(comment='filter with a valid unit license'):
+            units = utils.search_units(self.cfg, repo, {
+                'filters': {'unit': {
+                    'license': RPM_WITH_VENDOR_DATA['metadata']['license']
+                }},
+                'type_ids': ['rpm'],
+            })
+            self._verify_search_results(units)
+
+        with self.subTest(comment='filter with a valid unit vendor'):
+            units = utils.search_units(self.cfg, repo, {
+                'filters': {'unit': {
+                    'vendor': RPM_WITH_VENDOR_DATA['metadata']['vendor']
+                }},
+                'type_ids': ['rpm'],
+            })
+            self._verify_search_results(units)
+
+        with self.subTest(comment='filter with an invalid unit license'):
+            units = utils.search_units(self.cfg, repo, {
+                'filters': {'unit': {'license': utils.uuid4()}},
+                'type_ids': ['rpm'],
+            })
+            self.assertEqual(len(units), 0, units)
+
+        with self.subTest(comment='filter with an invalid unit vendor'):
+            units = utils.search_units(self.cfg, repo, {
+                'filters': {'unit': {'vendor': utils.uuid4()}},
+                'type_ids': ['rpm'],
+            })
+            self.assertEqual(len(units), 0, units)
+
+    def _verify_search_results(self, units):
+        """Assert that ``units`` contains one entry with a correct vendor."""
+        self.assertEqual(len(units), 1, units)
+        self.assertIn('vendor', units[0]['metadata'])
+        self.assertEqual(
+            units[0]['metadata']['vendor'],
             RPM_WITH_VENDOR_DATA['metadata']['vendor'],
-            units[0]['metadata']['repodata']['primary']
         )
