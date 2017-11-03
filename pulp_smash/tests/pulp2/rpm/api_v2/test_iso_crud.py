@@ -12,8 +12,8 @@ from pulp_smash import api, exceptions, selectors, utils
 from pulp_smash.constants import (
     FILE_FEED_URL,
     FILE_MIXED_FEED_URL,
-    REPOSITORY_PATH
 )
+from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 

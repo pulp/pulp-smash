@@ -8,10 +8,9 @@ from urllib.parse import urljoin
 from packaging.version import Version
 
 from pulp_smash import api, config, utils
-from pulp_smash.constants import (
+from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
+from pulp_smash.tests.pulp2.constants import (
     CONTENT_UPLOAD_PATH,
-    DOCKER_V1_FEED_URL,
-    DOCKER_V2_FEED_URL,
     REPOSITORY_PATH,
 )
 from pulp_smash.exceptions import TaskReportError

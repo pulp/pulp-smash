@@ -15,13 +15,15 @@ from packaging.version import Version
 
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
+    RPM,
+    RPM_SIGNED_FEED_URL,
+    RPM_SIGNED_URL,
+)
+from pulp_smash.tests.pulp2.constants import (
     REPOSITORY_EXPORT_DISTRIBUTOR,
     REPOSITORY_GROUP_EXPORT_DISTRIBUTOR,
     REPOSITORY_GROUP_PATH,
     REPOSITORY_PATH,
-    RPM,
-    RPM_SIGNED_FEED_URL,
-    RPM_SIGNED_URL,
 )
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     DisableSELinuxMixin,

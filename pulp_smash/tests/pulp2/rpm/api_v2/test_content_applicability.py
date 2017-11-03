@@ -12,13 +12,15 @@ from jsonschema import validate
 
 from pulp_smash import api, config, utils
 from pulp_smash.constants import (
+    RPM_UNSIGNED_FEED_URL,
+    RPM_DATA,
+    RPM2_DATA,
+)
+from pulp_smash.tests.pulp2.constants import (
     CONSUMERS_ACTIONS_CONTENT_REGENERATE_APPLICABILITY_PATH,
     CONSUMERS_CONTENT_APPLICABILITY_PATH,
     CONSUMERS_PATH,
     REPOSITORY_PATH,
-    RPM_UNSIGNED_FEED_URL,
-    RPM_DATA,
-    RPM2_DATA,
 )
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import

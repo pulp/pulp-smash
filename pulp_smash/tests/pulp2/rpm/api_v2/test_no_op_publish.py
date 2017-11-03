@@ -31,10 +31,10 @@ from urllib.parse import urljoin
 from packaging.version import Version
 
 from pulp_smash import api, config, exceptions, utils
-from pulp_smash.constants import (
+from pulp_smash.constants import RPM_SIGNED_FEED_URL
+from pulp_smash.tests.pulp2.constants import (
     ORPHANS_PATH,
     REPOSITORY_PATH,
-    RPM_SIGNED_FEED_URL,
 )
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277, check_issue_3104

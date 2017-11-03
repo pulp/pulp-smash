@@ -86,7 +86,7 @@ class BaseAPITestCase(unittest.TestCase):
 
         :meth:`pulp_smash.api.Client.delete` should be called once for each
         resource listed in ``resources``, and once for
-        :data:`pulp_smash.constants.ORPHANS_PATH`.
+        :data:`pulp_smash.tests.pulp2.constants.ORPHANS_PATH`.
         """
         with mock.patch.object(api, 'Client') as client:
             self.child.tearDownClass()

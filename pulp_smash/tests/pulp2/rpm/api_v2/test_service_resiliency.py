@@ -12,10 +12,12 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
-    PULP_SERVICES,
-    REPOSITORY_PATH,
     RPM_MIRRORLIST_LARGE,
     RPM_UNSIGNED_FEED_URL,
+)
+from pulp_smash.tests.pulp2.constants import (
+    PULP_SERVICES,
+    REPOSITORY_PATH,
     TASKS_PATH,
 )
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo

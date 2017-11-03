@@ -83,7 +83,11 @@
 import unittest
 
 from pulp_smash import api, config, selectors
-from pulp_smash.constants import ERROR_KEYS, LOGIN_KEYS, LOGIN_PATH
+from pulp_smash.tests.pulp2.constants import (
+    ERROR_KEYS,
+    LOGIN_KEYS,
+    LOGIN_PATH,
+)
 from pulp_smash.tests.pulp2.platform.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 

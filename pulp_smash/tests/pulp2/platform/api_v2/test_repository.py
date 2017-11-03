@@ -19,7 +19,7 @@ from urllib.parse import urljoin, urlparse
 from packaging.version import Version
 
 from pulp_smash import api, utils
-from pulp_smash.constants import REPOSITORY_PATH, ERROR_KEYS
+from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH, ERROR_KEYS
 from pulp_smash.selectors import bug_is_untestable, require
 from pulp_smash.tests.pulp2.platform.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 

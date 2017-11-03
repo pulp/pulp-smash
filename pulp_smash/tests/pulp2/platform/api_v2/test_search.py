@@ -30,7 +30,7 @@ import random
 import unittest
 
 from pulp_smash import api, config, selectors, utils
-from pulp_smash.constants import USER_PATH
+from pulp_smash.tests.pulp2.constants import USER_PATH
 from pulp_smash.tests.pulp2.platform.utils import set_up_module
 
 

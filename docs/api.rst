@@ -20,6 +20,7 @@ developers, not a gospel.
     api/pulp_smash.selectors
     api/pulp_smash.tests
     api/pulp_smash.tests.pulp2
+    api/pulp_smash.tests.pulp2.constants
     api/pulp_smash.tests.pulp2.docker
     api/pulp_smash.tests.pulp2.docker.api_v2
     api/pulp_smash.tests.pulp2.docker.api_v2.test_copy

@@ -14,7 +14,7 @@ The assumptions explored in this module have the following dependencies::
     https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/user/index.html
 """
 from pulp_smash import api, utils
-from pulp_smash.constants import LOGIN_PATH, USER_PATH
+from pulp_smash.tests.pulp2.constants import LOGIN_PATH, USER_PATH
 from pulp_smash.tests.pulp2.platform.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 

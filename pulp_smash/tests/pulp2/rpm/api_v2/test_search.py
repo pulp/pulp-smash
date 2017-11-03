@@ -19,12 +19,14 @@ from urllib.parse import urljoin
 
 from pulp_smash import api, utils
 from pulp_smash.constants import (
-    CONTENT_UNITS_PATH,
-    REPOSITORY_PATH,
     RPM,
     RPM_SIGNED_FEED_URL,
     SRPM,
     SRPM_SIGNED_FEED_URL,
+)
+from pulp_smash.tests.pulp2.constants import (
+    CONTENT_UNITS_PATH,
+    REPOSITORY_PATH,
 )
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import check_issue_2620

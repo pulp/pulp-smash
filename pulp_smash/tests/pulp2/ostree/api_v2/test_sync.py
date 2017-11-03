@@ -10,7 +10,8 @@ import unittest
 from urllib.parse import urljoin
 
 from pulp_smash import api, selectors, utils
-from pulp_smash.constants import OSTREE_FEED, OSTREE_BRANCHES, REPOSITORY_PATH
+from pulp_smash.constants import OSTREE_FEED, OSTREE_BRANCHES
+from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.ostree.utils import gen_repo
 from pulp_smash.tests.pulp2.ostree.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 

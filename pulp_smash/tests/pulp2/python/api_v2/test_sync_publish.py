@@ -8,6 +8,10 @@ from urllib.parse import urljoin, urlparse
 from packaging.version import Version
 
 from pulp_smash import api, config, constants, selectors, utils
+from pulp_smash.tests.pulp2.constants import (
+    REPOSITORY_PATH,
+    ORPHANS_PATH,
+)
 from pulp_smash.tests.pulp2.python.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -43,7 +47,7 @@ class BaseTestCase(unittest.TestCase):
         client = api.Client(cls.cfg)
         for repo in cls.repos:
             client.delete(repo['_href'])
-        client.delete(constants.ORPHANS_PATH)
+        client.delete(ORPHANS_PATH)
 
     def test_01_first_repo(self):
         """Create, populate and publish a Python repository.
@@ -74,7 +78,7 @@ class BaseTestCase(unittest.TestCase):
             'feed': get_repo_path(self.cfg, self.repos[0]),
             'package_names': 'shelf-reader',
         }
-        repo = client.post(constants.REPOSITORY_PATH, body)
+        repo = client.post(REPOSITORY_PATH, body)
         self.repos.append(repo)
         call_report = utils.sync_repo(self.cfg, repo)
         with self.subTest(comment='verify the sync succeeded'):
@@ -130,7 +134,7 @@ class SyncTestCase(BaseTestCase):
             'package_names': 'shelf-reader',
         }
         body['distributors'] = [gen_distributor()]
-        repo = client.post(constants.REPOSITORY_PATH, body)
+        repo = client.post(REPOSITORY_PATH, body)
         self.repos.append(repo)
         call_report = utils.sync_repo(self.cfg, repo)
         with self.subTest(comment='verify the sync succeeded'):
@@ -159,7 +163,7 @@ class UploadTestCase(BaseTestCase):
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
         body['distributors'] = [gen_distributor()]
-        repo = client.post(constants.REPOSITORY_PATH, body)
+        repo = client.post(REPOSITORY_PATH, body)
         self.repos.append(repo)
 
         # A for loop is easier, but it produces hard-to-debug test failures.

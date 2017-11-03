@@ -3,7 +3,8 @@
 import unittest
 
 from pulp_smash import api, config, utils
-from pulp_smash.constants import OSTREE_BRANCHES, OSTREE_FEED, REPOSITORY_PATH
+from pulp_smash.constants import OSTREE_BRANCHES, OSTREE_FEED
+from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.ostree.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.ostree.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 

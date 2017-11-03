@@ -17,10 +17,10 @@ from urllib.parse import urljoin
 from packaging.version import Version
 
 from pulp_smash import api, config, selectors, utils
-from pulp_smash.constants import (
+from pulp_smash.constants import RPM_SIGNED_FEED_URL
+from pulp_smash.tests.pulp2.constants import (
     ORPHANS_PATH,
     REPOSITORY_PATH,
-    RPM_SIGNED_FEED_URL,
 )
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -164,11 +164,11 @@ class OrphansTestCase(unittest.TestCase):
         """Ensure that a specific orphan is well and truly deleted.
 
         :param orphans_pre: The response to GET
-            :data:`pulp_smash.constants.ORPHANS_PATH` before the orphan was
-            deleted.
+            :data:`pulp_smash.tests.pulp2.constants.ORPHANS_PATH` before the
+            orphan was deleted.
         :param orphans_post: The response to GET
-            :data:`pulp_smash.constants.ORPHANS_PATH` after the orphan was
-            deleted.
+            :data:`pulp_smash.tests.pulp2.constants.ORPHANS_PATH` after the
+            orphan was deleted.
         :param orphan: A dict describing the orphan that was deleted.
         :returns: Nothing.
         """

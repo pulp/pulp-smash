@@ -54,12 +54,12 @@ from pulp_smash.constants import (
     DRPM_SIGNED_URL,
     DRPM_UNSIGNED_URL,
     PULP_FIXTURES_KEY_ID,
-    REPOSITORY_PATH,
     RPM_SIGNED_URL,
     RPM_UNSIGNED_URL,
     SRPM_SIGNED_URL,
     SRPM_UNSIGNED_URL,
 )
+from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module
 

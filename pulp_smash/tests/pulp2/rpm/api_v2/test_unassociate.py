@@ -15,14 +15,13 @@ from packaging.version import Version
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
     DRPM_UNSIGNED_FEED_URL,
-    ORPHANS_PATH,
-    REPOSITORY_PATH,
     RPM,
     RPM_UNSIGNED_FEED_COUNT,
     RPM_UNSIGNED_FEED_URL,
     RPM_UNSIGNED_URL,
     SRPM_UNSIGNED_FEED_URL,
 )
+from pulp_smash.tests.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import check_issue_2620
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module
