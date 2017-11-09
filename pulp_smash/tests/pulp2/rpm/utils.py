@@ -144,23 +144,3 @@ def gen_yum_config_file(cfg, repositoryid, **kwargs):
             .format(section.getvalue(), '' if is_root(cfg) else 'sudo ', path)
         )
     return path
-
-
-def get_rpm_names_versions(cfg, repo):
-    """Get a dict of a repository's RPMs and their versions.
-
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp app.
-    :param repo: A dict of information about a repository.
-    :returns: The name and versions of each package in the repository, with the
-        versions sorted in ascending order. For example: ``{'walrus': ['0.71',
-        '5.21']}``.
-    """
-    rpms = utils.search_units(cfg, repo, {'type_ids': ['rpm']})
-    names_versions = {}
-    for rpm in rpms:
-        rpm_name = rpm['metadata']['name']
-        names_versions.setdefault(rpm_name, [])
-        names_versions[rpm_name].append(rpm['metadata']['version'])
-    for versions in names_versions.values():
-        versions.sort()
-    return names_versions
