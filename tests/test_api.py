@@ -94,6 +94,14 @@ class JsonHandlerTestCase(unittest.TestCase):
             api.json_handler(**kwargs)
         self.assertEqual(handle_202.call_count, 1)
 
+    def test_204_check_run(self):
+        """Assert HTTP 204 responses are treated specially."""
+        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        kwargs['response'].status_code = 204
+        with mock.patch.object(api, '_handle_202'):
+            api.json_handler(**kwargs)
+        self.assertEqual(kwargs['response'].json.call_count, 0)
+
 
 class ClientTestCase(unittest.TestCase):
     """Tests for :class:`pulp_smash.api.Client`."""

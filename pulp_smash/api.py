@@ -12,12 +12,13 @@ from time import sleep
 from urllib.parse import urljoin, urlparse
 
 import requests
+from packaging.version import Version
 
 from pulp_smash import exceptions
 
-
 _SENTINEL = object()
 _TASK_END_STATES = ('canceled', 'error', 'finished', 'skipped', 'timed out')
+_P3_TASK_END_STATES = ('canceled', 'completed', 'failed', 'skipped')
 
 
 def _check_http_202_content_type(response):
@@ -60,14 +61,14 @@ def _check_call_report(call_report):
         )
 
 
-def _check_tasks(tasks):
+def _check_tasks(tasks, task_errors):
     """Inspect each task's ``error``, ``exception`` and ``traceback`` fields.
 
     If any of these fields is non-null for any tasks, raise a
     ``TaskReportError``.
     """
     for task in tasks:
-        for field in ('error', 'exception', 'traceback'):
+        for field in task_errors:
             if task[field] is not None:
                 msg = 'Task report {} contains a {}: {}\nFull task report: {}'
                 msg = msg.format(task['_href'], field, task[field], task)
@@ -80,8 +81,11 @@ def _handle_202(server_config, response):
         _check_http_202_content_type(response)
         call_report = response.json()
         tasks = tuple(poll_spawned_tasks(server_config, call_report))
-        _check_call_report(call_report)
-        _check_tasks(tasks)
+        if server_config.pulp_version < Version('3'):
+            _check_call_report(call_report)
+            _check_tasks(tasks, ('error', 'exception', 'traceback'))
+        else:
+            _check_tasks(tasks, ('error',))
 
 
 def echo_handler(server_config, response):  # pylint:disable=unused-argument
@@ -128,6 +132,8 @@ def json_handler(server_config, response):
     response body as JSON and return the result.
     """
     response.raise_for_status()
+    if response.status_code == 204:
+        return response
     _handle_202(server_config, response)
     return response.json()
 
@@ -362,7 +368,10 @@ def poll_spawned_tasks(server_config, call_report, pulp_system=None):
     """
     if not pulp_system:
         pulp_system = server_config.get_systems('api')[0]
-    hrefs = (task['_href'] for task in call_report['spawned_tasks'])
+    if server_config.pulp_version < Version('3'):
+        hrefs = (task['_href'] for task in call_report['spawned_tasks'])
+    else:
+        hrefs = (result['_href'] for result in call_report)
     for href in hrefs:
         for final_task_state in poll_task(server_config, href, pulp_system):
             yield final_task_state
@@ -397,7 +406,11 @@ def poll_task(server_config, href, pulp_system=None):
         )
         response.raise_for_status()
         attrs = response.json()
-        if attrs['state'] in _TASK_END_STATES:
+        if server_config.pulp_version < Version('3'):
+            task_end_states = _TASK_END_STATES
+        else:
+            task_end_states = _P3_TASK_END_STATES
+        if attrs['state'] in task_end_states:
             # This task has completed. Yield its final state, then iterate
             # through each of its children and yield their final states.
             yield attrs
