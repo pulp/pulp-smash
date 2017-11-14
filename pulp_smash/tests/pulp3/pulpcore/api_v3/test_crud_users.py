@@ -9,6 +9,7 @@ from requests.exceptions import HTTPError
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.tests.pulp3.constants import USER_PATH
 from pulp_smash.tests.pulp3.utils import get_auth
+from pulp_smash.tests.pulp3.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
 class UsersCRUDTestCase(unittest.TestCase):
@@ -18,8 +19,6 @@ class UsersCRUDTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Create class-wide variables."""
         cls.cfg = config.get_config()
-        cls.password = utils.uuid4()
-        cls.username = utils.uuid4()
         cls.user = {}
 
     def setUp(self):
@@ -27,65 +26,70 @@ class UsersCRUDTestCase(unittest.TestCase):
         self.client = api.Client(self.cfg, api.code_handler)
         self.client.request_kwargs['auth'] = get_auth()
 
-    def test_01_create_user(self):
-        """Create user."""
-        type(self).user = self.client.post(USER_PATH, {
-            'username': self.username,
-            'password': self.password,
-            'is_superuser': choice([True, False])
-        }).json()
+    def test_01_create_read_user(self):
+        """Create a user."""
+        attrs = _gen_verbose_user_attrs()
+        type(self).user = self.client.post(USER_PATH, attrs).json()
+        del attrs['password']
+        for key, val in attrs.items():
+            with self.subTest(key=key):
+                self.assertEqual(self.user[key], val)
 
     @selectors.skip_if(bool, 'user', False)
     def test_02_read_user(self):
-        """Read a user by its href.
-
-        Assert that response contains the correct user.
-        """
+        """Read a user."""
         user = self.client.get(self.user['_href']).json()
-        self.assertEqual(self.user['username'], user['username'])
+        for key, val in user.items():
+            with self.subTest(key=key):
+                self.assertEqual(val, self.user[key])
 
     @selectors.skip_if(bool, 'user', False)
     def test_03_fully_update_user(self):
         """Update a user info using HTTP PUT."""
+        attrs = _gen_verbose_user_attrs()
         if selectors.bug_is_untestable(3125, self.cfg.pulp_version):
-            self.skipTest('https://pulp.plan.io/issues/3125')
-        user = self.client.get(self.user['_href']).json()
-        data = utils.uuid4()
-        user['username'] = data
-        user['password'] = data
-        self.client.put(user['_href'], user)
+            attrs['username'] = self.user['username']
+        self.client.put(self.user['_href'], attrs)
         sleep(5)
-
-        # verify update
-        user = self.client.get(user['_href']).json()
-        self.assertEqual(data, user['username'])
+        del attrs['password']
+        user = self.client.get(self.user['_href']).json()
+        for key, val in attrs.items():
+            with self.subTest(key=key):
+                self.assertEqual(user[key], val)
 
     @selectors.skip_if(bool, 'user', False)
     def test_03_partially_update_user(self):
         """Update a user info using HTTP PATCH."""
-        user = self.client.get(self.user['_href']).json()
-        is_superuser = user['is_superuser']
-        user['is_superuser'] = self.invert_super_user(user['is_superuser'])
-        self.client.patch(user['_href'], user)
+        attrs = _gen_verbose_user_attrs()
+        del attrs['password']
+        if selectors.bug_is_untestable(3125, self.cfg.pulp_version):
+            del attrs['username']
+        self.client.patch(self.user['_href'], attrs)
         sleep(5)
-
-        # verify update
-        user = self.client.get(user['_href']).json()
-        self.assertNotEqual(is_superuser, user['is_superuser'])
+        user = self.client.get(self.user['_href']).json()
+        for key, val in attrs.items():
+            with self.subTest(key=key):
+                self.assertEqual(user[key], val)
 
     @selectors.skip_if(bool, 'user', False)
     def test_04_delete_user(self):
         """Delete an user."""
         self.client.delete(self.user['_href'])
         sleep(5)
-
-        # verify delete
         with self.assertRaises(HTTPError):
             self.client.get(self.user['_href'])
 
-    @staticmethod
-    def invert_super_user(is_superuser):
-        """Return an inverted status for ``is_superuser``."""
-        if is_superuser is True:
-            return False
-        return True
+
+def _gen_verbose_user_attrs():
+    """Generate a dict with lots of user attributes.
+
+    For most tests, it's desirable to create users with as few attributes as
+    possible, so that the tests can specifically target and attempt to break
+    specific features. This module specifically targets users, so it makes
+    sense to provide as many attributes as possible.
+    """
+    return {
+        'username': utils.uuid4(),
+        'password': utils.uuid4(),
+        'is_superuser': choice((True, False)),
+    }
