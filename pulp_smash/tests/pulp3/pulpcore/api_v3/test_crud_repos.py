@@ -43,7 +43,7 @@ class CRUDRepoTestCase(unittest.TestCase):
     def test_02_read_repos(self):
         """Search for the repository by its name.
 
-        Assert that just one search result is returned, and that that result
+        Assert that just one search result is returned, and that the result
         has a correct name.
         """
         page = self.client.get(REPO_PATH, params={
