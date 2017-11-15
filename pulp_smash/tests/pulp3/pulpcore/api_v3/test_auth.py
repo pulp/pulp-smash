@@ -5,7 +5,6 @@ For more information, see the documentation on `Authentication
 <http://docs.pulpproject.org/en/3.0/nightly/integration_guide/rest_api/authentication.html>`_.
 """
 import unittest
-from random import choice
 from time import sleep
 from urllib.parse import urljoin
 
@@ -74,83 +73,45 @@ class AuthTestCase(unittest.TestCase):
 class JWTResetTestCase(unittest.TestCase):
     """Perform series of tests related to JWT reset."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.client = api.Client(cls.cfg, api.json_handler)
+    def setUp(self):
+        """Create a user and several JWT tokens for that user.
 
-    def test_reset_jwt(self):
-        """Perform JWT reset.
-
-        Do the following:
-
-        1. Generate 2 tokens using ``JWT`` as authentication method.
-        2. Use ``token_1`` to reset the ``JWT`` secret key which is used to
-           sign both **tokens**.
-        3. Attempt to use the ``token_2`` to access any endpoint that requires
-           credential.
-        4. Assert that a response indicating failure is returned.
+        Also, verify that the tokens are valid.
         """
-        token_1 = self.client.post(JWT_PATH, {
-            'username': self.cfg.pulp_auth[0],
-            'password': self.cfg.pulp_auth[1]
-        })
+        # Create a user.
+        self.cfg = config.get_config()
+        auth = {'username': utils.uuid4(), 'password': utils.uuid4()}
+        client = api.Client(self.cfg)
+        self.addCleanup(sleep, 5)  # drop when client can wait on async tasks
+        self.user = client.post(USER_PATH, auth).json()
+        self.addCleanup(client.delete, self.user['_href'])
 
-        token_2 = self.client.post(JWT_PATH, {
-            'username': self.cfg.pulp_auth[0],
-            'password': self.cfg.pulp_auth[1]
-        })
+        # Create tokens for that user, and verify they're valid.
+        self.tokens = tuple((
+            client.post(JWT_PATH, auth).json() for _ in range(2)
+        ))
+        for token in self.tokens:
+            client.get(BASE_PATH, auth=JWTAuth(token['token']))
 
-        self.client.post(urljoin(USER_PATH,
-                                 urljoin((self.cfg.pulp_auth[0] + '/'),
-                                         'jwt_reset/')),
-                         auth=JWTAuth(token_1['token']))
+    def test_reset_tokens(self):
+        """Repeatedly reset the user's tokens, and verify they're invalid.
 
-        with self.assertRaises(HTTPError):
-            self.client.get(BASE_PATH, auth=JWTAuth(token_2['token']))
-
-    def test_reset_jwt_basic_auth(self):
-        """Using ``BasichAuth`` to reset ``JWT`` secret key.
-
-        Assert that no failure is returned.
+        Repeatedly resetting tokens ensures that token resets work even when a
+        user has no tokens.
         """
-        self.client.post(urljoin(USER_PATH,
-                                 urljoin(
-                                     (self.cfg.pulp_auth[0] + '/'),
-                                     'jwt_reset/'
-                                 )),
-                         auth=HTTPBasicAuth(self.cfg.pulp_auth[0],
-                                            self.cfg.pulp_auth[1]))
+        path = urljoin(USER_PATH, self.user['username'] + '/')
+        path = urljoin(path, 'jwt_reset/')
+        client = api.Client(self.cfg)
+        for _ in range(10):
+            client.post(path)
+        for token in self.tokens:
+            with self.assertRaises(HTTPError):
+                client.get(BASE_PATH, auth=JWTAuth(token['token']))
 
-        self.client.get(BASE_PATH)
-
-    def test_reset_user_tokens(self):
-        """Test whether when deleting a user all user`s JWT are invalidated.
-
-        Do the following:
-
-        1. Create a user, and obtain a ``JWT`` token.
-        2. Delete the previous created user.
-        3. Verify whether the user`s token still valid.
-        """
-        attrs = {
-            'username': utils.uuid4(),
-            'password': utils.uuid4(),
-            'is_superuser': choice((True, False)),
-        }
-
-        self.client.response_handler = api.echo_handler
-        user = self.client.post(USER_PATH, attrs).json()
-        token = self.client.post(JWT_PATH, {
-            'username': attrs['username'],
-            'password': attrs['password']
-        }).json()
-
-        self.client.get(BASE_PATH, auth=JWTAuth(token['token']))
-        self.client.delete(user['_href'])
-        sleep(5)
-
-        with self.assertRaises(HTTPError):
-            response = self.client.get(BASE_PATH, auth=JWTAuth(token['token']))
-            response.raise_for_status()
+    def test_delete_user(self):
+        """Delete the user, and verify their tokens are invalid."""
+        self.doCleanups()
+        client = api.Client(self.cfg)
+        for token in self.tokens:
+            with self.assertRaises(HTTPError):
+                client.get(BASE_PATH, auth=JWTAuth(token['token']))
