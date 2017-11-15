@@ -26,20 +26,34 @@ class UsersCRUDTestCase(unittest.TestCase):
         self.client = api.Client(self.cfg, api.code_handler)
         self.client.request_kwargs['auth'] = get_auth()
 
-    def test_01_create_read_user(self):
+    def test_01_create_user(self):
         """Create a user."""
         attrs = _gen_verbose_user_attrs()
         type(self).user = self.client.post(USER_PATH, attrs).json()
-        del attrs['password']
         for key, val in attrs.items():
             with self.subTest(key=key):
-                self.assertEqual(self.user[key], val)
+                if key == 'password':
+                    self.assertNotIn(key, self.user)
+                else:
+                    self.assertEqual(self.user[key], val)
 
     @selectors.skip_if(bool, 'user', False)
     def test_02_read_user(self):
         """Read a user."""
         user = self.client.get(self.user['_href']).json()
         for key, val in user.items():
+            with self.subTest(key=key):
+                self.assertEqual(val, self.user[key])
+
+    @selectors.skip_if(bool, 'user', False)
+    def test_02_read_users(self):
+        """Read all users. Verify that the created user is in the results."""
+        users = [
+            user for user in self.client.get(USER_PATH).json()['results']
+            if user['_href'] == self.user['_href']
+        ]
+        self.assertEqual(len(users), 1, users)
+        for key, val in users[0].items():
             with self.subTest(key=key):
                 self.assertEqual(val, self.user[key])
 
@@ -51,17 +65,18 @@ class UsersCRUDTestCase(unittest.TestCase):
             attrs['username'] = self.user['username']
         self.client.put(self.user['_href'], attrs)
         sleep(5)
-        del attrs['password']
         user = self.client.get(self.user['_href']).json()
         for key, val in attrs.items():
             with self.subTest(key=key):
-                self.assertEqual(user[key], val)
+                if key == 'password':
+                    self.assertNotIn(key, user)
+                else:
+                    self.assertEqual(user[key], val)
 
     @selectors.skip_if(bool, 'user', False)
     def test_03_partially_update_user(self):
         """Update a user info using HTTP PATCH."""
         attrs = _gen_verbose_user_attrs()
-        del attrs['password']
         if selectors.bug_is_untestable(3125, self.cfg.pulp_version):
             del attrs['username']
         self.client.patch(self.user['_href'], attrs)
@@ -69,7 +84,10 @@ class UsersCRUDTestCase(unittest.TestCase):
         user = self.client.get(self.user['_href']).json()
         for key, val in attrs.items():
             with self.subTest(key=key):
-                self.assertEqual(user[key], val)
+                if key == 'password':
+                    self.assertNotIn(key, user)
+                else:
+                    self.assertEqual(user[key], val)
 
     @selectors.skip_if(bool, 'user', False)
     def test_04_delete_user(self):
