@@ -10,3 +10,5 @@ JWT_PATH = urljoin(BASE_PATH, 'jwt/')
 REPO_PATH = urljoin(BASE_PATH, 'repositories/')
 
 USER_PATH = urljoin(BASE_PATH, 'users/')
+
+TASKS_PATH = urljoin(BASE_PATH, 'tasks/')
