@@ -383,6 +383,12 @@ RPM_ERRATUM_URL = (
 RPM_ERRATUM_COUNT = 4
 """The number of errata listed in :data:`RPM_ERRATUM_URL`."""
 
+RPM_INVALID_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-invalid-rpm/')
+"""The URL to an invalid RPM repository."""
+
+RPM_INVALID_URL = urljoin(RPM_INVALID_FEED_URL, 'invalid.rpm')
+"""The URL to an invalid RPM package."""
+
 RPM_MIRRORLIST_LARGE = (
     'https://mirrors.fedoraproject.org/metalink?repo=epel-7&arch=x86_64'
 )

@@ -12,12 +12,13 @@ Content`_ and `Publication`_.
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, config, exceptions, selectors, utils
 from pulp_smash.constants import (
     DRPM,
     DRPM_UNSIGNED_URL,
     RPM,
     RPM_DATA,
+    RPM_INVALID_URL,
     RPM_UNSIGNED_URL,
     RPM_WITH_VENDOR_DATA,
     RPM_WITH_VENDOR_FEED_URL,
@@ -468,3 +469,46 @@ class VendorInfoTestCase(unittest.TestCase):
             units[0]['metadata']['vendor'],
             RPM_WITH_VENDOR_DATA['metadata']['vendor'],
         )
+
+
+class UploadInvalidRPMTestCase(unittest.TestCase):
+    """Test that upload fails and error is raised when upload invalid RPM."""
+
+    def test_all(self):
+        """Test whether one invalid RPM upload fails and produces error details.
+
+        This test targets the following issues.
+
+        * `Pulp Smash #544 <https://github.com/PulpQE/pulp-smash/issues/544>`_
+        * `Pulp #2543 <https://pulp.plan.io/issues/2543>`_
+        * `Pulp #3090 <https://pulp.plan.io/issues/3090>`_
+
+        Do the following:
+
+        1. Create a RPM repository.
+        2. Upload an invalid RPM to repository. Assert that upload fails, and
+           that the returned error contains a descriptive message.
+        3. Verify that the repository contains no RPMs.
+        """
+        cfg = config.get_config()
+        if selectors.bug_is_untestable(2543, cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/2543')
+        if selectors.bug_is_untestable(3090, cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/3090')
+        client = api.Client(cfg, api.json_handler)
+        repo = client.post(REPOSITORY_PATH, gen_repo())
+        self.addCleanup(client.delete, repo['_href'])
+
+        # Upload invalid RPM
+        rpm = utils.http_get(RPM_INVALID_URL)
+        with self.assertRaises(exceptions.TaskReportError) as context:
+            utils.upload_import_unit(cfg, rpm, {'unit_type_id': 'rpm'}, repo)
+        task = context.exception.task
+
+        # Assert that rturned error contains a descriptive message
+        self.assertIsNotNone(task['error']['description'])
+        self.assertIn('upload', task['error']['description'])
+
+        # Verify that the repository contains no RPMs
+        rpm = utils.search_units(cfg, repo, {'type_ids': ('rpm',)})
+        self.assertEqual(len(rpm), 0)
