@@ -14,7 +14,7 @@ from pulp_smash.tests.pulp2.rpm.utils import gen_yum_config_file
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 
 
-class ApplyErratumTestCsae(unittest.TestCase):
+class ApplyErratumTestCase(unittest.TestCase):
     """Test whether applying an erratum will install referenced RPMs."""
 
     def test_all(self):
