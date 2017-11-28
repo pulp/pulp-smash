@@ -125,6 +125,12 @@ FILE_MIXED_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'file-mixed/')
 FILE_URL = urljoin(FILE_FEED_URL, '1.iso')
 """The URL to an ISO file at :data:`FILE_FEED_URL`."""
 
+FILE2_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'file2/')
+"""The URL to a file repository."""
+
+FILE2_URL = urljoin(FILE2_FEED_URL, '1.iso')
+"""The URL to an ISO file at :data:`FILE2_FEED_URL`."""
+
 OSTREE_BRANCHES = ['rawhide', 'stable']
 """A branch in :data:`OSTREE_FEED`. See OSTree `Importer Configuration`_.
 

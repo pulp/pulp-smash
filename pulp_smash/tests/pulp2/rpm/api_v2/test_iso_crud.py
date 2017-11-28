@@ -2,16 +2,18 @@
 """Test CRUD for ISO RPM repositories."""
 import csv
 import json
+import unittest
 from unittest import SkipTest
 from urllib.parse import urljoin, urlparse
 
 import requests
 from packaging.version import Version
 
-from pulp_smash import api, exceptions, selectors, utils
+from pulp_smash import api, config, exceptions, selectors, utils
 from pulp_smash.constants import (
     FILE_FEED_URL,
     FILE_MIXED_FEED_URL,
+    FILE2_FEED_URL,
 )
 from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -362,3 +364,70 @@ class PulpManifestTestCase(utils.BaseAPITestCase):
                 self.assertEqual(info['error']['response_code'], 404)
                 self.assertEqual(info['error']['response_msg'], 'Not Found')
                 self.assertIn(info['name'], missing)
+
+
+class ISOUpdateTestCase(unittest.TestCase):
+    """Verify how ISO repos handles changes in content already in Pulp."""
+
+    def test_all(self):
+        """Verify how ISO repos handles changes in content already in Pulp.
+
+        The main goal of this test is to verify how ISO repository handles
+        updates in content already in Pulp.
+
+        For this test two different feed urls will be used.
+        These urls contain the same amount of units, the units have the same
+        type and name in both urls, but different content thereafter different
+        checksum values.
+        To recreate this dynamic scenario of change. After the repository is
+        synced for the first time the feed url is updated, and the repository
+        is synced again.
+
+        This test targets the following issues:
+
+        * `Pulp Smash #715 <https://github.com/PulpQE/pulp-smash/issues/715>`_
+        * `Pulp #2773 <https://pulp.plan.io/issues/2773>`_
+        * `Pulp #3047 <https://pulp.plan.io/issues/3047>`_
+        * `Pulp #3100 <https://pulp.plan.io/issues/3100>`_
+
+        Do the following:
+
+        1. Create and sync an ISO repository.
+        2. Update the repository's feed URL, and sync it. This simulates a
+           change in the contents of the source ISOs.
+        3. Assert that number of units remain the same, but the content has
+           changed.
+        """
+        cfg = config.get_config()
+        for issue_id in (2773, 3047, 3100):
+            if selectors.bug_is_untestable(issue_id, cfg.pulp_version):
+                self.skipTest('https://pulp.plan.io/issues/{}'.format(issue_id))   # noqa pylint:disable=line-too-long
+        client = api.Client(cfg, api.json_handler)
+        repo = client.post(REPOSITORY_PATH, _gen_iso_repo(FILE_FEED_URL))
+        self.addCleanup(client.delete, repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
+        utils.sync_repo(cfg, repo)
+        units_pre = utils.search_units(cfg, repo)
+        unit_checksums = {
+            unit['metadata']['name']: unit['metadata']['checksum']
+            for unit in units_pre
+        }
+        importer_config = {'importer_config': {'feed': FILE2_FEED_URL}}
+        client.put(repo['importers'][0]['_href'], importer_config)
+        utils.sync_repo(cfg, repo)
+        units_post = utils.search_units(cfg, repo)
+
+        # Assert that the number of units has not changed.
+        self.assertEqual(len(units_pre), len(units_post))
+
+        # Assert that all unit names pre still in the repo.
+        unit_post_names = [unit['metadata']['name'] for unit in units_post]
+        self.assertTrue(all(
+            name in unit_post_names
+            for name in unit_checksums.keys()
+        ))
+
+        # Assert that content of units has changed.
+        for unit in units_post:
+            if unit['metadata']['name'] in unit_checksums:
+                self.assertNotIn(unit['metadata']['checksum'], unit_checksums)
