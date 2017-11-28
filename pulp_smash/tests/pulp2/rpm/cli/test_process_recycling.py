@@ -14,20 +14,6 @@ def setUpModule():  # pylint:disable=invalid-name
     utils.pulp_admin_login(config.get_config())
 
 
-def restart_pulp(cfg):
-    """Restart all of Pulp's services.
-
-    Unlike :func:`pulp_smash.utils.reset_pulp`, do not reset the state of any
-    of Pulp's services.
-
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
-        deployment being targeted.
-    """
-    svc_mgr = cli.GlobalServiceManager(cfg)
-    svc_mgr.stop(PULP_SERVICES)
-    svc_mgr.start(PULP_SERVICES)
-
-
 def get_pulp_worker_procs(cfg):
     """Use ``ps aux`` to get information about each Pulp worker process.
 
@@ -35,9 +21,8 @@ def get_pulp_worker_procs(cfg):
         deployment being targeted.
     :return: An iterable of strings, one per line of matching output.
     """
-    cmd = ['ps', 'aux']
-    if not utils.is_root(cfg):
-        cmd.insert(0, 'sudo')
+    sudo = () if utils.is_root(cfg) else ('sudo',)
+    cmd = sudo + ('ps', 'aux')
     return tuple((
         proc for proc in cli.Client(cfg).run(cmd).stdout.splitlines()
         if 'celery worker' in proc and 'resource_manager' not in proc
@@ -72,50 +57,51 @@ class MaxTasksPerChildTestCase(unittest.TestCase):
         cfg = config.get_config()
         if selectors.bug_is_untestable(2172, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2172')
-        set_opt = [
+        svc_mgr = cli.GlobalServiceManager(cfg)
+        sudo = () if utils.is_root(cfg) else ('sudo',)
+        set_opt = sudo + (
             'sed', '-i', '-e',
             's/.*PULP_MAX_TASKS_PER_CHILD=[0-9]*$/PULP_MAX_TASKS_PER_CHILD=2/',
             '/etc/default/pulp_workers'
-        ]
-        reset_opt = [
+        )
+        reset_opt = sudo + (
             'sed', '-i', '-e',
             's/^PULP_MAX_TASKS_PER_CHILD=2$/# PULP_MAX_TASKS_PER_CHILD=2/',
             '/etc/default/pulp_workers'
-        ]
-        if not utils.is_root(cfg):
-            for cmd in (set_opt, reset_opt):
-                cmd.insert(0, 'sudo')
+        )
 
         # Step 1
-        for proc in get_pulp_worker_procs(cfg):
-            self.assertNotIn('--maxtasksperchild=2', proc)
+        procs = get_pulp_worker_procs(cfg)
+        for proc in procs:
+            self.assertNotIn('--maxtasksperchild=2', proc, procs)
 
         # Step 2
         client = cli.Client(cfg)
         client.run(set_opt)
+        self.addCleanup(svc_mgr.restart, PULP_SERVICES)
         self.addCleanup(client.run, reset_opt)
-        restart_pulp(cfg)
-        for proc in get_pulp_worker_procs(cfg):
-            self.assertIn('--maxtasksperchild=2', proc)
+        svc_mgr.restart(PULP_SERVICES)
+        procs = get_pulp_worker_procs(cfg)
+        for proc in procs:
+            self.assertIn('--maxtasksperchild=2', proc, procs)
 
         # Step 3
         repo_id = utils.uuid4()
-        proc = client.run(
-            'pulp-admin rpm repo create --repo-id {} --feed {}'
-            .format(repo_id, RPM_UNSIGNED_FEED_URL).split()
-        )
-        self.addCleanup(
-            client.run,
-            'pulp-admin rpm repo delete --repo-id {}'.format(repo_id).split()
-        )
+        proc = client.run((
+            'pulp-admin', 'rpm', 'repo', 'create', '--repo-id', repo_id,
+            '--feed', RPM_UNSIGNED_FEED_URL
+        ))
+        self.addCleanup(client.run, (
+            'pulp-admin', 'rpm', 'repo', 'delete', '--repo-id', repo_id
+        ))
         self.assertNotIn('Task Failed', proc.stdout)
-        proc = client.run(
-            'pulp-admin rpm repo sync run --repo-id {}'.format(repo_id).split()
-        )
+        proc = client.run((
+            'pulp-admin', 'rpm', 'repo', 'sync', 'run', '--repo-id', repo_id
+        ))
         self.assertNotIn('Task Failed', proc.stdout)
 
         # Step 4
-        client.run(reset_opt)
-        restart_pulp(cfg)
-        for proc in get_pulp_worker_procs(cfg):
-            self.assertNotIn('--maxtasksperchild=2', proc)
+        self.doCleanups()
+        procs = get_pulp_worker_procs(cfg)
+        for proc in procs:
+            self.assertNotIn('--maxtasksperchild=2', proc, procs)
