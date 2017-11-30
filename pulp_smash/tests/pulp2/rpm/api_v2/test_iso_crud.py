@@ -375,11 +375,10 @@ class ISOUpdateTestCase(unittest.TestCase):
         The main goal of this test is to verify how ISO repository handles
         updates in content already in Pulp.
 
-        For this test two different feed urls will be used.
-        These urls contain the same amount of units, the units have the same
-        type and name in both urls, but different content thereafter different
-        checksum values.
-        To recreate this dynamic scenario of change. After the repository is
+        For this test two different feed urls will be used. These urls contain
+        the same amount of units, the units have the same type and name in both
+        urls, but different content thereafter different checksum values. To
+        recreate this dynamic scenario of change. After the repository is
         synced for the first time the feed url is updated, and the repository
         is synced again.
 
@@ -401,33 +400,36 @@ class ISOUpdateTestCase(unittest.TestCase):
         cfg = config.get_config()
         for issue_id in (2773, 3047, 3100):
             if selectors.bug_is_untestable(issue_id, cfg.pulp_version):
-                self.skipTest('https://pulp.plan.io/issues/{}'.format(issue_id))   # noqa pylint:disable=line-too-long
+                self.skipTest('https://pulp.plan.io/issues/' + str(issue_id))
+
+        # Step 1
         client = api.Client(cfg, api.json_handler)
         repo = client.post(REPOSITORY_PATH, _gen_iso_repo(FILE_FEED_URL))
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
         utils.sync_repo(cfg, repo)
         units_pre = utils.search_units(cfg, repo)
-        unit_checksums = {
-            unit['metadata']['name']: unit['metadata']['checksum']
-            for unit in units_pre
-        }
-        importer_config = {'importer_config': {'feed': FILE2_FEED_URL}}
-        client.put(repo['importers'][0]['_href'], importer_config)
+
+        # Step 2
+        client.put(repo['importers'][0]['_href'], {
+            'importer_config': {'feed': FILE2_FEED_URL}
+        })
         utils.sync_repo(cfg, repo)
         units_post = utils.search_units(cfg, repo)
 
-        # Assert that the number of units has not changed.
+        # Step 3
         self.assertEqual(len(units_pre), len(units_post))
+        self.check_names(units_pre, units_post)
+        self.check_checksums(units_pre, units_post)
 
-        # Assert that all unit names pre still in the repo.
-        unit_post_names = [unit['metadata']['name'] for unit in units_post]
-        self.assertTrue(all(
-            name in unit_post_names
-            for name in unit_checksums.keys()
-        ))
+    def check_names(self, units_pre, units_post):
+        """Assert that the names in units_pre and units_post are equal."""
+        names_pre = {unit['metadata']['name'] for unit in units_pre}
+        names_post = {unit['metadata']['name'] for unit in units_post}
+        self.assertEqual(names_pre, names_post)
 
-        # Assert that content of units has changed.
-        for unit in units_post:
-            if unit['metadata']['name'] in unit_checksums:
-                self.assertNotIn(unit['metadata']['checksum'], unit_checksums)
+    def check_checksums(self, units_pre, units_post):
+        """Assert the checksums in units_pre and units_post are disjoint."""
+        checksums_pre = {unit['metadata']['checksum'] for unit in units_pre}
+        checksums_post = {unit['metadata']['checksum'] for unit in units_post}
+        self.assertEqual(checksums_pre - checksums_post, checksums_pre)
