@@ -376,18 +376,8 @@ repository which feed is :data:`pulp_smash.constants.RPM_SIGNED_FEED_URL`.
 RPM_ERRATUM_RPM_NAME = 'gorilla'
 """The name of the RPM named by :data:`pulp_smash.constants.RPM_ERRATUM_ID`."""
 
-RPM_ERRATUM_URL = (
-    'https://repos.fedorapeople.org'
-    '/repos/pulp/pulp/fixtures/rpm-erratum/erratum.json'
-)
-"""The URL to an JSON erratum file for an RPM repository.
-
-.. NOTE:: This erratum is also used by several of the RPM repositories
-    referenced in this module.
-"""
-
 RPM_ERRATUM_COUNT = 4
-"""The number of errata listed in :data:`RPM_ERRATUM_URL`."""
+"""The number of errata in :data:`RPM_UNSIGNED_FEED_URL`."""
 
 RPM_INVALID_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-invalid-rpm/')
 """The URL to an invalid RPM repository."""
