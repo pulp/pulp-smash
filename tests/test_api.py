@@ -65,7 +65,7 @@ class SafeHandlerTestCase(unittest.TestCase):
         self.assertEqual(kwargs['response'].raise_for_status.call_count, 1)
 
     def test_202_check_run(self):
-        """Assert HTTP 202 responses are not treated specially."""
+        """Assert HTTP 202 responses are treated specially."""
         kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
         with mock.patch.object(api, '_handle_202') as handle_202:
             api.safe_handler(**kwargs)
@@ -88,7 +88,7 @@ class JsonHandlerTestCase(unittest.TestCase):
         self.assertEqual(kwargs['response'].raise_for_status.call_count, 1)
 
     def test_202_check_run(self):
-        """Assert HTTP 202 responses are not treated specially."""
+        """Assert HTTP 202 responses are treated specially."""
         kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
         with mock.patch.object(api, '_handle_202') as handle_202:
             api.json_handler(**kwargs)
