@@ -417,7 +417,7 @@ def set_pulp_manage_rsync(cfg, boolean):
         # root privileges to discover.
         client.run(sudo + ('which', 'semanage'))
     except exceptions.CalledProcessError:
-        return
+        return None
     cmd = sudo
     cmd += ('semanage', 'boolean', '--modify')
     cmd += ('--on',) if boolean else ('--off',)
