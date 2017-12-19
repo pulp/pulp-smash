@@ -1,7 +1,6 @@
 # coding=utf-8
 """Tests that CRUD users."""
 from random import choice
-from time import sleep
 import unittest
 
 from requests.exceptions import HTTPError
@@ -23,13 +22,13 @@ class UsersCRUDTestCase(unittest.TestCase):
 
     def setUp(self):
         """Create an API client."""
-        self.client = api.Client(self.cfg, api.code_handler)
+        self.client = api.Client(self.cfg, api.json_handler)
         self.client.request_kwargs['auth'] = get_auth()
 
     def test_01_create_user(self):
         """Create a user."""
         attrs = _gen_verbose_user_attrs()
-        type(self).user = self.client.post(USER_PATH, attrs).json()
+        type(self).user = self.client.post(USER_PATH, attrs)
         for key, val in attrs.items():
             with self.subTest(key=key):
                 if key == 'password':
@@ -40,7 +39,7 @@ class UsersCRUDTestCase(unittest.TestCase):
     @selectors.skip_if(bool, 'user', False)
     def test_02_read_user(self):
         """Read a user."""
-        user = self.client.get(self.user['_href']).json()
+        user = self.client.get(self.user['_href'])
         for key, val in user.items():
             with self.subTest(key=key):
                 self.assertEqual(val, self.user[key])
@@ -49,7 +48,7 @@ class UsersCRUDTestCase(unittest.TestCase):
     def test_02_read_users(self):
         """Read all users. Verify that the created user is in the results."""
         users = [
-            user for user in self.client.get(USER_PATH).json()['results']
+            user for user in self.client.get(USER_PATH)['results']
             if user['_href'] == self.user['_href']
         ]
         self.assertEqual(len(users), 1, users)
@@ -64,8 +63,7 @@ class UsersCRUDTestCase(unittest.TestCase):
         if selectors.bug_is_untestable(3125, self.cfg.pulp_version):
             attrs['username'] = self.user['username']
         self.client.put(self.user['_href'], attrs)
-        sleep(5)
-        user = self.client.get(self.user['_href']).json()
+        user = self.client.get(self.user['_href'])
         for key, val in attrs.items():
             with self.subTest(key=key):
                 if key == 'password':
@@ -80,8 +78,7 @@ class UsersCRUDTestCase(unittest.TestCase):
         if selectors.bug_is_untestable(3125, self.cfg.pulp_version):
             del attrs['username']
         self.client.patch(self.user['_href'], attrs)
-        sleep(5)
-        user = self.client.get(self.user['_href']).json()
+        user = self.client.get(self.user['_href'])
         for key, val in attrs.items():
             with self.subTest(key=key):
                 if key == 'password':
@@ -93,7 +90,6 @@ class UsersCRUDTestCase(unittest.TestCase):
     def test_04_delete_user(self):
         """Delete an user."""
         self.client.delete(self.user['_href'])
-        sleep(5)
         with self.assertRaises(HTTPError):
             self.client.get(self.user['_href'])
 

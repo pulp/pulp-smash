@@ -5,7 +5,6 @@ For more information, see the documentation on `Authentication
 <http://docs.pulpproject.org/en/3.0/nightly/integration_guide/rest_api/authentication.html>`_.
 """
 import unittest
-from time import sleep
 from urllib.parse import urljoin
 
 from requests.auth import HTTPBasicAuth
@@ -81,14 +80,13 @@ class JWTResetTestCase(unittest.TestCase):
         # Create a user.
         self.cfg = config.get_config()
         auth = {'username': utils.uuid4(), 'password': utils.uuid4()}
-        client = api.Client(self.cfg)
-        self.addCleanup(sleep, 5)  # drop when client can wait on async tasks
-        self.user = client.post(USER_PATH, auth).json()
+        client = api.Client(self.cfg, api.json_handler)
+        self.user = client.post(USER_PATH, auth)
         self.addCleanup(client.delete, self.user['_href'])
 
         # Create tokens for that user, and verify they're valid.
         self.tokens = tuple((
-            client.post(JWT_PATH, auth).json() for _ in range(2)
+            client.post(JWT_PATH, auth) for _ in range(2)
         ))
         for token in self.tokens:
             client.get(BASE_PATH, auth=JWTAuth(token['token']))
