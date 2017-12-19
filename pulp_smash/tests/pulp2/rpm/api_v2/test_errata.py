@@ -3,7 +3,7 @@ import unittest
 from urllib.parse import urljoin
 
 from pulp_smash import api, cli, config, utils
-from pulp_smash.constants import RPM_UNSIGNED_FEED_URL
+from pulp_smash.constants import RPM_LARGE_UPDATEINFO, RPM_UNSIGNED_FEED_URL
 from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
@@ -105,3 +105,46 @@ class ApplyErratumTestCase(unittest.TestCase):
             'dnf', '--quiet', 'updateinfo', 'list', erratum
         )).stdout.strip().splitlines()
         return tuple((line.split()[2] for line in lines))
+
+
+class LargePackageListTestCase(unittest.TestCase):
+    """Test syncing errata with large package list."""
+
+    def test_all(self):
+        """Test syncing errata with large package list.
+
+        This test targets the following issue:
+
+        * `Pulp Smash #656 <https://github.com/PulpQE/pulp-smash/issues/656>`_
+
+        Do the following:
+
+        1. Create two repositories, with a feed URL that contains a large
+           errata package list.
+        2. Sync both repositories.
+        3. Assert that sync of second repository was finished without any
+           error.
+        """
+        repos = []
+        cfg = config.get_config()
+        client = api.Client(cfg, api.json_handler)
+        # Create first repository.
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_LARGE_UPDATEINFO
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        repos.append(repo)
+        # Create second repository.
+        body = gen_repo()
+        body['importer_config']['feed'] = RPM_LARGE_UPDATEINFO
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        repos.append(repo)
+        # Sync both repositories.
+        utils.sync_repo(cfg, repos[0])
+        report = utils.sync_repo(cfg, repos[1])
+        tasks = tuple(api.poll_spawned_tasks(cfg, report.json()))
+        for i, task in enumerate(tasks):
+            with self.subTest(i=i):
+                error_details = task['progress_report']['yum_importer']['content']['error_details']  # noqa pylint:disable=line-too-long
+                self.assertEqual(error_details, [], task)

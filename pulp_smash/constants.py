@@ -385,6 +385,9 @@ RPM_INVALID_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-invalid-rpm/')
 RPM_INVALID_URL = urljoin(RPM_INVALID_FEED_URL, 'invalid.rpm')
 """The URL to an invalid RPM package."""
 
+RPM_LARGE_UPDATEINFO = urljoin(PULP_FIXTURES_BASE_URL, 'rpm-long-updateinfo/')
+"""The URL to RPM with a large updateinfo.xml."""
+
 RPM_MIRRORLIST_LARGE = (
     'https://mirrors.fedoraproject.org/metalink?repo=epel-7&arch=x86_64'
 )
