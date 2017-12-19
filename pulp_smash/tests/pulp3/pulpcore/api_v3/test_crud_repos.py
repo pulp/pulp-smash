@@ -1,7 +1,6 @@
 # coding=utf-8
 """Tests that CRUD repositories."""
 import unittest
-from time import sleep
 
 from requests.exceptions import HTTPError
 
@@ -23,12 +22,12 @@ class CRUDRepoTestCase(unittest.TestCase):
 
     def setUp(self):
         """Create an API client."""
-        self.client = api.Client(self.cfg, api.code_handler)
+        self.client = api.Client(self.cfg, api.json_handler)
         self.client.request_kwargs['auth'] = get_auth()
 
     def test_01_create_repo(self):
         """Create repository."""
-        type(self).repo = self.client.post(REPO_PATH, gen_repo()).json()
+        type(self).repo = self.client.post(REPO_PATH, gen_repo())
 
     @selectors.skip_if(bool, 'repo', False)
     def test_02_read_repo(self):
@@ -36,7 +35,7 @@ class CRUDRepoTestCase(unittest.TestCase):
 
         Assert that the response contains the correct repository name.
         """
-        repo = self.client.get(self.repo['_href']).json()
+        repo = self.client.get(self.repo['_href'])
         self.assertEqual(self.repo['name'], repo['name'])
 
     @selectors.skip_if(bool, 'repo', False)
@@ -48,7 +47,7 @@ class CRUDRepoTestCase(unittest.TestCase):
         """
         page = self.client.get(REPO_PATH, params={
             'name': self.repo['name']
-        }).json()
+        })
         self.assertEqual(len(page['results']), 1)
         self.assertEqual(page['results'][0]['name'], self.repo['name'])
 
@@ -70,14 +69,13 @@ class CRUDRepoTestCase(unittest.TestCase):
         :param attr: The name of the attribute to update. For example,
             "description." The attribute to update must be a string.
         """
-        repo = self.client.get(self.repo['_href']).json()
+        repo = self.client.get(self.repo['_href'])
         string = utils.uuid4()
         repo[attr] = string
         self.client.put(repo['_href'], repo)
-        sleep(5)
 
         # verify the update
-        repo = self.client.get(repo['_href']).json()
+        repo = self.client.get(repo['_href'])
         self.assertEqual(string, repo[attr])
 
     @selectors.skip_if(bool, 'repo', False)
@@ -100,17 +98,15 @@ class CRUDRepoTestCase(unittest.TestCase):
         """
         string = utils.uuid4()
         self.client.patch(self.repo['_href'], {attr: string})
-        sleep(5)
 
         # verify the update
-        repo = self.client.get(self.repo['_href']).json()
+        repo = self.client.get(self.repo['_href'])
         self.assertEqual(repo[attr], string)
 
     @selectors.skip_if(bool, 'repo', False)
     def test_04_delete_repo(self):
         """Delete a repository."""
         self.client.delete(self.repo['_href'])
-        sleep(5)
 
         # verify the delete
         with self.assertRaises(HTTPError):
