@@ -10,7 +10,7 @@ from urllib.parse import urljoin
 from requests.auth import HTTPBasicAuth
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, config, utils
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.tests.pulp3.constants import BASE_PATH, JWT_PATH, USER_PATH
 from pulp_smash.tests.pulp3.utils import JWTAuth
 from pulp_smash.tests.pulp3.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -97,6 +97,8 @@ class JWTResetTestCase(unittest.TestCase):
         Repeatedly resetting tokens ensures that token resets work even when a
         user has no tokens.
         """
+        if selectors.bug_is_untestable(3239, self.cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/3239')
         path = urljoin(USER_PATH, self.user['username'] + '/')
         path = urljoin(path, 'jwt_reset/')
         client = api.Client(self.cfg)
