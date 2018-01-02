@@ -9,20 +9,14 @@ from pulp_smash.tests.pulp3.constants import (
 from pulp_smash import utils
 
 
-def gen_importer():
-    """Return a semi-random dict for use in creating an importer."""
+def gen_importer(repo):
+    """Return a semi-random dict for use in creating an importer.
+
+    :param repo: A dict of information about a file repository.
+    """
     return {
-        'name': utils.uuid4(),
         'download_policy': sample(IMPORTER_DOWN_POLICY, 1)[0],
+        'name': utils.uuid4(),
+        'repository': repo['_href'],
         'sync_mode': sample(IMPORTER_SYNC_MODE, 1)[0],
     }
-
-
-def modify_importer_down_policy(down_policy):
-    """Return a valid download policy different from the given one."""
-    return sample((IMPORTER_DOWN_POLICY - down_policy), 1)[0]
-
-
-def modify_importer_sync_mode(sync_mode):
-    """Return a valid sync mode different from the given one."""
-    return sample((IMPORTER_SYNC_MODE - sync_mode), 1)[0]
