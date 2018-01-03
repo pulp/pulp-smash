@@ -6,9 +6,14 @@ from copy import deepcopy
 
 from packaging.version import Version
 from requests.auth import AuthBase, HTTPBasicAuth
+from requests.exceptions import HTTPError
 
 from pulp_smash import api, config
-from pulp_smash.tests.pulp3.constants import JWT_PATH
+from pulp_smash.tests.pulp3.constants import (
+    FILE_IMPORTER_PATH,
+    JWT_PATH,
+    STATUS_PATH,
+)
 
 
 # _get_jwt_auth() uses this as a cache. It is intentionally a global. This
@@ -39,13 +44,28 @@ class JWTAuth(AuthBase):  # pylint:disable=too-few-public-methods
         return request
 
 
-def set_up_module():
-    """Skip tests if Pulp 3 isn't under test."""
-    cfg = config.get_config()
+def set_up_module(cfg=None, required_plugins=None):
+    """Skip tests if Pulp 3 isn't under test, or if a plugin is missing.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
+        application.
+    :param required_plugins: A set of plugin names, e.g.  ``{'pulp-file'}``.
+    """
+    if not cfg:
+        cfg = config.get_config()
     if cfg.pulp_version < Version('3'):
         raise unittest.SkipTest(
             'These tests are for Pulp 3 or newer, but Pulp {} is under test.'
             .format(cfg.pulp_version)
+        )
+
+    if required_plugins is None:
+        required_plugins = set()
+    missing_plugins = required_plugins - get_plugins(cfg)
+    if missing_plugins:
+        raise unittest.SkipTest(
+            'The following plugins are required but not installed: {}'
+            .format(missing_plugins)
         )
 
 
@@ -108,3 +128,31 @@ def _get_jwt_auth(cfg):
         })
         _JWT_AUTH = JWTAuth(token['token'])
     return deepcopy(_JWT_AUTH)
+
+
+def get_plugins(cfg=None):
+    """Return the set of plugins installed on the Pulp application.
+
+    Pulp's API endpoint for reporting plugins and their versions doesn't work
+    correctly at this time. Some hacks are implemented to discover which
+    plugins are installed. As a result, not all plugins are returned.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        application under test.
+    :returns: A set of plugin names, e.g. ``{'pulpcore', 'pulp-file'}``.
+    """
+    if not cfg:
+        cfg = config.get_config()
+    client = api.Client(cfg, api.json_handler)
+    plugins = {
+        version['component'] for version in client.get(STATUS_PATH)['versions']
+    }
+
+    # As of this writing, only the pulpcore plugin reports its existence.
+    try:
+        client.get(FILE_IMPORTER_PATH)
+        plugins.add('pulp-file')  # Name of PyPI package.
+    except HTTPError:
+        pass
+
+    return plugins
