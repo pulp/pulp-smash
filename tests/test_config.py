@@ -234,8 +234,9 @@ class ReadTestCase(unittest.TestCase):
         """Ensure Pulp Smash can read the config file."""
         open_ = mock.mock_open(read_data=PULP_SMASH_CONFIG)
         with mock.patch.object(builtins, 'open', open_):
-            with mock.patch.object(config, '_get_config_file_path'):
-                cfg = config.PulpSmashConfig().read()
+            cfg = config.PulpSmashConfig()
+            with mock.patch.object(cfg, 'get_config_file_path'):
+                cfg = cfg.read()
         with self.subTest('check pulp_auth'):
             self.assertEqual(cfg.pulp_auth, ['username', 'password'])
         with self.subTest('check pulp_version'):
@@ -284,9 +285,10 @@ class ReadTestCase(unittest.TestCase):
         """Ensure Pulp Smash can read old config file format."""
         open_ = mock.mock_open(read_data=OLD_CONFIG)
         with mock.patch.object(builtins, 'open', open_):
-            with mock.patch.object(config, '_get_config_file_path'):
+            cfg = config.PulpSmashConfig()
+            with mock.patch.object(cfg, 'get_config_file_path'):
                 with self.assertWarns(DeprecationWarning):
-                    cfg = config.PulpSmashConfig().read()
+                    cfg = cfg.read()
         with self.subTest('check pulp_auth'):
             self.assertEqual(cfg.pulp_auth, ['username', 'password'])
         with self.subTest('check pulp_version'):
@@ -322,8 +324,9 @@ class HelperMethodsTestCase(unittest.TestCase):
         """Generate contents for a configuration file."""
         open_ = mock.mock_open(read_data=PULP_SMASH_CONFIG)
         with mock.patch.object(builtins, 'open', open_):
-            with mock.patch.object(config, '_get_config_file_path'):
-                self.cfg = config.PulpSmashConfig().read()
+            cfg = config.PulpSmashConfig()
+            with mock.patch.object(cfg, 'get_config_file_path'):
+                self.cfg = cfg.read()
 
     def test_get_systems(self):
         """``get_systems`` returns proper result."""
@@ -441,7 +444,7 @@ class ReprTestCase(unittest.TestCase):
 
 
 class GetConfigFilePathTestCase(unittest.TestCase):
-    """Test ``pulp_smash.config._get_config_file_path``."""
+    """Test ``pulp_smash.PulpSmashConfig.get_config_file_path``."""
 
     def test_success(self):
         """Assert the method returns a path when a config file is found."""
@@ -450,7 +453,7 @@ class GetConfigFilePathTestCase(unittest.TestCase):
             with mock.patch.object(os.path, 'isfile') as isfile:
                 isfile.return_value = True
                 # pylint:disable=protected-access
-                config._get_config_file_path(utils.uuid4(), utils.uuid4())
+                config.PulpSmashConfig().get_config_file_path()
         self.assertGreater(isfile.call_count, 0)
 
     def test_failures(self):
@@ -461,7 +464,7 @@ class GetConfigFilePathTestCase(unittest.TestCase):
                 isfile.return_value = False
                 with self.assertRaises(exceptions.ConfigFileNotFoundError):
                     # pylint:disable=protected-access
-                    config._get_config_file_path(utils.uuid4(), utils.uuid4())
+                    config.PulpSmashConfig().get_config_file_path()
         self.assertGreater(isfile.call_count, 0)
 
 

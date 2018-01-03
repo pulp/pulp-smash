@@ -381,14 +381,36 @@ class PulpSmashConfig(object):
             self._xdg_config_file
         )
 
-    def get_config_file_path(self):
-        """Get the config file path.
+    def get_config_file_path(self, xdg_config_file=None, xdg_config_dir=None):
+        """Search for a config file and return the first found.
 
-        :raises pulp_smash.exceptions.ConfigFileNotFoundError: If configuration
-            file cannot be found.
+        Search each of the standard XDG configuration directories for a
+        configuration file. Return as soon as a configuration file is found.
+        Beware of race conditions. By the time client code attempts to open the
+        file, it may be gone or otherwise inaccessible.
+
+        :param xdg_config_file: A string. The name of the configuration file
+            that is being searched for.
+        :param xdg_config_dir: A string. The name of the directory that is
+            suffixed to the end of each of the ``XDG_CONFIG_DIRS`` paths.
+        :returns: A string. A path to a configuration file.
+        :raises pulp_smash.exceptions.ConfigFileNotFoundError: If no
+            configuration file can be found.
         """
-        return _get_config_file_path(
-            self._xdg_config_dir, self._xdg_config_file)
+        if xdg_config_file is None:
+            xdg_config_file = self._xdg_config_file
+        if xdg_config_dir is None:
+            xdg_config_dir = self._xdg_config_dir
+        path = BaseDirectory.load_first_config(xdg_config_dir, xdg_config_file)
+        if path and os.path.isfile(path):
+            return path
+        raise exceptions.ConfigFileNotFoundError(
+            'Pulp Smash is unable to find a configuration file. The following '
+            '(XDG compliant) paths have been searched: ' + ', '.join([
+                os.path.join(config_dir, xdg_config_dir, xdg_config_file)
+                for config_dir in BaseDirectory.xdg_config_dirs
+            ])
+        )
 
     def read(self, xdg_config_file=None, xdg_config_dir=None):
         """Read a configuration file.
@@ -407,7 +429,7 @@ class PulpSmashConfig(object):
             xdg_config_file = self._xdg_config_file
         if xdg_config_dir is None:
             xdg_config_dir = self._xdg_config_dir
-        path = self.get_config_file_path()
+        path = self.get_config_file_path(xdg_config_file, xdg_config_dir)
         with open(path) as handle:
             config_file = json.load(handle)
 
@@ -520,31 +542,3 @@ class PulpSmashConfig(object):
         for key in ('port', 'scheme'):
             kwargs.pop(key, None)
         return kwargs
-
-
-def _get_config_file_path(xdg_config_dir, xdg_config_file):
-    """Search ``XDG_CONFIG_DIRS`` for a config file and return the first found.
-
-    Search each of the standard XDG configuration directories for a
-    configuration file. Return as soon as a configuration file is found. Beware
-    of race conditions. By the time client code attempts to open the file, it
-    may be gone or otherwise inaccessible.
-
-    :param xdg_config_dir: A string. The name of the directory that is suffixed
-        to the end of each of the ``XDG_CONFIG_DIRS`` paths.
-    :param xdg_config_file: A string. The name of the configuration file that
-        is being searched for.
-    :returns: A string. A path to a configuration file.
-    :raises pulp_smash.exceptions.ConfigFileNotFoundError: If the requested
-        configuration file cannot be found.
-    """
-    path = BaseDirectory.load_first_config(xdg_config_dir, xdg_config_file)
-    if path and os.path.isfile(path):
-        return path
-    raise exceptions.ConfigFileNotFoundError(
-        'Pulp Smash is unable to find a configuration file. The following '
-        '(XDG compliant) paths have been searched: ' + ', '.join([
-            os.path.join(config_dir, xdg_config_dir, xdg_config_file)
-            for config_dir in BaseDirectory.xdg_config_dirs
-        ])
-    )
