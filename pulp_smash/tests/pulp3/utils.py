@@ -44,24 +44,21 @@ class JWTAuth(AuthBase):  # pylint:disable=too-few-public-methods
         return request
 
 
-def set_up_module(cfg=None, required_plugins=None):
-    """Skip tests if Pulp 3 isn't under test, or if a plugin is missing.
-
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
-        application.
-    :param required_plugins: A set of plugin names, e.g.  ``{'pulp-file'}``.
-    """
-    if not cfg:
-        cfg = config.get_config()
+def require_pulp_version():
+    """Skip tests if Pulp 3 isn't under test."""
+    cfg = config.get_config()
     if cfg.pulp_version < Version('3'):
         raise unittest.SkipTest(
             'These tests are for Pulp 3 or newer, but Pulp {} is under test.'
             .format(cfg.pulp_version)
         )
 
+
+def require_pulp_plugins(required_plugins=None):
+    """Skip tests if one or more plugins are missing."""
     if required_plugins is None:
         required_plugins = set()
-    missing_plugins = required_plugins - get_plugins(cfg)
+    missing_plugins = required_plugins - get_plugins()
     if missing_plugins:
         raise unittest.SkipTest(
             'The following plugins are required but not installed: {}'
