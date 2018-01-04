@@ -41,19 +41,10 @@ lint-flake8:
 lint-pylint:
 	pylint -j $(CPU_COUNT) --reports=n --disable=I \
 		docs/conf.py \
+		pulp_smash \
 		scripts/run_functional_tests.py \
 		setup.py \
-		tests \
-		pulp_smash/__init__.py \
-		pulp_smash/api.py \
-		pulp_smash/cli.py \
-		pulp_smash/config.py \
-		pulp_smash/constants.py \
-		pulp_smash/exceptions.py \
-		pulp_smash/pulp_smash_cli.py \
-		pulp_smash/selectors.py \
-		pulp_smash/utils.py
-	pylint -j $(CPU_COUNT) --reports=n --disable=I,duplicate-code pulp_smash/tests/
+		tests
 
 lint: lint-flake8 lint-pylint
 
