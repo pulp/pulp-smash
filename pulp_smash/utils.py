@@ -18,7 +18,6 @@ from pulp_smash.cli import _is_root as is_root  # for backward compatibility
 from pulp_smash.tests.pulp2.constants import (
     CONTENT_UPLOAD_PATH,
     ORPHANS_PATH,
-    PLUGIN_TYPES_PATH,
     PULP_SERVICES,
     REPOSITORY_PATH,
 )
@@ -430,47 +429,6 @@ def _get_squid_version(cfg):
     return Version(resp.stdout.splitlines()[0].lower()[len(phrase):].strip())
 
 
-def skip_if_type_is_unsupported(unit_type_id, server_config=None):
-    """Raise ``SkipTest`` if support for the named type is not availalble.
-
-    :param unit_type_id: A content unit type ID, such as "ostree".
-    :param pulp_smash.config.PulpSmashConfig server_config: Information about
-        the Pulp server being targeted. If none is provided, the config
-        returned by :func:`pulp_smash.config.get_config` is used.
-    :raises: ``unittest.SkipTest`` if support is unavailable.
-    :returns: Nothing.
-    """
-    if server_config is None:
-        server_config = config.get_config()
-    if unit_type_id not in get_unit_type_ids(server_config):
-        raise unittest.SkipTest(
-            'These tests require support for the "{}" content unit type.'
-            .format(unit_type_id)
-        )
-
-
-def get_unit_type_ids(server_config):
-    """Tell which content unit types are supported by the target Pulp server.
-
-    Each Pulp plugin adds one (or more?) content unit types to Pulp, and each
-    content unit type has a unique identifier. For example, the Python plugin
-    [1]_ adds the Python content unit type [2]_, and Python content units have
-    an ID of ``python_package``. This function queries the server and returns
-    those unit type IDs.
-
-    :param pulp_smash.config.PulpSmashConfig server_config: Information about
-        the Pulp deployment being targeted.
-    :returns: A set of content unit type IDs. For example: ``{'ostree',
-        'python_package'}``.
-
-    .. [1] http://docs.pulpproject.org/plugins/pulp_python/
-    .. [2]
-       http://docs.pulpproject.org/plugins/pulp_python/reference/python-type.html
-    """
-    unit_types = api.Client(server_config).get(PLUGIN_TYPES_PATH).json()
-    return {unit_type['id'] for unit_type in unit_types}
-
-
 def sync_repo(cfg, repo):
     """Sync a repository.
 
@@ -570,13 +528,3 @@ def os_is_f26(cfg, pulp_system=None):
         '/etc/redhat-release',
     ))
     return response.returncode == 0
-
-
-def set_up_module():
-    """Skip tests if Pulp 2 isn't under test."""
-    cfg = config.get_config()
-    if cfg.pulp_version >= Version('3'):
-        raise unittest.SkipTest(
-            'These tests are for Pulp 2, but Pulp {} is under test.'
-            .format(cfg.pulp_version)
-        )

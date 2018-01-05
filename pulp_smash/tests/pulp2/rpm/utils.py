@@ -6,16 +6,13 @@ from io import StringIO
 from packaging.version import Version
 
 from pulp_smash import cli, selectors, utils
-from pulp_smash.utils import is_root
+from pulp_smash.tests.pulp2 import utils as pulp2_utils
 
 
 def set_up_module():
-    """Skip tests if the RPM plugin is not installed.
-
-    See :mod:`pulp_smash.tests` for more information.
-    """
-    utils.set_up_module()
-    utils.skip_if_type_is_unsupported('rpm')
+    """Skip tests if Pulp 2 isn't under test or if RPM isn't installed."""
+    pulp2_utils.require_pulp_2()
+    pulp2_utils.require_unit_types({'rpm'})
 
 
 def check_issue_2277(cfg):
@@ -140,7 +137,10 @@ def gen_yum_config_file(cfg, repositoryid, **kwargs):
         for key, value in kwargs.items():
             section.write('{}: {}\n'.format(key, value))
         cli.Client(cfg).machine.session().run(
-            'echo "{}" | {}tee {} > /dev/null'
-            .format(section.getvalue(), '' if is_root(cfg) else 'sudo ', path)
+            'echo "{}" | {}tee {} > /dev/null'.format(
+                section.getvalue(),
+                '' if utils.is_root(cfg) else 'sudo ',
+                path
+            )
         )
     return path

@@ -1,21 +1,19 @@
 # coding=utf-8
 """Utilities for interacting with OS tree."""
-from pulp_smash import utils
+from pulp_smash.tests.pulp2 import utils
+from pulp_smash.utils import uuid4
 
 
 def set_up_module():
-    """Skip tests if the OSTree plugin is not installed.
-
-    See :mod:`pulp_smash.tests` for more information.
-    """
-    utils.set_up_module()
-    utils.skip_if_type_is_unsupported('ostree')
+    """Skip tests if Pulp 2 isn't under test or if OSTree isn't installed."""
+    utils.require_pulp_2()
+    utils.require_unit_types({'ostree'})
 
 
 def gen_repo():
     """Return a semi-random dict for use in creating an OSTree repository."""
     return {
-        'id': utils.uuid4(),
+        'id': uuid4(),
         'importer_type_id': 'ostree_web_importer',
         'importer_config': {},
         'distributors': [],
@@ -40,6 +38,6 @@ def gen_distributor():
     .. _Pulp #2254: https://pulp.plan.io/issues/2254
     """
     return {
-        'distributor_id': utils.uuid4(),
+        'distributor_id': uuid4(),
         'distributor_type_id': 'ostree_web_distributor',
     }

@@ -125,6 +125,7 @@ developers, not a gospel.
     api/pulp_smash.tests.pulp2.rpm.cli.test_upload
     api/pulp_smash.tests.pulp2.rpm.cli.utils
     api/pulp_smash.tests.pulp2.rpm.utils
+    api/pulp_smash.tests.pulp2.utils
     api/pulp_smash.tests.pulp3
     api/pulp_smash.tests.pulp3.constants
     api/pulp_smash.tests.pulp3.file
