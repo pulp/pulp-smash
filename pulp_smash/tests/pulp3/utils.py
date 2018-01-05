@@ -54,10 +54,11 @@ def require_pulp_version():
         )
 
 
-def require_pulp_plugins(required_plugins=None):
-    """Skip tests if one or more plugins are missing."""
-    if required_plugins is None:
-        required_plugins = set()
+def require_pulp_plugins(required_plugins):
+    """Skip tests if one or more plugins are missing.
+
+    :param required_plugins: A set of plugin names, e.g. ``{'pulp-file'}``.
+    """
     missing_plugins = required_plugins - get_plugins()
     if missing_plugins:
         raise unittest.SkipTest(
