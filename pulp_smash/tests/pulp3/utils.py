@@ -44,12 +44,12 @@ class JWTAuth(AuthBase):  # pylint:disable=too-few-public-methods
         return request
 
 
-def require_pulp_version():
+def require_pulp_3():
     """Skip tests if Pulp 3 isn't under test."""
     cfg = config.get_config()
-    if cfg.pulp_version < Version('3'):
+    if cfg.pulp_version < Version('3') or cfg.pulp_version >= Version('4'):
         raise unittest.SkipTest(
-            'These tests are for Pulp 3 or newer, but Pulp {} is under test.'
+            'These tests are for Pulp 3, but Pulp {} is under test.'
             .format(cfg.pulp_version)
         )
 
