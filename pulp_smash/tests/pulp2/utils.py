@@ -4,7 +4,7 @@ import unittest
 
 from packaging.version import Version
 
-from pulp_smash import api, config
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.tests.pulp2.constants import PLUGIN_TYPES_PATH
 
 
@@ -49,3 +49,14 @@ def require_unit_types(required_unit_types):
             "The following unit types aren't supported by the Pulp "
             'application under test: {}'.format(missing_unit_types)
         )
+
+
+def require_issue_3159():
+    """Skip tests if Fedora 27 is under test and `Pulp #3159`_ is open.
+
+    .. _Pulp #3159: https://pulp.plan.io/issues/3159
+    """
+    cfg = config.get_config()
+    if (selectors.bug_is_untestable(3159, cfg.pulp_version) and
+            utils.os_is_f27(cfg)):
+        raise unittest.SkipTest('https://pulp.plan.io/issues/3159')

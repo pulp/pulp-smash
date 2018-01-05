@@ -13,6 +13,7 @@ def set_up_module():
     """Skip tests if Pulp 2 isn't under test or if Docker isn't installed."""
     utils.require_pulp_2()
     utils.require_unit_types({'docker_image'})
+    utils.require_issue_3159()
 
 
 def get_upstream_name(cfg):

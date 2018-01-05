@@ -528,3 +528,21 @@ def os_is_f26(cfg, pulp_system=None):
         '/etc/redhat-release',
     ))
     return response.returncode == 0
+
+
+def os_is_f27(cfg, pulp_system=None):
+    """Return ``True`` if the server runs Fedora 27, or ``False`` otherwise.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the system
+        being targeted.
+    :param pulp_system: A :class:`pulp_smash.config.PulpSystem` to target,
+        instead of the default chosen by :class:`pulp_smash.cli.Client`.
+    :returns: True or false.
+    """
+    response = cli.Client(cfg, cli.echo_handler, pulp_system).run((
+        'grep',
+        '-i',
+        'fedora release 27',
+        '/etc/redhat-release',
+    ))
+    return response.returncode == 0
