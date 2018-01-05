@@ -8,7 +8,7 @@ from packaging.version import Version
 from requests.auth import AuthBase, HTTPBasicAuth
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, config
+from pulp_smash import api, config, selectors
 from pulp_smash.tests.pulp3.constants import (
     FILE_IMPORTER_PATH,
     JWT_PATH,
@@ -102,7 +102,10 @@ def get_auth(cfg=None):
     """
     if not cfg:
         cfg = config.get_config()
-    return random.choice((_get_basic_auth, _get_jwt_auth))(cfg)
+    choices = [_get_basic_auth]
+    if selectors.bug_is_testable(3248, cfg.pulp_version):
+        choices.append(_get_jwt_auth)
+    return random.choice(choices)(cfg)
 
 
 def _get_basic_auth(cfg):

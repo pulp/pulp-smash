@@ -50,6 +50,8 @@ class AuthTestCase(unittest.TestCase):
 
         Assert that a response indicating success is returned.
         """
+        if selectors.bug_is_untestable(3248, self.cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/3248')
         client = api.Client(self.cfg, api.json_handler)
         token = client.post(JWT_PATH, {
             'username': self.cfg.pulp_auth[0],
@@ -62,6 +64,8 @@ class AuthTestCase(unittest.TestCase):
 
         Assert that a response indicating failure is returned.
         """
+        if selectors.bug_is_untestable(3248, self.cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/3248')
         with self.assertRaises(HTTPError):
             api.Client(self.cfg, api.json_handler).post(
                 JWT_PATH,
@@ -79,6 +83,8 @@ class JWTResetTestCase(unittest.TestCase):
         """
         # Create a user.
         self.cfg = config.get_config()
+        if selectors.bug_is_untestable(3248, self.cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/3248')
         auth = {'username': utils.uuid4(), 'password': utils.uuid4()}
         client = api.Client(self.cfg, api.json_handler)
         self.user = client.post(USER_PATH, auth)
