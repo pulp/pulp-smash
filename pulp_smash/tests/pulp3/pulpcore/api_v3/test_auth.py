@@ -103,8 +103,6 @@ class JWTResetTestCase(unittest.TestCase):
         Repeatedly resetting tokens ensures that token resets work even when a
         user has no tokens.
         """
-        if selectors.bug_is_untestable(3239, self.cfg.pulp_version):
-            self.skipTest('https://pulp.plan.io/issues/3239')
         path = urljoin(USER_PATH, self.user['username'] + '/')
         path = urljoin(path, 'jwt_reset/')
         client = api.Client(self.cfg)
