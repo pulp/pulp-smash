@@ -7,7 +7,11 @@ BASE_PATH = '/api/v3/'
 
 BASE_IMPORTER_PATH = urljoin(BASE_PATH, 'importers/')
 
+BASE_PUBLISHER_PATH = urljoin(BASE_PATH, 'publishers/')
+
 FILE_IMPORTER_PATH = urljoin(BASE_IMPORTER_PATH, 'file/')
+
+FILE_PUBLISHER_PATH = urljoin(BASE_PUBLISHER_PATH, 'file/')
 
 IMPORTER_DOWN_POLICY = {'background', 'immediate', 'on_demand'}
 
