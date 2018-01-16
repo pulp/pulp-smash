@@ -51,6 +51,19 @@ def require_unit_types(required_unit_types):
         )
 
 
+def require_issues():
+    """Skip tests if one of several issues affects the Pulp app under test.
+
+    This function calls several ``require_issue_*`` functions, for convenience.
+    This function only checks issues that have a severe impact on the
+    functioning of an entire Pulp 2 application, regardless of which plugin is
+    under test. As a result, it's appropriate to call this function before
+    running any Pulp 2 tests.
+    """
+    require_issue_3287()
+    require_issue_3159()
+
+
 def require_issue_3159():
     """Skip tests if Fedora 27 is under test and `Pulp #3159`_ is open.
 
@@ -60,3 +73,14 @@ def require_issue_3159():
     if (selectors.bug_is_untestable(3159, cfg.pulp_version) and
             utils.os_is_f27(cfg)):
         raise unittest.SkipTest('https://pulp.plan.io/issues/3159')
+
+
+def require_issue_3287():
+    """Skip tests if Fedora 27 is under test and `Pulp #3287`_ is open.
+
+    .. _Pulp #3287: https://pulp.plan.io/issues/3287
+    """
+    cfg = config.get_config()
+    if (selectors.bug_is_untestable(3287, cfg.pulp_version) and
+            utils.os_is_f27(cfg)):
+        raise unittest.SkipTest('https://pulp.plan.io/issues/3287')
