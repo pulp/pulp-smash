@@ -11,5 +11,6 @@ install:
     - pip install .[dev]
 script:
     - make all
+cache: pip
 after_success:
     coveralls
