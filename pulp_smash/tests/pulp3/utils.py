@@ -3,6 +3,7 @@
 import random
 import unittest
 from copy import deepcopy
+from urllib.parse import urljoin
 
 from packaging.version import Version
 from requests.auth import AuthBase, HTTPBasicAuth
@@ -157,3 +158,18 @@ def get_plugins(cfg=None):
         pass
 
     return plugins
+
+
+def sync_repo(cfg, importer):
+    """Sync a repository.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        host.
+    :param importer: A dict of detailed information about the importer of
+        the repository to be synced.
+    :returns: The server's response. Call ``.json()`` on the response to get
+        a call report.
+    """
+    return api.Client(cfg, api.json_handler).post(
+        urljoin(importer['_href'], 'sync/')
+    )
