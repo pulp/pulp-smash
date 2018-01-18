@@ -435,7 +435,7 @@ def sync_repo(cfg, repo):
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
         host.
     :param repo: A dict of detailed information about the repository to be
-        published.
+        synced.
     :returns: The server's reponse. Call ``.json()`` on the response to get a
         call report.
     """
