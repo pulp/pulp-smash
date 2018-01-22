@@ -35,13 +35,25 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_repo,
     get_unit,
 )
-from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277, check_issue_3104
-from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.rpm.utils import (
+    check_issue_2277,
+    check_issue_3104,
+    set_up_module,
+)
 
 
 def _gen_rel_url():
     """Generate a relative URL."""
     return utils.uuid4() + '/'
+
+
+def setUpModule():  # pylint:disable=invalid-name
+    """Maybe skip this module of tests."""
+    set_up_module()
+    cfg = config.get_config()
+    if (cfg.pulp_version >= Version('2.15.1') and
+            selectors.bug_is_untestable(3310, cfg.pulp_version)):
+        raise unittest.SkipTest('https://pulp.plan.io/issues/3310')
 
 
 def tearDownModule():  # pylint:disable=invalid-name
