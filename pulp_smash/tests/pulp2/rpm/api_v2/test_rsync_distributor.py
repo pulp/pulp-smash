@@ -758,3 +758,68 @@ class PublishTwiceTestCase(
             step['num_processed'] for step in publish_task['result']['details']
             if step['step_type'].lower().startswith('unit query step')
         )
+
+
+class RsyncExtraArgsTestCase(
+        _RsyncDistUtilsMixin,
+        DisableSELinuxMixin,
+        TemporaryUserMixin,
+        unittest.TestCase):
+    """Use the ``rsync_extra_args`` RPM rsync distributor option.
+
+    Do the following:
+
+    1. Create a repository with a yum distributor and RPM rsync distributor.
+       Add content units to the repository.
+    2. Publish with the yum distributor.
+    3. Publish with the RPM rsync distributor, with
+       ``rsync_extra_args`` set to ``['--dry-run']``, i.e. no files
+       should actually be copied by rsync
+    4. Verify that no files are in the target directory.
+    5. Publish with the RPM rsync distributor, with ``force_full`` set to true.
+       Note: ``force_full`` is needed here as Pulp is not aware that
+       the previous calls to rsync did nothing on the target
+    6. Verify that all files are present in the target directory.
+
+    This test targets `Pulp #3317 <https://pulp.plan.io/issues/3317>`_.
+
+    """
+
+    def test_all(self):
+        """Use the ``rsync_extra_args`` RPM rsync distributor option."""
+        cfg = config.get_config()
+        if selectors.bug_is_untestable(3317, cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/3317')
+
+        # Create a user and repo with an importer and distribs. Sync the repo.
+        ssh_user, priv_key = self.make_user(cfg)
+        ssh_identity_file = self.write_private_key(cfg, priv_key)
+        repo = self.make_repo(cfg, {'remote': {
+            'host': urlparse(cfg.get_base_url()).hostname,
+            'root': '/home/' + ssh_user,
+            'ssh_identity_file': ssh_identity_file,
+            'ssh_user': ssh_user,
+        }})
+        utils.sync_repo(cfg, repo)
+
+        # Publish the repo with the yum and rsync distributors, respectively.
+        distribs = get_dists_by_type_id(cfg, repo)
+        self.maybe_disable_selinux(cfg, 2199)
+        utils.publish_repo(cfg, repo, {
+            'id': distribs['yum_distributor']['id']
+        })
+        utils.publish_repo(cfg, repo, {
+            'id': distribs['rpm_rsync_distributor']['id'],
+            'override_config': {'rsync_extra_args': ['--dry-run']},
+        })
+        # Verify that the rsync distributor hasn't placed any files.
+        files = self.remote_root_files(cfg,
+                                       distribs['rpm_rsync_distributor'])
+        self.assertSetEqual(files, set())
+
+        # Publish the repo again with the rsync distributor (force full)
+        utils.publish_repo(cfg, repo, {
+            'id': distribs['rpm_rsync_distributor']['id'],
+            'override_config': {'force_full': True},
+        })
+        self.verify_remote_units_path(cfg, distribs['rpm_rsync_distributor'])
