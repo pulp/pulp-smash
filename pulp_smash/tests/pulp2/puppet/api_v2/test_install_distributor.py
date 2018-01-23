@@ -31,6 +31,9 @@ class InstallDistributorTestCase(utils.BaseAPITestCase):
         3. Publish the repository
         4. Check if the puppet_install_distributor config was properly used
         """
+        if (selectors.bug_is_untestable(3314, self.cfg.pulp_version) and
+                utils.os_is_f27(self.cfg)):
+            self.skipTest('https://pulp.plan.io/issues/3314')
         cli_client = cli.Client(self.cfg)
         sudo = () if utils.is_root(self.cfg) else ('sudo',)
 
