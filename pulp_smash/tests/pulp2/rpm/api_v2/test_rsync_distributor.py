@@ -95,13 +95,19 @@ def setUpModule():  # pylint:disable=invalid-name
 
     * The RPM plugin is not installed on the target Pulp server.
     * `Pulp #1759`_ is not implemented on the target Pulp server.
+    * `Pulp #3313`_ is not fixed on the target Pulp server, and the target host
+      is running Fedora 27.
 
     .. _Pulp #1759: https://pulp.plan.io/issues/1759
+    .. _Pulp #3313: https://pulp.plan.io/issues/3313
     """
     set_up_module()
     cfg = config.get_config()
     if selectors.bug_is_untestable(1759, cfg.pulp_version):
         raise unittest.SkipTest('https://pulp.plan.io/issues/1759')
+    if (selectors.bug_is_untestable(3313, cfg.pulp_version) and
+            utils.os_is_f27(cfg)):
+        raise unittest.SkipTest('https://pulp.plan.io/issues/3313')
     set_pulp_manage_rsync(cfg, True)
 
 
