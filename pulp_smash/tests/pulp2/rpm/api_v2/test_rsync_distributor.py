@@ -227,6 +227,26 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
         files = cli_client.run(cmd).stdout.strip().split('\n')
         self.assertEqual(len(files), num_units, files)
 
+    @staticmethod
+    def remote_root_files(cfg, distributor_cfg):
+        """Get the directory content of the remote root directory.
+
+        Return the directory content of the remote root path
+        configured in the distributor.  Only non-hidden
+        files/directories are returned.
+
+        :param pulp_smash.config.PulpSmashConfig cfg: Information about the
+            system onto which files have been published.
+        :param distributor_cfg: A dict of information about an RPM rsync
+            distributor.
+        :returns: set of file/directory names
+
+        """
+        path = distributor_cfg['config']['remote']['root']
+        sudo = () if utils.is_root(cfg) else ('sudo',)
+        cmd = sudo + ('ls', '-1', path)
+        return set(cli.Client(cfg).run(cmd).stdout.splitlines())
+
 
 class PublishBeforeYumDistTestCase(
         _RsyncDistUtilsMixin,
@@ -273,15 +293,14 @@ class PublishBeforeYumDistTestCase(
         self.verify_publish_is_skip(cfg, utils.publish_repo(*args).json())
 
         # Verify that the rsync distributor hasn't placed files.
-        sudo = '' if utils.is_root(cfg) else 'sudo '
-        cmd = (sudo + 'ls -1 /home/{}'.format(ssh_user)).split()
-        dirs = set(cli.Client(cfg).run(cmd).stdout.strip().split('\n'))
+        dirs = self.remote_root_files(cfg, distribs['rpm_rsync_distributor'])
         self.assertNotIn('content', dirs)
 
         # Publish with the rsync distributor again, and verify again.
         if selectors.bug_is_testable(2722, cfg.pulp_version):
             self.verify_publish_is_skip(cfg, utils.publish_repo(*args).json())
-            dirs = set(cli.Client(cfg).run(cmd).stdout.strip().split('\n'))
+            dirs = self.remote_root_files(cfg,
+                                          distribs['rpm_rsync_distributor'])
             self.assertNotIn('content', dirs)
 
 
@@ -351,8 +370,7 @@ class ForceFullTestCase(
             repo,
             {'id': distribs['rpm_rsync_distributor']['id']}
         ).json())
-        cmd = sudo + 'ls -1 /home/{}'.format(ssh_user)
-        dirs = set(cli_client.run(cmd.split()).stdout.strip().split('\n'))
+        dirs = self.remote_root_files(cfg, distribs['rpm_rsync_distributor'])
         self.assertNotIn('content', dirs)
 
         # Publish the repo with ``force_full`` set to true. Verify that the RPM
