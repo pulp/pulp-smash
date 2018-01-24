@@ -31,6 +31,8 @@ See `pulpcore.app.models.Importer
 
 JWT_PATH = urljoin(BASE_PATH, 'jwt/')
 
+PUBLICATIONS_PATH = urljoin(BASE_PATH, 'publications/')
+
 REPO_PATH = urljoin(BASE_PATH, 'repositories/')
 
 STATUS_PATH = urljoin(BASE_PATH, 'status/')
