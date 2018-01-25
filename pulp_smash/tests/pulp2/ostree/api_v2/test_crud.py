@@ -6,12 +6,15 @@
 .. _repositories:
    http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/cud.html
 """
+import unittest
+from random import choice, randrange
 from urllib.parse import urljoin
 
 from packaging.version import Version
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, exceptions, selectors, utils
+from pulp_smash import api, config, exceptions, selectors, utils
+from pulp_smash.constants import OSTREE_FEED, OSTREE_BRANCHES
 from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.ostree.utils import gen_repo
 from pulp_smash.tests.pulp2.ostree.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -326,3 +329,49 @@ class UpdateDistributorsTestCase(utils.BaseAPITestCase):
             repo['distributors'][0]['config']['relative_path'],
             old_path
         )
+
+
+class UpdateImportersTestCase(unittest.TestCase):
+    """Test the update of ostree importers.
+
+    This test targets the following issues:
+
+    * `Pulp Smash #839 <https://github.com/PulpQE/pulp-smash/issues/839>`_
+    * `Pulp #3210 <https://pulp.plan.io/issues/3210>`_
+    """
+
+    def test_all(self):
+        """Test the update of ostree importers.
+
+        Do the following:
+
+        1. Create a repository.
+        2. Update the ``importer`` associated with the repository.
+        3. Perform assertions about the just updated ``importer``.
+        """
+        cfg = config.get_config()
+        if selectors.bug_is_untestable(3210, cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/3210')
+        client = api.Client(cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['feed'] = OSTREE_FEED
+        body['importer_config']['branches'] = OSTREE_BRANCHES
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        repo = client.get(repo['_href'], params={'details': True})
+        importer_config = {
+            'basic_auth_username': None,
+            'depth': randrange(-1, 10),
+            'feed': utils.uuid4(),
+            'ssl_validation': choice((False, True)),
+        }
+        client.put(repo['importers'][0]['_href'], {
+            'importer_config': importer_config
+        })
+        repo = client.get(repo['_href'], params={'details': True})
+        for key, val in importer_config.items():
+            with self.subTest(key=key):
+                if val is None:
+                    self.assertNotIn(key, repo['importers'][0]['config'])
+                else:
+                    self.assertEqual(val, repo['importers'][0]['config'][key])
