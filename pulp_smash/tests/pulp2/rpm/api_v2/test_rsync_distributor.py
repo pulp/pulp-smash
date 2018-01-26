@@ -231,16 +231,14 @@ class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
     def remote_root_files(cfg, distributor_cfg):
         """Get the directory content of the remote root directory.
 
-        Return the directory content of the remote root path
-        configured in the distributor.  Only non-hidden
-        files/directories are returned.
+        Return the directory content of the remote root path configured in the
+        distributor. Only non-hidden files/directories are returned.
 
         :param pulp_smash.config.PulpSmashConfig cfg: Information about the
             system onto which files have been published.
         :param distributor_cfg: A dict of information about an RPM rsync
             distributor.
         :returns: set of file/directory names
-
         """
         path = distributor_cfg['config']['remote']['root']
         sudo = () if utils.is_root(cfg) else ('sudo',)
@@ -778,17 +776,15 @@ class RsyncExtraArgsTestCase(
     1. Create a repository with a yum distributor and RPM rsync distributor.
        Add content units to the repository.
     2. Publish with the yum distributor.
-    3. Publish with the RPM rsync distributor, with
-       ``rsync_extra_args`` set to ``['--dry-run']``, i.e. no files
-       should actually be copied by rsync
+    3. Publish with the RPM rsync distributor, with ``rsync_extra_args`` set to
+       ``['--dry-run']``, i.e. no files should actually be copied by rsync.
     4. Verify that no files are in the target directory.
     5. Publish with the RPM rsync distributor, with ``force_full`` set to true.
-       Note: ``force_full`` is needed here as Pulp is not aware that
-       the previous calls to rsync did nothing on the target
+       Note: ``force_full`` is needed here as Pulp is not aware that the
+       previous calls to rsync did nothing on the target
     6. Verify that all files are present in the target directory.
 
     This test targets `Pulp #3317 <https://pulp.plan.io/issues/3317>`_.
-
     """
 
     def test_all(self):
@@ -818,6 +814,7 @@ class RsyncExtraArgsTestCase(
             'id': distribs['rpm_rsync_distributor']['id'],
             'override_config': {'rsync_extra_args': ['--dry-run']},
         })
+
         # Verify that the rsync distributor hasn't placed any files.
         files = self.remote_root_files(cfg,
                                        distribs['rpm_rsync_distributor'])
