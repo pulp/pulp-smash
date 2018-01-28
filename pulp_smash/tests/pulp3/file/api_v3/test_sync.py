@@ -2,7 +2,8 @@
 """Tests that sync file plugin repositories."""
 import unittest
 from itertools import product
-from urllib.parse import urljoin
+from random import randint
+from urllib.parse import urljoin, urlsplit
 
 from pulp_smash import api, config
 from pulp_smash.constants import FILE_FEED_URL
@@ -85,3 +86,43 @@ class SyncFileRepoTestCase(unittest.TestCase):
         sync_repo(self.cfg, importer)
         repo = client.get(repo['_href'])
         self.assertNotEqual(latest_version_href, repo['_latest_version_href'])
+
+
+class SyncChangeRepoVersionTestCase(unittest.TestCase):
+    """Verify whether sync of repository updates repository version."""
+
+    def test_all(self):
+        """Verify whether the sync of a repository updates its version.
+
+        This test explores the design choice stated in the `Pulp #3308`_ that a
+        new repository version is created even if the sync does not add or
+        remove any content units. Even without any changes to the importer if a
+        new sync occurs, a new repository version is created.
+
+        .. _Pulp #3308: https://pulp.plan.io/issues/3308
+
+        Do the following:
+
+        1. Create a repository, and an importer.
+        2. Sync the repository an arbitrary number of times.
+        3. Verify that the repository version is equal to the previous number
+           of syncs.
+        """
+        cfg = config.get_config()
+        client = api.Client(cfg, api.json_handler)
+        client.request_kwargs['auth'] = get_auth()
+        repo = client.post(REPO_PATH, gen_repo())
+        self.addCleanup(client.delete, repo['_href'])
+        body = gen_importer(repo)
+        body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
+        importer = client.post(FILE_IMPORTER_PATH, body)
+        self.addCleanup(client.delete, importer['_href'])
+
+        number_of_syncs = randint(1, 10)
+        for _ in range(number_of_syncs):
+            sync_repo(cfg, importer)
+
+        repo = client.get(repo['_href'])
+        path = urlsplit(repo['_latest_version_href']).path
+        latest_repo_version = int(path.split('/')[-2])
+        self.assertEqual(latest_repo_version, number_of_syncs)
