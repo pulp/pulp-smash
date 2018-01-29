@@ -99,6 +99,13 @@ Please adhere to the following guidelines:
   reason. As another example, do not add a test that makes dozens of concurrent
   requests to a public service such as docker hub.
 
+These next guidelines **are not** mandatory, but will match the formatting adopted
+in the existing code base.
+
+* Docstrings should not end with a blank line.
+* Lines should be hard wrapped at 79 characters.
+* Comments should typically be preceded by a blank line.
+
 Review Process
 ~~~~~~~~~~~~~~
 
