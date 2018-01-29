@@ -183,9 +183,10 @@ class Client(object):
 
     Pulp Smash ships with several response handlers. See:
 
+    * :func:`pulp_smash.api.code_handler`
     * :func:`pulp_smash.api.echo_handler`
-    * :func:`pulp_smash.api.safe_handler`
     * :func:`pulp_smash.api.json_handler`
+    * :func:`pulp_smash.api.safe_handler`
 
     As mentioned, this class has configurable request and response handling
     mechanisms. We've covered response handling mechanisms — let's move on to
