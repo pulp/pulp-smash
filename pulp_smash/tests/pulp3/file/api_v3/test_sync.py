@@ -61,7 +61,7 @@ class SyncFileRepoTestCase(unittest.TestCase):
         6. Assert that repository version is different from the previous one.
 
         :param download_policy: The download policy for the importer.
-        :param sync_mode: The download policy for the importer.
+        :param sync_mode: The sync mode for the importer.
         """
         client = api.Client(self.cfg, api.json_handler)
         client.request_kwargs['auth'] = get_auth()
