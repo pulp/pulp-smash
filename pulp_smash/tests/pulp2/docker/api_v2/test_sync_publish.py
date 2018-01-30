@@ -1,7 +1,6 @@
 # coding=utf-8
 """Tests for syncing and publishing docker repositories."""
 import unittest
-from urllib.parse import urlsplit, urlunsplit
 
 from jsonschema import validate
 from packaging.version import Version
@@ -12,6 +11,7 @@ from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.docker.api_v2.utils import (
     gen_distributor,
     gen_repo,
+    SyncPublishMixin,
 )
 from pulp_smash.tests.pulp2.docker.utils import get_upstream_name
 from pulp_smash.tests.pulp2.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -158,58 +158,6 @@ MANIFEST_LIST_V2 = {
 """A schema for docker manifest lists."""
 
 
-class SyncPublishMixin(object):
-    """Tools for test cases that sync and publish Docker repositories.
-
-    This class must be mixed in to a class that inherits from
-    ``unittest.TestCase``.
-    """
-
-    @staticmethod
-    def adjust_url(url):
-        """Return a URL that can be used for talking with Crane.
-
-        The URL returned is the same as ``url``, except that the scheme is set
-        to HTTP, and the port is set to (or replaced by) 5000.
-
-        :param url: A string, such as ``https://pulp.example.com/foo``.
-        :returns: A string, such as ``http://pulp.example.com:5000/foo``.
-        """
-        parse_result = urlsplit(url)
-        netloc = parse_result[1].partition(':')[0] + ':5000'
-        return urlunsplit(('http', netloc) + parse_result[2:])
-
-    @staticmethod
-    def make_crane_client(cfg):
-        """Make an API client for talking with Crane.
-
-        Create an API client for talking to Crane. The client returned by this
-        method is similar to the following ``client``:
-
-        >>> client = api.Client(cfg, api.json_handler)
-
-        However:
-
-        * The client's base URL is adjusted as described by :meth:`adjust_url`.
-        * The client will send an ``accept:application/json`` header with each
-          request.
-
-        :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
-            deployment.
-        :returns: An API client for talking with Crane.
-        :rtype: pulp_smash.api.Client
-        """
-        client = api.Client(
-            cfg,
-            api.json_handler,
-            {'headers': {'accept': 'application/json'}},
-        )
-        client.request_kwargs['url'] = SyncPublishMixin.adjust_url(
-            client.request_kwargs['url']
-        )
-        return client
-
-
 class V1RegistryTestCase(SyncPublishMixin, unittest.TestCase):
     """Create, sync, publish and interact with a v1 Docker registry."""
 
@@ -218,50 +166,16 @@ class V1RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         """Create class-wide variables."""
         super().setUpClass()
         cls.cfg = config.get_config()
-        cls.repo = {}
         if (utils.os_is_f26(cls.cfg) and
                 selectors.bug_is_untestable(3036, cls.cfg.pulp_version)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3036')
 
-    @classmethod
-    def tearDownClass(cls):
-        """Clean up resources."""
-        if cls.repo:
-            api.Client(cls.cfg).delete(cls.repo['_href'])
-        super().tearDownClass()
-
-    def test_01_set_up(self):
-        """Create, sync and publish a repository.
-
-        Specifically, do the following:
-
-        1. Create, sync and publish a Docker repository. Let the repository's
-           feed reference a v1 Docker registry.
-        2. Make Crane immediately re-read the metadata files published by Pulp.
-           (Restart Apache.)
-        """
-        client = api.Client(self.cfg, api.json_handler)
-        body = gen_repo()
-        body['importer_config'].update({
-            'enable_v1': True,
-            'enable_v2': False,
-            'feed': DOCKER_V1_FEED_URL,
-            'upstream_name': get_upstream_name(self.cfg),
-        })
-        body['distributors'] = [gen_distributor()]
-        type(self).repo = client.post(REPOSITORY_PATH, body)
-        type(self).repo = client.get(
-            self.repo['_href'],
-            params={'details': True}
-        )
-        utils.sync_repo(self.cfg, self.repo)
-        utils.publish_repo(self.cfg, self.repo)
-
-        # Make Crane re-read metadata. (Now!)
-        cli.GlobalServiceManager(self.cfg).restart(('httpd',))
+    def setUp(self):
+        """Create a docker repository."""
+        self.repo = self.create_repo(self.cfg, True, False, DOCKER_V1_FEED_URL)
 
     @selectors.skip_if(bool, 'repo', False)
-    def test_02_get_crane_repositories(self):
+    def test_01_get_crane_repositories(self):
         """Issue an HTTP GET request to ``/crane/repositories``.
 
         Assert that the response is as described by `Crane Admin
@@ -273,7 +187,7 @@ class V1RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         self.verify_v1_repo(repos[repo_id])
 
     @selectors.skip_if(bool, 'repo', False)
-    def test_02_get_crane_repositories_v1(self):  # pylint:disable=invalid-name
+    def test_01_get_crane_repositories_v1(self):  # pylint:disable=invalid-name
         """Issue an HTTP GET request to ``/crane/repositories/v1``.
 
         Assert that the response is as described by `Crane Admin
@@ -305,7 +219,6 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         """Create class-wide variables."""
         super().setUpClass()
         cls.cfg = config.get_config()
-        cls.repo = {}
         if (utils.os_is_f26(cls.cfg) and
                 selectors.bug_is_untestable(3036, cls.cfg.pulp_version)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3036')
@@ -315,46 +228,12 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
                     'https://pulp.plan.io/issues/{}'.format(issue_id)
                 )
 
-    @classmethod
-    def tearDownClass(cls):
-        """Clean up resources."""
-        if cls.repo:
-            api.Client(cls.cfg).delete(cls.repo['_href'])
-        super().tearDownClass()
-
-    def test_01_set_up(self):
-        """Create, sync and publish a Docker repository.
-
-        Specifically, do the following:
-
-        1. Create, sync and publish a Docker repository. Let the repository's
-           feed reference a v2 Docker registry, and let the repository's
-           upstream name reference an image with a manifest list.
-        2. Make Crane immediately re-read the metadata files published by Pulp.
-           (Restart Apache.)
-        """
-        client = api.Client(self.cfg, api.json_handler)
-        body = gen_repo()
-        body['importer_config'].update({
-            'enable_v1': False,
-            'enable_v2': True,
-            'feed': DOCKER_V2_FEED_URL,
-            'upstream_name': get_upstream_name(self.cfg),
-        })
-        body['distributors'] = [gen_distributor()]
-        type(self).repo = client.post(REPOSITORY_PATH, body)
-        type(self).repo = client.get(
-            self.repo['_href'],
-            params={'details': True}
-        )
-        utils.sync_repo(self.cfg, self.repo)
-        utils.publish_repo(self.cfg, self.repo)
-
-        # Make Crane read the metadata. (Now!)
-        cli.GlobalServiceManager(self.cfg).restart(('httpd',))
+    def setUp(self):
+        """Create docker repository."""
+        self.repo = self.create_repo(self.cfg, False, True, DOCKER_V2_FEED_URL)
 
     @selectors.skip_if(bool, 'repo', False)
-    def test_02_get_crane_repositories_v2(self):  # pylint:disable=invalid-name
+    def test_01_get_crane_repositories_v2(self):  # pylint:disable=invalid-name
         """Issue an HTTP GET request to ``/crane/repositories/v2``.
 
         Assert that the response is as described by `Crane Admin
@@ -369,7 +248,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         self.assertFalse(repos[repo_id]['protected'])
 
     @selectors.skip_if(bool, 'repo', False)
-    def test_02_get_manifest_v1(self):
+    def test_01_get_manifest_v1(self):
         """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
 
         Pass each of the followng headers in turn:
@@ -402,7 +281,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
                 validate(manifest, MANIFEST_V1)
 
     @selectors.skip_if(bool, 'repo', False)
-    def test_02_get_manifest_v2(self):
+    def test_01_get_manifest_v2(self):
         """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
 
         Pass a header of
@@ -425,7 +304,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         validate(manifest, MANIFEST_V2)
 
     @selectors.skip_if(bool, 'repo', False)
-    def test_02_get_manifest_list(self):
+    def test_01_get_manifest_list(self):
         """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
 
         Pass a header of
