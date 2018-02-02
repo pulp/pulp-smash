@@ -395,10 +395,10 @@ def poll_task(server_config, href, pulp_system=None):
     """
     if not pulp_system:
         pulp_system = server_config.get_systems('api')[0]
-    # 360 * 5s == 1800s == 30m
+    # 900 * 2s == 1800s == 30m
     # NOTE: The timeout counter is synchronous. We query Pulp, then count down,
     # then query pulp, then count down, etc. This is… dumb.
-    poll_limit = 360
+    poll_limit = 900
     poll_counter = 0
     while True:
         response = requests.get(
@@ -424,4 +424,4 @@ def poll_task(server_config, href, pulp_system=None):
             raise exceptions.TaskTimedOutError(
                 'Task {} is ongoing after {} polls.'.format(href, poll_limit)
             )
-        sleep(5)
+        sleep(2)
