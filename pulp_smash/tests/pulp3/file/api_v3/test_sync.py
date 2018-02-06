@@ -4,15 +4,17 @@ import unittest
 from itertools import product
 from urllib.parse import urljoin
 
-from pulp_smash import api, config, selectors
+from pulp_smash import api, config
 from pulp_smash.constants import FILE_FEED_URL
 from pulp_smash.tests.pulp3.constants import (
     FILE_IMPORTER_PATH,
-    IMPORTER_DOWN_POLICY,
     IMPORTER_SYNC_MODE,
     REPO_PATH,
 )
-from pulp_smash.tests.pulp3.file.api_v3.utils import gen_importer
+from pulp_smash.tests.pulp3.file.api_v3.utils import (
+    gen_importer,
+    get_importer_down_policy,
+)
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule # noqa pylint:disable=unused-import
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
 from pulp_smash.tests.pulp3.utils import get_auth, sync_repo
@@ -37,9 +39,7 @@ class SyncFileRepoTestCase(unittest.TestCase):
 
         .. _Pulp #3320: https://pulp.plan.io/issues/3320
         """
-        importer_down_policy = IMPORTER_DOWN_POLICY
-        if selectors.bug_is_untestable(3320, self.cfg):
-            importer_down_policy -= {'background', 'on_demand'}
+        importer_down_policy = get_importer_down_policy()
         for pair in product(importer_down_policy, IMPORTER_SYNC_MODE):
             with self.subTest(pair=pair):
                 self.do_test(*pair)
