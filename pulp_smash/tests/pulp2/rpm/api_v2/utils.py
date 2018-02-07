@@ -394,7 +394,7 @@ def get_dists_by_type_id(cfg, repo):
 def set_pulp_manage_rsync(cfg, boolean):
     """Set the ``pulp_manage_rsync`` SELinux policy.
 
-    If the ``semanage`` executable is not available, return. (This is the case
+    If the ``setsebool`` executable is not available, return. (This is the case
     if SELinux isn't installed on the system under test.) Otherwise, set the
     ``pulp_manage_rsync SELinux policy on or off, depending on the truthiness
     of ``boolean``.
@@ -413,15 +413,13 @@ def set_pulp_manage_rsync(cfg, boolean):
     sudo = () if utils.is_root(cfg) else ('sudo',)
     client = cli.Client(cfg)
     try:
-        # semanage is installed at /sbin/semanage on some distros, and requires
-        # root privileges to discover.
-        client.run(sudo + ('which', 'semanage'))
+        # setsebool is installed at /usr/sbin/setsebool on some distros, and
+        # requires root privileges to discover.
+        client.run(sudo + ('which', 'setsebool'))
     except exceptions.CalledProcessError:
         return None
-    cmd = sudo
-    cmd += ('semanage', 'boolean', '--modify')
-    cmd += ('--on',) if boolean else ('--off',)
-    cmd += ('pulp_manage_rsync',)
+    cmd = sudo + ('setsebool', 'pulp_manage_rsync')
+    cmd += ('on',) if boolean else ('off',)
     return client.run(cmd)
 
 
