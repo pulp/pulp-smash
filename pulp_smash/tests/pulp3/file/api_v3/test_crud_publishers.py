@@ -34,7 +34,7 @@ class CRUDPublishersTestCase(unittest.TestCase):
 
     def test_01_create_publisher(self):
         """Create a publisher."""
-        body = gen_publisher(self.repo)
+        body = gen_publisher()
         type(self).publisher = self.client.post(FILE_PUBLISHER_PATH, body)
         for key, val in body.items():
             with self.subTest(key=key):
@@ -62,7 +62,7 @@ class CRUDPublishersTestCase(unittest.TestCase):
     @selectors.skip_if(bool, 'publisher', False)
     def test_03_partially_update(self):
         """Update a publisher using HTTP PATCH."""
-        body = gen_publisher(self.repo)
+        body = gen_publisher()
         self.client.patch(self.publisher['_href'], body)
         type(self).publisher = self.client.get(self.publisher['_href'])
         for key, val in body.items():
@@ -72,7 +72,7 @@ class CRUDPublishersTestCase(unittest.TestCase):
     @selectors.skip_if(bool, 'publisher', False)
     def test_04_fully_update(self):
         """Update a publisher using HTTP PUT."""
-        body = gen_publisher(self.repo)
+        body = gen_publisher()
         self.client.put(self.publisher['_href'], body)
         type(self).publisher = self.client.get(self.publisher['_href'])
         for key, val in body.items():

@@ -36,7 +36,7 @@ class CRUDImportersTestCase(unittest.TestCase):
 
     def test_01_create_importer(self):
         """Create an importer."""
-        body = _gen_verbose_importer(self.repo)
+        body = _gen_verbose_importer()
         type(self).importer = self.client.post(FILE_IMPORTER_PATH, body)
         for key in ('username', 'password'):
             del body[key]
@@ -66,7 +66,7 @@ class CRUDImportersTestCase(unittest.TestCase):
     @selectors.skip_if(bool, 'importer', False)
     def test_03_partially_update(self):
         """Update an importer using HTTP PATCH."""
-        body = _gen_verbose_importer(self.repo)
+        body = _gen_verbose_importer()
         self.client.patch(self.importer['_href'], body)
         for key in ('username', 'password'):
             del body[key]
@@ -78,7 +78,7 @@ class CRUDImportersTestCase(unittest.TestCase):
     @selectors.skip_if(bool, 'importer', False)
     def test_04_fully_update(self):
         """Update an importer using HTTP PUT."""
-        body = _gen_verbose_importer(self.repo)
+        body = _gen_verbose_importer()
         self.client.put(self.importer['_href'], body)
         for key in ('username', 'password'):
             del body[key]
@@ -95,7 +95,7 @@ class CRUDImportersTestCase(unittest.TestCase):
             self.client.get(self.importer['_href'])
 
 
-def _gen_verbose_importer(repo):
+def _gen_verbose_importer():
     """Return a semi-random dict for use in defining an importer.
 
     For most tests, it's desirable to create importers with as few attributes
@@ -104,10 +104,8 @@ def _gen_verbose_importer(repo):
     sense to provide as many attributes as possible.
 
     Note that 'username' and 'password' are write-only attributes.
-
-    :param repo: A dict of information about a file repository.
     """
-    attrs = gen_importer(repo)
+    attrs = gen_importer()
     attrs.update({
         'feed_url': random.choice((FILE_FEED_URL, FILE2_FEED_URL)),
         'password': utils.uuid4(),

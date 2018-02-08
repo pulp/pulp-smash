@@ -23,26 +23,18 @@ def get_importer_down_policy():
     return IMPORTER_DOWN_POLICY
 
 
-def gen_importer(repo):
-    """Return a semi-random dict for use in creating an importer.
-
-    :param repo: A dict of information about a file repository.
-    """
+def gen_importer():
+    """Return a semi-random dict for use in creating an importer."""
     return {
         'download_policy': sample(get_importer_down_policy(), 1)[0],
         'name': utils.uuid4(),
-        'repository': repo['_href'],
         'sync_mode': sample(IMPORTER_SYNC_MODE, 1)[0],
     }
 
 
-def gen_publisher(repo):
-    """Return a semi-random dict for use in creating a publisher.
-
-    :param repo: A dict of information about a file repository.
-    """
+def gen_publisher():
+    """Return a semi-random dict for use in creating a publisher."""
     return {
         'name': utils.uuid4(),
-        'repository': repo['_href'],
         'auto_publish': choice((False, True))
     }

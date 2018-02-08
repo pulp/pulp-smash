@@ -160,16 +160,17 @@ def get_plugins(cfg=None):
     return plugins
 
 
-def sync_repo(cfg, importer):
+def sync_repo(cfg, importer, repo):
     """Sync a repository.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
         host.
     :param importer: A dict of detailed information about the importer of
         the repository to be synced.
+    :param repo: A dict of detailed information about the repository.
     :returns: The server's response. Call ``.json()`` on the response to get
         a call report.
     """
     return api.Client(cfg, api.json_handler).post(
-        urljoin(importer['_href'], 'sync/')
+        urljoin(importer['_href'], 'sync/'), {'repository': repo['_href']}
     )

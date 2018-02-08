@@ -68,7 +68,7 @@ class SyncFileRepoTestCase(unittest.TestCase):
         client.request_kwargs['auth'] = get_auth()
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
-        body = gen_importer(repo)
+        body = gen_importer()
         body['download_policy'] = download_policy
         body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
         body['sync_mode'] = sync_mode
@@ -77,13 +77,13 @@ class SyncFileRepoTestCase(unittest.TestCase):
 
         # Sync the repository.
         self.assertIsNone(repo['_latest_version_href'])
-        sync_repo(self.cfg, importer)
+        sync_repo(self.cfg, importer, repo)
         repo = client.get(repo['_href'])
         self.assertIsNotNone(repo['_latest_version_href'])
 
         # Sync the repository again.
         latest_version_href = repo['_latest_version_href']
-        sync_repo(self.cfg, importer)
+        sync_repo(self.cfg, importer, repo)
         repo = client.get(repo['_href'])
         self.assertNotEqual(latest_version_href, repo['_latest_version_href'])
 
@@ -113,14 +113,14 @@ class SyncChangeRepoVersionTestCase(unittest.TestCase):
         client.request_kwargs['auth'] = get_auth()
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
-        body = gen_importer(repo)
+        body = gen_importer()
         body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
         importer = client.post(FILE_IMPORTER_PATH, body)
         self.addCleanup(client.delete, importer['_href'])
 
         number_of_syncs = randint(1, 10)
         for _ in range(number_of_syncs):
-            sync_repo(cfg, importer)
+            sync_repo(cfg, importer, repo)
 
         repo = client.get(repo['_href'])
         path = urlsplit(repo['_latest_version_href']).path
