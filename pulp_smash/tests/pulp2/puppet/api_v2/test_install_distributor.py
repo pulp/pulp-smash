@@ -44,9 +44,9 @@ class InstallDistributorTestCase(utils.BaseAPITestCase):
         cli_client.run(sudo + ('chcon', '-t', 'puppet_etc_t', install_path))
 
         # Make sure the pulp_manage_puppet boolean is enabled
-        cli_client.run(sudo + ('setsebool', 'pulp_manage_puppet' 'on'))
+        cli_client.run(sudo + ('setsebool', 'pulp_manage_puppet', 'on'))
         self.addCleanup(cli_client.run, sudo + (
-            'setsebool', 'pulp_manage_puppet' 'off'))
+            'setsebool', 'pulp_manage_puppet', 'off'))
 
         # Create and populate a Puppet repository.
         distributor = gen_install_distributor()
