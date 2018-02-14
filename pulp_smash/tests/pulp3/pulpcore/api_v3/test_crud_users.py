@@ -38,11 +38,23 @@ class UsersCRUDTestCase(unittest.TestCase):
 
     @selectors.skip_if(bool, 'user', False)
     def test_02_read_user(self):
-        """Read a user."""
+        """Read a user byt its _href."""
         user = self.client.get(self.user['_href'])
         for key, val in user.items():
             with self.subTest(key=key):
                 self.assertEqual(val, self.user[key])
+
+    @selectors.skip_if(bool, 'user', False)
+    def test_02_read_username(self):
+        """Read a user by its username."""
+        if selectors.bug_is_untestable(3142, self.cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/3142')
+        page = self.client.get(USER_PATH, params={
+            'username': self.user['username']
+        })
+        for key, val in self.user.items():
+            with self.subTest(key=key):
+                self.assertEqual(page['results'][0][key], val)
 
     @selectors.skip_if(bool, 'user', False)
     def test_02_read_users(self):
