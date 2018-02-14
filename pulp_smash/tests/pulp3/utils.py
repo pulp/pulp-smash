@@ -174,3 +174,43 @@ def sync_repo(cfg, importer, repo):
     return api.Client(cfg, api.json_handler).post(
         urljoin(importer['_href'], 'sync/'), {'repository': repo['_href']}
     )
+
+
+def publish_repo(cfg, publisher, repo):
+    """Publish a repository.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        host.
+    :param publisher: A dict of detailed information about the publisher of
+        the repository to be published.
+    :param repo: A dict of detailed information about the repository.
+    :returns: A publication. A dict of detailed information about the just
+        create publication.
+    """
+    client = api.Client(cfg, api.json_handler)
+    call_report = client.post(
+        urljoin(publisher['_href'], 'publish/'), {'repository': repo['_href']}
+    )
+    last_task = next(api.poll_spawned_tasks(cfg, call_report))
+    return client.get(last_task['created_resources'][0])
+
+
+def get_latest_repo_version(repo):
+    """Get the latest version of a given repository.
+
+    :param repo: A dict of detailed information about the repository.
+    :returns: A _href to the latest version of a given repository.
+    """
+    client = api.Client(config.get_config(), api.json_handler)
+    return client.get(repo['_href'])['_latest_version_href']
+
+
+def read_repo_content(repo):
+    """Read the content units of a given repository.
+
+    :param repo: A dict of detailed information about the repository.
+    :returns: A dict of detailed information about the contents units present
+        in a given repository.
+    """
+    client = api.Client(config.get_config(), api.json_handler)
+    return client.get(urljoin(get_latest_repo_version(repo), 'content/'))
