@@ -31,25 +31,22 @@ class CRUDRepoTestCase(unittest.TestCase):
 
     @selectors.skip_if(bool, 'repo', False)
     def test_02_read_repo(self):
-        """Read a repository by its href.
-
-        Assert that the response contains the correct repository name.
-        """
+        """Read a repository by its href."""
         repo = self.client.get(self.repo['_href'])
-        self.assertEqual(self.repo['name'], repo['name'])
+        for key, val in self.repo.items():
+            with self.subTest(key=key):
+                self.assertEqual(repo[key], val)
 
     @selectors.skip_if(bool, 'repo', False)
     def test_02_read_repos(self):
-        """Search for the repository by its name.
-
-        Assert that just one search result is returned, and that the result
-        has a correct name.
-        """
+        """Read the repository by its name."""
         page = self.client.get(REPO_PATH, params={
             'name': self.repo['name']
         })
         self.assertEqual(len(page['results']), 1)
-        self.assertEqual(page['results'][0]['name'], self.repo['name'])
+        for key, val in self.repo.items():
+            with self.subTest(key=key):
+                self.assertEqual(page['results'][0][key], val)
 
     @selectors.skip_if(bool, 'repo', False)
     def test_03_fully_update_name(self):
