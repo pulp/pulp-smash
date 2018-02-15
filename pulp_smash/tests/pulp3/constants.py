@@ -9,7 +9,11 @@ BASE_IMPORTER_PATH = urljoin(BASE_PATH, 'importers/')
 
 BASE_PUBLISHER_PATH = urljoin(BASE_PATH, 'publishers/')
 
+CONTENT_PATH = urljoin(BASE_PATH, 'content/')
+
 DISTRIBUTION_PATH = urljoin(BASE_PATH, 'distributions/')
+
+FILE_CONTENT_PATH = urljoin(CONTENT_PATH, 'file/')
 
 FILE_IMPORTER_PATH = urljoin(BASE_IMPORTER_PATH, 'file/')
 
