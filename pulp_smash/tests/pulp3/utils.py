@@ -165,9 +165,9 @@ def sync_repo(cfg, importer, repo):
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
         host.
-    :param importer: A dict of detailed information about the importer of
-        the repository to be synced.
-    :param repo: A dict of detailed information about the repository.
+    :param importer: A dict of information about the importer of the repository
+        to be synced.
+    :param repo: A dict of information about the repository.
     :returns: The server's response. Call ``.json()`` on the response to get
         a call report.
     """
@@ -181,16 +181,18 @@ def publish_repo(cfg, publisher, repo):
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
         host.
-    :param publisher: A dict of detailed information about the publisher of
-        the repository to be published.
-    :param repo: A dict of detailed information about the repository.
-    :returns: A publication. A dict of detailed information about the just
-        create publication.
+    :param publisher: A dict of information about the publisher of the
+        repository to be published.
+    :param repo: A dict of information about the repository.
+    :returns: A publication. A dict of information about the just created
+        publication.
     """
     client = api.Client(cfg, api.json_handler)
     call_report = client.post(
         urljoin(publisher['_href'], 'publish/'), {'repository': repo['_href']}
     )
+    # As of this writing, Pulp 3 only returns one task. If Pulp 3 starts
+    # returning multiple tasks, this may need to be re-written.
     last_task = next(api.poll_spawned_tasks(cfg, call_report))
     return client.get(last_task['created_resources'][0])
 
@@ -198,19 +200,21 @@ def publish_repo(cfg, publisher, repo):
 def get_latest_repo_version(repo):
     """Get the latest version of a given repository.
 
-    :param repo: A dict of detailed information about the repository.
+    :param repo: A dict of information about the repository.
     :returns: A _href to the latest version of a given repository.
     """
-    client = api.Client(config.get_config(), api.json_handler)
-    return client.get(repo['_href'])['_latest_version_href']
+    return (api
+            .Client(config.get_config(), api.json_handler)
+            .get(repo['_href'])['_latest_version_href'])
 
 
 def read_repo_content(repo):
     """Read the content units of a given repository.
 
-    :param repo: A dict of detailed information about the repository.
-    :returns: A dict of detailed information about the contents units present
-        in a given repository.
+    :param repo: A dict of information about the repository.
+    :returns: A dict of information about the contents units present in a given
+        repository.
     """
-    client = api.Client(config.get_config(), api.json_handler)
-    return client.get(urljoin(get_latest_repo_version(repo), 'content/'))
+    return (api
+            .Client(config.get_config(), api.json_handler)
+            .get(urljoin(get_latest_repo_version(repo), 'content/')))

@@ -4,7 +4,7 @@
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, config
+from pulp_smash import api, config, selectors
 from pulp_smash.constants import FILE_FEED_URL
 from pulp_smash.tests.pulp3.constants import (
     FILE_IMPORTER_PATH,
@@ -43,14 +43,13 @@ class ImportersPublishersTestCase(unittest.TestCase):
         1. Create an importer, and a publisher.
         2. Create 2 repositories.
         3. Sync both repositories using the same importer.
-        4. Assert that the number of units present in both repositories are the
-           same.
+        4. Assert that the two repositories have the same contents.
         5. Publish both repositories using the same publisher.
         6. Assert that each generated publication has the same publisher, but
            are associated with different repositories.
         """
+        # Create an importer and publisher.
         cfg = config.get_config()
-        repos = []
         client = api.Client(cfg, api.json_handler)
         client.request_kwargs['auth'] = get_auth()
         body = gen_importer()
@@ -59,22 +58,29 @@ class ImportersPublishersTestCase(unittest.TestCase):
         self.addCleanup(client.delete, importer['_href'])
         publisher = client.post(FILE_PUBLISHER_PATH, gen_publisher())
         self.addCleanup(client.delete, publisher['_href'])
+
+        # Create and sync repos.
+        repos = []
         for _ in range(2):
-            repo = client.post(REPO_PATH, gen_repo())
-            self.addCleanup(client.delete, repo['_href'])
-            repos.append(repo)
-            sync_repo(cfg, importer, repo)
+            repos.append(client.post(REPO_PATH, gen_repo()))
+            self.addCleanup(client.delete, repos[-1]['_href'])
+            sync_repo(cfg, importer, repos[-1])
 
+        # Compare contents of repositories.
         contents = []
-        contents.append(len(read_repo_content(repos[0])['results']))
-        contents.append(len(read_repo_content(repos[1])['results']))
+        for repo in repos:
+            contents.append(read_repo_content(repo)['results'])
+        self.assertEqual(
+            {content['digest'] for content in contents[0]},
+            {content['digest'] for content in contents[1]},
+        )
 
-        self.assertEqual(contents[0], contents[1])
-
+        # Publish repositories.
         publications = []
         for repo in repos:
             publications.append(publish_repo(cfg, publisher, repo))
-
+            if selectors.bug_is_testable(3354, cfg.pulp_version):
+                self.addCleanup(client.delete, publications[-1]['_href'])
         self.assertEqual(
             publications[0]['publisher'],
             publications[1]['publisher']
