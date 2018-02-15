@@ -27,41 +27,43 @@ class PublicationsTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Create class-wide variables.
-
-        In order to create a publication a publisher has to be created first.
-        Besides that, a repo with a non null version has to created as well.
-        """
+        """Create class-wide variables."""
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
         cls.client.request_kwargs['auth'] = get_auth()
+        cls.importer = {}
         cls.publication = {}
-        cls.repo = cls.client.post(REPO_PATH, gen_repo())
-        body = gen_importer()
-        body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
-        cls.importer = cls.client.post(FILE_IMPORTER_PATH, body)
-        sync_repo(cls.cfg, cls.importer, cls.repo)
-        cls.publisher = cls.client.post(
-            FILE_PUBLISHER_PATH,
-            gen_publisher()
-        )
+        cls.publisher = {}
+        cls.repo = {}
+        try:
+            cls.repo.update(cls.client.post(REPO_PATH, gen_repo()))
+            body = gen_importer()
+            body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
+            cls.importer.update(cls.client.post(FILE_IMPORTER_PATH, body))
+            cls.publisher.update(
+                cls.client.post(FILE_PUBLISHER_PATH, gen_publisher())
+            )
+            sync_repo(cls.cfg, cls.importer, cls.repo)
+        except:  # noqa:E722
+            cls.tearDownClass()
+            raise
 
     @classmethod
     def tearDownClass(cls):
         """Clean class-wide variables."""
-        cls.client.delete(cls.importer['_href'])
-        cls.client.delete(cls.publisher['_href'])
-        cls.client.delete(cls.repo['_href'])
+        for resource in (cls.importer, cls.publisher, cls.repo):
+            if resource:
+                cls.client.delete(resource['_href'])
 
     def test_01_create_publication(self):
-        """Create publication."""
+        """Create a publication."""
         call_report = self.client.post(
             urljoin(self.publisher['_href'], 'publish/'),
             {'repository': self.repo['_href']}
         )
         last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
         publication_href = last_task['created_resources'][0]
-        type(self).publication = self.client.get(publication_href)
+        self.publication.update(self.client.get(publication_href))
 
     @selectors.skip_if(bool, 'publication', False)
     def test_02_read_publication(self):
@@ -77,6 +79,7 @@ class PublicationsTestCase(unittest.TestCase):
         page = self.client.get(PUBLICATIONS_PATH, params={
             'repository_version': self.repo['_href']
         })
+        self.assertEqual(len(page['results']), 1)
         for key, val in self.publication.items():
             with self.subTest(key=key):
                 self.assertEqual(page['results'][0][key], val)
@@ -87,6 +90,7 @@ class PublicationsTestCase(unittest.TestCase):
         page = self.client.get(PUBLICATIONS_PATH, params={
             'publisher': self.publisher['_href']
         })
+        self.assertEqual(len(page['results']), 1)
         for key, val in self.publication.items():
             with self.subTest(key=key):
                 self.assertEqual(page['results'][0][key], val)
