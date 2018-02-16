@@ -22,7 +22,7 @@ See `pulpcore.app.models.Importer
 <https://docs.pulpproject.org/en/3.0/nightly/contributing/platform_api/app/models.html#pulpcore.app.models.Importer>`_.
 """
 
-IMPORTER_SYNC_MODE = {'additive', 'mirror'}
+IMPORTER_SYNC_MODE = {'mirror'}
 """Sync modes for an importer.
 
 See `pulpcore.app.models.Importer
