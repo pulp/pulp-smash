@@ -4,7 +4,7 @@ import unittest
 
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, config, selectors
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.tests.pulp3.constants import FILE_PUBLISHER_PATH, REPO_PATH
 from pulp_smash.tests.pulp3.file.api_v3.utils import gen_publisher
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -12,7 +12,7 @@ from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
 from pulp_smash.tests.pulp3.utils import get_auth
 
 
-class CRUDPublishersTestCase(unittest.TestCase):
+class CRUDPublishersTestCase(unittest.TestCase, utils.SmokeTest):
     """CRUD publishers."""
 
     @classmethod

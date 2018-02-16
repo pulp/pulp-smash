@@ -1,12 +1,13 @@
 # coding=utf-8
 """Unit tests for :mod:`pulp_smash.pulp_smash_cli`."""
+import importlib
 import json
 import os
 import unittest
 from unittest import mock
 
 from click.testing import CliRunner
-from pulp_smash import config, exceptions, pulp_smash_cli
+from pulp_smash import config, exceptions, pulp_smash_cli, utils
 
 from .test_config import OLD_CONFIG, PULP_SMASH_CONFIG
 
@@ -324,3 +325,26 @@ class SettingsValidateTestCase(
                 ),
                 result.output,
             )
+
+
+class SmokeTestsTestCase(BasePulpSmashCliTestCase):
+    """Test ``pulp_smash.pulp_smash_cli.smoke_tests`` command."""
+
+    def test_all(self):
+        """Execute the CLI command.
+
+        Assert that each line of output names a test case, and each of those
+        test cases inherits from :class:`pulp_smash.utils.SmokeTest`.
+        """
+        result = self.cli_runner.invoke(pulp_smash_cli.smoke_tests, [])
+        self.assertEqual(result.exit_code, 0)
+        # Each line printed to stdout is a fully qualified test case name, e.g.
+        # `pulp_smash.tests.….TestFoo`.
+        fq_names = result.output.strip().splitlines()
+        self.assertGreater(len(fq_names), 0)
+        for fq_name in fq_names:
+            with self.subTest(fq_name=fq_name):
+                module_name, _, class_name = fq_name.rpartition('.')
+                module = importlib.import_module(module_name)
+                klass = getattr(module, class_name)
+                self.assertTrue(issubclass(klass, utils.SmokeTest))

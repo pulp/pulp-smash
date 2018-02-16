@@ -5,7 +5,7 @@ from itertools import product
 from random import randint
 from urllib.parse import urljoin, urlsplit
 
-from pulp_smash import api, config
+from pulp_smash import api, config, utils
 from pulp_smash.constants import FILE_FEED_URL
 from pulp_smash.tests.pulp3.constants import (
     FILE_IMPORTER_PATH,
@@ -21,7 +21,7 @@ from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
 from pulp_smash.tests.pulp3.utils import get_auth, sync_repo
 
 
-class SyncFileRepoTestCase(unittest.TestCase):
+class SyncFileRepoTestCase(unittest.TestCase, utils.SmokeTest):
     """Sync repositories with the file plugin."""
 
     @classmethod

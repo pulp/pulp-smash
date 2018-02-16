@@ -16,7 +16,7 @@ from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  
 from pulp_smash.tests.pulp3.utils import JWTAuth
 
 
-class AuthTestCase(unittest.TestCase):
+class AuthTestCase(unittest.TestCase, utils.SmokeTest):
     """Test Pulp3 Authentication."""
 
     @classmethod

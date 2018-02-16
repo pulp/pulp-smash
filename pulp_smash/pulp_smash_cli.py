@@ -1,10 +1,11 @@
 # coding=utf-8
 """The entry point for Pulp Smash's command line interface."""
 import json
+import unittest
 
 import click
 
-from pulp_smash import config, exceptions
+from pulp_smash import config, exceptions, utils
 from pulp_smash.config import PulpSmashConfig
 
 
@@ -194,6 +195,58 @@ def settings_validate(ctx):
         result = click.ClickException(message)
         result.exit_code = -1
         raise result
+
+
+@pulp_smash.command('smoke-tests')
+def smoke_tests():
+    """Print smoke tests, one per line.
+
+    Sample usage:
+
+        python -m unittest $(pulp-smash smoke-tests)
+    """
+    test_suite = unittest.TestSuite()
+    test_suite.addTests(unittest.TestLoader().discover('pulp_smash.tests'))
+    for smoke_test_name in _get_unique_smoke_test_names(test_suite):
+        print(smoke_test_name)
+
+
+def _get_unique_smoke_test_names(test_suite):
+    """Recursively search for smoke tests, and return their unique names.
+
+    :param test_suite: A ``unittest.TestSuite`` to recursively search through.
+    :returns: A set of strings, each identifying a
+        :class:`pulp_smash.utils.SmokeTest` within the given test suite.
+    """
+    return {
+        '.'.join((type(test_case).__module__, type(test_case).__qualname__))
+        for test_case in _get_smoke_tests(test_suite)
+    }
+
+
+def _get_smoke_tests(test_suite):
+    """Recursively search for smoke tests, and yield them.
+
+    :param test_suite: A ``unittest.TestSuite`` to recursively search through.
+    :returns: :class:`pulp_smash.utils.SmokeTest` objects within the given test
+        suite.
+    """
+    for test_case in _get_test_cases(test_suite):
+        if isinstance(test_case, utils.SmokeTest):
+            yield test_case
+
+
+def _get_test_cases(test_suite):
+    """Recursively search for ``unittest.TestCase`` objects, and yield them.
+
+    :param test_suite: A ``unittest.TestSuite`` to recursively search through.
+    :returns: ``unittest.TestCase`` objects within the given test suite.
+    """
+    for test_case_or_suite in test_suite:
+        if isinstance(test_case_or_suite, unittest.TestCase):
+            yield test_case_or_suite
+        else:
+            yield from _get_test_cases(test_case_or_suite)
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, config, selectors
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import FILE_FEED_URL
 from pulp_smash.tests.pulp3.constants import (
     FILE_IMPORTER_PATH,
@@ -25,7 +25,7 @@ from pulp_smash.tests.pulp3.utils import (
 )
 
 
-class ImportersPublishersTestCase(unittest.TestCase):
+class ImportersPublishersTestCase(unittest.TestCase, utils.SmokeTest):
     """Verify publisher and importer can be used with different repos."""
 
     def test_all(self):

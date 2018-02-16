@@ -14,7 +14,7 @@ from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
 from pulp_smash.tests.pulp3.utils import get_auth
 
 
-class CRUDImportersTestCase(unittest.TestCase):
+class CRUDImportersTestCase(unittest.TestCase, utils.SmokeTest):
     """CRUD importers."""
 
     @classmethod
