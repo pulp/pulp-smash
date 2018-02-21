@@ -133,6 +133,7 @@ developers, not a gospel.
     api/pulp_smash.tests.pulp3.file.api_v3.test_crd_publications
     api/pulp_smash.tests.pulp3.file.api_v3.test_crud_importers
     api/pulp_smash.tests.pulp3.file.api_v3.test_crud_publishers
+    api/pulp_smash.tests.pulp3.file.api_v3.test_download_content
     api/pulp_smash.tests.pulp3.file.api_v3.test_repo_version
     api/pulp_smash.tests.pulp3.file.api_v3.test_sync
     api/pulp_smash.tests.pulp3.file.api_v3.test_unlinking_repo
