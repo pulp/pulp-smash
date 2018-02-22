@@ -11,6 +11,8 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, selectors
 from pulp_smash.tests.pulp3.constants import (
+    ARTIFACTS_PATH,
+    FILE_CONTENT_PATH,
     FILE_IMPORTER_PATH,
     JWT_PATH,
     STATUS_PATH,
@@ -230,3 +232,30 @@ def get_content_unit_names(repo):
         content_unit['path']  # A misnomer. Think "name," not "path."
         for content_unit in read_repo_content(repo)['results']
     ]
+
+
+def clean_artifacts(cfg=None):
+    """Clean all artifacts present in pulp.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        host.
+    """
+    if cfg is None:
+        cfg = config.get_config()
+    clean_content_units(cfg)
+    client = api.Client(cfg, api.json_handler)
+    for artifact in client.get(ARTIFACTS_PATH)['results']:
+        client.delete(artifact['_href'])
+
+
+def clean_content_units(cfg=None):
+    """Clean all content units present in pulp.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+     host.
+    """
+    if cfg is None:
+        cfg = config.get_config()
+    client = api.Client(cfg, api.json_handler)
+    for content_unit in client.get(FILE_CONTENT_PATH)['results']:
+        client.delete(content_unit['_href'])

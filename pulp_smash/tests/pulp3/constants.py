@@ -5,6 +5,8 @@ from urllib.parse import urljoin
 
 BASE_PATH = '/api/v3/'
 
+ARTIFACTS_PATH = urljoin(BASE_PATH, 'artifacts/')
+
 BASE_IMPORTER_PATH = urljoin(BASE_PATH, 'importers/')
 
 BASE_PUBLISHER_PATH = urljoin(BASE_PATH, 'publishers/')
