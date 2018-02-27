@@ -20,7 +20,7 @@ def set_up_module():
 def gen_distribution():
     """Return a semi-random dict for use in creating a distribution."""
     return {
-        'base_path': utils.uuid4(),
+        'base_path': utils.uuid4() + '/',
         'http': choice((False, True)),
         'https': choice((False, True)),
         'name': utils.uuid4()
