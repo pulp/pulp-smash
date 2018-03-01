@@ -32,7 +32,7 @@ from pulp_smash.tests.pulp3.utils import (
 class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
     """Verify whether content served by pulp can be downloaded."""
 
-    def test_all(self):  # pylint:disable=too-many-locals
+    def test_all(self):
         """Verify whether content served by pulp can be downloaded.
 
         The process of publishing content is more involved in Pulp 3 than it
@@ -97,10 +97,7 @@ class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
 
         # …and Pulp.
         client.response_handler = api.safe_handler
-        schemes = ['http']
-        if selectors.bug_is_testable(3416, cfg.pulp_version):
-            schemes.append('https')
-        for scheme in schemes:
+        for scheme in self.get_schemes(cfg):
             with self.subTest(scheme=scheme):
                 unit_url = urljoin(
                     scheme + '://' + distribution['base_url'] + '/',
@@ -115,3 +112,16 @@ class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
                     if selectors.bug_is_testable(3413, cfg.pulp_version):
                         with self.assertRaises(HTTPError):
                             client.get(unit_url)
+
+    @staticmethod
+    def get_schemes(cfg):
+        """Tell which URI schemes the Pulp web server supports.
+
+        :param pulp_smash.config.PulpSmashConfig: Information about the
+            Pulp application.
+        :returns: A list like ``['http']`` or ``['http', 'https']``.
+        """
+        schemes = ['http']
+        if selectors.bug_is_testable(3416, cfg.pulp_version):
+            schemes.append('https')
+        return schemes
