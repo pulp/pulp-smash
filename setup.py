@@ -29,7 +29,7 @@ setup(
     license='GPLv3',
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        'Development Status :: 1 - Planning',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         ('License :: OSI Approved :: GNU General Public License v3 or later '
          '(GPLv3+)'),
