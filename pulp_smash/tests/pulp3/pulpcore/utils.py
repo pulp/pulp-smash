@@ -1,8 +1,9 @@
 # coding=utf-8
 """Utilities for Pulpcore tests."""
+import warnings
 from random import choice
 
-from pulp_smash import utils
+from pulp_smash import config, selectors, utils
 from pulp_smash.tests.pulp3 import utils as pulp3_utils
 
 
@@ -19,6 +20,11 @@ def set_up_module():
 
 def gen_distribution():
     """Return a semi-random dict for use in creating a distribution."""
+    if selectors.bug_is_testable(3412, config.get_config().pulp_version):
+        warnings.warn(
+            'The base_path field may be malformed. See: '
+            'https://pulp.plan.io/issues/3412'
+        )
     return {
         'base_path': utils.uuid4(),
         'http': choice((False, True)),
