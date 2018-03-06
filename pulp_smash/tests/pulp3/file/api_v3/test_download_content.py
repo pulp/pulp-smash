@@ -23,7 +23,7 @@ from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # no
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_distribution, gen_repo
 from pulp_smash.tests.pulp3.utils import (
     get_auth,
-    get_content_unit_names,
+    get_content_unit_paths,
     publish_repo,
     sync_repo,
 )
@@ -90,9 +90,9 @@ class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
         self.addCleanup(client.delete, distribution['_href'])
 
         # Pick a file, and download it from both Pulp Fixtures…
-        unit_name = choice(get_content_unit_names(repo))
+        unit_path = choice(get_content_unit_paths(repo))
         fixtures_hash = hashlib.sha256(
-            utils.http_get(urljoin(FILE_URL, unit_name))
+            utils.http_get(urljoin(FILE_URL, unit_path))
         ).hexdigest()
 
         # …and Pulp.
@@ -101,7 +101,7 @@ class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
             with self.subTest(scheme=scheme):
                 unit_url = urljoin(
                     scheme + '://' + distribution['base_url'] + '/',
-                    unit_name
+                    unit_path
                 )
                 if distribution[scheme]:
                     pulp_hash = hashlib.sha256(

@@ -222,14 +222,14 @@ def read_repo_content(repo):
             .get(urljoin(get_latest_repo_version(repo), 'content/')))
 
 
-def get_content_unit_names(repo):
-    """Return the name of content units present in a given repository.
+def get_content_unit_paths(repo):
+    """Return the relative path of content units present in a given repository.
 
     :param repo: A dict of information about the repository.
-    :returns: A list with the names of units present in a given repository.
+    :returns: A list with the paths of units present in a given repository.
     """
     return [
-        content_unit['path']  # A misnomer. Think "name," not "path."
+        content_unit['relative_path']  # file path and name
         for content_unit in read_repo_content(repo)['results']
     ]
 

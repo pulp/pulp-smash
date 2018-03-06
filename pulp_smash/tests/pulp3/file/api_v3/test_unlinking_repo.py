@@ -71,8 +71,8 @@ class ImportersPublishersTestCase(unittest.TestCase, utils.SmokeTest):
         for repo in repos:
             contents.append(read_repo_content(repo)['results'])
         self.assertEqual(
-            {content['digest'] for content in contents[0]},
-            {content['digest'] for content in contents[1]},
+            {content['_href'] for content in contents[0]},
+            {content['_href'] for content in contents[1]},
         )
 
         # Publish repositories.
