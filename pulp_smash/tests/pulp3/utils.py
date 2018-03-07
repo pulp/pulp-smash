@@ -210,16 +210,25 @@ def get_latest_repo_version(repo):
             .get(repo['_href'])['_latest_version_href'])
 
 
-def read_repo_content(repo):
+def read_repo_content(repo, version=None):
     """Read the content units of a given repository.
 
+    In case the repository version is not provided, the content of latest
+    repository version will be read.
+
     :param repo: A dict of information about the repository.
-    :returns: A dict of information about the contents units present in a given
-        repository.
+    :param version: An integer specifying what repository version should be
+        read.
+    :returns: A dict of information about the content units present in a given
+        repository version.
     """
+    if version is None:
+        version_href = get_latest_repo_version(repo)
+    else:
+        version_href = urljoin(repo['_versions_href'], str(version) + '/')
     return (api
             .Client(config.get_config(), api.json_handler)
-            .get(urljoin(get_latest_repo_version(repo), 'content/')))
+            .get(urljoin(version_href, 'content/')))
 
 
 def get_content_unit_paths(repo):
