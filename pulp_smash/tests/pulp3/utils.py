@@ -236,6 +236,42 @@ def read_repo_content(repo, version=None):
             .get(urljoin(version_href, 'content/')))
 
 
+def read_repo_added_content(repo, version=None):
+    """Read the added content of a given repository version.
+
+    :param repo: A dict of information about the repository.
+    :param version: An integer specifying what repository version should be
+     read.
+    :returns: A dict of information about the content added since the
+     previous repository version.
+    """
+    if version is None:
+        version_href = get_latest_repo_version(repo)
+    else:
+        version_href = urljoin(repo['_versions_href'], str(version) + '/')
+    return (api
+            .Client(config.get_config(), api.json_handler)
+            .get(urljoin(version_href, 'added_content/')))
+
+
+def read_repo_removed_content(repo, version=None):
+    """Read the removed content of a given repository version.
+
+    :param repo: A dict of information about the repository.
+    :param version: An integer specifying what repository version should be
+     read.
+    :returns: A dict of information about the content removed since the
+     previous repository version.
+    """
+    if version is None:
+        version_href = get_latest_repo_version(repo)
+    else:
+        version_href = urljoin(repo['_versions_href'], str(version) + '/')
+    return (api
+            .Client(config.get_config(), api.json_handler)
+            .get(urljoin(version_href, 'removed_content/')))
+
+
 def get_content_unit_paths(repo):
     """Return the relative path of content units present in a given repository.
 
