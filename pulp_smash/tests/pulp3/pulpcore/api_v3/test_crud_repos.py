@@ -49,6 +49,14 @@ class CRUDRepoTestCase(unittest.TestCase, utils.SmokeTest):
                 self.assertEqual(page['results'][0][key], val)
 
     @selectors.skip_if(bool, 'repo', False)
+    def test_02_read_all_repos(self):
+        """Ensure name is displayed when listing repositories."""
+        if selectors.bug_is_untestable(2824, self.cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/2824')
+        for repo in self.client.get(REPO_PATH)['results']:
+            self.assertIsNotNone(repo['name'])
+
+    @selectors.skip_if(bool, 'repo', False)
     def test_03_fully_update_name(self):
         """Update a repository's name using HTTP PUT."""
         if selectors.bug_is_untestable(3101, self.cfg.pulp_version):
