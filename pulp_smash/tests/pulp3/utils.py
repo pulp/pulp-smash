@@ -178,7 +178,7 @@ def sync_repo(cfg, importer, repo):
     )
 
 
-def publish_repo(cfg, publisher, repo):
+def publish_repo(cfg, publisher, repo, version=None):
     """Publish a repository.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
@@ -186,13 +186,18 @@ def publish_repo(cfg, publisher, repo):
     :param publisher: A dict of information about the publisher of the
         repository to be published.
     :param repo: A dict of information about the repository.
+    :param version: An integer specifying what repository version should be
+        published.
     :returns: A publication. A dict of information about the just created
         publication.
     """
+    if version is None:
+        body = {'repository': repo['_href']}
+    else:
+        version_href = urljoin(repo['_versions_href'], str(version) + '/')
+        body = {'repository_version': version_href}
     client = api.Client(cfg, api.json_handler)
-    call_report = client.post(
-        urljoin(publisher['_href'], 'publish/'), {'repository': repo['_href']}
-    )
+    call_report = client.post(urljoin(publisher['_href'], 'publish/'), body)
     # As of this writing, Pulp 3 only returns one task. If Pulp 3 starts
     # returning multiple tasks, this may need to be re-written.
     last_task = next(api.poll_spawned_tasks(cfg, call_report))
