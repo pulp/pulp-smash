@@ -5,9 +5,7 @@ import unittest
 from random import choice
 from urllib.parse import urljoin
 
-from requests.exceptions import HTTPError
-
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, config, utils
 from pulp_smash.constants import FILE_FEED_URL, FILE_URL
 from pulp_smash.tests.pulp3.constants import (
     DISTRIBUTION_PATH,
@@ -49,19 +47,13 @@ class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
         Do the following:
 
         1. Create, populate, publish, and distribute a repository.
-        2. Select a random content unit in the distribution.
-        3. For the schemes "http" and "https":
-
-           * If the distribution has enabled that scheme, then download the
-             content unit from Pulp, and verify that the content unit has the
-             same checksum when fetched directly from Pulp-Fixtures.
-           * If the distribution hasn't enabled that scheme, then verify that
-             download requests fail.
+        2. Select a random content unit in the distribution. Download that
+           content unit from Pulp, and verify that the content unit has the
+           same checksum when fetched directly from Pulp-Fixtures.
 
         This test targets the following issues:
 
         * `Pulp #2895 <https://pulp.plan.io/issues/2895>`_
-        * `Pulp #3413 <http://pulp.plan.io/issues/3413>`_
         * `Pulp Smash #872 <https://github.com/PulpQE/pulp-smash/issues/872>`_
         """
         cfg = config.get_config()
@@ -97,31 +89,8 @@ class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
 
         # …and Pulp.
         client.response_handler = api.safe_handler
-        for scheme in self.get_schemes(cfg):
-            with self.subTest(scheme=scheme):
-                unit_url = urljoin(
-                    scheme + '://' + distribution['base_url'] + '/',
-                    unit_path
-                )
-                if distribution[scheme]:
-                    pulp_hash = hashlib.sha256(
-                        client.get(unit_url).content
-                    ).hexdigest()
-                    self.assertEqual(fixtures_hash, pulp_hash)
-                else:
-                    if selectors.bug_is_testable(3413, cfg.pulp_version):
-                        with self.assertRaises(HTTPError):
-                            client.get(unit_url)
-
-    @staticmethod
-    def get_schemes(cfg):
-        """Tell which URI schemes the Pulp web server supports.
-
-        :param pulp_smash.config.PulpSmashConfig: Information about the
-            Pulp application.
-        :returns: A list like ``['http']`` or ``['http', 'https']``.
-        """
-        schemes = ['http']
-        if selectors.bug_is_testable(3416, cfg.pulp_version):
-            schemes.append('https')
-        return schemes
+        unit_url = cfg.get_systems('api')[0].roles['api']['scheme']
+        unit_url += '://' + distribution['base_url'] + '/'
+        unit_url = urljoin(unit_url, unit_path)
+        pulp_hash = hashlib.sha256(client.get(unit_url).content).hexdigest()
+        self.assertEqual(fixtures_hash, pulp_hash)

@@ -1,7 +1,6 @@
 # coding=utf-8
 """Utilities for Pulpcore tests."""
 import warnings
-from random import choice
 
 from pulp_smash import config, selectors, utils
 from pulp_smash.tests.pulp3 import utils as pulp3_utils
@@ -27,7 +26,5 @@ def gen_distribution():
         )
     return {
         'base_path': utils.uuid4(),
-        'http': choice((False, True)),
-        'https': choice((False, True)),
         'name': utils.uuid4()
     }
