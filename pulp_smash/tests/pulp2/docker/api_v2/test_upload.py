@@ -1,13 +1,15 @@
 # coding=utf-8
 """Tests for uploading content to docker repositories."""
+import copy
+import json
 import unittest
 
-from pulp_smash import api, cli, config, selectors, utils
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import DOCKER_V2_FEED_URL
 from pulp_smash.tests.pulp2.docker.api_v2.utils import SyncPublishMixin
 from pulp_smash.tests.pulp2.docker.utils import (
+    get_upstream_name,
     set_up_module,
-    write_manifest_list,
 )
 
 
@@ -34,59 +36,59 @@ class UploadManifestListV2TestCase(SyncPublishMixin, unittest.TestCase):
                     'https://pulp.plan.io/issues/{}'.format(issue_id)
                 )
 
-    def setUp(self):
-        """Create a docker repository."""
-        self.repo = self.create_repo(self.cfg, False, True, DOCKER_V2_FEED_URL)
-
-    @selectors.skip_if(bool, 'repo', False)
-    def test_01_upload_manifest_list(self):
-        """Test upload of manifest list V2 without perform a sync.
-
-        This test targets the following issues:
-
-        * `Pulp Smash #829 <https://github.com/PulpQE/pulp-smash/issues/829>`_
-        * `Pulp #2993 <https://pulp.plan.io/issues/2993>`_
+    def test_all(self):
+        """Upload a V2 manifest list.
 
         Do the following:
 
-        1. Create, sync and publish a repository.
-        2. Read the manifest list, and remove one of the existent
-           architectures from it.
-        3. From the modified manifest list create a new JSON valid on a
-           temporary dir on disk.
-        4. Upload the just created JSON file to the repository.
-        5. Assert that the number of ``docker_manifest_list`` present on the
-           repository has increased.
+        1. Create, sync and publish a repository. Read the repository and the
+           repository's manifest list.
+        2. Upload a modified version of the manifest list to the repository.
+           Re-read the repository and the repository's manifest list.
+        3. Assert that:
+
+           * The repository's manifest list hasn't been changed. (After all,
+             the repository hasn't been published since the new manifest list
+             was uploaded.)
+           * The repository's ``docker_manifest_list`` attribute has increased
+             by the approprate number.
+
+        This test targets the following issues:
+
+        * `Pulp #2993 <https://pulp.plan.io/issues/2993>`_
+        * `Pulp Smash #829 <https://github.com/PulpQE/pulp-smash/issues/829>`_
         """
-        content_type = (
+        repo = self.create_sync_publish_repo(self.cfg, {
+            'enable_v1': False,
+            'enable_v2': True,
+            'feed': DOCKER_V2_FEED_URL,
+            'upstream_name': get_upstream_name(self.cfg),
+        })
+        crane_client = self.make_crane_client(self.cfg)
+        crane_client.request_kwargs['headers']['accept'] = (
             'application/vnd.docker.distribution.manifest.list.v2+json'
         )
-        client = api.Client(
+        manifest_list_path = '/v2/{}/manifests/latest'.format(repo['id'])
+        manifest_list = crane_client.get(manifest_list_path)
+
+        # Upload a modified manifest list.
+        modified_manifest_list = copy.deepcopy(manifest_list)
+        modified_manifest_list['manifests'].pop()
+        utils.upload_import_unit(
             self.cfg,
-            request_kwargs={'headers': {'accept': content_type}}
+            json.dumps(modified_manifest_list).encode('utf-8'),
+            {'unit_type_id': 'docker_manifest_list'},
+            repo,
         )
-        client.request_kwargs['url'] = self.adjust_url(
-            client.request_kwargs['url']
-        )
-        response = client.get(
-            '/v2/{}/manifests/latest'.format(self.repo['id'])
-        )
-        manifest_list = response.json()
-        # In order to modify the current manifest list, one unwanted
-        # architecture is removed.
-        manifest_list['manifests'].pop()
-        manifest_path, dir_path = write_manifest_list(self.cfg, manifest_list)
-        repos = []
-        api_client = api.Client(self.cfg, api.json_handler)
-        repos.append(api_client.get(self.repo['_href']))
-        cli_client = cli.Client(self.cfg)
-        self.addCleanup(cli_client.run, ('rm', '-rf', dir_path))
-        cli_client.machine.session().run(
-            'pulp-admin docker repo uploads upload --repo-id {} -f {}'
-            .format(self.repo['id'], manifest_path)
-        )
-        repos.append(api_client.get(self.repo['_href']))
-        self.assertGreater(
-            repos[1]['content_unit_counts']['docker_manifest_list'],
-            repos[0]['content_unit_counts']['docker_manifest_list']
-        )
+
+        # Verify outcomes.
+        with self.subTest(comment='verify manifest list is same'):
+            new_manifest_list = crane_client.get(manifest_list_path)
+            self.assertEqual(manifest_list, new_manifest_list)
+        with self.subTest(comment='verify docker_manifest_list repo attr'):
+            new_repo = api.Client(self.cfg).get(repo['_href']).json()
+            self.assertEqual(
+                repo['content_unit_counts']['docker_manifest_list'] +
+                len(modified_manifest_list['manifests']),
+                new_repo['content_unit_counts']['docker_manifest_list'],
+            )

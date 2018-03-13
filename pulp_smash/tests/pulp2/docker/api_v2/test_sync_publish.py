@@ -9,9 +9,9 @@ from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
 from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.docker.api_v2.utils import (
+    SyncPublishMixin,
     gen_distributor,
     gen_repo,
-    SyncPublishMixin,
 )
 from pulp_smash.tests.pulp2.docker.utils import get_upstream_name
 from pulp_smash.tests.pulp2.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -172,10 +172,15 @@ class V1RegistryTestCase(SyncPublishMixin, unittest.TestCase):
 
     def setUp(self):
         """Create a docker repository."""
-        self.repo = self.create_repo(self.cfg, True, False, DOCKER_V1_FEED_URL)
+        self.repo = self.create_sync_publish_repo(self.cfg, {
+            'enable_v1': True,
+            'enable_v2': False,
+            'feed': DOCKER_V1_FEED_URL,
+            'upstream_name': get_upstream_name(self.cfg),
+        })
 
     @selectors.skip_if(bool, 'repo', False)
-    def test_01_get_crane_repositories(self):
+    def test_get_crane_repositories(self):
         """Issue an HTTP GET request to ``/crane/repositories``.
 
         Assert that the response is as described by `Crane Admin
@@ -187,7 +192,7 @@ class V1RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         self.verify_v1_repo(repos[repo_id])
 
     @selectors.skip_if(bool, 'repo', False)
-    def test_01_get_crane_repositories_v1(self):  # pylint:disable=invalid-name
+    def test_get_crane_repositories_v1(self):
         """Issue an HTTP GET request to ``/crane/repositories/v1``.
 
         Assert that the response is as described by `Crane Admin
@@ -202,7 +207,7 @@ class V1RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         self.verify_v1_repo(repos[repo_id])
 
     def verify_v1_repo(self, repo):
-        """Implement the assertions for the ``test_02*`` methods."""
+        """Implement the assertions for the ``test*`` methods."""
         with self.subTest():
             self.assertFalse(repo['protected'])
         with self.subTest():
@@ -230,10 +235,15 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
 
     def setUp(self):
         """Create docker repository."""
-        self.repo = self.create_repo(self.cfg, False, True, DOCKER_V2_FEED_URL)
+        self.repo = self.create_sync_publish_repo(self.cfg, {
+            'enable_v1': False,
+            'enable_v2': True,
+            'feed': DOCKER_V2_FEED_URL,
+            'upstream_name': get_upstream_name(self.cfg),
+        })
 
     @selectors.skip_if(bool, 'repo', False)
-    def test_01_get_crane_repositories_v2(self):  # pylint:disable=invalid-name
+    def test_get_crane_repositories_v2(self):
         """Issue an HTTP GET request to ``/crane/repositories/v2``.
 
         Assert that the response is as described by `Crane Admin
@@ -248,7 +258,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         self.assertFalse(repos[repo_id]['protected'])
 
     @selectors.skip_if(bool, 'repo', False)
-    def test_01_get_manifest_v1(self):
+    def test_get_manifest_v1(self):
         """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
 
         Pass each of the followng headers in turn:
@@ -281,7 +291,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
                 validate(manifest, MANIFEST_V1)
 
     @selectors.skip_if(bool, 'repo', False)
-    def test_01_get_manifest_v2(self):
+    def test_get_manifest_v2(self):
         """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
 
         Pass a header of
@@ -304,7 +314,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         validate(manifest, MANIFEST_V2)
 
     @selectors.skip_if(bool, 'repo', False)
-    def test_01_get_manifest_list(self):
+    def test_get_manifest_list(self):
         """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
 
         Pass a header of
@@ -351,23 +361,12 @@ class NonNamespacedImageTestCase(SyncPublishMixin, unittest.TestCase):
         given, a prefix of "library" is assumed.
         """
         cfg = config.get_config()
-        client = api.Client(cfg, api.json_handler)
-        body = gen_repo()
-        body['importer_config'].update({
+        repo = self.create_sync_publish_repo(cfg, {
             'enable_v1': False,
             'enable_v2': True,
             'feed': DOCKER_V2_FEED_URL,
             'upstream_name': 'busybox',
         })
-        body['distributors'] = [gen_distributor()]
-        repo = client.post(REPOSITORY_PATH, body)
-        self.addCleanup(client.delete, repo['_href'])
-        repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(cfg, repo)
-        utils.publish_repo(cfg, repo)
-
-        # Make Crane read the metadata. (Now!)
-        cli.GlobalServiceManager(cfg).restart(('httpd',))
 
         # Get and inspect /crane/repositories/v2.
         if (cfg.pulp_version >= Version('2.14') and
@@ -568,24 +567,15 @@ class RepoRegistryIdTestCase(SyncPublishMixin, unittest.TestCase):
     def do_test(self, cfg, repo_registry_id):
         """Execute the test with the given ``repo_registry_id``."""
         # Create, sync and publish.
-        client = api.Client(cfg, api.json_handler)
-        body = gen_repo()
-        body['importer_config'].update({
+        importer_config = {
             'enable_v1': False,
             'enable_v2': True,
             'feed': DOCKER_V2_FEED_URL,
             'upstream_name': get_upstream_name(cfg),
-        })
-        body['distributors'] = [gen_distributor()]
-        body['distributors'][0]['distributor_config']['repo-registry-id'] = (
-            repo_registry_id
-        )
-        repo = client.post(REPOSITORY_PATH, body)
-        self.addCleanup(client.delete, repo['_href'])
-        repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(cfg, repo)
-        utils.publish_repo(cfg, repo)
-        cli.GlobalServiceManager(cfg).restart(('httpd',))  # restart Crane
+        }
+        distrib = gen_distributor()
+        distrib['distributor_config']['repo-registry-id'] = repo_registry_id
+        self.create_sync_publish_repo(cfg, importer_config, [distrib])
 
         # Get and inspect /crane/repositories/v2.
         client = self.make_crane_client(cfg)

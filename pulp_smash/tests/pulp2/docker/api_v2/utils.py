@@ -4,7 +4,6 @@ from urllib.parse import urlsplit, urlunsplit
 
 from pulp_smash import api, cli, utils
 from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
-from pulp_smash.tests.pulp2.docker.utils import get_upstream_name
 
 
 def gen_repo():
@@ -78,41 +77,42 @@ class SyncPublishMixin():
         )
         return client
 
-    def create_repo(self, cfg, enable_v1, enable_v2, feed):
+    def create_sync_publish_repo(
+            self,
+            cfg,
+            importer_config,
+            distributors=None):
         """Create, sync and publish a repository.
 
         Specifically do the following:
 
-        1. Create, sync and publish a Docker repository.
-        2. Make Crane immediately re-read the metadata files published by
-           Pulp.(Restart Apache)
+        1. Create a repository and schedule it for deletion.
+        2. Sync and publish the repository.
+        3. Make Crane immediately re-read the metadata files published by Pulp.
+           (Restart Apache)
 
         :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
             deployment.
-        :param enable_v1: A boolean. Either ``True`` or ``False``.
-        :param enable_v2: A boolean. Either ``True`` or ``False``.
-        :param feed: A value for the docker importer's ``feed`` option.
+        :param importer_config: An importer configuration to pass when creating
+            the repository. For example: ``{'feed': '…'}``.
+        :param distributors: Distributor configurations to pass when creating
+            the repository. If no value is passed, one will be generated.
         :returns: A detailed dict of information about the repository.
         """
+        # create repository
         client = api.Client(cfg, api.json_handler)
         body = gen_repo()
-        body['importer_config'].update({
-            'enable_v1': enable_v1,
-            'enable_v2': enable_v2,
-            'feed': feed,
-            'upstream_name': get_upstream_name(cfg),
-        })
-        body['distributors'] = [gen_distributor()]
+        body['importer_config'].update(importer_config)
+        if distributors is None:
+            body['distributors'] = [gen_distributor()]
+        else:
+            body['distributors'] = distributors
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        repo = client.get(
-            repo['_href'],
-            params={'details': True}
-        )
+
+        # Sync, publish, and re-read metadata.
+        repo = client.get(repo['_href'], params={'details': True})
         utils.sync_repo(cfg, repo)
         utils.publish_repo(cfg, repo)
-
-        # Make Crane re-read metadata. (Now!)
         cli.GlobalServiceManager(cfg).restart(('httpd',))
-
-        return repo
+        return client.get(repo['_href'], params={'details': True})
