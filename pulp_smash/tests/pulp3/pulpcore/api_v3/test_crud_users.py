@@ -117,5 +117,4 @@ def _gen_verbose_user_attrs():
     return {
         'username': utils.uuid4(),
         'password': utils.uuid4(),
-        'is_superuser': choice((True, False)),
     }
