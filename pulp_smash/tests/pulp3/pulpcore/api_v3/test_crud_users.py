@@ -1,6 +1,5 @@
 # coding=utf-8
 """Tests that CRUD users."""
-from random import choice
 import unittest
 
 from requests.exceptions import HTTPError
