@@ -5,7 +5,7 @@ import unittest
 from random import choice
 from urllib.parse import urljoin
 
-from pulp_smash import api, config, utils
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import FILE_FEED_URL, FILE_URL
 from pulp_smash.tests.pulp3.constants import (
     DISTRIBUTION_PATH,
@@ -57,6 +57,9 @@ class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
         * `Pulp Smash #872 <https://github.com/PulpQE/pulp-smash/issues/872>`_
         """
         cfg = config.get_config()
+        if selectors.bug_is_untestable(3502, cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/3502')
+
         client = api.Client(cfg, api.json_handler)
         client.request_kwargs['auth'] = get_auth()
         repo = client.post(REPO_PATH, gen_repo())

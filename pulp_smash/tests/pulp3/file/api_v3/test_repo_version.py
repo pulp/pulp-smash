@@ -4,7 +4,7 @@ import unittest
 from random import choice
 from urllib.parse import urljoin
 
-from pulp_smash import api, config, utils
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import FILE_FEED_URL
 from pulp_smash.tests.pulp3.constants import (
     FILE_CONTENT_PATH,
@@ -53,8 +53,11 @@ class AddingRemovingUnitsTestCase(unittest.TestCase, utils.SmokeTest):
         7. Assert that there are no content units present in the second
            repository.
         """
-        # Add content to Pulp.
         cfg = config.get_config()
+        if selectors.bug_is_untestable(3502, cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/3502')
+
+        # Add content to Pulp.
         client = api.Client(cfg, api.json_handler)
         client.request_kwargs['auth'] = get_auth()
         body = gen_importer()

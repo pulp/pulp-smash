@@ -48,8 +48,11 @@ class ImportersPublishersTestCase(unittest.TestCase, utils.SmokeTest):
         6. Assert that each generated publication has the same publisher, but
            are associated with different repositories.
         """
-        # Create an importer and publisher.
         cfg = config.get_config()
+        if selectors.bug_is_untestable(3502, cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/3502')
+
+        # Create an importer and publisher.
         client = api.Client(cfg, api.json_handler)
         client.request_kwargs['auth'] = get_auth()
         body = gen_importer()
