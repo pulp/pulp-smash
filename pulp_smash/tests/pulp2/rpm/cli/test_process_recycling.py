@@ -39,15 +39,15 @@ class MaxTasksPerChildTestCase(unittest.TestCase):
 
     Test this feature by doing the following:
 
-    1. Use ``ps`` to see how Pulp worker processes were invoked. None should
-       have the ``--maxtasksperchild`` option set.
-    2. Set ``PULP_MAX_TASKS_PER_CHILD`` and restart Pulp. Use ``ps`` to see how
-       Pulp worker processes were invoked. Each should have the
-       ``--maxtasksperchild`` option set as appropriate.
+    1. Use ``ps`` to verify that no Pulp worker processes have the
+       ``--maxtasksperchild`` option set.
+    2. Set ``PULP_MAX_TASKS_PER_CHILD`` and restart Pulp. Use ``ps`` to verify
+       that all Pulp worker processes were invoked with the
+       ``--maxtasksperchild`` option.
     3. Execute a sync and publish. No errors should be reported.
-    4. Reset the ``PULP_MAX_TASKS_PER_CHILD`` option and restart Pulp.
-       ``ps`` to see how Pulp worker processes were invoked. Each should have
-       the ``--maxtasksperchild`` option set as appropriate.
+    4. Unset the ``PULP_MAX_TASKS_PER_CHILD`` option and restart Pulp. Use
+       ``ps`` to verify that no Pulp worker processes have the
+       ``--maxtasksperchild`` option set.
 
     For more information, see `Pulp #2172 <https://pulp.plan.io/issues/2172>`_.
     """
@@ -59,31 +59,32 @@ class MaxTasksPerChildTestCase(unittest.TestCase):
             self.skipTest('https://pulp.plan.io/issues/2172')
         svc_mgr = cli.GlobalServiceManager(cfg)
         sudo = () if utils.is_root(cfg) else ('sudo',)
-        set_opt = sudo + (
+        set_cmd = sudo + (
             'sed', '-i', '-e',
             's/.*PULP_MAX_TASKS_PER_CHILD=[0-9]*$/PULP_MAX_TASKS_PER_CHILD=2/',
             '/etc/default/pulp_workers'
         )
-        reset_opt = sudo + (
+        unset_cmd = sudo + (
             'sed', '-i', '-e',
             's/^PULP_MAX_TASKS_PER_CHILD=2$/# PULP_MAX_TASKS_PER_CHILD=2/',
             '/etc/default/pulp_workers'
         )
+        procs_over_time = []
 
         # Step 1
-        procs = get_pulp_worker_procs(cfg)
-        for proc in procs:
-            self.assertNotIn('--maxtasksperchild=2', proc, procs)
+        procs_over_time.append(get_pulp_worker_procs(cfg))
+        for proc in procs_over_time[-1]:
+            self.assertNotIn('--maxtasksperchild=2', proc, procs_over_time)
 
         # Step 2
         client = cli.Client(cfg)
-        client.run(set_opt)
+        client.run(set_cmd)
         self.addCleanup(svc_mgr.restart, PULP_SERVICES)
-        self.addCleanup(client.run, reset_opt)
+        self.addCleanup(client.run, unset_cmd)
         svc_mgr.restart(PULP_SERVICES)
-        procs = get_pulp_worker_procs(cfg)
-        for proc in procs:
-            self.assertIn('--maxtasksperchild=2', proc, procs)
+        procs_over_time.append(get_pulp_worker_procs(cfg))
+        for proc in procs_over_time[-1]:
+            self.assertIn('--maxtasksperchild=2', proc, procs_over_time)
 
         # Step 3
         repo_id = utils.uuid4()
@@ -102,6 +103,6 @@ class MaxTasksPerChildTestCase(unittest.TestCase):
 
         # Step 4
         self.doCleanups()
-        procs = get_pulp_worker_procs(cfg)
-        for proc in procs:
-            self.assertNotIn('--maxtasksperchild=2', proc, procs)
+        procs_over_time.append(get_pulp_worker_procs(cfg))
+        for proc in procs_over_time[-1]:
+            self.assertNotIn('--maxtasksperchild=2', proc, procs_over_time)
