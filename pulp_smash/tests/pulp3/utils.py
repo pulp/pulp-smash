@@ -204,69 +204,49 @@ def publish_repo(cfg, publisher, repo, version=None):
     return client.get(last_task['created_resources'][0])
 
 
-def get_latest_repo_version(repo):
-    """Get the latest version of a given repository.
-
-    :param repo: A dict of information about the repository.
-    :returns: A _href to the latest version of a given repository.
-    """
-    return (api
-            .Client(config.get_config(), api.json_handler)
-            .get(repo['_href'])['_latest_version_href'])
-
-
-def read_repo_content(repo, version=None):
+def get_content(repo, version_href=None):
     """Read the content units of a given repository.
 
-    In case the repository version is not provided, the content of latest
-    repository version will be read.
-
     :param repo: A dict of information about the repository.
-    :param version: An integer. The repository version to read. If none, read
-        the latest repository version.
+    :param version_href: The repository version to read. If none, read the
+        latest repository version.
     :returns: A dict of information about the content units present in a given
         repository version.
     """
-    if version is None:
-        version_href = get_latest_repo_version(repo)
-    else:
-        version_href = urljoin(repo['_versions_href'], str(version) + '/')
+    if version_href is None:
+        version_href = repo['_latest_version_href']
     return (api
             .Client(config.get_config(), api.json_handler)
             .get(urljoin(version_href, 'content/')))
 
 
-def read_repo_added_content(repo, version=None):
+def get_added_content(repo, version_href=None):
     """Read the added content of a given repository version.
 
-    :param repo: A dict of information about the repository.
-    :param version: An integer. The repository version to read. If none, read
-        the latest repository version.
+    :param repo: A dict of information about a repository.
+    :param version_href: The repository version to read. If none, read the
+        latest repository version.
     :returns: A dict of information about the content added since the previous
         repository version.
     """
-    if version is None:
-        version_href = get_latest_repo_version(repo)
-    else:
-        version_href = urljoin(repo['_versions_href'], str(version) + '/')
+    if version_href is None:
+        version_href = repo['_latest_version_href']
     return (api
             .Client(config.get_config(), api.json_handler)
             .get(urljoin(version_href, 'added_content/')))
 
 
-def read_repo_removed_content(repo, version=None):
+def get_removed_content(repo, version_href=None):
     """Read the removed content of a given repository version.
 
     :param repo: A dict of information about the repository.
-    :param version: An integer. The repository version to read. If none, read
-        the latest repository version.
+    :param version_href: The repository version to read. If none, read the
+        latest repository version.
     :returns: A dict of information about the content removed since the
         previous repository version.
     """
-    if version is None:
-        version_href = get_latest_repo_version(repo)
-    else:
-        version_href = urljoin(repo['_versions_href'], str(version) + '/')
+    if version_href is None:
+        version_href = repo['_latest_version_href']
     return (api
             .Client(config.get_config(), api.json_handler)
             .get(urljoin(version_href, 'removed_content/')))
@@ -280,7 +260,7 @@ def get_content_unit_paths(repo):
     """
     return [
         content_unit['relative_path']  # file path and name
-        for content_unit in read_repo_content(repo)['results']
+        for content_unit in get_content(repo)['results']
     ]
 
 

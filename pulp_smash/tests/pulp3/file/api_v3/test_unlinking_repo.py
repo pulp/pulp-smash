@@ -19,8 +19,8 @@ from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # no
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
 from pulp_smash.tests.pulp3.utils import (
     get_auth,
+    get_content,
     publish_repo,
-    read_repo_content,
     sync_repo,
 )
 
@@ -65,14 +65,15 @@ class ImportersPublishersTestCase(unittest.TestCase, utils.SmokeTest):
         # Create and sync repos.
         repos = []
         for _ in range(2):
-            repos.append(client.post(REPO_PATH, gen_repo()))
-            self.addCleanup(client.delete, repos[-1]['_href'])
+            repo = client.post(REPO_PATH, gen_repo())
+            self.addCleanup(client.delete, repo['_href'])
             sync_repo(cfg, importer, repos[-1])
+            repos.append(client.get(repo['_href']))
 
         # Compare contents of repositories.
         contents = []
         for repo in repos:
-            contents.append(read_repo_content(repo)['results'])
+            contents.append(get_content(repo)['results'])
         self.assertEqual(
             {content['_href'] for content in contents[0]},
             {content['_href'] for content in contents[1]},
