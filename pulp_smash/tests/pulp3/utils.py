@@ -222,8 +222,8 @@ def read_repo_content(repo, version=None):
     repository version will be read.
 
     :param repo: A dict of information about the repository.
-    :param version: An integer specifying what repository version should be
-        read.
+    :param version: An integer. The repository version to read. If none, read
+        the latest repository version.
     :returns: A dict of information about the content units present in a given
         repository version.
     """
@@ -240,10 +240,10 @@ def read_repo_added_content(repo, version=None):
     """Read the added content of a given repository version.
 
     :param repo: A dict of information about the repository.
-    :param version: An integer specifying what repository version should be
-     read.
-    :returns: A dict of information about the content added since the
-     previous repository version.
+    :param version: An integer. The repository version to read. If none, read
+        the latest repository version.
+    :returns: A dict of information about the content added since the previous
+        repository version.
     """
     if version is None:
         version_href = get_latest_repo_version(repo)
@@ -258,10 +258,10 @@ def read_repo_removed_content(repo, version=None):
     """Read the removed content of a given repository version.
 
     :param repo: A dict of information about the repository.
-    :param version: An integer specifying what repository version should be
-     read.
+    :param version: An integer. The repository version to read. If none, read
+        the latest repository version.
     :returns: A dict of information about the content removed since the
-     previous repository version.
+        previous repository version.
     """
     if version is None:
         version_href = get_latest_repo_version(repo)

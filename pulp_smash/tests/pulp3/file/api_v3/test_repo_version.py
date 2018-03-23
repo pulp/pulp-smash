@@ -29,24 +29,32 @@ class AddingRemovingUnitsTestCase(unittest.TestCase, utils.SmokeTest):
 
     @classmethod
     def setUpClass(cls):
-        """Create class-wide variables.
-
-        Sync a repository.
-        """
+        """Create and sync a repository."""
         cls.cfg = config.get_config()
+        if selectors.bug_is_untestable(3502, cls.cfg.pulp_version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3502')
+
         cls.client = api.Client(cls.cfg, api.json_handler)
         cls.client.request_kwargs['auth'] = get_auth()
         body = gen_importer()
         body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
-        cls.importer = cls.client.post(FILE_IMPORTER_PATH, body)
-        cls.repo = cls.client.post(REPO_PATH, gen_repo())
-        sync_repo(cls.cfg, cls.importer, cls.repo)
+        cls.importer = {}
+        cls.repo = {}
+        try:
+            cls.importer.update(cls.client.post(FILE_IMPORTER_PATH, body))
+            cls.repo.update(cls.client.post(REPO_PATH, gen_repo()))
+            sync_repo(cls.cfg, cls.importer, cls.repo)
+        except:  # noqa:E722
+            cls.tearDownClass()
+            raise
 
     @classmethod
     def tearDownClass(cls):
-        """Clean class-wide variables."""
-        cls.client.delete(cls.importer['_href'])
-        cls.client.delete(cls.repo['_href'])
+        """Destroy resources created by :meth:`setUpClass`."""
+        if cls.importer:
+            cls.client.delete(cls.importer['_href'])
+        if cls.repo:
+            cls.client.delete(cls.repo['_href'])
 
     def test_01_create_repo_version(self):
         """Create a new repo version adding or removing content.
@@ -69,9 +77,6 @@ class AddingRemovingUnitsTestCase(unittest.TestCase, utils.SmokeTest):
            has changed.
         6. Assert that there are no content units present in the repository.
         """
-        if selectors.bug_is_untestable(3502, self.cfg.pulp_version):
-            self.skipTest('https://pulp.plan.io/issues/3502')
-
         # Create repository.
         repo = self.client.post(REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo['_href'])
@@ -102,35 +107,40 @@ class AddingRemovingUnitsTestCase(unittest.TestCase, utils.SmokeTest):
         self.assertNotEqual(repo_versions[1], repo_versions[2])
         self.assertEqual(len(read_repo_content(repo)['results']), 0)
 
-    def test_02_view_content(self):
-        """Test whether a user can view content for a repository version.
+    def test_02_content_summary(self):
+        """Inspect the ``content_summary`` attribute.
 
         This test targets the following issues:
 
         * `Pulp #3059 <https://pulp.plan.io/issues/3059>`_
         * `Pulp Smash #878 <https://github.com/PulpQE/pulp-smash/issues/878>`_
+        """
+        repo = self.client.get(self.repo['_href'])
+        repo_versions = self.client.get(repo['_versions_href'])
+        num_files = repo_versions['results'][0]['content_summary']['file']
+        self.assertEqual(num_files, FILE_FEED_COUNT)
+
+    def test_03_view_content(self):
+        """Test whether a user can view content for a repository version.
 
         Do the following:
 
-        1. Assert that ``content_summary`` has the correct number of files
-           according to the sync ``feed_url``.
-        2. Assert that the content present on the last version of repository
+        1. Assert that the content present on the last version of repository
            is equal to the content that was added to the the last version.
            Inspect ``/added_content/`` and ``/content/`` endpoints to
            achieve this.
-        3. Remove a content unit from the repository, and assert that endpoint
+        2. Remove a content unit from the repository, and assert that endpoint
            ``removed_content`` represents this change.
+
+        This test targets the following issues:
+
+        * `Pulp #3059 <https://pulp.plan.io/issues/3059>`_
+        * `Pulp Smash #878 <https://github.com/PulpQE/pulp-smash/issues/878>`_
         """
-        versions_href = self.client.get(self.repo['_href'])['_versions_href']
-        detail_view = self.client.get(versions_href)
-        content_summary = detail_view['results'][0]['content_summary']
-        self.assertEqual(int(content_summary['file']), FILE_FEED_COUNT)
         repo_content = read_repo_content(self.repo)
         added_content = read_repo_added_content(self.repo)
-        self.assertListEqual(
-            repo_content['results'],
-            added_content['results']
-        )
+        self.assertListEqual(repo_content['results'], added_content['results'])
+
         content_href = choice(repo_content['results'])['_href']
         self.client.post(
             self.repo['_versions_href'],
