@@ -131,6 +131,16 @@ FILE2_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'file2/')
 FILE2_URL = urljoin(FILE2_FEED_URL, '1.iso')
 """The URL to an ISO file at :data:`FILE2_FEED_URL`."""
 
+OPENSUSE_FEED_URL = 'https://download.opensuse.org/update/openSUSE-stable/'
+"""The URL to an openSUSE repository.
+
+The repository contains at least one erratum.
+
+.. WARNING:: This repository is large, and is served by a third party. Do not
+    sync from this repository with the "immediate" or "background" download
+    policies. Know that metadata parsing will be time-consuming.
+"""
+
 OSTREE_BRANCHES = ['rawhide', 'stable']
 """A branch in :data:`OSTREE_FEED`. See OSTree `Importer Configuration`_.
 

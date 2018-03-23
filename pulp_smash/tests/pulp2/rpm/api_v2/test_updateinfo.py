@@ -37,6 +37,7 @@ yum (and, therefore, dnf) allows a ``<collection>`` element to have "name" and
 .. _openSUSE:Standards Rpm Metadata UpdateInfo:
     https://en.opensuse.org/openSUSE:Standards_Rpm_Metadata_UpdateInfo
 """
+import re
 import unittest
 from urllib.parse import urljoin
 from xml.etree import ElementTree
@@ -46,6 +47,7 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import (
+    OPENSUSE_FEED_URL,
     RPM,
     RPM_DATA,
     RPM_ERRATUM_ID,
@@ -566,3 +568,90 @@ class CleanUpTestCase(unittest.TestCase):
             path += '/'
         path = urljoin(path, location_elements[0].get('href'))
         return path
+
+
+class OpenSuseErrataTestCase(unittest.TestCase):
+    """Test Pulp's handling of openSUSE errata.
+
+    Do the following:
+
+    1. Create, sync and publish a repository. Let its feed URL reference
+       :data:`pulp_smash.constants.OPENSUSE_FEED_URL`. Also, let it have an "on
+       demand" download policy, so that time isn't spent syncing a potentially
+       large amount of data.
+    2. Download the published errata, and make it available to the remaining
+       test methods.
+
+    This test targets:
+
+    * `Pulp #3377 <https://pulp.plan.io/issues/3377>`_
+    * `Pulp Smash #904 <https://github.com/PulpQE/pulp-smash/issues/904>`_
+
+    .. WARNING:: This test is extremely slow, due to the heavy single-threaded
+        workload incurred by parsing a large production-grade repository's
+        metadata.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables."""
+        cls.updates_element = None
+
+    def test_01_create_sync_publish(self):
+        """Create, sync, and publish an openSUSE repository."""
+        cfg = config.get_config()
+        if selectors.bug_is_untestable(3377, cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/3377')
+
+        # Create, sync, and publish a repository.
+        client = api.Client(cfg, api.json_handler)
+        body = gen_repo()
+        body['importer_config']['download_policy'] = 'on_demand'
+        body['importer_config']['feed'] = OPENSUSE_FEED_URL
+        body['distributors'] = [gen_distributor()]
+        repo = client.post(REPOSITORY_PATH, body)
+        self.addCleanup(client.delete, repo['_href'])
+        utils.sync_repo(cfg, repo)
+        repo = client.get(repo['_href'], params={'details': True})
+        utils.publish_repo(cfg, repo)
+
+        # Download the published errata and verify its attributes.
+        type(self).updates_element = (
+            get_repodata(cfg, repo['distributors'][0], 'updateinfo')
+        )
+
+    @selectors.skip_if(bool, 'updates_element', False)
+    def test_02_update_issued_dates(self):
+        """Assert 'date' attributes are formatted as seconds since epoch.
+
+        For each element matching XPath ``/updates/update/issued``, verify that
+        its ``date`` attribute looks like seconds since the epoch.
+        """
+        matcher = re.compile(r'^\d+$')
+        for element in self.updates_element.findall('update/issued'):
+            self.assertIsNotNone(matcher.match(element.get('date')))
+
+    @selectors.skip_if(bool, 'updates_element', False)
+    def test_02_restart_suggested(self):
+        """Assert ``restart_suggested`` element are present."""
+        num_restart_suggested = len(self.updates_element.findall(
+            'update/pkglist/collection/package/restart_suggested'
+        ))
+        self.assertGreater(num_restart_suggested, 0)
+
+    @selectors.skip_if(bool, 'updates_element', False)
+    def test_02_relogin_suggested(self):
+        """Assert ``relogin_suggested`` element are present."""
+        num_relogin_suggested = len(self.updates_element.findall(
+            'update/pkglist/collection/package/relogin_suggested'
+        ))
+        self.assertGreater(num_relogin_suggested, 0)
+
+    @selectors.skip_if(bool, 'updates_element', False)
+    def test_02_updated(self):
+        """Assert ``<updated>`` elements are absent.
+
+        Assert that no elements match XPath ``/updates/update/updated``.
+        """
+        updated = self.updates_element.findall('update/updated')
+        self.assertEqual(len(updated), 0, updated)
