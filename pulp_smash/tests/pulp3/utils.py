@@ -3,7 +3,7 @@
 import random
 import unittest
 from copy import deepcopy
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 from packaging.version import Version
 from requests.auth import AuthBase, HTTPBasicAuth
@@ -178,7 +178,7 @@ def sync_repo(cfg, importer, repo):
     )
 
 
-def publish_repo(cfg, publisher, repo, version=None):
+def publish_repo(cfg, publisher, repo, version_href=None):
     """Publish a repository.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
@@ -186,15 +186,13 @@ def publish_repo(cfg, publisher, repo, version=None):
     :param publisher: A dict of information about the publisher of the
         repository to be published.
     :param repo: A dict of information about the repository.
-    :param version: An integer specifying what repository version should be
-        published.
+    :param version_href: The repository version to be published.
     :returns: A publication. A dict of information about the just created
         publication.
     """
-    if version is None:
+    if version_href is None:
         body = {'repository': repo['_href']}
     else:
-        version_href = urljoin(repo['_versions_href'], str(version) + '/')
         body = {'repository_version': version_href}
     client = api.Client(cfg, api.json_handler)
     call_report = client.post(urljoin(publisher['_href'], 'publish/'), body)
@@ -289,3 +287,17 @@ def clean_content_units(cfg=None):
     client = api.Client(cfg, api.json_handler)
     for content_unit in client.get(FILE_CONTENT_PATH)['results']:
         client.delete(content_unit['_href'])
+
+
+def get_repo_versions(repo):
+    """Return hrefs of repository versions.
+
+    :param repo: A dict of information about the repository.
+    :returns: A sorted list with the hrefs of repository versions.
+    """
+    client = api.Client(config.get_config(), api.json_handler)
+    versions = client.get(repo['_versions_href'])['results']
+    return sorted(
+        [version['_href'] for version in versions],
+        key=lambda url: int(urlsplit(url).path.split('/')[-2])
+    )
