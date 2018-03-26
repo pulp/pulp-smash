@@ -69,6 +69,7 @@ class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
         importer = client.post(FILE_IMPORTER_PATH, body)
         self.addCleanup(client.delete, importer['_href'])
         sync_repo(cfg, importer, repo)
+        repo = client.get(repo['_href'])
 
         # Create a publisher.
         publisher = client.post(FILE_PUBLISHER_PATH, gen_publisher())
