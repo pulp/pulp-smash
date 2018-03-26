@@ -67,7 +67,7 @@ class ImportersPublishersTestCase(unittest.TestCase, utils.SmokeTest):
         for _ in range(2):
             repo = client.post(REPO_PATH, gen_repo())
             self.addCleanup(client.delete, repo['_href'])
-            sync_repo(cfg, importer, repos[-1])
+            sync_repo(cfg, importer, repo)
             repos.append(client.get(repo['_href']))
 
         # Compare contents of repositories.
