@@ -149,6 +149,7 @@ developers, not a gospel.
     api/pulp_smash.tests.pulp3.pulpcore.api_v3.test_crud_distributions
     api/pulp_smash.tests.pulp3.pulpcore.api_v3.test_crud_repos
     api/pulp_smash.tests.pulp3.pulpcore.api_v3.test_crud_users
+    api/pulp_smash.tests.pulp3.pulpcore.api_v3.test_status
     api/pulp_smash.tests.pulp3.pulpcore.utils
     api/pulp_smash.tests.pulp3.utils
     api/pulp_smash.utils
