@@ -1,5 +1,6 @@
 # coding=utf-8
 """Test Pulp's ability to recycle processes."""
+import time
 import unittest
 
 from pulp_smash import cli, config, selectors, utils
@@ -57,6 +58,7 @@ class MaxTasksPerChildTestCase(unittest.TestCase):
         cfg = config.get_config()
         if selectors.bug_is_untestable(2172, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2172')
+        pulp_3540_testable = selectors.bug_is_testable(3540, cfg.pulp_version)
         svc_mgr = cli.GlobalServiceManager(cfg)
         sudo = () if utils.is_root(cfg) else ('sudo',)
         set_cmd = sudo + (
@@ -80,6 +82,8 @@ class MaxTasksPerChildTestCase(unittest.TestCase):
         client = cli.Client(cfg)
         client.run(set_cmd)
         self.addCleanup(svc_mgr.restart, PULP_SERVICES)
+        if not pulp_3540_testable:
+            self.addCleanup(time.sleep, 30)
         self.addCleanup(client.run, unset_cmd)
         svc_mgr.restart(PULP_SERVICES)
         procs_over_time.append(get_pulp_worker_procs(cfg))
