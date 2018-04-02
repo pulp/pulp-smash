@@ -11,10 +11,10 @@ from pulp_smash.constants import FILE_FEED_URL, FILE_URL
 from pulp_smash.tests.pulp3.constants import (
     ARTIFACTS_PATH,
     FILE_CONTENT_PATH,
-    FILE_IMPORTER_PATH,
+    FILE_REMOTE_PATH,
     REPO_PATH,
 )
-from pulp_smash.tests.pulp3.file.api_v3.utils import gen_importer
+from pulp_smash.tests.pulp3.file.api_v3.utils import gen_remote
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
 from pulp_smash.tests.pulp3.utils import (
@@ -126,13 +126,13 @@ class DeleteContentUnitRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
         cfg = config.get_config()
         client = api.Client(cfg, api.json_handler)
         client.request_kwargs['auth'] = get_auth()
-        body = gen_importer()
+        body = gen_remote()
         body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
-        importer = client.post(FILE_IMPORTER_PATH, body)
-        self.addCleanup(client.delete, importer['_href'])
+        remote = client.post(FILE_REMOTE_PATH, body)
+        self.addCleanup(client.delete, remote['_href'])
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
-        sync_repo(cfg, importer, repo)
+        sync_repo(cfg, remote, repo)
         repo = client.get(repo['_href'])
         content = get_content(repo)['results']
         with self.assertRaises(HTTPError):

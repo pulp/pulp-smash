@@ -9,12 +9,12 @@ from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import FILE_FEED_URL, FILE_URL
 from pulp_smash.tests.pulp3.constants import (
     DISTRIBUTION_PATH,
-    FILE_IMPORTER_PATH,
+    FILE_REMOTE_PATH,
     FILE_PUBLISHER_PATH,
     REPO_PATH,
 )
 from pulp_smash.tests.pulp3.file.api_v3.utils import (
-    gen_importer,
+    gen_remote,
     gen_publisher,
 )
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -64,11 +64,11 @@ class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
         client.request_kwargs['auth'] = get_auth()
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
-        body = gen_importer()
+        body = gen_remote()
         body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
-        importer = client.post(FILE_IMPORTER_PATH, body)
-        self.addCleanup(client.delete, importer['_href'])
-        sync_repo(cfg, importer, repo)
+        remote = client.post(FILE_REMOTE_PATH, body)
+        self.addCleanup(client.delete, remote['_href'])
+        sync_repo(cfg, remote, repo)
         repo = client.get(repo['_href'])
 
         # Create a publisher.
