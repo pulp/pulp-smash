@@ -7,13 +7,11 @@ from urllib.parse import urljoin, urlsplit
 
 from packaging.version import Version
 from requests.auth import AuthBase, HTTPBasicAuth
-from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, selectors
 from pulp_smash.tests.pulp3.constants import (
     ARTIFACTS_PATH,
     FILE_CONTENT_PATH,
-    FILE_IMPORTER_PATH,
     JWT_PATH,
     STATUS_PATH,
 )
@@ -143,23 +141,14 @@ def get_plugins(cfg=None):
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
         application under test.
-    :returns: A set of plugin names, e.g. ``{'pulpcore', 'pulp-file'}``.
+    :returns: A set of plugin names, e.g. ``{'pulpcore', 'pulp_file'}``.
     """
     if not cfg:
         cfg = config.get_config()
     client = api.Client(cfg, api.json_handler)
-    plugins = {
+    return {
         version['component'] for version in client.get(STATUS_PATH)['versions']
     }
-
-    # As of this writing, only the pulpcore plugin reports its existence.
-    try:
-        client.get(FILE_IMPORTER_PATH)
-        plugins.add('pulp-file')  # Name of PyPI package.
-    except HTTPError:
-        pass
-
-    return plugins
 
 
 def sync_repo(cfg, importer, repo):
