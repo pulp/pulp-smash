@@ -6,8 +6,8 @@ from urllib.parse import urljoin
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import FILE_FEED_COUNT, FILE_FEED_URL
-from pulp_smash.tests.pulp3.constants import FILE_IMPORTER_PATH, REPO_PATH
-from pulp_smash.tests.pulp3.file.api_v3.utils import gen_importer
+from pulp_smash.tests.pulp3.constants import FILE_REMOTE_PATH, REPO_PATH
+from pulp_smash.tests.pulp3.file.api_v3.utils import gen_remote
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
 from pulp_smash.tests.pulp3.utils import (
@@ -43,15 +43,15 @@ class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3502')
         cls.client = api.Client(cls.cfg, api.json_handler)
         cls.client.request_kwargs['auth'] = get_auth()
-        cls.importer = {}
+        cls.remote = {}
         cls.repo = {}
         cls.content = {}
 
     @classmethod
     def tearDownClass(cls):
         """Destroy resources created by test methods."""
-        if cls.importer:
-            cls.client.delete(cls.importer['_href'])
+        if cls.remote:
+            cls.client.delete(cls.remote['_href'])
         if cls.repo:
             cls.client.delete(cls.repo['_href'])
 
@@ -83,10 +83,10 @@ class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
         * The ``_latest_version_href + removed_content/`` API call is correct.
         * The ``content_summary`` attribute is correct.
         """
-        body = gen_importer()
+        body = gen_remote()
         body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
-        self.importer.update(self.client.post(FILE_IMPORTER_PATH, body))
-        sync_repo(self.cfg, self.importer, self.repo)
+        self.remote.update(self.client.post(FILE_REMOTE_PATH, body))
+        sync_repo(self.cfg, self.remote, self.repo)
         repo = self.client.get(self.repo['_href'])
 
         repo_versions = self.client.get(repo['_versions_href'])

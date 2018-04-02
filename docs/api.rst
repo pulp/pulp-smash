@@ -134,7 +134,7 @@ developers, not a gospel.
     api/pulp_smash.tests.pulp3.file.api_v3.test_crd_artifacts
     api/pulp_smash.tests.pulp3.file.api_v3.test_crd_publications
     api/pulp_smash.tests.pulp3.file.api_v3.test_crud_content_unit
-    api/pulp_smash.tests.pulp3.file.api_v3.test_crud_importers
+    api/pulp_smash.tests.pulp3.file.api_v3.test_crud_remotes
     api/pulp_smash.tests.pulp3.file.api_v3.test_crud_publishers
     api/pulp_smash.tests.pulp3.file.api_v3.test_download_content
     api/pulp_smash.tests.pulp3.file.api_v3.test_publish

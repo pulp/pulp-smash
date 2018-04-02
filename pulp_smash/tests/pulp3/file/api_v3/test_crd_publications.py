@@ -9,12 +9,12 @@ from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import FILE_FEED_URL
 from pulp_smash.tests.pulp3.constants import (
     FILE_PUBLISHER_PATH,
-    FILE_IMPORTER_PATH,
+    FILE_REMOTE_PATH,
     PUBLICATIONS_PATH,
     REPO_PATH,
 )
 from pulp_smash.tests.pulp3.file.api_v3.utils import (
-    gen_importer,
+    gen_remote,
     gen_publisher,
 )
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -31,19 +31,19 @@ class PublicationsTestCase(unittest.TestCase, utils.SmokeTest):
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
         cls.client.request_kwargs['auth'] = get_auth()
-        cls.importer = {}
+        cls.remote = {}
         cls.publication = {}
         cls.publisher = {}
         cls.repo = {}
         try:
             cls.repo.update(cls.client.post(REPO_PATH, gen_repo()))
-            body = gen_importer()
+            body = gen_remote()
             body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
-            cls.importer.update(cls.client.post(FILE_IMPORTER_PATH, body))
+            cls.remote.update(cls.client.post(FILE_REMOTE_PATH, body))
             cls.publisher.update(
                 cls.client.post(FILE_PUBLISHER_PATH, gen_publisher())
             )
-            sync_repo(cls.cfg, cls.importer, cls.repo)
+            sync_repo(cls.cfg, cls.remote, cls.repo)
         except:  # noqa:E722
             cls.tearDownClass()
             raise
@@ -51,7 +51,7 @@ class PublicationsTestCase(unittest.TestCase, utils.SmokeTest):
     @classmethod
     def tearDownClass(cls):
         """Clean class-wide variables."""
-        for resource in (cls.importer, cls.publisher, cls.repo):
+        for resource in (cls.remote, cls.publisher, cls.repo):
             if resource:
                 cls.client.delete(resource['_href'])
 

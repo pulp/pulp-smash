@@ -1,5 +1,5 @@
 # coding=utf-8
-"""Tests that perform action over importers and publishers."""
+"""Tests that perform action over remotes and publishers."""
 
 import unittest
 from urllib.parse import urljoin
@@ -7,12 +7,12 @@ from urllib.parse import urljoin
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import FILE_FEED_URL
 from pulp_smash.tests.pulp3.constants import (
-    FILE_IMPORTER_PATH,
+    FILE_REMOTE_PATH,
     FILE_PUBLISHER_PATH,
     REPO_PATH,
 )
 from pulp_smash.tests.pulp3.file.api_v3.utils import (
-    gen_importer,
+    gen_remote,
     gen_publisher,
 )
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
@@ -25,24 +25,24 @@ from pulp_smash.tests.pulp3.utils import (
 )
 
 
-class ImportersPublishersTestCase(unittest.TestCase, utils.SmokeTest):
-    """Verify publisher and importer can be used with different repos."""
+class RemotesPublishersTestCase(unittest.TestCase, utils.SmokeTest):
+    """Verify publisher and remote can be used with different repos."""
 
     def test_all(self):
-        """Verify publisher and importer can be used with different repos.
+        """Verify publisher and remote can be used with different repos.
 
         This test explores the design choice stated in `Pulp #3341`_ that
-        remove the FK from publishers and importers to repository.
-        Allowing importers and publishers to be used with different
+        remove the FK from publishers and remotes to repository.
+        Allowing remotes and publishers to be used with different
         repositories.
 
         .. _Pulp #3341: https://pulp.plan.io/issues/3341
 
         Do the following:
 
-        1. Create an importer, and a publisher.
+        1. Create an remote, and a publisher.
         2. Create 2 repositories.
-        3. Sync both repositories using the same importer.
+        3. Sync both repositories using the same remote.
         4. Assert that the two repositories have the same contents.
         5. Publish both repositories using the same publisher.
         6. Assert that each generated publication has the same publisher, but
@@ -52,13 +52,13 @@ class ImportersPublishersTestCase(unittest.TestCase, utils.SmokeTest):
         if selectors.bug_is_untestable(3502, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/3502')
 
-        # Create an importer and publisher.
+        # Create an remote and publisher.
         client = api.Client(cfg, api.json_handler)
         client.request_kwargs['auth'] = get_auth()
-        body = gen_importer()
+        body = gen_remote()
         body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
-        importer = client.post(FILE_IMPORTER_PATH, body)
-        self.addCleanup(client.delete, importer['_href'])
+        remote = client.post(FILE_REMOTE_PATH, body)
+        self.addCleanup(client.delete, remote['_href'])
         publisher = client.post(FILE_PUBLISHER_PATH, gen_publisher())
         self.addCleanup(client.delete, publisher['_href'])
 
@@ -67,7 +67,7 @@ class ImportersPublishersTestCase(unittest.TestCase, utils.SmokeTest):
         for _ in range(2):
             repo = client.post(REPO_PATH, gen_repo())
             self.addCleanup(client.delete, repo['_href'])
-            sync_repo(cfg, importer, repo)
+            sync_repo(cfg, remote, repo)
             repos.append(client.get(repo['_href']))
 
         # Compare contents of repositories.
