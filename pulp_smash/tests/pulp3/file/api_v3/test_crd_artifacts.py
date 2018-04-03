@@ -5,8 +5,9 @@ import unittest
 
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import FILE_URL
+from pulp_smash.exceptions import CalledProcessError
 from pulp_smash.tests.pulp3.constants import ARTIFACTS_PATH
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 from pulp_smash.tests.pulp3.utils import delete_orphans, get_auth
@@ -64,3 +65,39 @@ class ArtifactTestCase(unittest.TestCase, utils.SmokeTest):
         self.client.delete(self.artifact['_href'])
         with self.assertRaises(HTTPError):
             self.client.get(self.artifact['_href'])
+
+
+class ArtifactsDeleteFileSystemTestCase(unittest.TestCase, utils.SmokeTest):
+    """Delete an artifact, it is removed from the filesystem.
+
+    This test targets the following issues:
+
+    * `Pulp #3508 <https://pulp.plan.io/issues/3508>`_
+    * `Pulp Smash #908 <https://github.com/PulpQE/pulp-smash/issues/908>`_
+    """
+
+    def test_all(self):
+        """Delete an artifact, it is removed from the filesystem.
+
+        Do the following:
+
+        1. Create an artifact, and verify it is present on the filesystem.
+        2. Delete the artifact, and verify it is absent on the filesystem.
+        """
+        cfg = config.get_config()
+        api_client = api.Client(cfg, api.json_handler)
+        api_client.request_kwargs['auth'] = get_auth()
+        cli_client = cli.Client(cfg)
+
+        # create
+        files = {'file': utils.http_get(FILE_URL)}
+        artifact = api_client.post(ARTIFACTS_PATH, files=files)
+        self.addCleanup(api_client.delete, artifact['_href'])
+        sudo = () if utils.is_root(cfg) else ('sudo',)
+        cmd = sudo + ('ls', artifact['file'])
+        cli_client.run(cmd)
+
+        # delete
+        self.doCleanups()
+        with self.assertRaises(CalledProcessError):
+            cli_client.run(cmd)
