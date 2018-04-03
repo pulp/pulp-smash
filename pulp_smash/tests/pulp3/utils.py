@@ -286,3 +286,34 @@ def get_repo_versions(repo):
         [version['_href'] for version in versions],
         key=lambda url: int(urlsplit(url).path.split('/')[-2])
     )
+
+
+def get_artifact_paths(repo, version_href=None):
+    """Return the paths of artifacts present in a given repository version.
+
+    :param repo: A dict of information about the repository.
+    :param version_href: The repository version to read.
+    :returns: A set with the paths of units present in a given repository.
+    """
+    return {
+        content_unit['artifact']  # file path and name
+        for content_unit in get_content(repo, version_href)['results']
+    }
+
+
+def delete_repo_version(repo, version_href=None):
+    """Delete a given repository version.
+
+    :param repo: A dict of information about the repository.
+    :param version_href: The repository version that should be
+        deleted.
+    :returns: A tuple. The tasks spawned by Pulp.
+    """
+    if version_href is None:
+        version_href = repo['_latest_version_href']
+    cfg = config.get_config()
+    client = api.Client(cfg, api.json_handler)
+    call_report = client.delete(version_href)
+    # As of this writing, Pulp 3 only returns one task. If Pulp 3 starts
+    # returning multiple tasks, this may need to be re-written.
+    return tuple(api.poll_spawned_tasks(cfg, call_report))
