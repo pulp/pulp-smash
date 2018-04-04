@@ -67,6 +67,17 @@ class ContentUnitTestCase(unittest.TestCase, utils.SmokeTest):
                 self.assertEqual(content_unit[key], val)
 
     @selectors.skip_if(bool, 'content_unit', False)
+    def test_02_read_content_units(self):
+        """Read a content unit by its relative_path."""
+        page = self.client.get(FILE_CONTENT_PATH, params={
+            'relative_path': self.content_unit['relative_path']
+        })
+        self.assertEqual(len(page['results']), 1)
+        for key, val in self.content_unit.items():
+            with self.subTest(key=key):
+                self.assertEqual(page['results'][0][key], val)
+
+    @selectors.skip_if(bool, 'content_unit', False)
     def test_03_partially_update(self):
         """Attempt to update a content unit using HTTP PATCH.
 
