@@ -37,7 +37,7 @@ class StatusTestCase(unittest.TestCase, utils.SmokeTest):
         self.assertTrue(self.status['database_connection'])
         self.assertTrue(self.status['messaging_connection'])
         self.assertTrue(self.status['online_workers'])
-        self.assertFalse(self.status['missing_workers'])
+        self.assertTrue(self.status['missing_workers'])
         self.assertTrue(self.status['versions'])
 
     def test_03_http_method(self):
