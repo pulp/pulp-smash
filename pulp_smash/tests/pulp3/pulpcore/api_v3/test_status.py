@@ -16,6 +16,7 @@ class StatusTestCase(unittest.TestCase, utils.SmokeTest):
 
     * `Pulp #2804 <https://pulp.plan.io/issues/2804>`_
     * `Pulp #2867 <https://pulp.plan.io/issues/2867>`_
+    * `Pulp #3544 <https://pulp.plan.io/issues/3544>`_
     * `Pulp Smash #755 <https://github.com/PulpQE/pulp-smash/issues/755>`_
     """
 
@@ -35,8 +36,12 @@ class StatusTestCase(unittest.TestCase, utils.SmokeTest):
         """Verify whether few parameters are present on status page."""
         self.assertTrue(self.status['database_connection'])
         self.assertTrue(self.status['messaging_connection'])
-        self.assertTrue(self.status['known_workers'])
-        self.assertTrue(self.status['versions'])
+        self.assertIsInstance(self.status['online_workers'], list)
+        self.assertIsInstance(self.status['missing_workers'], list)
+        self.assertIsInstance(self.status['versions'], list)
+        self.assertNotEqual(self.status['online_workers'], [])
+        self.assertEqual(self.status['missing_workers'], [])
+        self.assertNotEqual(self.status['versions'], [])
 
     def test_03_http_method(self):
         """Verify whether an HTTP exception is raised.
