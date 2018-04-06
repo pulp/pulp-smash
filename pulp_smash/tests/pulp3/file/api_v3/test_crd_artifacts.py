@@ -9,7 +9,7 @@ from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import FILE_URL
 from pulp_smash.tests.pulp3.constants import ARTIFACTS_PATH
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
-from pulp_smash.tests.pulp3.utils import clean_artifacts, get_auth
+from pulp_smash.tests.pulp3.utils import delete_orphans, get_auth
 
 
 class ArtifactTestCase(unittest.TestCase, utils.SmokeTest):
@@ -20,6 +20,7 @@ class ArtifactTestCase(unittest.TestCase, utils.SmokeTest):
         """Create class-wide variable."""
         cls.artifact = {}
         cls.cfg = config.get_config()
+        delete_orphans(cls.cfg)
         cls.client = api.Client(cls.cfg, api.json_handler)
         cls.client.request_kwargs['auth'] = get_auth()
 
@@ -43,12 +44,6 @@ class ArtifactTestCase(unittest.TestCase, utils.SmokeTest):
            the checksum of the file that was uploaded.
         """
         files = {'file': utils.http_get(FILE_URL)}
-
-        # To avoid upload of duplicates in pulp. This function call may be
-        # removed after pulp3 is able to handle duplicates, and how to delete
-        # artifacts that are content units as well.
-        clean_artifacts(self.cfg)
-
         type(self).artifact = self.client.post(ARTIFACTS_PATH, files=files)
         self.assertEqual(
             self.artifact['sha256'],
