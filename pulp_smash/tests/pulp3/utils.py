@@ -10,9 +10,8 @@ from requests.auth import AuthBase, HTTPBasicAuth
 
 from pulp_smash import api, config, selectors
 from pulp_smash.tests.pulp3.constants import (
-    ARTIFACTS_PATH,
-    FILE_CONTENT_PATH,
     JWT_PATH,
+    ORPHANS_PATH,
     STATUS_PATH,
 )
 
@@ -251,31 +250,19 @@ def get_content_unit_paths(repo):
     ]
 
 
-def clean_artifacts(cfg=None):
-    """Clean all artifacts present in pulp.
-
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
-        host.
-    """
-    if cfg is None:
-        cfg = config.get_config()
-    clean_content_units(cfg)
-    client = api.Client(cfg, api.json_handler)
-    for artifact in client.get(ARTIFACTS_PATH)['results']:
-        client.delete(artifact['_href'])
-
-
-def clean_content_units(cfg=None):
+def delete_orphans(cfg=None):
     """Clean all content units present in pulp.
+
+    An orphaned artifact is an artifact that is not in any content units.
+    An orphaned content unit is a content unit that is not in any repository
+    version.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
      host.
     """
     if cfg is None:
         cfg = config.get_config()
-    client = api.Client(cfg, api.json_handler)
-    for content_unit in client.get(FILE_CONTENT_PATH)['results']:
-        client.delete(content_unit['_href'])
+    api.Client(cfg, api.safe_handler).delete(ORPHANS_PATH)
 
 
 def get_repo_versions(repo):

@@ -18,7 +18,7 @@ from pulp_smash.tests.pulp3.file.api_v3.utils import gen_remote
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
 from pulp_smash.tests.pulp3.utils import (
-    clean_artifacts,
+    delete_orphans,
     get_auth,
     get_content,
     sync_repo,
@@ -38,7 +38,7 @@ class ContentUnitTestCase(unittest.TestCase, utils.SmokeTest):
     def setUpClass(cls):
         """Create class-wide variable."""
         cls.cfg = config.get_config()
-        clean_artifacts(cls.cfg)
+        delete_orphans(cls.cfg)
         cls.content_unit = {}
         cls.client = api.Client(cls.cfg, api.json_handler)
         cls.client.request_kwargs['auth'] = get_auth()
@@ -48,7 +48,7 @@ class ContentUnitTestCase(unittest.TestCase, utils.SmokeTest):
     @classmethod
     def tearDownClass(cls):
         """Clean class-wide variable."""
-        cls.client.delete(cls.artifact['_href'])
+        delete_orphans(cls.cfg)
 
     def test_01_create_content_unit(self):
         """Create content unit."""
@@ -85,13 +85,6 @@ class ContentUnitTestCase(unittest.TestCase, utils.SmokeTest):
         attrs = _gen_content_unit_attrs(self.artifact)
         with self.assertRaises(HTTPError):
             self.client.put(self.content_unit['_href'], attrs)
-
-    @selectors.skip_if(bool, 'content_unit', False)
-    def test_04_delete_content_unit(self):
-        """Delete a content unit."""
-        self.client.delete(self.content_unit['_href'])
-        with self.assertRaises(HTTPError):
-            self.client.get(self.content_unit['_href'])
 
 
 def _gen_content_unit_attrs(artifact):

@@ -37,6 +37,8 @@ See `pulpcore.app.models.Remote
 
 JWT_PATH = urljoin(BASE_PATH, 'jwt/')
 
+ORPHANS_PATH = urljoin(BASE_PATH, 'orphans/')
+
 PUBLICATIONS_PATH = urljoin(BASE_PATH, 'publications/')
 
 REPO_PATH = urljoin(BASE_PATH, 'repositories/')
