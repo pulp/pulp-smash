@@ -45,4 +45,6 @@ REPO_PATH = urljoin(BASE_PATH, 'repositories/')
 
 STATUS_PATH = urljoin(BASE_PATH, 'status/')
 
+APIDOCS_PATH = urljoin(BASE_PATH, 'docs/')
+
 USER_PATH = urljoin(BASE_PATH, 'users/')
