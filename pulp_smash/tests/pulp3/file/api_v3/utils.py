@@ -1,6 +1,6 @@
 # coding=utf-8
 """Utilities for file plugin tests."""
-from random import choice, sample
+from random import sample
 
 from pulp_smash.tests.pulp3.constants import (
     REMOTE_DOWN_POLICY,
@@ -36,5 +36,4 @@ def gen_publisher():
     """Return a semi-random dict for use in creating a publisher."""
     return {
         'name': utils.uuid4(),
-        'auto_publish': choice((False, True))
     }
