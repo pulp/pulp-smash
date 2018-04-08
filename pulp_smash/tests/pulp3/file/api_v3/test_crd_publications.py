@@ -42,7 +42,7 @@ class PublicationsTestCase(unittest.TestCase, utils.SmokeTest):
         try:
             cls.repo.update(cls.client.post(REPO_PATH, gen_repo()))
             body = gen_remote()
-            body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
+            body['url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
             cls.remote.update(cls.client.post(FILE_REMOTE_PATH, body))
             cls.publisher.update(
                 cls.client.post(FILE_PUBLISHER_PATH, gen_publisher())

@@ -70,7 +70,7 @@ class SyncFileRepoTestCase(unittest.TestCase, utils.SmokeTest):
         self.addCleanup(client.delete, repo['_href'])
         body = gen_remote()
         body['download_policy'] = download_policy
-        body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
+        body['url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
         body['sync_mode'] = sync_mode
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
@@ -114,7 +114,7 @@ class SyncChangeRepoVersionTestCase(unittest.TestCase):
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
         body = gen_remote()
-        body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
+        body['url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
 

@@ -84,7 +84,7 @@ class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
         * The ``content_summary`` attribute is correct.
         """
         body = gen_remote()
-        body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
+        body['url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
         self.remote.update(self.client.post(FILE_REMOTE_PATH, body))
         sync_repo(self.cfg, self.remote, self.repo)
         repo = self.client.get(self.repo['_href'])

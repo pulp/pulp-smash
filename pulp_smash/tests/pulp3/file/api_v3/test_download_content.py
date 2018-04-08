@@ -65,7 +65,7 @@ class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
         body = gen_remote()
-        body['feed_url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
+        body['url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
         sync_repo(cfg, remote, repo)

@@ -107,7 +107,7 @@ def _gen_verbose_remote():
     """
     attrs = gen_remote()
     attrs.update({
-        'feed_url': random.choice((FILE_FEED_URL, FILE2_FEED_URL)),
+        'url': random.choice((FILE_FEED_URL, FILE2_FEED_URL)),
         'password': utils.uuid4(),
         'username': utils.uuid4(),
         'validate': random.choice((False, True)),
