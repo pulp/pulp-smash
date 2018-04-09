@@ -19,7 +19,11 @@ from pulp_smash.tests.pulp3.file.api_v3.utils import (
 )
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
-from pulp_smash.tests.pulp3.utils import get_auth, sync_repo
+from pulp_smash.tests.pulp3.utils import (
+    get_auth,
+    publish_repo,
+    sync_repo,
+)
 
 
 class PublicationsTestCase(unittest.TestCase, utils.SmokeTest):
@@ -57,13 +61,9 @@ class PublicationsTestCase(unittest.TestCase, utils.SmokeTest):
 
     def test_01_create_publication(self):
         """Create a publication."""
-        call_report = self.client.post(
-            urljoin(self.publisher['_href'], 'publish/'),
-            {'repository': self.repo['_href']}
+        self.publication.update(
+            publish_repo(self.cfg, self.publisher, self.repo)
         )
-        last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
-        publication_href = last_task['created_resources'][0]
-        self.publication.update(self.client.get(publication_href))
 
     @selectors.skip_if(bool, 'publication', False)
     def test_02_read_publication(self):
