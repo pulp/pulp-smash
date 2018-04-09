@@ -2,6 +2,7 @@
 """Utility functions for Pulp 3 tests."""
 import random
 import unittest
+import warnings
 from copy import deepcopy
 from urllib.parse import urljoin, urlsplit
 
@@ -186,8 +187,16 @@ def publish_repo(cfg, publisher, repo, version_href=None):
     call_report = client.post(urljoin(publisher['_href'], 'publish/'), body)
     # As of this writing, Pulp 3 only returns one task. If Pulp 3 starts
     # returning multiple tasks, this may need to be re-written.
-    last_task = next(api.poll_spawned_tasks(cfg, call_report))
-    return client.get(last_task['created_resources'][0])
+    tasks = tuple(api.poll_spawned_tasks(cfg, call_report))
+    if len(tasks) != 1:
+        message = (
+            'Multiple tasks were spawned in response to API call. This is '
+            'unexpected, and Pulp Smash may handle the response incorrectly. '
+            'Here is the tasks generated: {}'
+        )
+        message = message.format(tasks)
+        warnings.warn(message, RuntimeWarning)
+    return client.get(tasks[-1]['created_resources'][0])
 
 
 def get_content(repo, version_href=None):
