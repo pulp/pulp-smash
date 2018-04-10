@@ -1,7 +1,7 @@
 # coding=utf-8
 """Tests related to repository version."""
 import unittest
-from random import choice, randint
+from random import choice, randint, sample
 from urllib.parse import urljoin
 
 from requests.exceptions import HTTPError
@@ -195,8 +195,8 @@ class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
         return content_summaries[0]
 
 
-class DeleteAnyRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
-    """Verify that any repository version can be deleted.
+class AddRemoveRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
+    """Create and delete repository versions.
 
     This test targets the following issues:
 
@@ -204,93 +204,99 @@ class DeleteAnyRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
     * `Pulp Smash #871 <https://github.com/PulpQE/pulp-smash/issues/871>`_
     """
 
-    def setUp(self):
-        """Create class-wide variables."""
-        self.cfg = config.get_config()
-        self.client = api.Client(self.cfg, api.json_handler)
-        self.client.request_kwargs['auth'] = get_auth()
+    # `cls.content[i]` is a dict.
+    # pylint:disable=unsubscriptable-object
+
+    @classmethod
+    def setUpClass(cls):
+        """Add content to Pulp."""
+        cls.cfg = config.get_config()
+        cls.client = api.Client(cls.cfg, api.json_handler)
+        cls.client.request_kwargs['auth'] = get_auth()
         body = gen_remote()
         body['url'] = urljoin(FILE_LARGE_FEED_URL, 'PULP_MANIFEST')
-        importer = self.client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(self.client.delete, importer['_href'])
+        importer = {}
+        repo = {}
+        try:
+            importer.update(cls.client.post(FILE_REMOTE_PATH, body))
+            repo.update(cls.client.post(REPO_PATH, gen_repo()))
+            sync_repo(cls.cfg, importer, repo)
+        finally:
+            if importer:
+                cls.client.delete(importer['_href'])
+            if repo:
+                cls.client.delete(repo['_href'])
+
+        # We need at least three content units. Choosing a relatively low
+        # number is useful, to limit how many repo versions are created, and
+        # thus how long the test takes.
+        cls.content = sample(cls.client.get(FILE_CONTENT_PATH)['results'], 10)
+
+    def setUp(self):
+        """Create a repository and give it nine new versions."""
         self.repo = self.client.post(REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, self.repo['_href'])
-        sync_repo(self.cfg, importer, self.repo)
 
-    def test_01_delete_any_version(self):
-        """Verify that any repository version can be deleted.
-
-        1. Delete a version (e.g. 1) and verify doesn't affect the content of
-           successive versions (e.g. 2, 3, ...).
-        2. Assert that the last version can be deleted.
-        3. Verify whether when the last version is deleted and then a new
-           version is created, it should not have the previously deleted
-           version content.
-        """
-        repo = self.client.post(REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo['_href'])
-        files_content = self.client.get(FILE_CONTENT_PATH)['results']
-
-        # This file will be used to create a new version after the last one
-        # is deleted.
-        last_file_content = files_content.pop()
-        for file_content in files_content:
+        # Don't upload the last content unit. The test case might upload it to
+        # create a new repo version within the test.
+        for content in self.content[:-1]:
             self.client.post(
-                repo['_versions_href'],
-                {'add_content_units': [file_content['_href']]}
+                self.repo['_versions_href'],
+                {'add_content_units': [content['_href']]}
             )
-        versions = get_repo_versions(repo)
-        artifact = get_artifact_paths(repo, versions[0])
+        self.repo = self.client.get(self.repo['_href'])
+        self.repo_versions = get_repo_versions(self.repo)
 
-        # Delete first repository version.
-        delete_repo_version(repo, versions[0])
+    def test_delete_first_version(self):
+        """Delete the first repository version."""
+        delete_repo_version(self.repo, self.repo_versions[0])
         with self.assertRaises(HTTPError):
-            get_content(repo, versions[0])
+            get_content(self.repo, self.repo_versions[0])
+        for repo_version in self.repo_versions[1:]:
+            artifact_paths = get_artifact_paths(self.repo, repo_version)
+            self.assertIn(self.content[0]['artifact'], artifact_paths)
 
-        # Verify that second version has content added by the first one,
-        # even after the first one was deleted.
-        next_artifact = get_artifact_paths(repo, versions[1])
-        self.assertTrue(artifact.issubset(next_artifact))
+    def test_delete_last_version(self):
+        """Delete the last repository version.
 
-        # Delete last repository version.
-        last_artifact = get_artifact_paths(repo, versions[-1])
-        delete_repo_version(repo, versions[-1])
+        Create a new repository version from the second-to-last repository
+        version. Verify that the content unit from the old last repository
+        version is not in the new last repository version.
+        """
+        # Delete the last repo version.
+        delete_repo_version(self.repo, self.repo_versions[-1])
         with self.assertRaises(HTTPError):
-            get_content(repo, versions[-1])
+            get_content(self.repo, self.repo_versions[-1])
 
-        # Pick a random version between the second one and the antepenultimate
-        # one.
-        index = randint(1, len(versions) - 2)
-
-        # Read and artifact of selected index, remove selected version, and
-        # read the content of the next version.
-        artifact = get_artifact_paths(repo, versions[index])
-        delete_repo_version(repo, versions[index])
-        with self.assertRaises(HTTPError):
-            get_content(repo, versions[index])
-        next_artifact = get_artifact_paths(repo, versions[index + 1])
-        self.assertTrue(artifact.issubset(next_artifact))
-
-        # Get the last but one artifact.
-        last_but_one_artifact = get_artifact_paths(repo, versions[-2])
-
-        # Create new version - using the latest present version as base.
+        # Make new repo version from new last repo version.
         self.client.post(
-            repo['_versions_href'],
-            {'add_content_units': [last_file_content['_href']]}
+            self.repo['_versions_href'],
+            {'add_content_units': [self.content[-1]['_href']]}
         )
-        versions = get_repo_versions(repo)
-        last_version_artifacts = get_artifact_paths(repo, versions[-1])
-        self.assertFalse(last_artifact.issubset(last_version_artifacts))
-        self.assertTrue(last_but_one_artifact.issubset(last_version_artifacts))
+        self.repo = self.client.get(self.repo['_href'])
+        artifact_paths = get_artifact_paths(self.repo)
+        self.assertNotIn(self.content[-2]['artifact'], artifact_paths)
+        self.assertIn(self.content[-1]['artifact'], artifact_paths)
 
-    @selectors.skip_if(bool, 'repo', False)
-    def test_02_delete_publication(self):
-        """Test if delete a given repo version will delete its publication."""
+    def test_delete_middle_version(self):
+        """Delete a middle version."""
+        index = randint(1, len(self.repo_versions) - 2)
+        delete_repo_version(self.repo, self.repo_versions[index])
+        with self.assertRaises(HTTPError):
+            get_content(self.repo, self.repo_versions[index])
+        for repo_version in self.repo_versions[index + 1:]:
+            artifact_paths = get_artifact_paths(self.repo, repo_version)
+            self.assertIn(self.content[index]['artifact'], artifact_paths)
+
+    def test_delete_publication(self):
+        """Delete a publication.
+
+        Delete a repository version, and verify the associated publication is
+        also deleted.
+        """
         publisher = self.client.post(FILE_PUBLISHER_PATH, gen_publisher())
         self.addCleanup(self.client.delete, publisher['_href'])
-        version = get_repo_versions(self.repo)[0]
-        publication = publish_repo(self.cfg, publisher, self.repo, version)
-        delete_repo_version(self.repo, version)
+        publication = publish_repo(self.cfg, publisher, self.repo)
+        delete_repo_version(self.repo)
         with self.assertRaises(HTTPError):
             self.client.get(publication['_href'])
