@@ -18,7 +18,7 @@ from pulp_smash import exceptions
 
 _SENTINEL = object()
 _TASK_END_STATES = ('canceled', 'error', 'finished', 'skipped', 'timed out')
-_P3_TASK_END_STATES = ('canceled', 'completed', 'failed', 'skipped')
+P3_TASK_END_STATES = ('canceled', 'completed', 'failed', 'skipped')
 
 
 def _check_http_202_content_type(response):
@@ -410,7 +410,7 @@ def poll_task(server_config, href, pulp_system=None):
         if server_config.pulp_version < Version('3'):
             task_end_states = _TASK_END_STATES
         else:
-            task_end_states = _P3_TASK_END_STATES
+            task_end_states = P3_TASK_END_STATES
         if attrs['state'] in task_end_states:
             # This task has completed. Yield its final state, then iterate
             # through each of its children and yield their final states.

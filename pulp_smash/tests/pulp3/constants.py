@@ -33,6 +33,8 @@ REPO_PATH = urljoin(BASE_PATH, 'repositories/')
 
 STATUS_PATH = urljoin(BASE_PATH, 'status/')
 
+TASKS_PATH = urljoin(BASE_PATH, 'tasks/')
+
 USER_PATH = urljoin(BASE_PATH, 'users/')
 
 WORKER_PATH = urljoin(BASE_PATH, 'workers/')
