@@ -40,7 +40,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     get_unit,
 )
 from pulp_smash.tests.pulp2.rpm.utils import check_issue_3104
-from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
 # This class is left public for documentation purposes.
@@ -86,7 +86,7 @@ class SyncRepoBaseTestCase(utils.BaseAPITestCase):
         tasks = tuple(api.poll_spawned_tasks(self.cfg, self.report.json()))
         for i, task in enumerate(tasks):
             with self.subTest(i=i):
-                error_details = task['progress_report']['yum_importer']['content']['error_details']  # noqa pylint:disable=line-too-long
+                error_details = task['progress_report']['yum_importer']['content']['error_details']  # pylint:disable=line-too-long
                 self.assertEqual(error_details, [], task)
 
 

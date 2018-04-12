@@ -15,7 +15,7 @@ from pulp_smash.tests.pulp2.puppet.api_v2.utils import (
     gen_install_distributor,
     gen_repo,
 )
-from pulp_smash.tests.pulp2.puppet.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.puppet.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
 class InstallDistributorTestCase(utils.BaseAPITestCase):

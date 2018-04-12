@@ -17,7 +17,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     get_dists_by_type_id,
     set_pulp_manage_rsync,
 )
-from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
 class ServeHttpsFalseTestCase(TemporaryUserMixin, unittest.TestCase):

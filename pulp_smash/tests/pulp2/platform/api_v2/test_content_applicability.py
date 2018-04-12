@@ -24,11 +24,11 @@ from pulp_smash.tests.pulp2.constants import (
     CALL_REPORT_KEYS,
     GROUP_CALL_REPORT_KEYS,
 )
-from pulp_smash.tests.pulp2.platform.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.platform.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 _PATHS = {
-    'consumer': '/pulp/api/v2/consumers/actions/content/regenerate_applicability/',  # noqa
-    'repo': '/pulp/api/v2/repositories/actions/content/regenerate_applicability/',  # noqa
+    'consumer': '/pulp/api/v2/consumers/actions/content/regenerate_applicability/',
+    'repo': '/pulp/api/v2/repositories/actions/content/regenerate_applicability/',
 }
 
 

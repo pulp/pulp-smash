@@ -2,7 +2,7 @@
 """Tests that CRUD Python repositories."""
 from pulp_smash import utils
 from pulp_smash.tests.pulp2.python.api_v2.utils import gen_repo
-from pulp_smash.tests.pulp2.python.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.python.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
 class CRUDTestCase(utils.BaseAPICrudTestCase):

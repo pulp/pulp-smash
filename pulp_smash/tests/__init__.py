@@ -1,5 +1,4 @@
 # coding=utf-8
-# flake8:noqa
 """Tests for Pulp.
 
 This package contain functional tests for Pulp. These tests should be run

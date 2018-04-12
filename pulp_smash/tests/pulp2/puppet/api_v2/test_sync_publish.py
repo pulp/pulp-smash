@@ -28,7 +28,7 @@ from pulp_smash.tests.pulp2.puppet.api_v2.utils import (
     gen_distributor,
     gen_repo,
 )
-from pulp_smash.tests.pulp2.puppet.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.puppet.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
 class CreateTestCase(utils.BaseAPITestCase):
@@ -169,7 +169,7 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
         report = utils.sync_repo(self.cfg, repo).json()
         for task in api.poll_spawned_tasks(self.cfg, report):
             self.assertIsNone(
-                task['progress_report']['puppet_importer']['metadata']['error_message']  # noqa pylint:disable=line-too-long
+                task['progress_report']['puppet_importer']['metadata']['error_message']  # pylint:disable=line-too-long
             )
 
 
@@ -208,7 +208,7 @@ class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
     def test_error_details(self):
         """Assert each task's progress report contains error details."""
         self.assertIsNotNone(
-            self.tasks[0]['progress_report']['puppet_importer']['metadata']['error']  # noqa pylint:disable=line-too-long
+            self.tasks[0]['progress_report']['puppet_importer']['metadata']['error']  # pylint:disable=line-too-long
         )
 
 
@@ -258,7 +258,7 @@ class SyncValidManifestFeedTestCase(utils.BaseAPITestCase):
         client = api.Client(cls.cfg)
         body = gen_repo()
         body['importer_config'] = {
-            'feed': 'http://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/puppet_manifest/modules/'  # noqa pylint:disable=line-too-long
+            'feed': 'http://repos.fedorapeople.org/repos/pulp/pulp/demo_repos/puppet_manifest/modules/'  # pylint:disable=line-too-long
         }
         repo = client.post(REPOSITORY_PATH, body).json()
         cls.resources.add(repo['_href'])
@@ -280,7 +280,7 @@ class SyncValidManifestFeedTestCase(utils.BaseAPITestCase):
         for i, task in enumerate(self.tasks):
             with self.subTest(i=i):
                 self.assertIsNone(
-                    task['progress_report']['puppet_importer']['metadata']['error_message']  # noqa pylint:disable=line-too-long
+                    task['progress_report']['puppet_importer']['metadata']['error_message']  # pylint:disable=line-too-long
                 )
 
 

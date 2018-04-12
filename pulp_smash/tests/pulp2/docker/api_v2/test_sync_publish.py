@@ -14,7 +14,7 @@ from pulp_smash.tests.pulp2.docker.api_v2.utils import (
     gen_repo,
 )
 from pulp_smash.tests.pulp2.docker.utils import get_upstream_name
-from pulp_smash.tests.pulp2.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.docker.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 # Variable name derived from HTTP content-type.
 MANIFEST_V1 = {

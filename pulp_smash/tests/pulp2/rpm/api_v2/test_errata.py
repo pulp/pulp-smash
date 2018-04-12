@@ -11,7 +11,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     get_rpm_names_versions,
 )
 from pulp_smash.tests.pulp2.rpm.utils import gen_yum_config_file
-from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
 class ApplyErratumTestCase(unittest.TestCase):
@@ -97,7 +97,7 @@ class ApplyErratumTestCase(unittest.TestCase):
         # methods like PackageManager.upgrade. But sometimes, we need to peek
         # under the hood, and this is a good example of that. Maybe
         # _get_package_manager() could be made into a public function.
-        yum_or_dnf = cli.PackageManager._get_package_manager(cfg)  # noqa pylint:disable=protected-access
+        yum_or_dnf = cli.PackageManager._get_package_manager(cfg)  # pylint:disable=protected-access
         self.assertIn(yum_or_dnf, ('yum', 'dnf'))
         if yum_or_dnf == 'yum':
             return ('--advisory', erratum)
@@ -145,5 +145,5 @@ class LargePackageListTestCase(unittest.TestCase):
             tasks = tuple(api.poll_spawned_tasks(cfg, report.json()))
             for i, task in enumerate(tasks):
                 with self.subTest(i=i):
-                    error_details = task['progress_report']['yum_importer']['content']['error_details']  # noqa pylint:disable=line-too-long
+                    error_details = task['progress_report']['yum_importer']['content']['error_details']  # pylint:disable=line-too-long
                     self.assertEqual(error_details, [], task)

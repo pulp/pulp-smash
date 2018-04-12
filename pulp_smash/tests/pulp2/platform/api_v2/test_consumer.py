@@ -10,7 +10,7 @@ from urllib.parse import urljoin
 from pulp_smash import api, config, utils
 from pulp_smash.tests.pulp2.constants import CONSUMERS_PATH, REPOSITORY_PATH
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo, gen_distributor
-from pulp_smash.tests.pulp2.platform.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.platform.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
 class BindConsumerTestCase(unittest.TestCase):

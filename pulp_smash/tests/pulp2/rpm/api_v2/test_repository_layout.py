@@ -31,7 +31,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     xml_handler,
 )
 from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277, check_issue_3104
-from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
 def get_parse_repodata_xml(server_config, distributor, file_path):
