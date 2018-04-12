@@ -7,7 +7,7 @@ from requests.exceptions import HTTPError
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.tests.pulp3.constants import DISTRIBUTION_PATH
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_distribution
-from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.utils import get_auth
 
 

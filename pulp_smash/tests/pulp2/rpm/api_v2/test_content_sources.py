@@ -12,7 +12,7 @@ from urllib.parse import urlsplit, urlunsplit
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import PULP_FIXTURES_BASE_URL
 from pulp_smash.tests.pulp2.constants import CONTENT_SOURCES_PATH
-from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 _HEADERS = {'X-RHUI-ID', 'X-CSRF-TOKEN'}
 

@@ -105,7 +105,7 @@ def repo_update(  # pylint:disable=too-many-arguments
     return cli.Client(server_config).run(cmd)
 
 
-def repo_publish(server_config, repo_id, bg=None, force_full=None):  # noqa pylint:disable=invalid-name
+def repo_publish(server_config, repo_id, bg=None, force_full=None):  # pylint:disable=invalid-name
     """Execute ``pulp-admin docker repo publish run``."""
     cmd = (
         'pulp-admin', 'docker', 'repo', 'publish', 'run', '--repo-id', repo_id

@@ -17,7 +17,7 @@ from pulp_smash.tests.pulp3.file.api_v3.utils import (
     gen_remote,
     gen_publisher,
 )
-from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_distribution, gen_repo
 from pulp_smash.tests.pulp3.utils import (
     get_auth,

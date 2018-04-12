@@ -46,7 +46,7 @@ from pulp_smash.tests.pulp2.rpm.utils import (
     check_issue_2387,
     check_issue_3104,
 )
-from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
 class BrokerTestCase(unittest.TestCase):

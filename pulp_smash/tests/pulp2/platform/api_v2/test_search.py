@@ -241,7 +241,7 @@ class FiltersIdsTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Search for exactly two users."""
         super(FiltersIdsTestCase, cls).setUpClass()
-        cls.user_ids = [user['id'] for user in random.sample(_USERS, 2)]  # noqa pylint:disable=unsubscriptable-object
+        cls.user_ids = [user['id'] for user in random.sample(_USERS, 2)]  # pylint:disable=unsubscriptable-object
         cls.searches['post'] = api.Client(cls.cfg).post(
             _SEARCH_PATH,
             {'criteria': {'filters': {'id': {'$in': cls.user_ids}}}},
@@ -272,7 +272,7 @@ class LimitSkipTestCase(_BaseTestCase):
     def setUpClass(cls):
         """Create two users. Execute searches."""
         super(LimitSkipTestCase, cls).setUpClass()
-        cls.user_ids = [user['id'] for user in random.sample(_USERS, 2)]  # noqa pylint:disable=unsubscriptable-object
+        cls.user_ids = [user['id'] for user in random.sample(_USERS, 2)]  # pylint:disable=unsubscriptable-object
         client = api.Client(cls.cfg)
         for criterion in {'limit', 'skip'}:
             key = 'post_' + criterion

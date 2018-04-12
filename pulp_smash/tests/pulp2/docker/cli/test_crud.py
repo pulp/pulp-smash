@@ -11,7 +11,7 @@ from packaging import version
 
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.tests.pulp2.docker.cli import utils as docker_utils
-from pulp_smash.tests.pulp2.docker.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.docker.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 _FEED = 'https://example.com'
 _UPSTREAM_NAME = 'foo/bar'

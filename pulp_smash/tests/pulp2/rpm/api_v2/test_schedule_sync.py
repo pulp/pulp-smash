@@ -13,7 +13,7 @@ from pulp_smash import api, utils
 from pulp_smash.constants import RPM_SIGNED_FEED_URL
 from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo
-from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # noqa pylint:disable=unused-import
+from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 _MUTABLE_ATTRS = {
     'consecutive_failures',

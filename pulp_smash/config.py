@@ -365,7 +365,8 @@ class PulpSmashConfig(object):
         )
         self._xdg_config_dir = 'pulp_smash'
 
-    def __repr__(self):  # noqa
+    def __repr__(self):
+        """Create string representation of the object."""
         attrs = _public_attrs(self)
         attrs['pulp_version'] = type('')(attrs['pulp_version'])
         str_kwargs = ', '.join(
