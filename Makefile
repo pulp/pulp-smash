@@ -11,6 +11,7 @@ help:
 	@echo "  docs-clean     to remove documentation"
 	@echo "  lint           to run all linters"
 	@echo "  lint-flake8    to run the flake8 linter"
+	@echo "  lint-pycode    to run the pycodestyle linter"
 	@echo "  lint-pylint    to run the pylint linter"
 	@echo "  publish        to upload dist/* to PyPi"
 	@echo "  test           to run unit tests"
@@ -38,6 +39,9 @@ docs-clean:
 lint-flake8:
 	flake8 . --ignore D203 --exclude docs/_build
 
+lint-pycode:
+	pycodestyle . --ignore=E501 --exclude docs/_build
+
 lint-pylint:
 	pylint -j $(CPU_COUNT) --reports=n --disable=I \
 		docs/conf.py \
@@ -46,7 +50,7 @@ lint-pylint:
 		setup.py \
 		tests
 
-lint: lint-flake8 lint-pylint
+lint: lint-flake8 lint-pylint lint-pycode
 
 publish: dist
 	twine upload dist/*
@@ -58,5 +62,5 @@ test-coverage:
 	coverage run --source pulp_smash.api,pulp_smash.cli,pulp_smash.config,pulp_smash.exceptions,pulp_smash.pulp_smash_cli,pulp_smash.selectors,pulp_smash.utils \
 	$(TEST_OPTIONS)
 
-.PHONY: help all docs-html docs-clean lint-flake8 lint-pylint lint test \
+.PHONY: help all docs-html docs-clean lint-flake8 lint-pylint lint-pycode lint test \
     test-coverage dist-clean publish
