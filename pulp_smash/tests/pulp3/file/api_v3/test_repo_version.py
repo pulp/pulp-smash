@@ -215,15 +215,15 @@ class AddRemoveRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
         cls.client.request_kwargs['auth'] = get_auth()
         body = gen_remote()
         body['url'] = urljoin(FILE_LARGE_FEED_URL, 'PULP_MANIFEST')
-        importer = {}
+        remote = {}
         repo = {}
         try:
-            importer.update(cls.client.post(FILE_REMOTE_PATH, body))
+            remote.update(cls.client.post(FILE_REMOTE_PATH, body))
             repo.update(cls.client.post(REPO_PATH, gen_repo()))
-            sync_repo(cls.cfg, importer, repo)
+            sync_repo(cls.cfg, remote, repo)
         finally:
-            if importer:
-                cls.client.delete(importer['_href'])
+            if remote:
+                cls.client.delete(remote['_href'])
             if repo:
                 cls.client.delete(repo['_href'])
 
