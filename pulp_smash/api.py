@@ -372,7 +372,7 @@ def poll_spawned_tasks(server_config, call_report, pulp_system=None):
     if server_config.pulp_version < Version('3'):
         hrefs = (task['_href'] for task in call_report['spawned_tasks'])
     else:
-        hrefs = (result['_href'] for result in call_report)
+        hrefs = [call_report['_href']]
     for href in hrefs:
         for final_task_state in poll_task(server_config, href, pulp_system):
             yield final_task_state
