@@ -7,6 +7,7 @@ from requests.exceptions import HTTPError
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.tests.pulp3.constants import STATUS_PATH
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
+from pulp_smash.tests.pulp3.utils import get_auth
 
 
 class StatusTestCase(unittest.TestCase, utils.SmokeTest):
@@ -25,6 +26,7 @@ class StatusTestCase(unittest.TestCase, utils.SmokeTest):
         """Create class-wide variables."""
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
+        del cls.client.request_kwargs['auth']
         cls.status = {}
 
     def test_01_access_status(self):
@@ -48,5 +50,6 @@ class StatusTestCase(unittest.TestCase, utils.SmokeTest):
 
         When using a not allowed HTTP method.
         """
+        self.client.request_kwargs['auth'] = get_auth()
         with self.assertRaises(HTTPError):
             self.client.post(STATUS_PATH)
