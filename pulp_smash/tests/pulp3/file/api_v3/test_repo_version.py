@@ -300,3 +300,38 @@ class AddRemoveRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
         delete_repo_version(self.repo)
         with self.assertRaises(HTTPError):
             self.client.get(publication['_href'])
+
+
+class ContentImmutableRepoVersionTestCase(unittest.TestCase):
+    """Test whether the content present in a repo version is immutable.
+
+    This test targets the following issue:
+
+    * `Pulp Smash #953 <https://github.com/PulpQE/pulp-smash/issues/953>`_
+    """
+
+    def test_all(self):
+        """Test whether the content present in a repo version is immutable.
+
+        Do the following:
+
+        1. Create a repository that has at least one repository version.
+        2. Attempt to update the content of a repository version.
+        3. Assert that an HTTP exception is raised.
+        4. Assert that the repository version was not updated.
+        """
+        cfg = config.get_config()
+        client = api.Client(cfg, api.json_handler)
+        client.request_kwargs['auth'] = get_auth()
+        repo = client.post(REPO_PATH, gen_repo())
+        self.addCleanup(client.delete, repo['_href'])
+        body = gen_remote()
+        body['url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
+        remote = client.post(FILE_REMOTE_PATH, body)
+        self.addCleanup(client.delete, remote['_href'])
+        sync_repo(cfg, remote, repo)
+        latest_version_href = client.get(repo['_href'])['_latest_version_href']
+        with self.assertRaises(HTTPError):
+            client.post(latest_version_href)
+        repo = client.get(repo['_href'])
+        self.assertEqual(latest_version_href, repo['_latest_version_href'])
