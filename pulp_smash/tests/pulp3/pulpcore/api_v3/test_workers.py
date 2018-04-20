@@ -45,8 +45,9 @@ class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
         """Read a worker by its _href."""
         worker = self.client.get(self.worker['_href'])
         for key, val in self.worker.items():
-            with self.subTest(key=key):
-                self.assertEqual(worker[key], val)
+            if key != 'last_heartbeat':
+                with self.subTest(key=key):
+                    self.assertEqual(worker[key], val)
 
     @selectors.skip_if(bool, 'worker', False)
     def test_02_read_workers(self):
@@ -56,22 +57,24 @@ class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
         })
         self.assertEqual(len(page['results']), 1)
         for key, val in self.worker.items():
-            with self.subTest(key=key):
-                self.assertEqual(page['results'][0][key], val)
+            if key != 'last_heartbeat':
+                with self.subTest(key=key):
+                    self.assertEqual(page['results'][0][key], val)
 
     @selectors.skip_if(bool, 'worker', False)
     def test_03_positive_filters(self):
         """Read a worker using a set of query parameters."""
         page = self.client.get(WORKER_PATH, params={
-            'last_updated__gte': self.worker['last_heartbeat'],
+            'last_heartbeat__gte': self.worker['last_heartbeat'],
             'name': self.worker['name'],
             'online': self.worker['online'],
             'missing': self.worker['missing'],
         })
         self.assertEqual(len(page['results']), 1)
         for key, val in self.worker.items():
-            with self.subTest(key=key):
-                self.assertEqual(page['results'][0][key], val)
+            if key != 'last_heartbeat':
+                with self.subTest(key=key):
+                    self.assertEqual(page['results'][0][key], val)
 
     @selectors.skip_if(bool, 'worker', False)
     def test_04_negative_filters(self):
