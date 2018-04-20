@@ -23,8 +23,8 @@ class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
     @classmethod
     def setUpClass(cls):
         """Create an API Client."""
-        cfg = config.get_config()
-        cls.client = api.Client(cfg, api.json_handler)
+        cls.cfg = config.get_config()
+        cls.client = api.Client(cls.cfg, api.json_handler)
         cls.client.request_kwargs['auth'] = get_auth()
         cls.worker = {}
 
@@ -64,6 +64,8 @@ class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
     @selectors.skip_if(bool, 'worker', False)
     def test_03_positive_filters(self):
         """Read a worker using a set of query parameters."""
+        if selectors.bug_is_untestable(3586, self.cfg.pulp_version):
+            raise unittest.SkipTest('https://pulp.plan.io/issues/3586')
         page = self.client.get(WORKER_PATH, params={
             'last_heartbeat__gte': self.worker['last_heartbeat'],
             'name': self.worker['name'],
