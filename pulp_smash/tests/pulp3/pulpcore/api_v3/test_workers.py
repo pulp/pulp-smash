@@ -70,7 +70,9 @@ class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
             'online': self.worker['online'],
             'missing': self.worker['missing'],
         })
-        self.assertEqual(len(page['results']), 1)
+        self.assertEqual(len(page['results']),
+                         1,
+                         'Expected: {}. Got: {}.'.format([self.worker], page['results']))
         for key, val in self.worker.items():
             if key != 'last_heartbeat':
                 with self.subTest(key=key):
