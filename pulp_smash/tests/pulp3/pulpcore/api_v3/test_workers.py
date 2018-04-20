@@ -67,7 +67,6 @@ class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
         page = self.client.get(WORKER_PATH, params={
             'last_heartbeat__gte': self.worker['last_heartbeat'],
             'name': self.worker['name'],
-            'online': self.worker['online'],
         })
         self.assertEqual(len(page['results']), 1)
         for key, val in self.worker.items():
