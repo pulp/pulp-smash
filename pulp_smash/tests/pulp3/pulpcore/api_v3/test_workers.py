@@ -10,6 +10,9 @@ from pulp_smash.tests.pulp3.constants import WORKER_PATH
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.utils import get_auth
 
+_DYNAMIC_WORKER_ATTRS = ('last_heartbeat',)
+"""Worker attributes that are dynamically set by Pulp, not set by a user."""
+
 
 class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
     """Test actions over workers.
@@ -45,9 +48,10 @@ class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
         """Read a worker by its _href."""
         worker = self.client.get(self.worker['_href'])
         for key, val in self.worker.items():
-            if key != 'last_heartbeat':
-                with self.subTest(key=key):
-                    self.assertEqual(worker[key], val)
+            if key in _DYNAMIC_WORKER_ATTRS:
+                continue
+            with self.subTest(key=key):
+                self.assertEqual(worker[key], val)
 
     @selectors.skip_if(bool, 'worker', False)
     def test_02_read_workers(self):
@@ -57,9 +61,10 @@ class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
         })
         self.assertEqual(len(page['results']), 1)
         for key, val in self.worker.items():
-            if key != 'last_heartbeat':
-                with self.subTest(key=key):
-                    self.assertEqual(page['results'][0][key], val)
+            if key in _DYNAMIC_WORKER_ATTRS:
+                continue
+            with self.subTest(key=key):
+                self.assertEqual(page['results'][0][key], val)
 
     @selectors.skip_if(bool, 'worker', False)
     def test_03_positive_filters(self):
@@ -76,9 +81,10 @@ class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
                          1,
                          'Expected: {}. Got: {}.'.format([self.worker], page['results']))
         for key, val in self.worker.items():
-            if key != 'last_heartbeat':
-                with self.subTest(key=key):
-                    self.assertEqual(page['results'][0][key], val)
+            if key in _DYNAMIC_WORKER_ATTRS:
+                continue
+            with self.subTest(key=key):
+                self.assertEqual(page['results'][0][key], val)
 
     @selectors.skip_if(bool, 'worker', False)
     def test_04_negative_filters(self):
