@@ -3,7 +3,7 @@
 from urllib.parse import urljoin
 
 
-BASE_PATH = '/api/v3/'
+BASE_PATH = '/pulp/api/v3/'
 
 API_DOCS_PATH = urljoin(BASE_PATH, 'docs/')
 
