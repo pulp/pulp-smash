@@ -23,20 +23,6 @@ FILE_REMOTE_PATH = urljoin(BASE_REMOTE_PATH, 'file/')
 
 FILE_PUBLISHER_PATH = urljoin(BASE_PUBLISHER_PATH, 'file/')
 
-REMOTE_DOWN_POLICY = {'background', 'immediate', 'on_demand'}
-"""Download policies for an remote.
-
-See `pulpcore.app.models.Remote
-<https://docs.pulpproject.org/en/3.0/nightly/contributing/platform_api/app/models.html#pulpcore.app.models.Remote>`_.
-"""
-
-REMOTE_SYNC_MODE = {'mirror'}
-"""Sync modes for an remote.
-
-See `pulpcore.app.models.Remote
-<https://docs.pulpproject.org/en/3.0/nightly/contributing/platform_api/app/models.html#pulpcore.app.models.Remote>`_.
-"""
-
 JWT_PATH = urljoin(BASE_PATH, 'jwt/')
 
 ORPHANS_PATH = urljoin(BASE_PATH, 'orphans/')
