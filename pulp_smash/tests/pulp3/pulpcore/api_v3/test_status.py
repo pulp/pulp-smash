@@ -2,12 +2,49 @@
 """Test the status page."""
 import unittest
 
+from jsonschema import validate
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, config, utils
 from pulp_smash.tests.pulp3.constants import STATUS_PATH
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
-from pulp_smash.tests.pulp3.utils import get_auth
+
+STATUS = {
+    '$schema': 'http://json-schema.org/schema#',
+    'title': 'Pulp 3 status API schema',
+    'description': (
+        "Derived from Pulp's actual behaviour and various Pulp issues."
+    ),
+    'type': 'object',
+    'properties': {
+        'database_connection': {
+            'type': 'object',
+            'properties': {'connected': {'type': 'boolean'}},
+        },
+        'messaging_connection': {
+            'type': 'object',
+            'properties': {'connected': {'type': 'boolean'}},
+        },
+        'missing_workers': {
+            'type': 'array',
+            'items': {'type': 'object'},
+        },
+        'online_workers': {
+            'type': 'array',
+            'items': {'type': 'object'},
+        },
+        'versions': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'component': {'type': 'string'},
+                    'version': {'type': 'string'},
+                }
+            },
+        },
+    }
+}
 
 
 class StatusTestCase(unittest.TestCase, utils.SmokeTest):
@@ -21,35 +58,41 @@ class StatusTestCase(unittest.TestCase, utils.SmokeTest):
     * `Pulp Smash #755 <https://github.com/PulpQE/pulp-smash/issues/755>`_
     """
 
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.client = api.Client(cls.cfg, api.json_handler)
-        del cls.client.request_kwargs['auth']
-        cls.status = {}
+    def setUp(self):
+        """Make an API client."""
+        self.client = api.Client(config.get_config(), api.json_handler)
 
-    def test_01_access_status(self):
-        """Verify whether an un-authenticated user can view status page."""
-        self.status.update(self.client.get(STATUS_PATH))
+    def test_get_authenticated(self):
+        """GET the status path with valid credentials.
 
-    @selectors.skip_if(bool, 'status', False)
-    def test_02_data_content(self):
-        """Verify whether few parameters are present on status page."""
-        self.assertTrue(self.status['database_connection'])
-        self.assertTrue(self.status['messaging_connection'])
-        self.assertIsInstance(self.status['online_workers'], list)
-        self.assertIsInstance(self.status['missing_workers'], list)
-        self.assertIsInstance(self.status['versions'], list)
-        self.assertNotEqual(self.status['online_workers'], [])
-        self.assertEqual(self.status['missing_workers'], [])
-        self.assertNotEqual(self.status['versions'], [])
-
-    def test_03_http_method(self):
-        """Verify whether an HTTP exception is raised.
-
-        When using a not allowed HTTP method.
+        Verify the response with :meth:`verify_get_response`.
         """
-        self.client.request_kwargs['auth'] = get_auth()
+        self.verify_get_response(self.client.get(STATUS_PATH))
+
+    def test_get_unauthenticated(self):
+        """GET the status path with no credentials.
+
+        Verify the response with :meth:`verify_get_response`.
+        """
+        del self.client.request_kwargs['auth']
+        self.verify_get_response(self.client.get(STATUS_PATH))
+
+    def test_post_authenticated(self):
+        """POST the status path with valid credentials.
+
+        Assert an error is returned.
+        """
         with self.assertRaises(HTTPError):
             self.client.post(STATUS_PATH)
+
+    def verify_get_response(self, status):
+        """Verify the response to an HTTP GET call.
+
+        Verify that several attributes and have the correct type or value.
+        """
+        validate(status, STATUS)
+        self.assertTrue(status['database_connection']['connected'])
+        self.assertTrue(status['messaging_connection']['connected'])
+        self.assertEqual(status['missing_workers'], [])
+        self.assertNotEqual(status['online_workers'], [])
+        self.assertNotEqual(status['versions'], [])
