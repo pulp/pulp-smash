@@ -2,11 +2,12 @@
 """Tests that perform actions over artifacts."""
 import hashlib
 import unittest
+from random import randint
 
 from requests.exceptions import HTTPError
 
 from pulp_smash import api, cli, config, selectors, utils
-from pulp_smash.constants import FILE_URL
+from pulp_smash.constants import FILE_URL, FILE2_URL
 from pulp_smash.exceptions import CalledProcessError
 from pulp_smash.tests.pulp3.constants import ARTIFACTS_PATH
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
@@ -24,6 +25,8 @@ class ArtifactTestCase(unittest.TestCase, utils.SmokeTest):
         delete_orphans(cls.cfg)
         cls.client = api.Client(cls.cfg, api.json_handler)
         cls.client.request_kwargs['auth'] = get_auth()
+        cls.file = {'file': utils.http_get(FILE2_URL)}
+        cls.sha256 = hashlib.sha256(cls.file['file']).hexdigest()
 
     def test_01_create(self):
         """Create an artifact by uploading a file.
@@ -50,6 +53,23 @@ class ArtifactTestCase(unittest.TestCase, utils.SmokeTest):
             self.artifact['sha256'],
             hashlib.sha256(files['file']).hexdigest()
         )
+
+    def test_01_create_no_match_data(self):
+        """Create an artifact providing the wrong digest and size."""
+        with self.assertRaises(HTTPError):
+            data = {'sha256': utils.uuid4(),
+                    'size': randint(0, 100)}
+            self.client.post(ARTIFACTS_PATH, data=data, files=self.file)
+        for artifact in self.client.get(ARTIFACTS_PATH)['results']:
+            self.assertNotEqual(artifact['sha256'], self.sha256)
+
+    def test_01_create_with_match_data(self):
+        """Create an artifact providing the right digest and size."""
+        data = {'sha256': self.sha256,
+                'size': len(self.file['file'])}
+        artifact = self.client.post(ARTIFACTS_PATH, data=data, files=self.file)
+        self.assertEqual(artifact['sha256'], data['sha256'])
+        self.assertEqual(artifact['size'], data['size'])
 
     @selectors.skip_if(bool, 'artifact', False)
     def test_02_read(self):
