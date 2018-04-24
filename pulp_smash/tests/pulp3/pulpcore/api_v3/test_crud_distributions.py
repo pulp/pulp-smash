@@ -40,16 +40,18 @@ class CRUDDistributionsTestCase(unittest.TestCase, utils.SmokeTest):
 
     @selectors.skip_if(bool, 'distribution', False)
     def test_02_read_distributions(self):
-        """Read a distribution by its name."""
+        """Read a distribution using query parameters."""
         if selectors.bug_is_untestable(3082, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/3082')
-        page = self.client.get(DISTRIBUTION_PATH, params={
-            'name': self.distribution['name']
-        })
-        self.assertEqual(len(page['results']), 1)
-        for key, val in self.distribution.items():
-            with self.subTest(key=key):
-                self.assertEqual(page['results'][0][key], val)
+        for params in (
+                {'name': self.distribution['name']},
+                {'base_path': self.distribution['base_path']}):
+            with self.subTest(params=params):
+                page = self.client.get(DISTRIBUTION_PATH, params=params)
+                self.assertEqual(len(page['results']), 1)
+                for key, val in self.distribution.items():
+                    with self.subTest(key=key):
+                        self.assertEqual(page['results'][0][key], val)
 
     @selectors.skip_if(bool, 'distribution', False)
     def test_03_partially_update(self):
