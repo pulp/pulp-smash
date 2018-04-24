@@ -17,7 +17,7 @@ CONTENT_PATH = urljoin(BASE_PATH, 'content/')
 
 DISTRIBUTION_PATH = urljoin(BASE_PATH, 'distributions/')
 
-FILE_CONTENT_PATH = urljoin(CONTENT_PATH, 'file/')
+FILE_CONTENT_PATH = urljoin(CONTENT_PATH, 'file/files/')
 
 FILE_REMOTE_PATH = urljoin(BASE_REMOTE_PATH, 'file/')
 
