@@ -154,6 +154,12 @@ developers, not a gospel.
     api/pulp_smash.tests.pulp3.pulpcore.api_v3.test_status
     api/pulp_smash.tests.pulp3.pulpcore.api_v3.test_workers
     api/pulp_smash.tests.pulp3.pulpcore.utils
+    api/pulp_smash.tests.pulp3.python
+    api/pulp_smash.tests.pulp3.python.api_v3
+    api/pulp_smash.tests.pulp3.python.api_v3.test_crud_publishers
+    api/pulp_smash.tests.pulp3.python.api_v3.test_crud_remotes
+    api/pulp_smash.tests.pulp3.python.api_v3.utils
+    api/pulp_smash.tests.pulp3.python.utils
     api/pulp_smash.tests.pulp3.utils
     api/pulp_smash.utils
     api/tests

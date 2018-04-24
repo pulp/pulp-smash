@@ -23,6 +23,12 @@ FILE_REMOTE_PATH = urljoin(BASE_REMOTE_PATH, 'file/')
 
 FILE_PUBLISHER_PATH = urljoin(BASE_PUBLISHER_PATH, 'file/')
 
+PYTHON_CONTENT_PATH = urljoin(CONTENT_PATH, 'python/')
+
+PYTHON_REMOTE_PATH = urljoin(BASE_REMOTE_PATH, 'python/')
+
+PYTHON_PUBLISHER_PATH = urljoin(BASE_PUBLISHER_PATH, 'python/')
+
 JWT_PATH = urljoin(BASE_PATH, 'jwt/')
 
 ORPHANS_PATH = urljoin(BASE_PATH, 'orphans/')

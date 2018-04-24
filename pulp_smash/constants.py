@@ -237,6 +237,8 @@ to Pulp.
 PYTHON_PYPI_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'python-pypi/')
 """The URL to the PyPI Python repository."""
 
+PYTHON_PROJECT_LIST = "['shelf-reader']"
+
 PYTHON_EGG_URL = urljoin(
     PYTHON_PYPI_FEED_URL,
     'packages/3a/e3/a6954c4134a899c0006515fbd40208922572947e960b35d0d19fd5a1b3'
