@@ -75,7 +75,6 @@ class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
             'last_heartbeat__gte': self.worker['last_heartbeat'],
             'name': self.worker['name'],
             'online': self.worker['online'],
-            'missing': self.worker['missing'],
         })
         self.assertEqual(len(page['results']),
                          1,
