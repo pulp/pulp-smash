@@ -32,7 +32,7 @@ def _sync_repo(server_config, href):
 
 
 # It's OK for a mixin to have just one method.
-class _SyncMixin(object):  # pylint:disable=too-few-public-methods
+class _SyncMixin():  # pylint:disable=too-few-public-methods
     """Add test methods verifying Pulp's behaviour when a sync is started.
 
     The ``report`` instance attribute should be available. This is the response
@@ -44,7 +44,7 @@ class _SyncMixin(object):  # pylint:disable=too-few-public-methods
         self.assertEqual(self.report.status_code, 202)
 
 
-class _SyncFailedMixin(object):
+class _SyncFailedMixin():
     """Add test methods verifying Pulp's behaviour when a sync fails.
 
     This mixin assumes that:
@@ -69,7 +69,7 @@ class _SyncFailedMixin(object):
 
 
 # It's OK for a mixin to have just one method.
-class _SyncImportFailedMixin(object):  # pylint:disable=too-few-public-methods
+class _SyncImportFailedMixin():  # pylint:disable=too-few-public-methods
     """Add test methods verifying Pulp's behaviour when a sync fails.
 
     This class is like ``_SyncFailedMixin``, with the additional restriction

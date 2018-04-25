@@ -138,7 +138,7 @@ def json_handler(server_config, response):
     return response.json()
 
 
-class Client(object):
+class Client():
     """A convenience object for working with an API.
 
     This class is a wrapper around the ``requests.api`` module provided by

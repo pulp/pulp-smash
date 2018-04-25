@@ -118,7 +118,7 @@ def tearDownModule():  # pylint:disable=invalid-name
     set_pulp_manage_rsync(cfg, False)
 
 
-class _RsyncDistUtilsMixin(object):  # pylint:disable=too-few-public-methods
+class _RsyncDistUtilsMixin():  # pylint:disable=too-few-public-methods
     """A mixin providing methods for working with the RPM rsync distributor.
 
     This mixin requires that the ``unittest.TestCase`` class from the standard

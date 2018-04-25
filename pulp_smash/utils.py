@@ -358,7 +358,7 @@ class BaseAPICrudTestCase(unittest.TestCase):
 
 
 # It's OK for this method to have just one method. It's a mixin.
-class DuplicateUploadsMixin(object):  # pylint:disable=too-few-public-methods
+class DuplicateUploadsMixin():  # pylint:disable=too-few-public-methods
     """A mixin that adds tests for the "duplicate upload" test cases.
 
     Consider the following procedure:

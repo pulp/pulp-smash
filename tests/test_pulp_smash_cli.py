@@ -21,7 +21,7 @@ class BasePulpSmashCliTestCase(unittest.TestCase):
         self.cli_runner = CliRunner()
 
 
-class MissingSettingsFileMixin(object):
+class MissingSettingsFileMixin():
     # pylint:disable=too-few-public-methods
     """Test missing settings file.
 

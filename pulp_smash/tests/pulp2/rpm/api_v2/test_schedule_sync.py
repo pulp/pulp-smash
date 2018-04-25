@@ -34,7 +34,7 @@ _SCHEDULE_PATH = 'importers/{}/schedules/sync/'
 
 
 # It's OK that this class has one method. It's an intentionally small class.
-class CreateRepoMixin(object):  # pylint:disable=too-few-public-methods
+class CreateRepoMixin():  # pylint:disable=too-few-public-methods
     """Provide a method for creating a repository."""
 
     @classmethod
