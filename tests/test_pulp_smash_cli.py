@@ -60,6 +60,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             'pulp': {
                 'auth': ['admin', 'admin'],
                 'version': '2.13',
+                'selinux enabled': True,
             },
             'systems': [{
                 'hostname': 'pulp.example.com',
@@ -123,6 +124,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             '\n'  # admin username
             '\n'  # admin password
             '2.13\n'  # pulp version
+            '\n'  # pulp_selinux_enabled
             'pulp.example.com\n'  # system hostname
             '\n'  # published via HTTPS
             '\n'  # verify HTTPS
@@ -141,6 +143,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             '\n'  # admin username
             '\n'  # admin password
             '2.13\n'  # pulp version
+            '\n'  # pulp_selinux_enabled
             'pulp.example.com\n'  # system hostname
             '\n'  # published via HTTPS
             '\n'  # verify HTTPS
@@ -159,6 +162,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             '\n'  # admin username
             '\n'  # admin password
             '2.13\n'  # pulp version
+            '\n'  # pulp_selinux_enabled
             'pulp.example.com\n'  # system hostname
             '\n'  # published via HTTPS
             'y\n'  # verify HTTPS
@@ -180,6 +184,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             'username\n'  # admin username
             'password\n'  # admin password
             '2.13\n'  # pulp version
+            'n\n'  # pulp_selinux_enabled
             'pulp.example.com\n'  # system hostname
             'n\n'  # published via HTTPS
             '\n'  # API port
@@ -188,6 +193,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
         )
         generated_settings = self._test_common_logic(create_input)
         self.expected_config_dict['pulp']['auth'] = ['username', 'password']
+        self.expected_config_dict['pulp']['selinux enabled'] = False
         system_roles = self.expected_config_dict['systems'][0]['roles']
         system_roles['amqp broker']['service'] = 'rabbitmq'
         system_roles['api']['scheme'] = 'http'

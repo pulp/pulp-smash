@@ -42,11 +42,13 @@ class ServeHttpsFalseTestCase(TemporaryUserMixin, unittest.TestCase):
     def setUp(self):
         """Set the ``pulp_manage_rsync`` boolean."""
         self.cfg = config.get_config()
-        set_pulp_manage_rsync(self.cfg, True)
+        if self.cfg.pulp_selinux_enabled:
+            set_pulp_manage_rsync(self.cfg, True)
 
     def tearDown(self):
         """Reset the ``pulp_manage_rsync`` boolean."""
-        set_pulp_manage_rsync(self.cfg, False)
+        if self.cfg.pulp_selinux_enabled:
+            set_pulp_manage_rsync(self.cfg, False)
 
     def test_all(self):
         """Publish w/an rsync distributor when ``serve_https`` is false."""

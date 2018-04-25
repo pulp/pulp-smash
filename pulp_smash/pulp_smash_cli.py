@@ -41,7 +41,7 @@ def settings(ctx):
 
 @settings.command('create')
 @click.pass_context
-def settings_create(ctx):
+def settings_create(ctx):  # pylint:disable=too-many-locals
     """Create a settings file."""
     path = ctx.obj['cfg_path']
     if path:
@@ -54,6 +54,10 @@ def settings_create(ctx):
     pulp_username = click.prompt('Pulp admin username', default='admin')
     pulp_password = click.prompt('Pulp admin password', default='admin')
     pulp_version = click.prompt('Pulp version')
+    pulp_selinux_enabled = click.confirm(
+        'Is SELinux supported in the test environment?',
+        default=True
+    )
     system_hostname = click.prompt('System hostname')
     if click.confirm(
             "Is Pulp's API available over HTTPS (no for HTTP)?", default=True):
@@ -112,6 +116,7 @@ def settings_create(ctx):
         'pulp': {
             'auth': [pulp_username, pulp_password],
             'version': pulp_version,
+            'selinux enabled': pulp_selinux_enabled,
         },
         'systems': [{
             'hostname': system_hostname,
