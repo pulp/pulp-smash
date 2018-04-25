@@ -74,6 +74,7 @@ def _gen_attrs():
         'pulp_version': '.'.join(
             type('')(random.randint(1, 150)) for _ in range(4)
         ),
+        'pulp_selinux_enabled': True,
         'systems': [
             config.PulpSystem(
                 hostname='pulp.example.com',
@@ -197,6 +198,8 @@ class InitTestCase(unittest.TestCase):
         """Assert that public attributes have correct values."""
         attrs = config._public_attrs(self.cfg)  # pylint:disable=W0212
         attrs['pulp_version'] = type('')(attrs['pulp_version'])
+        attrs['pulp_selinux_enabled'] = bool(attrs['pulp_selinux_enabled'])
+        self.assertIsNotNone(attrs['pulp_selinux_enabled'])
         self.assertEqual(self.kwargs, attrs)
 
     def test_private_attrs(self):
@@ -241,6 +244,8 @@ class ReadTestCase(unittest.TestCase):
             self.assertEqual(cfg.pulp_auth, ['username', 'password'])
         with self.subTest('check pulp_version'):
             self.assertEqual(cfg.pulp_version, config.Version('2.12.1'))
+        with self.subTest('check pulp_selinux_enabled'):
+            self.assertEqual(cfg.pulp_selinux_enabled, True)
         with self.subTest('check systems'):
             self.assertEqual(
                 sorted(cfg.systems),
@@ -293,6 +298,8 @@ class ReadTestCase(unittest.TestCase):
             self.assertEqual(cfg.pulp_auth, ['username', 'password'])
         with self.subTest('check pulp_version'):
             self.assertEqual(cfg.pulp_version, config.Version('2.12'))
+        with self.subTest('check pulp_selinux_enabled'):
+            self.assertEqual(cfg.pulp_selinux_enabled, True)
         with self.subTest('check systems'):
             self.assertEqual(
                 cfg.systems,

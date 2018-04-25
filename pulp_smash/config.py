@@ -62,6 +62,7 @@ CONFIG_JSON_SCHEMA = {
             'properties': {
                 'auth': {'type': 'array', 'maxItems': 2, 'minItems': 2},
                 'version': {'type': 'string'},
+                'selinux enabled': {'type': 'boolean'},
             }
         },
         'systems': {  # A misnomer. Think "hosts," not "systems."
@@ -282,6 +283,7 @@ class PulpSmashConfig():
     >>> cfg = PulpSmashConfig(
     ...     pulp_auth=('username', 'password'),
     ...     pulp_version='2.12.2',
+    ...     pulp_selinux_enabled=True,
     ...     systems=[  # A misnomer. Think "hosts," not "systems."
     ...         PulpSystem(
     ...             hostname='pulp1.example.com',
@@ -310,6 +312,7 @@ class PulpSmashConfig():
     >>> cfg = PulpSmashConfig(
     ...     pulp_auth=('username', 'password'),
     ...     pulp_version='2.12.2',
+    ...     pulp_selinux_enabled=True,
     ...     systems=[  # A misnomer. Think "hosts," not "systems."
     ...         PulpSystem(
     ...             hostname='pulp.example.com',
@@ -344,6 +347,8 @@ class PulpSmashConfig():
     :param pulp_version: A string, such as '1.2' or '0.8.rc3'. Defaults to
         '1!0' (epoch 1, version 0). Must be compatible with the `packaging`_
         library's ``packaging.version.Version`` class.
+    :param pulp_selinux_enabled: A boolean. Should selinux tests be run. Defaults to
+        ``true``.
     :param pulp_smash.config.PulpSystem systems: A list of the hosts comprising
         a Pulp application.
 
@@ -352,13 +357,14 @@ class PulpSmashConfig():
         http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
     """
 
-    def __init__(self, pulp_auth=None, pulp_version=None, systems=None):
+    def __init__(self, pulp_auth=None, pulp_version=None, systems=None, pulp_selinux_enabled=None):
         """Initialize this object with needed instance attributes."""
         self.pulp_auth = pulp_auth
         self.pulp_version = pulp_version
         self.systems = systems
         if self.systems is None:
             self.systems = []
+        self.pulp_selinux_enabled = pulp_selinux_enabled
         self._xdg_config_file = os.environ.get(
             'PULP_SMASH_CONFIG_FILE',
             'settings.json'
@@ -453,10 +459,11 @@ class PulpSmashConfig():
         pulp = config_file.get('pulp', {})
         pulp_auth = pulp.get('auth', ['admin', 'admin'])
         pulp_version = Version(pulp.get('version', '1!0'))
+        pulp_selinux_enabled = pulp.get('selinux enabled', True)
         systems = [
             PulpSystem(**system) for system in config_file.get('systems', [])
         ]
-        return PulpSmashConfig(pulp_auth, pulp_version, systems)
+        return PulpSmashConfig(pulp_auth, pulp_version, systems, pulp_selinux_enabled)
 
     def get_systems(self, role):
         """Return a list of hosts fulfilling the given role.

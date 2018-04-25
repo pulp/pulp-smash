@@ -5,7 +5,7 @@ import unittest
 from collections import namedtuple
 
 from pulp_smash import cli, config, selectors, utils
-from pulp_smash.tests.pulp2.platform.utils import set_up_module as setUpModule  # pylint:disable=unused-import
+from pulp_smash.tests.pulp2.platform.utils import set_up_module, require_selinux
 
 
 CELERY_LABEL = ':system_r:celery_t:s0'
@@ -29,6 +29,16 @@ PS_FIELDS = ('label', 'args')
 
 Process = namedtuple('Process', PS_FIELDS)
 """A single line of output from ``ps``."""
+
+
+def setUpModule():  # pylint:disable=invalid-name
+    """Skip tests if the requirements are not met.
+
+    Skipped if either default platform requirements aren't met or
+    selinux is disabled by user config.
+    """
+    set_up_module()
+    require_selinux()
 
 
 class ProcessLabelsTestCase(unittest.TestCase):

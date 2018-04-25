@@ -108,14 +108,16 @@ def setUpModule():  # pylint:disable=invalid-name
     if (selectors.bug_is_untestable(3313, cfg.pulp_version) and
             utils.os_is_f27(cfg)):
         raise unittest.SkipTest('https://pulp.plan.io/issues/3313')
-    set_pulp_manage_rsync(cfg, True)
+    if cfg.pulp_selinux_enabled:
+        set_pulp_manage_rsync(cfg, True)
 
 
 def tearDownModule():  # pylint:disable=invalid-name
     """Delete orphan content units."""
     cfg = config.get_config()
     api.Client(cfg).delete(ORPHANS_PATH)
-    set_pulp_manage_rsync(cfg, False)
+    if cfg.pulp_selinux_enabled:
+        set_pulp_manage_rsync(cfg, False)
 
 
 class _RsyncDistUtilsMixin():  # pylint:disable=too-few-public-methods
