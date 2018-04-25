@@ -3,6 +3,7 @@
 import unittest
 from random import choice, randint, sample
 from urllib.parse import urljoin
+from time import sleep
 
 from requests.exceptions import HTTPError
 
@@ -332,3 +333,166 @@ class ContentImmutableRepoVersionTestCase(unittest.TestCase):
             client.post(latest_version_href)
         repo = client.get(repo['_href'])
         self.assertEqual(latest_version_href, repo['_latest_version_href'])
+
+
+class FilterRepoVersionTestCase(unittest.TestCase):
+    """Test whether repository versions can be filtered.
+
+    These tests target the following issues:
+
+    * `Pulp #3238 <https://pulp.plan.io/issues/3238>`_
+    * `Pulp #3536 <https://pulp.plan.io/issues/3536>`_
+    * `Pulp #3557 <https://pulp.plan.io/issues/3557>`_
+    * `Pulp #3558 <https://pulp.plan.io/issues/3558>`_
+    * `Pulp Smash #880 <https://github.com/PulpQE/pulp-smash/issues/880>`_
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables.
+
+        Add content to Pulp.
+        """
+        cls.cfg = config.get_config()
+        cls.client = api.Client(cls.cfg, api.json_handler)
+        cls.client.request_kwargs['auth'] = get_auth()
+        remote = {}
+        repo = {}
+        try:
+            body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
+            remote.update(cls.client.post(FILE_REMOTE_PATH, body))
+            repo.update(cls.client.post(REPO_PATH, gen_repo()))
+            sync_repo(cls.cfg, remote, repo)
+            cls.contents = cls.client.get(FILE_CONTENT_PATH)['results']
+        finally:
+            if remote:
+                cls.client.delete(remote['_href'])
+            if repo:
+                cls.client.delete(repo['_href'])
+
+    def setUp(self):
+        """Create a repository and give it new versions."""
+        self.repo = self.client.post(REPO_PATH, gen_repo())
+        self.addCleanup(self.client.delete, self.repo['_href'])
+        self.create_repo_version(self.repo)
+        self.repo = self.client.get(self.repo['_href'])
+
+    def create_repo_version(self, repo, secs=0):
+        """Create a new repository version.
+
+        Create a new repository version for each content unit present in Pulp,
+        a delay in seconds can be added between every repository version
+        creation.
+        """
+        for content in self.contents:
+            self.client.post(
+                repo['_versions_href'],
+                {'add_content_units': [content['_href']]}
+            )
+            sleep(secs)
+
+    def test_filter_invalid_content(self):
+        """Filter repository version by invalid content."""
+        with self.assertRaises(HTTPError):
+            page = self.filter_repo_version(
+                self.repo,
+                {'content': utils.uuid4()}
+            )
+            self.assertEqual(len(page['results']), 0, page['results'])
+
+    def test_filter_valid_content(self):
+        """Filter repository versions by valid content."""
+        content_filter = {'content': choice(self.contents)['_href']}
+        repo_versions = self.filter_repo_version(
+            self.repo, content_filter)['results']
+        for repo_version in repo_versions:
+            self.assertIn(
+                self.client.get(content_filter['content']),
+                get_content(self.repo, repo_version['_href'])['results']
+            )
+
+    def test_filter_invalid_date(self):
+        """Filter repository version by invalid date."""
+        repo = self.client.post(REPO_PATH, gen_repo())
+        self.addCleanup(self.client.delete, repo['_href'])
+        self.create_repo_version(repo, randint(1, 3))
+        criteria = utils.uuid4()
+        date_filters = (
+            {'created': criteria},
+            {'created__gt': criteria, 'created__lt': criteria},
+            {'created__gte': criteria, 'created__lte': criteria},
+            {'created__range': '{},{}'.format(criteria, criteria)}
+        )
+        for date_filter in date_filters:
+            page = self.filter_repo_version(repo, date_filter)
+            self.assertEqual(len(page['results']), 0, page['results'])
+
+    def test_filter_valid_date(self):
+        """Filter repository version by a valid date."""
+        repo = self.client.post(REPO_PATH, gen_repo())
+        self.addCleanup(self.client.delete, repo['_href'])
+        self.create_repo_version(repo, randint(1, 3))
+        dates = self.get_repo_data(repo, 'created')
+        date_filters = (
+            [1, {'created': dates[0]}],
+            [len(dates) - 2,
+             {'created__gt': dates[0], 'created__lt':dates[-1]}],
+            [len(dates),
+             {'created__gte': dates[0], 'created__lte': dates[-1]}],
+            [2, {'created__range': '{},{}'.format(dates[0], dates[1])}],
+        )
+        for date_filter in date_filters:
+            page = self.filter_repo_version(repo, date_filter[1])
+            self.assertEqual(
+                len(page['results']),
+                date_filter[0],
+                page['results']
+            )
+
+    def test_filter_invalid_version(self):
+        """Filter repository version by an invalid version number."""
+        criteria = utils.uuid4()
+        version_filters = (
+            {'number': criteria},
+            {'number__gt': criteria, 'number__lt': criteria},
+            {'number__gte': criteria, 'number__lte': criteria},
+            {'number__range': '{},{}'.format(criteria, criteria)},
+        )
+        for version_filter in version_filters:
+            page = self.filter_repo_version(self.repo, version_filter)
+            self.assertEqual(len(page['results']), 0, page['results'])
+
+    def test_filter_valid_version(self):
+        """Filter repository version by a valid version number."""
+        versions = self.get_repo_data(self.repo, 'number')
+        version_filters = (
+            [1, {'number': versions[0]}],
+            [len(versions) - 2,
+             {'number__gt': versions[0], 'number__lt':versions[-1]}],
+            [len(versions),
+             {'number__gte': versions[0], 'number__lte': versions[-1]}],
+            [2, {'number__range': '{},{}'.format(versions[0], versions[1])}],
+        )
+        for version_filter in version_filters:
+            page = self.filter_repo_version(self.repo, version_filter[1])
+            self.assertEqual(
+                len(page['results']),
+                version_filter[0],
+                page['results']
+            )
+
+    def test_deleted_version_filter(self):
+        """Delete a repository version and filter by its number."""
+        versions = self.get_repo_data(self.repo, 'number')
+        delete_repo_version(self.repo)
+        page = self.filter_repo_version(self.repo, {'number': versions[-1]})
+        self.assertEqual(len(page['results']), 0, page['results'])
+
+    def filter_repo_version(self, repo, params):
+        """Filter repository version based on the given criteria."""
+        return self.client.get(repo['_versions_href'], params=params)
+
+    def get_repo_data(self, repo, criteria):
+        """Get data about repository version based on the given criteria."""
+        versions = self.client.get(repo['_versions_href'])['results']
+        return sorted([version[criteria] for version in versions])
