@@ -143,7 +143,7 @@ def xml_handler(_, response):
     return ElementTree.fromstring(xml_bytes)
 
 
-class DisableSELinuxMixin(object):  # pylint:disable=too-few-public-methods
+class DisableSELinuxMixin():  # pylint:disable=too-few-public-methods
     """A mixin providing the ability to temporarily disable SELinux."""
 
     def maybe_disable_selinux(self, cfg, pulp_issue_id):
@@ -193,7 +193,7 @@ class DisableSELinuxMixin(object):  # pylint:disable=too-few-public-methods
         self.addCleanup(client.run, cmd)
 
 
-class TemporaryUserMixin(object):
+class TemporaryUserMixin():
     """A mixin providing the ability to create a temporary user.
 
     A typical usage of this mixin is as follows:

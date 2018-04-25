@@ -268,7 +268,7 @@ def validate_config(config_dict):
 PulpSystem = collections.namedtuple('PulpSystem', 'hostname roles')
 
 
-class PulpSmashConfig(object):
+class PulpSmashConfig():
     """Information about a Pulp application.
 
     This object stores information about Pulp application and its constituent

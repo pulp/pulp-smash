@@ -136,7 +136,7 @@ class BaseTestCase(utils.BaseAPITestCase):
         self.assertIsInstance(last_task['result']['summary'], dict)
 
 
-class NoOpPublishMixin(object):
+class NoOpPublishMixin():
     """Provide tests for the no-op publish test cases in this module."""
 
     def test_second_publish_tasks(self):

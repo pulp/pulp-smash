@@ -61,7 +61,7 @@ def tearDownModule():  # pylint:disable=invalid-name
     api.Client(config.get_config()).delete(ORPHANS_PATH)
 
 
-class UtilsMixin(object):
+class UtilsMixin():
     """A mixin providing methods to the test cases in this module.
 
     Any class inheriting from this mixin must also inherit from

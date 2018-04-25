@@ -52,7 +52,7 @@ def code_handler(completed_proc):
     return completed_proc
 
 
-class CompletedProcess(object):
+class CompletedProcess():
     # pylint:disable=too-few-public-methods
     """A process that has finished running.
 
@@ -127,7 +127,7 @@ class CompletedProcess(object):
             )
 
 
-class Client(object):  # pylint:disable=too-few-public-methods
+class Client():  # pylint:disable=too-few-public-methods
     """A convenience object for working with a CLI.
 
     This class provides the ability to execute shell commands on either the
@@ -596,7 +596,7 @@ class ServiceManager(BaseServiceManager):
             )
 
 
-class PackageManager(object):
+class PackageManager():
     """A package manager on a host.
 
     Each instance of this class represents the package manager on a host. An

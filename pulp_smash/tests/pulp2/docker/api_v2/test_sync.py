@@ -22,7 +22,7 @@ def setUpModule():  # pylint:disable=invalid-name
         raise unittest.SkipTest('These tests require at least Pulp 2.8.')
 
 
-class UpstreamNameTestsMixin(object):
+class UpstreamNameTestsMixin():
     """Provides tests that sync a repository and override ``upstream_name``.
 
     Any class inheriting from this mixin must also inherit from

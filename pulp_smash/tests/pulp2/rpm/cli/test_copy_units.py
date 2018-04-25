@@ -61,7 +61,7 @@ def tearDownModule():  # pylint:disable=invalid-name
     )
 
 
-class UtilsMixin(object):  # pylint:disable=too-few-public-methods
+class UtilsMixin():  # pylint:disable=too-few-public-methods
     """A mixin providing useful tools to unittest subclasses.
 
     Any class inheriting from this mixin must also inherit from
