@@ -247,18 +247,6 @@ def get_removed_content(repo, version_href=None):
             .get(urljoin(version_href, 'removed_content/')))
 
 
-def get_content_unit_paths(repo):
-    """Return the relative path of content units present in a given repository.
-
-    :param repo: A dict of information about the repository.
-    :returns: A list with the paths of units present in a given repository.
-    """
-    return [
-        content_unit['relative_path']  # file path and name
-        for content_unit in get_content(repo)['results']
-    ]
-
-
 def delete_orphans(cfg=None):
     """Clean all content units present in pulp.
 
