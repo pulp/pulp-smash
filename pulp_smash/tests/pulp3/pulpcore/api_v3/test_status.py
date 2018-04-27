@@ -21,7 +21,7 @@ STATUS = {
             'type': 'object',
             'properties': {'connected': {'type': 'boolean'}},
         },
-        'messaging_connection': {
+        'redis_connection': {
             'type': 'object',
             'properties': {'connected': {'type': 'boolean'}},
         },
@@ -92,7 +92,7 @@ class StatusTestCase(unittest.TestCase, utils.SmokeTest):
         """
         validate(status, STATUS)
         self.assertTrue(status['database_connection']['connected'])
-        self.assertTrue(status['messaging_connection']['connected'])
+        self.assertTrue(status['redis_connection']['connected'])
         self.assertEqual(status['missing_workers'], [])
         self.assertNotEqual(status['online_workers'], [])
         self.assertNotEqual(status['versions'], [])
