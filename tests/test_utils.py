@@ -13,7 +13,7 @@ class UUID4TestCase(unittest.TestCase):
 
     def test_type(self):
         """Assert the method returns a unicode string."""
-        self.assertIsInstance(utils.uuid4(), type(''))
+        self.assertIsInstance(utils.uuid4(), str)
 
 
 class GetBrokerTestCase(unittest.TestCase):

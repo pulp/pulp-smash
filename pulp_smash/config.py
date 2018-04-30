@@ -374,7 +374,7 @@ class PulpSmashConfig():
     def __repr__(self):
         """Create string representation of the object."""
         attrs = _public_attrs(self)
-        attrs['pulp_version'] = type('')(attrs['pulp_version'])
+        attrs['pulp_version'] = str(attrs['pulp_version'])
         str_kwargs = ', '.join(
             '{}={}'.format(key, repr(value)) for key, value in attrs.items()
         )

@@ -72,7 +72,7 @@ def _gen_attrs():
     return {
         'pulp_auth': [utils.uuid4() for _ in range(2)],
         'pulp_version': '.'.join(
-            type('')(random.randint(1, 150)) for _ in range(4)
+            str(random.randint(1, 150)) for _ in range(4)
         ),
         'pulp_selinux_enabled': True,
         'systems': [
@@ -197,7 +197,7 @@ class InitTestCase(unittest.TestCase):
     def test_public_attrs(self):
         """Assert that public attributes have correct values."""
         attrs = config._public_attrs(self.cfg)  # pylint:disable=W0212
-        attrs['pulp_version'] = type('')(attrs['pulp_version'])
+        attrs['pulp_version'] = str(attrs['pulp_version'])
         attrs['pulp_selinux_enabled'] = bool(attrs['pulp_selinux_enabled'])
         self.assertIsNotNone(attrs['pulp_selinux_enabled'])
         self.assertEqual(self.kwargs, attrs)

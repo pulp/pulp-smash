@@ -302,7 +302,7 @@ class UploadPackageGroupsTestCase(utils.BaseAPITestCase):
         output = _get_groups_by_id(self.root_element)[input_['id']]
         for key in ('id', 'name', 'description', 'display_order'):
             with self.subTest(key=key):
-                input_text = type('')(input_[key])
+                input_text = str(input_[key])
                 output_text = output.find(key).text
                 self.assertEqual(input_text, output_text)
 
@@ -320,7 +320,7 @@ class UploadPackageGroupsTestCase(utils.BaseAPITestCase):
             with self.subTest(input_key=input_key, output_key=output_key):
                 input_value = input_[input_key]
                 self.assertIn(input_value, (True, False))
-                input_value = type('')(input_value).lower()
+                input_value = str(input_value).lower()
 
                 output_value = output.find(output_key).text
                 self.assertEqual(input_value, output_value)
