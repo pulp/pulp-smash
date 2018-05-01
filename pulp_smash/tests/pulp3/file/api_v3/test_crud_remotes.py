@@ -112,3 +112,22 @@ def _gen_verbose_remote():
         'validate': choice((False, True)),
     })
     return attrs
+
+
+class CreateRemoteNoURLTestCase(unittest.TestCase):
+    """Verify whether is possible to create a remote without a URL."""
+
+    def test_all(self):
+        """Verify whether is possible to create a remote without a URL.
+
+        This test targets the following issues:
+
+        * `Pulp #3395 <https://pulp.plan.io/issues/3395>`_
+        * `Pulp Smash #984 <https://github.com/PulpQE/pulp-smash/issues/984>`_
+        """
+        client = api.Client(config.get_config())
+        client.request_kwargs['auth'] = get_auth()
+        body = gen_remote(utils.uuid4())
+        del body['url']
+        with self.assertRaises(HTTPError):
+            client.post(FILE_REMOTE_PATH, body)
