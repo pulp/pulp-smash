@@ -1,6 +1,6 @@
 # coding=utf-8
 """Tests that CRUD remotes."""
-import random
+from random import choice
 import unittest
 
 from requests.exceptions import HTTPError
@@ -105,11 +105,10 @@ def _gen_verbose_remote():
 
     Note that 'username' and 'password' are write-only attributes.
     """
-    attrs = gen_remote()
+    attrs = gen_remote(choice((FILE_FEED_URL, FILE2_FEED_URL)))
     attrs.update({
-        'url': random.choice((FILE_FEED_URL, FILE2_FEED_URL)),
         'password': utils.uuid4(),
         'username': utils.uuid4(),
-        'validate': random.choice((False, True)),
+        'validate': choice((False, True)),
     })
     return attrs

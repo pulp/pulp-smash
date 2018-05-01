@@ -55,8 +55,7 @@ class RemotesPublishersTestCase(unittest.TestCase, utils.SmokeTest):
         # Create an remote and publisher.
         client = api.Client(cfg, api.json_handler)
         client.request_kwargs['auth'] = get_auth()
-        body = gen_remote()
-        body['url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
+        body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
         publisher = client.post(FILE_PUBLISHER_PATH, gen_publisher())

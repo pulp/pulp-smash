@@ -4,11 +4,12 @@ from pulp_smash import utils
 from pulp_smash.tests.pulp3.utils import get_content
 
 
-def gen_remote():
-    """Return a semi-random dict for use in creating an remote."""
-    return {
-        'name': utils.uuid4(),
-    }
+def gen_remote(url):
+    """Return a semi-random dict for use in creating an remote.
+
+    :param url: The URL of an external content source.
+    """
+    return {'name': utils.uuid4(), 'url': url}
 
 
 def gen_publisher():

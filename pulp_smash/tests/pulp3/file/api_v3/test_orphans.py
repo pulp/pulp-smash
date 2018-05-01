@@ -68,8 +68,7 @@ class DeleteOrphansTestCase(unittest.TestCase, utils.SmokeTest):
         """
         repo = self.api_client.post(REPO_PATH, gen_repo())
         self.addCleanup(self.api_client.delete, repo['_href'])
-        body = gen_remote()
-        body['url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
+        body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
         remote = self.api_client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(self.api_client.delete, remote['_href'])
         sync_repo(self.cfg, remote, repo)

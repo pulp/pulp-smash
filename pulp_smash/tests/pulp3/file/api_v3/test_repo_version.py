@@ -99,8 +99,7 @@ class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
         * The ``_latest_version_href + removed_content/`` API call is correct.
         * The ``content_summary`` attribute is correct.
         """
-        body = gen_remote()
-        body['url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
+        body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
         self.remote.update(self.client.post(FILE_REMOTE_PATH, body))
         sync_repo(self.cfg, self.remote, self.repo)
         repo = self.client.get(self.repo['_href'])
@@ -213,8 +212,7 @@ class AddRemoveRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
         cls.client.request_kwargs['auth'] = get_auth()
-        body = gen_remote()
-        body['url'] = urljoin(FILE_LARGE_FEED_URL, 'PULP_MANIFEST')
+        body = gen_remote(urljoin(FILE_LARGE_FEED_URL, 'PULP_MANIFEST'))
         remote = {}
         repo = {}
         try:
@@ -325,8 +323,7 @@ class ContentImmutableRepoVersionTestCase(unittest.TestCase):
         client.request_kwargs['auth'] = get_auth()
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
-        body = gen_remote()
-        body['url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
+        body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
         sync_repo(cfg, remote, repo)

@@ -50,8 +50,7 @@ class SyncFileRepoTestCase(unittest.TestCase, utils.SmokeTest):
         client.request_kwargs['auth'] = get_auth()
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
-        body = gen_remote()
-        body['url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
+        body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
 
@@ -93,8 +92,7 @@ class SyncChangeRepoVersionTestCase(unittest.TestCase):
         client.request_kwargs['auth'] = get_auth()
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
-        body = gen_remote()
-        body['url'] = urljoin(FILE_FEED_URL, 'PULP_MANIFEST')
+        body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
 
@@ -135,8 +133,7 @@ class MultiResourceLockingTestCase(unittest.TestCase, utils.SmokeTest):
         client.request_kwargs['auth'] = get_auth()
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
-        body = gen_remote()
-        body['url'] = urljoin(FILE_LARGE_FEED_URL, 'PULP_MANIFEST')
+        body = gen_remote(urljoin(FILE_LARGE_FEED_URL, 'PULP_MANIFEST'))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
         url = {'url': urljoin(FILE_FEED_URL, 'PULP_MANIFEST')}
