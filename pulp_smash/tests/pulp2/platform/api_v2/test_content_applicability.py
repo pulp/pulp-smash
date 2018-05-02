@@ -83,10 +83,10 @@ class ParallelTestCase(_SuccessTestCase):
     def setUpClass(cls):
         """Make calls to the server and save the responses."""
         super(ParallelTestCase, cls).setUpClass()
-        client = api.Client(cls.cfg, api.echo_handler)
-        for key in {'repo'}:
-            json = {key + '_criteria': {}, 'parallel': True}
-            cls.responses[key] = client.post(_PATHS[key], json)
+        cls.responses['repo'] = (
+            api
+            .Client(cls.cfg, api.echo_handler)
+            .post(_PATHS['repo'], {'repo_criteria': {}, 'parallel': True}))
 
     def setUp(self):
         """Ensure this test only runs on Pulp 2.8 and later."""
