@@ -21,7 +21,7 @@ from pulp_smash.tests.pulp3.utils import (
     delete_orphans,
     get_auth,
     get_content,
-    sync_repo,
+    sync,
 )
 
 
@@ -135,7 +135,7 @@ class DeleteContentUnitRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
         self.addCleanup(client.delete, remote['_href'])
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
-        sync_repo(cfg, remote, repo)
+        sync(cfg, remote, repo)
         repo = client.get(repo['_href'])
         content = get_content(repo)['results']
         with self.assertRaises(HTTPError):

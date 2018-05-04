@@ -151,7 +151,7 @@ def get_plugins(cfg=None):
     }
 
 
-def sync_repo(cfg, remote, repo):
+def sync(cfg, remote, repo):
     """Sync a repository.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
@@ -167,7 +167,7 @@ def sync_repo(cfg, remote, repo):
     )
 
 
-def publish_repo(cfg, publisher, repo, version_href=None):
+def publish(cfg, publisher, repo, version_href=None):
     """Publish a repository.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
@@ -262,18 +262,19 @@ def delete_orphans(cfg=None):
     api.Client(cfg, api.safe_handler).delete(ORPHANS_PATH)
 
 
-def get_repo_versions(repo):
-    """Return hrefs of repository versions.
+def get_version_hrefs(repo):
+    """Return hrefs for repository versions.
 
     :param repo: A dict of information about the repository.
     :returns: A sorted list with the hrefs of repository versions.
     """
     client = api.Client(config.get_config(), api.json_handler)
-    versions = client.get(repo['_versions_href'])['results']
-    return sorted(
-        [version['_href'] for version in versions],
-        key=lambda url: int(urlsplit(url).path.split('/')[-2])
-    )
+    attributes = [
+        version_href['_href']
+        for version_href in client.get(repo['_versions_href'])['results']
+    ]
+    attributes.sort(key=lambda url: int(urlsplit(url).path.split('/')[-2]))
+    return attributes
 
 
 def get_artifact_paths(repo, version_href=None):
@@ -289,7 +290,7 @@ def get_artifact_paths(repo, version_href=None):
     }
 
 
-def delete_repo_version(repo, version_href=None):
+def delete_version(repo, version_href=None):
     """Delete a given repository version.
 
     :param repo: A dict of information about the repository.

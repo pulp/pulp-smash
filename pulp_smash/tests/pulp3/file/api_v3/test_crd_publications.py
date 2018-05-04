@@ -22,8 +22,8 @@ from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # py
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_distribution, gen_repo
 from pulp_smash.tests.pulp3.utils import (
     get_auth,
-    publish_repo,
-    sync_repo,
+    publish,
+    sync,
 )
 
 
@@ -47,7 +47,7 @@ class PublicationsTestCase(unittest.TestCase, utils.SmokeTest):
             cls.publisher.update(
                 cls.client.post(FILE_PUBLISHER_PATH, gen_publisher())
             )
-            sync_repo(cls.cfg, cls.remote, cls.repo)
+            sync(cls.cfg, cls.remote, cls.repo)
         except:  # noqa:E722
             cls.tearDownClass()
             raise
@@ -62,7 +62,7 @@ class PublicationsTestCase(unittest.TestCase, utils.SmokeTest):
     def test_01_create_publication(self):
         """Create a publication."""
         self.publication.update(
-            publish_repo(self.cfg, self.publisher, self.repo)
+            publish(self.cfg, self.publisher, self.repo)
         )
 
     @selectors.skip_if(bool, 'publication', False)

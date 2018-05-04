@@ -20,7 +20,7 @@ from pulp_smash.tests.pulp3.file.api_v3.utils import (
 )
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_distribution, gen_repo
-from pulp_smash.tests.pulp3.utils import get_auth, publish_repo, sync_repo
+from pulp_smash.tests.pulp3.utils import get_auth, publish, sync
 
 
 class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
@@ -63,7 +63,7 @@ class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
         body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
-        sync_repo(cfg, remote, repo)
+        sync(cfg, remote, repo)
         repo = client.get(repo['_href'])
 
         # Create a publisher.
@@ -71,7 +71,7 @@ class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
         self.addCleanup(client.delete, publisher['_href'])
 
         # Create a publication.
-        publication = publish_repo(cfg, publisher, repo)
+        publication = publish(cfg, publisher, repo)
         self.addCleanup(client.delete, publication['_href'])
 
         # Create a distribution.

@@ -22,11 +22,11 @@ from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # py
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
 from pulp_smash.tests.pulp3.utils import (
     delete_orphans,
-    delete_repo_version,
+    delete_version,
     get_auth,
     get_content,
-    get_repo_versions,
-    sync_repo,
+    get_version_hrefs,
+    sync,
 )
 
 
@@ -71,7 +71,7 @@ class DeleteOrphansTestCase(unittest.TestCase, utils.SmokeTest):
         body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
         remote = self.api_client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(self.api_client.delete, remote['_href'])
-        sync_repo(self.cfg, remote, repo)
+        sync(self.cfg, remote, repo)
         repo = self.api_client.get(repo['_href'])
         content = choice(get_content(repo)['results'])
 
@@ -88,7 +88,7 @@ class DeleteOrphansTestCase(unittest.TestCase, utils.SmokeTest):
 
         # Delete first repo version. The previous removed content unit will be
         # an orphan.
-        delete_repo_version(repo, get_repo_versions(repo)[0])
+        delete_version(repo, get_version_hrefs(repo)[0])
         content_units = self.api_client.get(FILE_CONTENT_PATH)['results']
         self.assertIn(content, content_units)
         delete_orphans()

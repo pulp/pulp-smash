@@ -22,9 +22,9 @@ from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # py
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
 from pulp_smash.tests.pulp3.utils import (
     get_auth,
-    get_repo_versions,
-    publish_repo,
-    sync_repo,
+    get_version_hrefs,
+    publish,
+    sync,
 )
 
 
@@ -59,7 +59,7 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
         self.addCleanup(client.delete, remote['_href'])
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
-        sync_repo(cfg, remote, repo)
+        sync(cfg, remote, repo)
         publisher = client.post(FILE_PUBLISHER_PATH, gen_publisher())
         self.addCleanup(client.delete, publisher['_href'])
 
@@ -71,17 +71,17 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
                 repo['_versions_href'],
                 {'add_content_units': [file_content['_href']]}
             )
-        versions = get_repo_versions(repo)
-        non_latest = choice(versions[:-1])
+        version_hrefs = get_version_hrefs(repo)
+        non_latest = choice(version_hrefs[:-1])
 
         # Step 2
-        publication = publish_repo(cfg, publisher, repo)
+        publication = publish(cfg, publisher, repo)
 
         # Step 3
-        self.assertEqual(publication['repository_version'], versions[-1])
+        self.assertEqual(publication['repository_version'], version_hrefs[-1])
 
         # Step 4
-        publication = publish_repo(cfg, publisher, repo, non_latest)
+        publication = publish(cfg, publisher, repo, non_latest)
 
         # Step 5
         self.assertEqual(publication['repository_version'], non_latest)
