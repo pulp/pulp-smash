@@ -25,7 +25,7 @@ from pulp_smash.tests.pulp3.utils import (
     delete_version,
     get_auth,
     get_content,
-    get_version_hrefs,
+    get_versions,
     sync,
 )
 
@@ -88,7 +88,7 @@ class DeleteOrphansTestCase(unittest.TestCase, utils.SmokeTest):
 
         # Delete first repo version. The previous removed content unit will be
         # an orphan.
-        delete_version(repo, get_version_hrefs(repo)[0])
+        delete_version(repo, get_versions(repo)[0]['_href'])
         content_units = self.api_client.get(FILE_CONTENT_PATH)['results']
         self.assertIn(content, content_units)
         delete_orphans()

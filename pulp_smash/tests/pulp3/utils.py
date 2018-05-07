@@ -262,19 +262,22 @@ def delete_orphans(cfg=None):
     api.Client(cfg, api.safe_handler).delete(ORPHANS_PATH)
 
 
-def get_version_hrefs(repo):
-    """Return hrefs for repository versions.
+def get_versions(repo, params=None):
+    """Return repository versions, sorted by version ID.
 
     :param repo: A dict of information about the repository.
-    :returns: A sorted list with the hrefs of repository versions.
+    :param params: Dictionary or bytes to be sent in the query string. Used to
+        filter which versions are returned.
+    :returns: A sorted list of dicts of information about repository versions.
     """
-    client = api.Client(config.get_config(), api.json_handler)
-    attributes = [
-        version_href['_href']
-        for version_href in client.get(repo['_versions_href'])['results']
-    ]
-    attributes.sort(key=lambda url: int(urlsplit(url).path.split('/')[-2]))
-    return attributes
+    versions = (
+        api
+        .Client(config.get_config(), api.json_handler)
+        .get(repo['_versions_href'], params=params)['results'])
+    versions.sort(
+        key=lambda version: int(urlsplit(version['_href']).path.split('/')[-2])
+    )
+    return versions
 
 
 def get_artifact_paths(repo, version_href=None):

@@ -20,12 +20,7 @@ from pulp_smash.tests.pulp3.file.api_v3.utils import (
 )
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
-from pulp_smash.tests.pulp3.utils import (
-    get_auth,
-    get_version_hrefs,
-    publish,
-    sync,
-)
+from pulp_smash.tests.pulp3.utils import get_auth, get_versions, publish, sync
 
 
 class PublishAnyRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
@@ -71,7 +66,7 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
                 repo['_versions_href'],
                 {'add_content_units': [file_content['_href']]}
             )
-        version_hrefs = get_version_hrefs(repo)
+        version_hrefs = tuple(ver['_href'] for ver in get_versions(repo))
         non_latest = choice(version_hrefs[:-1])
 
         # Step 2

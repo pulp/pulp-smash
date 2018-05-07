@@ -30,7 +30,7 @@ from pulp_smash.tests.pulp3.utils import (
     get_auth,
     get_content,
     get_removed_content,
-    get_version_hrefs,
+    get_versions,
     publish,
     sync,
 )
@@ -82,8 +82,8 @@ class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
         """
         self.repo.update(self.client.post(REPO_PATH, gen_repo()))
 
-        repo_versions = self.client.get(self.repo['_versions_href'])
-        self.assertEqual(len(repo_versions['results']), 0)
+        repo_versions = get_versions(self.repo)
+        self.assertEqual(len(repo_versions), 0, repo_versions)
 
         self.assertIsNone(self.repo['_latest_version_href'])
 
@@ -105,8 +105,8 @@ class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
         sync(self.cfg, self.remote, self.repo)
         repo = self.client.get(self.repo['_href'])
 
-        repo_versions = self.client.get(repo['_versions_href'])
-        self.assertEqual(len(repo_versions['results']), 1)
+        repo_versions = get_versions(repo)
+        self.assertEqual(len(repo_versions), 1, repo_versions)
 
         self.assertIsNotNone(repo['_latest_version_href'])
 
@@ -136,8 +136,8 @@ class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
         )
         repo = self.client.get(self.repo['_href'])
 
-        repo_versions = self.client.get(repo['_versions_href'])
-        self.assertEqual(len(repo_versions['results']), 2)
+        repo_versions = get_versions(repo)
+        self.assertEqual(len(repo_versions), 2, repo_versions)
 
         self.assertIsNotNone(repo['_latest_version_href'])
 
@@ -166,8 +166,8 @@ class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
         )
         repo = self.client.get(self.repo['_href'])
 
-        repo_versions = self.client.get(repo['_versions_href'])
-        self.assertEqual(len(repo_versions['results']), 3)
+        repo_versions = get_versions(repo)
+        self.assertEqual(len(repo_versions), 3, repo_versions)
 
         self.assertIsNotNone(repo['_latest_version_href'])
 
@@ -185,10 +185,10 @@ class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
 
     def get_content_summary(self, repo):
         """Get the ``content_summary`` for the given repository."""
-        repo_versions = self.client.get(repo['_versions_href'])
+        repo_versions = get_versions(repo)
         content_summaries = [
             repo_version['content_summary']
-            for repo_version in repo_versions['results']
+            for repo_version in repo_versions
             if repo_version['_href'] == repo['_latest_version_href']
         ]
         self.assertEqual(len(content_summaries), 1, content_summaries)
@@ -244,15 +244,17 @@ class AddRemoveRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
                 {'add_content_units': [content['_href']]}
             )
         self.repo = self.client.get(self.repo['_href'])
-        self.repo_version_hrefs = get_version_hrefs(self.repo)
+        self.repo_version_hrefs = tuple(
+            version['_href'] for version in get_versions(self.repo)
+        )
 
     def test_delete_first_version(self):
         """Delete the first repository version."""
         delete_version(self.repo, self.repo_version_hrefs[0])
         with self.assertRaises(HTTPError):
             get_content(self.repo, self.repo_version_hrefs[0])
-        for repo_version in self.repo_version_hrefs[1:]:
-            artifact_paths = get_artifact_paths(self.repo, repo_version)
+        for repo_version_href in self.repo_version_hrefs[1:]:
+            artifact_paths = get_artifact_paths(self.repo, repo_version_href)
             self.assertIn(self.content[0]['artifact'], artifact_paths)
 
     def test_delete_last_version(self):
@@ -283,8 +285,8 @@ class AddRemoveRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
         delete_version(self.repo, self.repo_version_hrefs[index])
         with self.assertRaises(HTTPError):
             get_content(self.repo, self.repo_version_hrefs[index])
-        for repo_version in self.repo_version_hrefs[index + 1:]:
-            artifact_paths = get_artifact_paths(self.repo, repo_version)
+        for repo_version_href in self.repo_version_hrefs[index + 1:]:
+            artifact_paths = get_artifact_paths(self.repo, repo_version_href)
             self.assertIn(self.content[index]['artifact'], artifact_paths)
 
     def test_delete_publication(self):
@@ -385,14 +387,12 @@ class FilterRepoVersionTestCase(unittest.TestCase):
     def test_filter_invalid_content(self):
         """Filter repository version by invalid content."""
         with self.assertRaises(HTTPError):
-            self.filter_repo_version({'content': utils.uuid4()})
+            get_versions(self.repo, {'content': utils.uuid4()})
 
     def test_filter_valid_content(self):
         """Filter repository versions by valid content."""
         content = choice(self.contents)
-        repo_versions = self.filter_repo_version(
-            {'content': content['_href']},
-        )['results']
+        repo_versions = get_versions(self.repo, {'content': content['_href']})
         for repo_version in repo_versions:
             self.assertIn(
                 self.client.get(content['_href']),
@@ -408,8 +408,8 @@ class FilterRepoVersionTestCase(unittest.TestCase):
                 {'created__gte': criteria, 'created__lte': criteria},
                 {'created__range': ','.join((criteria, criteria))}):
             with self.subTest(params=params):
-                page = self.filter_repo_version(params)
-                self.assertEqual(len(page['results']), 0, page['results'])
+                versions = get_versions(self.repo, params)
+                self.assertEqual(len(versions), 0, versions)
 
     def test_filter_valid_date(self):
         """Filter repository version by a valid date."""
@@ -424,7 +424,7 @@ class FilterRepoVersionTestCase(unittest.TestCase):
                 ({'created__range': ','.join((dates[0], dates[1]))},
                  2)):
             with self.subTest(params=params):
-                results = self.filter_repo_version(params)['results']
+                results = get_versions(self.repo, params)
                 self.assertEqual(len(results), num_results, results)
 
     def test_filter_invalid_version(self):
@@ -436,8 +436,8 @@ class FilterRepoVersionTestCase(unittest.TestCase):
                 {'number__gte': criteria, 'number__lte': criteria},
                 {'number__range': ','.join((criteria, criteria))}):
             with self.subTest(params=params):
-                page = self.filter_repo_version(params)
-                self.assertEqual(len(page['results']), 0, page['results'])
+                versions = get_versions(self.repo, params)
+                self.assertEqual(len(versions), 0, versions)
 
     def test_filter_valid_version(self):
         """Filter repository version by a valid version number."""
@@ -452,28 +452,21 @@ class FilterRepoVersionTestCase(unittest.TestCase):
                 ({'number__range': '{},{}'.format(numbers[0], numbers[1])},
                  2)):
             with self.subTest(params=params):
-                results = self.filter_repo_version(params)['results']
+                results = get_versions(self.repo, params)
                 self.assertEqual(len(results), num_results, results)
 
     def test_deleted_version_filter(self):
         """Delete a repository version and filter by its number."""
         numbers = self.get_repo_versions_attr('number')
         delete_version(self.repo)
-        page = self.filter_repo_version({'number': numbers[-1]})
-        self.assertEqual(len(page['results']), 0, page['results'])
-
-    def filter_repo_version(self, params):
-        """Filter repository version based on the given criteria."""
-        return self.client.get(self.repo['_versions_href'], params=params)
+        versions = get_versions(self.repo, {'number': numbers[-1]})
+        self.assertEqual(len(versions), 0, versions)
 
     def get_repo_versions_attr(self, attr):
         """Get an ``attr`` about each version of ``self.repo``.
 
         Return as sorted list.
         """
-        attributes = [
-            repo_version[attr] for repo_version in
-            self.client.get(self.repo['_versions_href'])['results']
-        ]
+        attributes = [version[attr] for version in get_versions(self.repo)]
         attributes.sort()
         return attributes
