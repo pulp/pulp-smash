@@ -37,8 +37,8 @@ class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
            repository version plus metadata.
         2. Create a distribution from the publication. The distribution defines
            at which URLs a publication is available, e.g.
-           ``http://example.com/content/pub-name/`` and
-           ``https://example.com/content/pub-name/``.
+           ``http://example.com/content/foo/`` and
+           ``http://example.com/content/bar/``.
 
         Do the following:
 
