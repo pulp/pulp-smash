@@ -15,12 +15,11 @@ from pulp_smash.tests.pulp3.constants import (
 )
 from pulp_smash.tests.pulp3.file.api_v3.utils import (
     gen_publisher,
-    gen_remote,
     get_content_unit_paths,
 )
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_distribution, gen_repo
-from pulp_smash.tests.pulp3.utils import get_auth, publish, sync
+from pulp_smash.tests.pulp3.utils import gen_remote, get_auth, publish, sync
 
 
 class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):

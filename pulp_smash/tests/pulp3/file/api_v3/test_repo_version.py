@@ -13,18 +13,19 @@ from pulp_smash.constants import (
     FILE_FEED_URL,
     FILE_LARGE_FEED_URL,
 )
-
 from pulp_smash.tests.pulp3.constants import (
     FILE_CONTENT_PATH,
     FILE_REMOTE_PATH,
     FILE_PUBLISHER_PATH,
     REPO_PATH,
 )
-from pulp_smash.tests.pulp3.file.api_v3.utils import gen_publisher, gen_remote
+from pulp_smash.tests.pulp3.file.api_v3.utils import gen_publisher
+from pulp_smash.tests.pulp3.file.utils import populate_pulp
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
 from pulp_smash.tests.pulp3.utils import (
     delete_version,
+    gen_remote,
     get_added_content,
     get_artifact_paths,
     get_auth,
@@ -213,19 +214,7 @@ class AddRemoveRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
         cls.client.request_kwargs['auth'] = get_auth()
-        body = gen_remote(urljoin(FILE_LARGE_FEED_URL, 'PULP_MANIFEST'))
-        remote = {}
-        repo = {}
-        try:
-            remote.update(cls.client.post(FILE_REMOTE_PATH, body))
-            repo.update(cls.client.post(REPO_PATH, gen_repo()))
-            sync(cls.cfg, remote, repo)
-        finally:
-            if remote:
-                cls.client.delete(remote['_href'])
-            if repo:
-                cls.client.delete(repo['_href'])
-
+        populate_pulp(cls.cfg, urljoin(FILE_LARGE_FEED_URL, 'PULP_MANIFEST'))
         # We need at least three content units. Choosing a relatively low
         # number is useful, to limit how many repo versions are created, and
         # thus how long the test takes.
@@ -358,19 +347,8 @@ class FilterRepoVersionTestCase(unittest.TestCase):
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
         cls.client.request_kwargs['auth'] = get_auth()
-        remote = {}
-        repo = {}
-        try:
-            body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
-            remote.update(cls.client.post(FILE_REMOTE_PATH, body))
-            repo.update(cls.client.post(REPO_PATH, gen_repo()))
-            sync(cls.cfg, remote, repo)
-            cls.contents = cls.client.get(FILE_CONTENT_PATH)['results']
-        finally:
-            if remote:
-                cls.client.delete(remote['_href'])
-            if repo:
-                cls.client.delete(repo['_href'])
+        populate_pulp(cls.cfg)
+        cls.contents = cls.client.get(FILE_CONTENT_PATH)['results']
 
     def setUp(self):
         """Create a repository and give it new versions."""

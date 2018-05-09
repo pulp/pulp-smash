@@ -9,7 +9,7 @@ from urllib.parse import urljoin, urlsplit
 from packaging.version import Version
 from requests.auth import AuthBase, HTTPBasicAuth
 
-from pulp_smash import api, config, selectors
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.tests.pulp3.constants import (
     JWT_PATH,
     ORPHANS_PATH,
@@ -309,3 +309,11 @@ def delete_version(repo, version_href=None):
     # As of this writing, Pulp 3 only returns one task. If Pulp 3 starts
     # returning multiple tasks, this may need to be re-written.
     return tuple(api.poll_spawned_tasks(cfg, call_report))
+
+
+def gen_remote(url):
+    """Return a semi-random dict for use in creating an remote.
+
+    :param url: The URL of an external content source.
+    """
+    return {'name': utils.uuid4(), 'url': url}
