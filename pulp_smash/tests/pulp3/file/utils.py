@@ -9,9 +9,9 @@ from pulp_smash.tests.pulp3.constants import (
     FILE_REMOTE_PATH,
     REPO_PATH,
 )
-from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
 from pulp_smash.tests.pulp3.utils import (
     gen_remote,
+    gen_repo,
     require_pulp_3,
     require_pulp_plugins,
     sync,

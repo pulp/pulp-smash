@@ -13,9 +13,9 @@ from pulp_smash.tests.pulp3.constants import (
 )
 from pulp_smash.tests.pulp3.file.api_v3.utils import gen_publisher
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
-from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
 from pulp_smash.tests.pulp3.utils import (
     gen_remote,
+    gen_repo,
     get_auth,
     get_content,
     publish,

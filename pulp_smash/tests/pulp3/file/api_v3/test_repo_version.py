@@ -22,10 +22,10 @@ from pulp_smash.tests.pulp3.constants import (
 from pulp_smash.tests.pulp3.file.api_v3.utils import gen_publisher
 from pulp_smash.tests.pulp3.file.utils import populate_pulp
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
-from pulp_smash.tests.pulp3.pulpcore.utils import gen_repo
 from pulp_smash.tests.pulp3.utils import (
     delete_version,
     gen_remote,
+    gen_repo,
     get_added_content,
     get_artifact_paths,
     get_auth,

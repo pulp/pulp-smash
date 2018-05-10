@@ -311,9 +311,19 @@ def delete_version(repo, version_href=None):
     return tuple(api.poll_spawned_tasks(cfg, call_report))
 
 
+def gen_distribution():
+    """Return a semi-random dict for use in creating a distribution."""
+    return {'base_path': utils.uuid4(), 'name': utils.uuid4()}
+
+
 def gen_remote(url):
     """Return a semi-random dict for use in creating an remote.
 
     :param url: The URL of an external content source.
     """
     return {'name': utils.uuid4(), 'url': url}
+
+
+def gen_repo():
+    """Return a semi-random dict for use in creating a repository."""
+    return {'name': utils.uuid4(), 'notes': {}}
