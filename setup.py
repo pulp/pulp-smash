@@ -55,7 +55,6 @@ setup(
             'flake8-quotes',
             'pydocstyle',
             'pylint',
-            'astroid',
             # For `make test-coverage`
             'coveralls',
             # For `make docs-html` and `make docs-clean`
