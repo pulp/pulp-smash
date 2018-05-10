@@ -4,12 +4,15 @@ import hashlib
 import unittest
 from urllib.parse import urljoin
 
+from requests import HTTPError
+
 from pulp_smash import api, config, utils
-from pulp_smash.constants import FILE_URL
+from pulp_smash.constants import FILE_FEED_URL, FILE_URL
 from pulp_smash.tests.pulp3.constants import (
     DISTRIBUTION_PATH,
     FILE_CONTENT_PATH,
     FILE_PUBLISHER_PATH,
+    FILE_REMOTE_PATH,
     REPO_PATH,
 )
 from pulp_smash.tests.pulp3.file.api_v3.utils import gen_publisher
@@ -17,11 +20,13 @@ from pulp_smash.tests.pulp3.file.utils import populate_pulp
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.utils import (
     gen_distribution,
+    gen_remote,
     gen_repo,
     get_added_content,
     get_auth,
     get_versions,
     publish,
+    sync,
 )
 
 
@@ -125,3 +130,69 @@ class AutoDistributionTestCase(unittest.TestCase):
 
         # Verify checksum. Step 9.
         self.assertEqual(fixtures_hash, pulp_hash)
+
+
+class SetupAutoDistributionTestCase(unittest.TestCase):
+    """Verify the set up of parameters related to auto distribution."""
+
+    def test_all(self):
+        """Verify the set up of parameters related to auto distribution.
+
+        This test targets the following issues:
+
+        * `Pulp #3295 <https://pulp.plan.io/issues/3295>`_
+        * `Pulp #3392 <https://pulp.plan.io/issues/3392>`_
+        * `Pulp #3394 <https://pulp.plan.io/issues/3394>`_
+        * `Pulp #3671 <https://pulp.plan.io/issues/3671>`_
+        * `Pulp Smash #883 <https://github.com/PulpQE/pulp-smash/issues/883>`_
+        * `Pulp Smash #917 <https://github.com/PulpQE/pulp-smash/issues/917>`_
+        """
+        cfg = config.get_config()
+        client = api.Client(cfg, api.json_handler)
+        client.request_kwargs['auth'] = get_auth()
+        repo = client.post(REPO_PATH, gen_repo())
+        self.addCleanup(client.delete, repo['_href'])
+        body = gen_distribution()
+
+        # Create a distribution with a repository but no publisher.
+        body['repository'] = repo['_href']
+        with self.assertRaises(HTTPError):
+            client.post(DISTRIBUTION_PATH, body)
+
+        # Create a distribution with a repository and publisher.
+        publisher = client.post(FILE_PUBLISHER_PATH, gen_publisher())
+        self.addCleanup(client.delete, publisher['_href'])
+        body['publisher'] = publisher['_href']
+        distribution = client.post(DISTRIBUTION_PATH, body)
+        self.addCleanup(client.delete, distribution['_href'])
+
+        # Update distribution`s repository to None.
+        distribution['repository'] = None
+        with self.assertRaises(HTTPError):
+            client.patch(distribution['_href'], distribution)
+        distribution = client.get(distribution['_href'])
+        self.assertIsNotNone(distribution['repository'], distribution)
+
+        # Update distribution`s publisher to None.
+        distribution['publisher'] = None
+        with self.assertRaises(HTTPError):
+            client.patch(distribution['_href'], distribution)
+        distribution = client.get(distribution['_href'])
+        self.assertIsNotNone(distribution['publisher'], distribution)
+
+        # Update distributions` publisher and repository to None.
+        distribution['publisher'] = None
+        distribution['repository'] = None
+        distribution = client.patch(distribution['_href'], distribution)
+        self.assertIsNone(distribution['publisher'], distribution)
+        self.assertIsNone(distribution['repository'], distribution)
+
+        # Publish the repository. Assert that distribution does not point to
+        # the new publication.
+        body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
+        remote = client.post(FILE_REMOTE_PATH, body)
+        self.addCleanup(client.delete, remote['_href'])
+        sync(cfg, remote, repo)
+        publication = publish(cfg, publisher, repo)
+        self.addCleanup(client.delete, publication['_href'])
+        self.assertNotEqual(distribution['publication'], publication['_href'])
