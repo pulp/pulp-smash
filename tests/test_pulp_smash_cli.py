@@ -7,9 +7,9 @@ import unittest
 from unittest import mock
 
 from click.testing import CliRunner
-from pulp_smash import config, exceptions, pulp_smash_cli, utils
+from pulp_smash import exceptions, pulp_smash_cli, utils
 
-from .test_config import OLD_CONFIG, PULP_SMASH_CONFIG
+from .test_config import PULP_SMASH_CONFIG
 
 
 class BasePulpSmashCliTestCase(unittest.TestCase):
@@ -295,40 +295,12 @@ class SettingsValidateTestCase(
                 )
             self.assertNotEqual(result.exit_code, 0)
             self.assertIn(
-                'invalid settings file settings.json',
+                'Invalid settings file: settings.json',
                 result.output,
             )
             self.assertIn(
                 "Failed to validate config['pulp'] because 'auth' is a "
                 'required property.',
-                result.output,
-            )
-
-    def test_old_config_alert(self):
-        """Ensure validate notifies about the old config format."""
-        with self.cli_runner.isolated_filesystem():
-            with open('settings.json', 'w') as handler:
-                handler.write(OLD_CONFIG)
-            with mock.patch.object(pulp_smash_cli, 'PulpSmashConfig') as psc:
-                cfg = mock.MagicMock()
-                psc.return_value = cfg
-                cfg.get_config_file_path.return_value = 'settings.json'
-                result = self.cli_runner.invoke(
-                    pulp_smash_cli.settings,
-                    ['validate'],
-                )
-            self.assertNotEqual(result.exit_code, 0)
-            self.assertIn(
-                'the settings file at settings.json appears to be following '
-                'the old configuration file format, please update it like '
-                'below:',
-                result.output
-            )
-            self.assertIn(
-                json.dumps(
-                    config.convert_old_config(json.loads(OLD_CONFIG)),
-                    indent=2,
-                ),
                 result.output,
             )
 
