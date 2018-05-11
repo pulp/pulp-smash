@@ -34,10 +34,10 @@ from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277, check_issue_3104
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
-def get_parse_repodata_xml(server_config, distributor, file_path):
+def get_parse_repodata_xml(cfg, distributor, file_path):
     """Fetch, parse and return an XML file from a ``repodata`` directory.
 
-    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about
         the Pulp deployment being targeted.
     :param distributor: Information about a distributor. It should be a dict
         containing at least ``{'config': {'relative_url': …}}``.
@@ -47,7 +47,7 @@ def get_parse_repodata_xml(server_config, distributor, file_path):
     """
     path = urljoin('/pulp/repos/', distributor['config']['relative_url'])
     path = urljoin(path, file_path)
-    return api.Client(server_config, xml_handler).get(path)
+    return api.Client(cfg, xml_handler).get(path)
 
 
 def get_parse_repodata_primary_xml(cfg, distributor):

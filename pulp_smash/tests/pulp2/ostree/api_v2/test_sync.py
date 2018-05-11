@@ -16,18 +16,18 @@ from pulp_smash.tests.pulp2.ostree.utils import gen_repo
 from pulp_smash.tests.pulp2.ostree.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
-def _sync_repo(server_config, href):
+def _sync_repo(cfg, href):
     """Sync a repository and wait for the sync to complete.
 
     Verify only the HTTP status codes of Pulp's responses. Don't verify
     response contents, as the default response handler does. Return ``call
     report, tasks``.
     """
-    response = api.Client(server_config, api.code_handler).post(
+    response = api.Client(cfg, api.code_handler).post(
         urljoin(href, 'actions/sync/'),
         {'override_config': {}},
     )
-    tasks = tuple(api.poll_spawned_tasks(server_config, response.json()))
+    tasks = tuple(api.poll_spawned_tasks(cfg, response.json()))
     return response, tasks
 
 

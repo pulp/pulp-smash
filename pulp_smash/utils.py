@@ -32,14 +32,14 @@ def uuid4():
 
 
 # See design discussion at: https://github.com/PulpQE/pulp-smash/issues/31
-def get_broker(server_config):
+def get_broker(cfg):
     """Build an object for managing the target system's AMQP broker.
 
-    Talk to the host named by ``server_config`` and use simple heuristics to
+    Talk to the host named by ``cfg`` and use simple heuristics to
     determine which AMQP broker is installed. If Qpid or RabbitMQ appear to be
     installed, return the name of that service. Otherwise, raise an exception.
 
-    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about
         the system on which an AMQP broker exists.
     :returns: A string such as 'qpidd' or 'rabbitmq'.
     :raises pulp_smash.exceptions.NoKnownBrokerError: If unable to find any
@@ -49,7 +49,7 @@ def get_broker(server_config):
     # for login shells. (See pathmunge() in /etc/profile.) As a result, logging
     # into a system and executing `which qpidd` and remotely executing `ssh
     # pulp.example.com which qpidd` may return different results.
-    client = cli.Client(server_config, cli.echo_handler)
+    client = cli.Client(cfg, cli.echo_handler)
     executables = ('qpidd', 'rabbitmq')  # ordering indicates preference
     for executable in executables:
         command = ('test', '-e', '/usr/sbin/' + executable)
@@ -58,7 +58,7 @@ def get_broker(server_config):
     raise exceptions.NoKnownBrokerError(
         'Unable to determine the AMQP broker used by {}. It does not appear '
         'to be any of {}.'
-        .format(urlparse(server_config.get_base_url()).hostname, executables)
+        .format(urlparse(cfg.get_base_url()).hostname, executables)
     )
 
 
@@ -76,28 +76,27 @@ def http_get(url, **kwargs):
     return response.content
 
 
-def pulp_admin_login(server_config):
+def pulp_admin_login(cfg):
     """Execute ``pulp-admin login``.
 
-    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about
         the Pulp server being targeted.
     :return: The completed process.
     :rtype: pulp_smash.cli.CompletedProcess
     """
-    return cli.Client(server_config).run((
-        'pulp-admin', 'login', '-u', server_config.pulp_auth[0],
-        '-p', server_config.pulp_auth[1]
+    return cli.Client(cfg).run((
+        'pulp-admin', 'login', '-u', cfg.pulp_auth[0], '-p', cfg.pulp_auth[1]
     ))
 
 
-def reset_pulp(server_config):
+def reset_pulp(cfg):
     """Stop Pulp, reset its database, remove certain files, and start it.
 
-    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about
         the Pulp server being targeted.
     :returns: Nothing.
     """
-    svc_mgr = cli.GlobalServiceManager(server_config)
+    svc_mgr = cli.GlobalServiceManager(cfg)
     svc_mgr.stop(PULP_SERVICES)
 
     # Reset the database and nuke accumulated files.
@@ -109,12 +108,12 @@ def reset_pulp(server_config):
     # Why not use runuser's `-u` flag? Because RHEL 6 ships an old version of
     # runuser that doesn't support the flag, and RHEL 6 is a supported Pulp
     # platform.
-    system = server_config.get_systems('mongod')[0]
-    client = cli.Client(server_config, pulp_system=system)
+    system = cfg.get_systems('mongod')[0]
+    client = cli.Client(cfg, pulp_system=system)
     client.run('mongo pulp_database --eval db.dropDatabase()'.split())
 
-    for index, system in enumerate(server_config.get_systems('api')):
-        prefix = '' if is_root(server_config, pulp_system=system) else 'sudo '
+    for index, system in enumerate(cfg.get_systems('api')):
+        prefix = '' if is_root(cfg, pulp_system=system) else 'sudo '
         if index == 0:
             client.run((
                 prefix + 'runuser --shell /bin/sh apache --command '
@@ -188,12 +187,12 @@ def upload_import_unit(cfg, unit, import_params, repo):
     return call_report
 
 
-def upload_import_erratum(server_config, erratum, repo_href):
+def upload_import_erratum(cfg, erratum, repo_href):
     """Upload an erratum to a Pulp server and import it into a repository.
 
     For most content types, use :meth:`upload_import_unit`.
 
-    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about
         the Pulp server being targeted.
     :param erratum: A dict, with keys such as "id," "status," "issued," and
         "references."
@@ -201,7 +200,7 @@ def upload_import_erratum(server_config, erratum, repo_href):
         imported.
     :returns: The call report returned when importing the erratum.
     """
-    client = api.Client(server_config, api.json_handler)
+    client = api.Client(cfg, api.json_handler)
     malloc = client.post(CONTENT_UPLOAD_PATH)
     call_report = client.post(urljoin(repo_href, 'actions/import_upload/'), {
         'unit_key': {'id': erratum['id']},

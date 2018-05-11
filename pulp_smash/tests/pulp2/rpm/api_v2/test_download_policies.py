@@ -51,7 +51,7 @@ def setUpModule():  # pylint:disable=invalid-name
         raise unittest.SkipTest('https://pulp.plan.io/issues/2144')
 
 
-def _create_repo(server_config, download_policy):
+def _create_repo(cfg, download_policy):
     """Create an RPM repository with the given download policy.
 
     The repository has a valid feed and is configured to auto-publish. Return
@@ -64,7 +64,7 @@ def _create_repo(server_config, download_policy):
     distributor['auto_publish'] = True
     distributor['distributor_config']['relative_url'] = body['id']
     body['distributors'] = [distributor]
-    return api.Client(server_config).post(REPOSITORY_PATH, body).json()
+    return api.Client(cfg).post(REPOSITORY_PATH, body).json()
 
 
 class BackgroundTestCase(utils.BaseAPITestCase):

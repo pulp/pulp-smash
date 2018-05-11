@@ -93,14 +93,14 @@ def _get_groups_by_id(comps_tree):
     }
 
 
-def _upload_import_package_group(server_config, repo, unit_metadata):
+def _upload_import_package_group(cfg, repo, unit_metadata):
     """Import a unit of type ``package_group`` into a repository.
 
     :param repo: A dict of attributes about a repository.
     :param unit_metadata: A dict of unit metadata.
     :returns: The call report generated when importing and uploading.
     """
-    client = api.Client(server_config, api.json_handler)
+    client = api.Client(cfg, api.json_handler)
     malloc = client.post(CONTENT_UPLOAD_PATH)
     call_report = client.post(
         urljoin(repo['_href'], 'actions/import_upload/'),

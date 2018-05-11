@@ -17,16 +17,16 @@ def setUpModule():  # pylint:disable=invalid-name
         raise unittest.SkipTest('https://pulp.plan.io/issues/2574')
 
 
-def get_num_units_in_repo(server_config, repo_id):
+def get_num_units_in_repo(cfg, repo_id):
     """Tell how many puppet modules are in a repository.
 
-    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about
         the Pulp server being targeted.
     :param repo_id: A Puppet repository ID.
     :returns: The number of puppet modules in a repository, as an ``int``.
     """
     keyword = 'Puppet Module:'
-    completed_proc = cli.Client(server_config).run((
+    completed_proc = cli.Client(cfg).run((
         'pulp-admin puppet repo list --repo-id {} --fields content_unit_counts'
     ).format(repo_id).split())
     lines = [

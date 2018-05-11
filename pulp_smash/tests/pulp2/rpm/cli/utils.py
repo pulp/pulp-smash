@@ -3,10 +3,10 @@
 from pulp_smash import cli
 
 
-def count_langpacks(server_config, repo_id):
+def count_langpacks(cfg, repo_id):
     """Tell how many langpack content units are in the given repository.
 
-    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about
         the Pulp deployment being targeted.
     :param repo_id: A repository ID.
     :returns: The number of langpacks in the named repository, as an integer.
@@ -14,7 +14,7 @@ def count_langpacks(server_config, repo_id):
     # This function could be refactored to take a third "keyword" argument. But
     # what do we do about the "rpm" word in the command below?
     keyword = 'Package Langpacks:'
-    completed_proc = cli.Client(server_config).run(
+    completed_proc = cli.Client(cfg).run(
         'pulp-admin rpm repo list --repo-id {} --fields content_unit_counts'
         .format(repo_id).split()
     )

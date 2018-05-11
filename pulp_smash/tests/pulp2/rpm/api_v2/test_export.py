@@ -45,15 +45,14 @@ def setUpModule():  # pylint:disable=invalid-name
         raise unittest.SkipTest('https://pulp.plan.io/issues/2277')
 
 
-def _create_distributor(
-        server_config, href, distributor_type_id, checksum_type=None):
+def _create_distributor(cfg, href, distributor_type_id, checksum_type=None):
     """Create an export distributor for the entity at ``href``."""
     path = urljoin(href, 'distributors/')
     body = gen_distributor()
     body['distributor_type_id'] = distributor_type_id
     if checksum_type is not None:
         body['distributor_config']['checksum_type'] = checksum_type
-    return api.Client(server_config).post(path, body).json()
+    return api.Client(cfg).post(path, body).json()
 
 
 def _get_iso_url(cfg, entity, entity_type, distributor):

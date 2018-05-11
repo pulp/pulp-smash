@@ -25,12 +25,12 @@ class GetBrokerTestCase(unittest.TestCase):
         Assert that:
 
         * ``get_broker(…)`` returns a string.
-        * The ``server_config`` argument is passed to the service object.
+        * The ``cfg`` argument is passed to the service object.
         * The "qpidd" broker is the preferred broker.
         """
         with mock.patch.object(cli, 'Client') as client:
             client.return_value.run.return_value.returncode = 0
-            broker = utils.get_broker(server_config=mock.Mock())
+            broker = utils.get_broker(cfg=mock.Mock())
         self.assertEqual(broker, 'qpidd')
 
     def test_failure(self):
@@ -163,7 +163,7 @@ class UploadImportErratumTestCase(unittest.TestCase):
                 'upload_id': 'bar',
             }
             response = utils.upload_import_erratum(
-                mock.Mock(),  # server_config
+                mock.Mock(),  # cfg
                 {'id': 'abc123'},  # erratum
                 'http://example.com',  # repo_href
             )

@@ -170,7 +170,7 @@ class Client():  # pylint:disable=too-few-public-methods
     If they match, ``machine`` is set to execute commands locally; and vice
     versa.
 
-    :param pulp_smash.config.PulpSmashConfig server_config: Information about
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about
         the host on which commands will be executed.
     :param response_handler: A callback function. Defaults to
         :func:`pulp_smash.cli.code_handler`.
@@ -180,11 +180,11 @@ class Client():  # pylint:disable=too-few-public-methods
     .. _Plumbum: http://plumbum.readthedocs.io/en/latest/index.html
     """
 
-    def __init__(self, server_config, response_handler=None, pulp_system=None):
+    def __init__(self, cfg, response_handler=None, pulp_system=None):
         """Initialize this object with needed instance attributes."""
         # How do we make requests?
         if not pulp_system:
-            pulp_system = server_config.get_systems('pulp cli')[0]
+            pulp_system = cfg.get_systems('pulp cli')[0]
         self.pulp_system = pulp_system
         hostname = pulp_system.hostname
         transport = pulp_system.roles.get('shell', {}).get('transport')

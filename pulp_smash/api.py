@@ -75,25 +75,25 @@ def _check_tasks(tasks, task_errors):
                 raise exceptions.TaskReportError(msg, task)
 
 
-def _handle_202(server_config, response):
+def _handle_202(cfg, response):
     """Check for an HTTP 202 response and handle it appropriately."""
     if response.status_code == 202:  # "Accepted"
         _check_http_202_content_type(response)
         call_report = response.json()
-        tasks = tuple(poll_spawned_tasks(server_config, call_report))
-        if server_config.pulp_version < Version('3'):
+        tasks = tuple(poll_spawned_tasks(cfg, call_report))
+        if cfg.pulp_version < Version('3'):
             _check_call_report(call_report)
             _check_tasks(tasks, ('error', 'exception', 'traceback'))
         else:
             _check_tasks(tasks, ('error',))
 
 
-def echo_handler(server_config, response):  # pylint:disable=unused-argument
+def echo_handler(cfg, response):  # pylint:disable=unused-argument
     """Immediately return ``response``."""
     return response
 
 
-def code_handler(server_config, response):  # pylint:disable=unused-argument
+def code_handler(cfg, response):  # pylint:disable=unused-argument
     """Check the response status code, and return the response.
 
     Unlike :meth:`safe_handler`, this method doesn't wait for asynchronous
@@ -106,7 +106,7 @@ def code_handler(server_config, response):  # pylint:disable=unused-argument
     return response
 
 
-def safe_handler(server_config, response):
+def safe_handler(cfg, response):
     """Check status code, wait for tasks to complete, and check tasks.
 
     Inspect the response's HTTP status code. If the response has an HTTP
@@ -121,11 +121,11 @@ def safe_handler(server_config, response):
         an error.
     """
     response.raise_for_status()
-    _handle_202(server_config, response)
+    _handle_202(cfg, response)
     return response
 
 
-def json_handler(server_config, response):
+def json_handler(cfg, response):
     """Like ``safe_handler``, but also return a JSON-decoded response body.
 
     Do what :func:`pulp_smash.api.safe_handler` does. In addition, decode the
@@ -134,7 +134,7 @@ def json_handler(server_config, response):
     response.raise_for_status()
     if response.status_code == 204:
         return response
-    _handle_202(server_config, response)
+    _handle_202(cfg, response)
     return response.json()
 
 
@@ -173,7 +173,7 @@ class Client():
 
     >>> from pulp_smash.api import Client
     >>> from pulp_smash.config import get_config
-    >>> def response_handler(server_config, response):
+    >>> def response_handler(cfg, response):
     ...     response.raise_for_status()
     ...     return response.json()
     >>> client = Client(get_config(), response_handler=response_handler)
@@ -263,16 +263,16 @@ class Client():
 
     def __init__(
             self,
-            server_config,
+            cfg,
             response_handler=None,
             request_kwargs=None,
             pulp_system=None,
     ):
         """Initialize this object with needed instance attributes."""
         if not pulp_system:
-            pulp_system = server_config.get_systems('api')[0]
+            pulp_system = cfg.get_systems('api')[0]
         self.pulp_system = pulp_system
-        self._cfg = server_config
+        self._cfg = cfg
         self.request_kwargs = self._cfg.get_requests_kwargs(pulp_system)
         self.request_kwargs['url'] = self._cfg.get_base_url(pulp_system)
         self.request_kwargs.update(
@@ -350,14 +350,14 @@ class Client():
         )
 
 
-def poll_spawned_tasks(server_config, call_report, pulp_system=None):
+def poll_spawned_tasks(cfg, call_report, pulp_system=None):
     """Recursively wait for spawned tasks to complete. Yield response bodies.
 
     Recursively wait for each of the spawned tasks listed in the given `call
     report`_ to complete. For each task that completes, yield a response body
     representing that task's final state.
 
-    :param server_config: A :class:`pulp_smash.config.PulpSmashConfig` object.
+    :param cfg: A :class:`pulp_smash.config.PulpSmashConfig` object.
     :param call_report: A dict-like object with a `call report`_ structure.
     :param pulp_system: The system from where to pool the task. If ``None`` is
         provided then the first system found with api role will be used.
@@ -368,24 +368,24 @@ def poll_spawned_tasks(server_config, call_report, pulp_system=None):
         http://docs.pulpproject.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
     """
     if not pulp_system:
-        pulp_system = server_config.get_systems('api')[0]
-    if server_config.pulp_version < Version('3'):
+        pulp_system = cfg.get_systems('api')[0]
+    if cfg.pulp_version < Version('3'):
         hrefs = (task['_href'] for task in call_report['spawned_tasks'])
     else:
         hrefs = [call_report['_href']]
     for href in hrefs:
-        for final_task_state in poll_task(server_config, href, pulp_system):
+        for final_task_state in poll_task(cfg, href, pulp_system):
             yield final_task_state
 
 
-def poll_task(server_config, href, pulp_system=None):
+def poll_task(cfg, href, pulp_system=None):
     """Wait for a task and its children to complete. Yield response bodies.
 
     Poll the task at ``href``, waiting for the task to complete. When a
     response is received indicating that the task is complete, yield that
     response body and recursively poll each child task.
 
-    :param server_config: A :class:`pulp_smash.config.PulpSmashConfig` object.
+    :param cfg: A :class:`pulp_smash.config.PulpSmashConfig` object.
     :param href: The path to a task you'd like to monitor recursively.
     :param pulp_system: The system from where to pool the task. If ``None`` is
         provided then the first system found with api role will be used.
@@ -394,7 +394,7 @@ def poll_task(server_config, href, pulp_system=None):
         long to complete.
     """
     if not pulp_system:
-        pulp_system = server_config.get_systems('api')[0]
+        pulp_system = cfg.get_systems('api')[0]
     # 900 * 2s == 1800s == 30m
     # NOTE: The timeout counter is synchronous. We query Pulp, then count down,
     # then query pulp, then count down, etc. This is… dumb.
@@ -402,12 +402,12 @@ def poll_task(server_config, href, pulp_system=None):
     poll_counter = 0
     while True:
         response = requests.get(
-            urljoin(server_config.get_base_url(pulp_system), href),
-            **server_config.get_requests_kwargs(pulp_system)
+            urljoin(cfg.get_base_url(pulp_system), href),
+            **cfg.get_requests_kwargs(pulp_system)
         )
         response.raise_for_status()
         attrs = response.json()
-        if server_config.pulp_version < Version('3'):
+        if cfg.pulp_version < Version('3'):
             task_end_states = _TASK_END_STATES
         else:
             task_end_states = P3_TASK_END_STATES
@@ -416,7 +416,7 @@ def poll_task(server_config, href, pulp_system=None):
             # through each of its children and yield their final states.
             yield attrs
             for href_ in (task['_href'] for task in attrs['spawned_tasks']):
-                for final_task_state in poll_task(server_config, href_):
+                for final_task_state in poll_task(cfg, href_):
                     yield final_task_state
             break
         poll_counter += 1

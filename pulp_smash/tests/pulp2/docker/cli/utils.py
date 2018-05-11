@@ -12,18 +12,18 @@ For the meaning of each argument, see pulp-admin.
 from pulp_smash import cli
 
 
-def repo_copy(server_config, unit_type, from_repo_id=None, to_repo_id=None):
+def repo_copy(cfg, unit_type, from_repo_id=None, to_repo_id=None):
     """Execute ``pulp-admin docker repo copy {unit_type}``."""
     cmd = 'pulp-admin docker repo copy {}'.format(unit_type).split()
     if from_repo_id is not None:
         cmd.extend(('--from-repo-id', from_repo_id))
     if to_repo_id is not None:
         cmd.extend(('--to-repo-id', to_repo_id))
-    return cli.Client(server_config).run(cmd)
+    return cli.Client(cfg).run(cmd)
 
 
 def repo_create(  # pylint:disable=too-many-arguments
-        server_config,
+        cfg,
         enable_v1=None,
         enable_v2=None,
         feed=None,
@@ -44,44 +44,44 @@ def repo_create(  # pylint:disable=too-many-arguments
         cmd.extend(('--repo-registry-id', repo_registry_id))
     if upstream_name is not None:
         cmd.extend(('--upstream-name', upstream_name))
-    return cli.Client(server_config).run(cmd)
+    return cli.Client(cfg).run(cmd)
 
 
-def repo_delete(server_config, repo_id):
+def repo_delete(cfg, repo_id):
     """Execute ``pulp-admin docker repo delete``."""
     cmd = 'pulp-admin docker repo delete --repo-id {}'.format(repo_id).split()
-    return cli.Client(server_config).run(cmd)
+    return cli.Client(cfg).run(cmd)
 
 
-def repo_list(server_config, repo_id=None, details=False):
+def repo_list(cfg, repo_id=None, details=False):
     """Execute ``pulp-admin docker repo list``."""
     cmd = 'pulp-admin docker repo list'.split()
     if repo_id is not None:
         cmd.extend(('--repo-id', repo_id))
     if details:
         cmd.append('--details')
-    return cli.Client(server_config).run(cmd)
+    return cli.Client(cfg).run(cmd)
 
 
-def repo_search(server_config, unit_type, fields=None, repo_id=None):
+def repo_search(cfg, unit_type, fields=None, repo_id=None):
     """Execute ``pulp-admin docker repo search {unit_type}``."""
     cmd = 'pulp-admin docker repo search {}'.format(unit_type).split()
     if fields is not None:
         cmd.extend(('--fields', fields))
     if repo_id is not None:
         cmd.extend(('--repo-id', repo_id))
-    return cli.Client(server_config).run(cmd)
+    return cli.Client(cfg).run(cmd)
 
 
-def repo_sync(server_config, repo_id):
+def repo_sync(cfg, repo_id):
     """Execute ``pulp-admin docker repo sync run``."""
     cmd = 'pulp-admin docker repo sync run'.split()
     cmd.extend(('--repo-id', repo_id))
-    return cli.Client(server_config).run(cmd)
+    return cli.Client(cfg).run(cmd)
 
 
 def repo_update(  # pylint:disable=too-many-arguments
-        server_config,
+        cfg,
         enable_v1=None,
         enable_v2=None,
         feed=None,
@@ -102,10 +102,10 @@ def repo_update(  # pylint:disable=too-many-arguments
         cmd.extend(('--upstream-name', upstream_name))
     if repo_registry_id is not None:
         cmd.extend(('--repo-registry-id', repo_registry_id))
-    return cli.Client(server_config).run(cmd)
+    return cli.Client(cfg).run(cmd)
 
 
-def repo_publish(server_config, repo_id, bg=None, force_full=None):  # pylint:disable=invalid-name
+def repo_publish(cfg, repo_id, bg=None, force_full=None):  # pylint:disable=invalid-name
     """Execute ``pulp-admin docker repo publish run``."""
     cmd = (
         'pulp-admin', 'docker', 'repo', 'publish', 'run', '--repo-id', repo_id
@@ -114,4 +114,4 @@ def repo_publish(server_config, repo_id, bg=None, force_full=None):  # pylint:di
         cmd += '--bg'
     if force_full:
         cmd += '--force-full'
-    return cli.Client(server_config).run(cmd)
+    return cli.Client(cfg).run(cmd)

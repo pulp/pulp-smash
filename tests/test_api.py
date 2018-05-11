@@ -11,18 +11,18 @@ class EchoHandlerTestCase(unittest.TestCase):
 
     def test_return(self):
         """Assert the passed-in ``response`` is returned."""
-        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        kwargs = {key: mock.Mock() for key in ('cfg', 'response')}
         self.assertIs(kwargs['response'], api.echo_handler(**kwargs))
 
     def test_raise_for_status(self):
         """Assert ``response.raise_for_status()`` is not called."""
-        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        kwargs = {key: mock.Mock() for key in ('cfg', 'response')}
         api.echo_handler(**kwargs)
         self.assertEqual(kwargs['response'].raise_for_status.call_count, 0)
 
     def test_202_check_skipped(self):
         """Assert HTTP 202 responses are not treated specially."""
-        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        kwargs = {key: mock.Mock() for key in ('cfg', 'response')}
         with mock.patch.object(api, '_handle_202') as handle_202:
             api.echo_handler(**kwargs)
         self.assertEqual(handle_202.call_count, 0)
@@ -33,18 +33,18 @@ class CodeHandlerTestCase(unittest.TestCase):
 
     def test_return(self):
         """Assert the passed-in ``response`` is returned."""
-        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        kwargs = {key: mock.Mock() for key in ('cfg', 'response')}
         self.assertIs(kwargs['response'], api.code_handler(**kwargs))
 
     def test_raise_for_status(self):
         """Assert ``response.raise_for_status()`` is called."""
-        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        kwargs = {key: mock.Mock() for key in ('cfg', 'response')}
         api.code_handler(**kwargs)
         self.assertEqual(kwargs['response'].raise_for_status.call_count, 1)
 
     def test_202_check_skipped(self):
         """Assert HTTP 202 responses are not treated specially."""
-        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        kwargs = {key: mock.Mock() for key in ('cfg', 'response')}
         with mock.patch.object(api, '_handle_202') as handle_202:
             api.code_handler(**kwargs)
         self.assertEqual(handle_202.call_count, 0)
@@ -55,18 +55,18 @@ class SafeHandlerTestCase(unittest.TestCase):
 
     def test_return(self):
         """Assert the passed-in ``response`` is returned."""
-        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        kwargs = {key: mock.Mock() for key in ('cfg', 'response')}
         self.assertIs(kwargs['response'], api.safe_handler(**kwargs))
 
     def test_raise_for_status(self):
         """Assert ``response.raise_for_status()`` is called."""
-        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        kwargs = {key: mock.Mock() for key in ('cfg', 'response')}
         api.safe_handler(**kwargs)
         self.assertEqual(kwargs['response'].raise_for_status.call_count, 1)
 
     def test_202_check_run(self):
         """Assert HTTP 202 responses are treated specially."""
-        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        kwargs = {key: mock.Mock() for key in ('cfg', 'response')}
         with mock.patch.object(api, '_handle_202') as handle_202:
             api.safe_handler(**kwargs)
         self.assertEqual(handle_202.call_count, 1)
@@ -77,26 +77,26 @@ class JsonHandlerTestCase(unittest.TestCase):
 
     def test_return(self):
         """Assert the JSON-decoded body of ``response`` is returned."""
-        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        kwargs = {key: mock.Mock() for key in ('cfg', 'response')}
         out = api.json_handler(**kwargs)
         self.assertEqual(kwargs['response'].json.return_value, out)
 
     def test_raise_for_status(self):
         """Assert ``response.raise_for_status()`` is called."""
-        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        kwargs = {key: mock.Mock() for key in ('cfg', 'response')}
         api.json_handler(**kwargs)
         self.assertEqual(kwargs['response'].raise_for_status.call_count, 1)
 
     def test_202_check_run(self):
         """Assert HTTP 202 responses are treated specially."""
-        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        kwargs = {key: mock.Mock() for key in ('cfg', 'response')}
         with mock.patch.object(api, '_handle_202') as handle_202:
             api.json_handler(**kwargs)
         self.assertEqual(handle_202.call_count, 1)
 
     def test_204_check_run(self):
         """Assert HTTP 204 responses are treated specially."""
-        kwargs = {key: mock.Mock() for key in ('server_config', 'response')}
+        kwargs = {key: mock.Mock() for key in ('cfg', 'response')}
         kwargs['response'].status_code = 204
         with mock.patch.object(api, '_handle_202'):
             api.json_handler(**kwargs)
