@@ -111,7 +111,7 @@ class AutoDistributionTestCase(unittest.TestCase):
         self.assertEqual(distribution['publication'], publication['_href'])
         unit_path = get_added_content(
             repo, last_version_href)['results'][0]['relative_path']
-        unit_url = self.cfg.get_systems('api')[0].roles['api']['scheme']
+        unit_url = self.cfg.get_hosts('api')[0].roles['api']['scheme']
         unit_url += '://' + distribution['base_url'] + '/'
         unit_url = urljoin(unit_url, unit_path)
 

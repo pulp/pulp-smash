@@ -22,16 +22,16 @@ _SERVICE_MANAGERS = {}
 _PACKAGE_MANAGERS = {}
 
 
-def _is_root(cfg, pulp_system=None):
+def _is_root(cfg, pulp_host=None):
     """Tell if we are root on the target host.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
         application.
-    :param pulp_smash.config.PulpSystem pulp_system: A specific host to target,
+    :param pulp_smash.config.PulpHost pulp_host: A specific host to target,
         instead of the first host with the ``pulp cli`` role.
     :returns: Either ``True`` or ``False``.
     """
-    result = Client(cfg, pulp_system=pulp_system).run(('id', '-u'))
+    result = Client(cfg, pulp_host=pulp_host).run(('id', '-u'))
     if result.stdout.strip() == '0':
         return True
     return False
@@ -134,11 +134,11 @@ class Client():  # pylint:disable=too-few-public-methods
     local host or a remote host. Here is a pedagogic usage example:
 
     >>> from pulp_smash import cli, config
-    >>> system = (
-    ...     config.PulpSystem('localhost', {'shell': {'transport': 'local'}})
+    >>> host = (
+    ...     config.PulpHost('localhost', {'shell': {'transport': 'local'}})
     ... )
-    >>> cfg = config.PulpSmashConfig(systems=[system])
-    >>> client = cli.Client(cfg, pulp_system=system)
+    >>> cfg = config.PulpSmashConfig(hosts=[host])
+    >>> client = cli.Client(cfg, pulp_host=host)
     >>> response = client.run(('echo', '-n', 'foo'))
     >>> response.returncode == 0
     True
@@ -162,11 +162,11 @@ class Client():  # pylint:disable=too-few-public-methods
         result is handed to this callback, and the callback's return value is
         handed to the user.
 
-    If ``pulp_system.roles['shell']['transport']`` is ``'local'`` or ``'ssh``,
+    If ``pulp_host.roles['shell']['transport']`` is ``'local'`` or ``'ssh``,
     ``machine`` will be set so that commands run locally or over SSH,
-    respectively. If ``pulp_system.roles['shell']['transport']`` is ``None``,
+    respectively. If ``pulp_host.roles['shell']['transport']`` is ``None``,
     the constructor will guess how to set ``machine`` by comparing the hostname
-    embedded in ``pulp_system.hostname`` against the current host's hostname.
+    embedded in ``pulp_host.hostname`` against the current host's hostname.
     If they match, ``machine`` is set to execute commands locally; and vice
     versa.
 
@@ -174,26 +174,26 @@ class Client():  # pylint:disable=too-few-public-methods
         the host on which commands will be executed.
     :param response_handler: A callback function. Defaults to
         :func:`pulp_smash.cli.code_handler`.
-    :param pulp_smash.config.PulpSystem pulp_system: A specific host to target,
+    :param pulp_smash.config.PulpHost pulp_host: A specific host to target,
         instead of the first host with the ``pulp cli`` role.
 
     .. _Plumbum: http://plumbum.readthedocs.io/en/latest/index.html
     """
 
-    def __init__(self, cfg, response_handler=None, pulp_system=None):
+    def __init__(self, cfg, response_handler=None, pulp_host=None):
         """Initialize this object with needed instance attributes."""
         # How do we make requests?
-        if not pulp_system:
-            pulp_system = cfg.get_systems('pulp cli')[0]
-        self.pulp_system = pulp_system
-        hostname = pulp_system.hostname
-        transport = pulp_system.roles.get('shell', {}).get('transport')
+        if not pulp_host:
+            pulp_host = cfg.get_hosts('pulp cli')[0]
+        self.pulp_host = pulp_host
+        hostname = pulp_host.hostname
+        transport = pulp_host.roles.get('shell', {}).get('transport')
         if transport is None:
             transport = 'local' if hostname == socket.getfqdn() else 'ssh'
         if transport == 'local':
             self.machine = plumbum.machines.local
         else:  # transport == 'ssh'
-            # The SshMachine is a wrapper around the system's "ssh" binary.
+            # The SshMachine is a wrapper around the host's "ssh" binary.
             # Thus, it uses ~/.ssh/config, ~/.ssh/known_hosts, etc.
             self.machine = (
                 plumbum.machines.SshMachine(hostname)
@@ -250,18 +250,18 @@ class BaseServiceManager(metaclass=ABCMeta):
         self._on_jenkins = 'JENKINS_HOME' in os.environ
 
     @staticmethod
-    def _get_service_manager(cfg, pulp_system):
+    def _get_service_manager(cfg, pulp_host):
         """Talk to the target host and determine the type of service manager.
 
         Return "systemd" or "sysv" if the service manager appears to be one of
         those. Raise an exception otherwise.
         """
         try:
-            return _SERVICE_MANAGERS[pulp_system.hostname]
+            return _SERVICE_MANAGERS[pulp_host.hostname]
         except KeyError:
             pass
 
-        client = Client(cfg, echo_handler, pulp_system=pulp_system)
+        client = Client(cfg, echo_handler, pulp_host=pulp_host)
         commands_managers = (
             ('which systemctl', 'systemd'),
             ('which service', 'sysv'),
@@ -269,13 +269,13 @@ class BaseServiceManager(metaclass=ABCMeta):
         )
         for command, service_manager in commands_managers:
             if client.run(command.split()).returncode == 0:
-                _SERVICE_MANAGERS[pulp_system.hostname] = service_manager
+                _SERVICE_MANAGERS[pulp_host.hostname] = service_manager
                 return service_manager
         raise exceptions.NoKnownServiceManagerError(
             'Unable to determine the service manager used by {}. It does not '
             'appear to be any of {}.'
             .format(
-                pulp_system.hostname,
+                pulp_host.hostname,
                 {manager for _, manager in commands_managers}
             )
         )
@@ -397,18 +397,18 @@ class GlobalServiceManager(BaseServiceManager):
         self._cfg = cfg
         self._is_root_cache = {}
 
-    def _check_root(self, pulp_system):
+    def _check_root(self, pulp_host):
         """Tell if we are root on the target host.
 
         Use the cache if the information is already available.
         """
         try:
-            return self._is_root_cache[pulp_system.hostname]
+            return self._is_root_cache[pulp_host.hostname]
         except KeyError:
             pass
 
-        is_root = _is_root(self._cfg, pulp_system)
-        self._is_root_cache[pulp_system.hostname] = is_root
+        is_root = _is_root(self._cfg, pulp_host)
+        self._is_root_cache[pulp_host.hostname] = is_root
         return is_root
 
     def start(self, services):
@@ -420,24 +420,24 @@ class GlobalServiceManager(BaseServiceManager):
         """
         services = set(services)
         result = {}
-        for system in self._cfg.systems:
+        for host in self._cfg.hosts:
             intersection = services.intersection(
-                self._cfg.services_for_roles(system.roles))
+                self._cfg.services_for_roles(host.roles))
             if intersection:
-                client = Client(self._cfg, pulp_system=system)
-                svc_mgr = self._get_service_manager(self._cfg, system)
-                sudo = not self._check_root(system)
+                client = Client(self._cfg, pulp_host=host)
+                svc_mgr = self._get_service_manager(self._cfg, host)
+                sudo = not self._check_root(host)
                 if svc_mgr == 'sysv':
                     with self._disable_selinux(client, sudo):
-                        result[system.hostname] = self._start_sysv(
+                        result[host.hostname] = self._start_sysv(
                             client, sudo, services)
                 elif svc_mgr == 'systemd':
-                    result[system.hostname] = self._start_systemd(
+                    result[host.hostname] = self._start_systemd(
                         client, sudo, services)
                 else:
                     raise NotImplementedError(
                         'Service manager "{}" not supported on "{}"'.format(
-                            svc_mgr, system.hostname)
+                            svc_mgr, host.hostname)
                     )
         return result
 
@@ -450,19 +450,19 @@ class GlobalServiceManager(BaseServiceManager):
         """
         services = set(services)
         result = {}
-        for system in self._cfg.systems:
+        for host in self._cfg.hosts:
             intersection = services.intersection(
-                self._cfg.services_for_roles(system.roles))
+                self._cfg.services_for_roles(host.roles))
             if intersection:
-                client = Client(self._cfg, pulp_system=system)
-                svc_mgr = self._get_service_manager(self._cfg, system)
-                sudo = not self._check_root(system)
+                client = Client(self._cfg, pulp_host=host)
+                svc_mgr = self._get_service_manager(self._cfg, host)
+                sudo = not self._check_root(host)
                 if svc_mgr == 'sysv':
                     with self._disable_selinux(client, sudo):
-                        result[system.hostname] = self._stop_sysv(
+                        result[host.hostname] = self._stop_sysv(
                             client, sudo, services)
                 elif svc_mgr == 'systemd':
-                    result[system.hostname] = self._stop_systemd(
+                    result[host.hostname] = self._stop_systemd(
                         client, sudo, services)
                 else:
                     raise NotImplementedError(
@@ -479,19 +479,19 @@ class GlobalServiceManager(BaseServiceManager):
         """
         services = set(services)
         result = {}
-        for system in self._cfg.systems:
+        for host in self._cfg.hosts:
             intersection = services.intersection(
-                self._cfg.services_for_roles(system.roles))
+                self._cfg.services_for_roles(host.roles))
             if intersection:
-                client = Client(self._cfg, pulp_system=system)
-                svc_mgr = self._get_service_manager(self._cfg, system)
-                sudo = not self._check_root(system)
+                client = Client(self._cfg, pulp_host=host)
+                svc_mgr = self._get_service_manager(self._cfg, host)
+                sudo = not self._check_root(host)
                 if svc_mgr == 'sysv':
                     with self._disable_selinux(client, sudo):
-                        result[system.hostname] = self._restart_sysv(
+                        result[host.hostname] = self._restart_sysv(
                             client, sudo, services)
                 elif svc_mgr == 'systemd':
-                    result[system.hostname] = self._restart_systemd(
+                    result[host.hostname] = self._restart_systemd(
                         client, sudo, services)
                 else:
                     raise NotImplementedError(
@@ -508,8 +508,8 @@ class ServiceManager(BaseServiceManager):
 
     >>> from pulp_smash import cli, config
     >>> cfg = config.get_config()
-    >>> pulp_system = cfg.get_services_for_roles(('api',))[0]
-    >>> svc_mgr = cli.ServiceManager(cfg, pulp_system)
+    >>> pulp_host = cfg.get_services_for_roles(('api',))[0]
+    >>> svc_mgr = cli.ServiceManager(cfg, pulp_host)
     >>> completed_process_list = svc_mgr.stop(['httpd'])
     >>> completed_process_list = svc_mgr.start(['httpd'])
 
@@ -532,17 +532,17 @@ class ServiceManager(BaseServiceManager):
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
         application.
-    :param pulp_smash.config.PulpSystem pulp_system: The host to target.
+    :param pulp_smash.config.PulpHost pulp_host: The host to target.
     :raises pulp_smash.exceptions.NoKnownServiceManagerError: If unable to find
         any service manager on the target host.
     """
 
-    def __init__(self, cfg, pulp_system):
+    def __init__(self, cfg, pulp_host):
         """Initialize a new object."""
         super().__init__()
-        self._client = Client(cfg, pulp_system=pulp_system)
-        self._sudo = not _is_root(cfg, pulp_system)
-        self._svc_mgr = self._get_service_manager(cfg, pulp_system)
+        self._client = Client(cfg, pulp_host=pulp_host)
+        self._sudo = not _is_root(cfg, pulp_host)
+        self._svc_mgr = self._get_service_manager(cfg, pulp_host)
 
     def start(self, services):
         """Start the given services.

@@ -58,22 +58,22 @@ def settings_create(ctx):  # pylint:disable=too-many-locals
         'Is SELinux supported in the test environment?',
         default=True
     )
-    system_hostname = click.prompt('System hostname')
+    host_hostname = click.prompt('Host hostname')
     if click.confirm(
             "Is Pulp's API available over HTTPS (no for HTTP)?", default=True):
-        system_api_scheme = 'https'
+        host_api_scheme = 'https'
     else:
-        system_api_scheme = 'http'
+        host_api_scheme = 'http'
 
-    if (system_api_scheme == 'https' and
+    if (host_api_scheme == 'https' and
             click.confirm('Verify HTTPS?', default=True)):
         certificate_path = click.prompt('SSL certificate path', default='')
         if not certificate_path:
-            system_api_verify = True  # pragma: no cover
+            host_api_verify = True  # pragma: no cover
         else:
-            system_api_verify = certificate_path
+            host_api_verify = certificate_path
     else:
-        system_api_verify = False
+        host_api_verify = False
 
     click.echo(
         "By default, Pulp Smash will communicate with Pulp's API on the port "
@@ -82,7 +82,7 @@ def settings_create(ctx):  # pylint:disable=too-many-locals
         "If Pulp's API is avaialable on a non-standard port, like 8000, then "
         'Pulp Smash needs to know about that.'
     )
-    system_api_port = click.prompt('Pulp API port number', type=int, default=0)
+    host_api_port = click.prompt('Pulp API port number', type=int, default=0)
 
     if click.confirm(
             'Is Pulp\'s message broker Qpid (no for RabbitMQ)?', default=True):
@@ -90,10 +90,10 @@ def settings_create(ctx):  # pylint:disable=too-many-locals
     else:
         amqp_broker = 'rabbitmq'
     using_ssh = not click.confirm(
-        'Are you running Pulp Smash on the Pulp system?')
+        'Are you running Pulp Smash on the Pulp host?')
     if using_ssh:
         click.echo(
-            'Pulp Smash will be configured to access the Pulp system using '
+            'Pulp Smash will be configured to access the Pulp host using '
             'SSH. Because of that, some additional information is required.'
         )
         ssh_user = click.prompt('SSH username to use', default='root')
@@ -101,14 +101,14 @@ def settings_create(ctx):  # pylint:disable=too-many-locals
             'Ensure ~/.ssh/controlmasters/ exists, and ensure the following '
             'is present in your ~/.ssh/config file:'
             '\n\n'
-            '  Host {system_hostname}\n'
+            '  Host {host_hostname}\n'
             '      StrictHostKeyChecking no\n'
             '      User {ssh_user}\n'
             '      UserKnownHostsFile /dev/null\n'
             '      ControlMaster auto\n'
             '      ControlPersist 10m\n'
             '      ControlPath ~/.ssh/controlmasters/%C\n'
-            .format(system_hostname=system_hostname, ssh_user=ssh_user)
+            .format(host_hostname=host_hostname, ssh_user=ssh_user)
         )
 
     click.echo('Creating the settings file at {}...'.format(path))
@@ -118,13 +118,13 @@ def settings_create(ctx):  # pylint:disable=too-many-locals
             'version': pulp_version,
             'selinux enabled': pulp_selinux_enabled,
         },
-        'systems': [{
-            'hostname': system_hostname,
+        'hosts': [{
+            'hostname': host_hostname,
             'roles': {
                 'amqp broker': {'service': amqp_broker},
                 'api': {
-                    'scheme': system_api_scheme,
-                    'verify': system_api_verify,
+                    'scheme': host_api_scheme,
+                    'verify': host_api_verify,
                 },
                 'mongod': {},
                 'pulp celerybeat': {},
@@ -136,8 +136,8 @@ def settings_create(ctx):  # pylint:disable=too-many-locals
             }
         }]
     }
-    if system_api_port:
-        config_dict['systems'][0]['roles']['api']['port'] = system_api_port
+    if host_api_port:
+        config_dict['hosts'][0]['roles']['api']['port'] = host_api_port
     with open(path, 'w') as handler:
         handler.write(json.dumps(config_dict, indent=2, sort_keys=True))
     click.echo(

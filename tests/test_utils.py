@@ -178,8 +178,8 @@ class PulpAdminLoginTestCase(unittest.TestCase):
         with mock.patch.object(cli, 'Client') as client:
             cfg = config.PulpSmashConfig(
                 pulp_auth=['u', 'p'],
-                systems=[
-                    config.PulpSystem(
+                hosts=[
+                    config.PulpHost(
                         hostname='example.com',
                         roles={'pulp cli': {}}
                     )

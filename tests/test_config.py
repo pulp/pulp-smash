@@ -18,6 +18,43 @@ PULP_SMASH_CONFIG = """
         "auth": ["username", "password"],
         "version": "2.12.1"
     },
+    "hosts": [
+        {
+            "hostname": "first.example.com",
+            "roles": {
+                "amqp broker": {"service": "qpidd"},
+                "api": {"port": 1234, "scheme": "https", "verify": true},
+                "mongod": {},
+                "pulp cli": {},
+                "pulp celerybeat": {},
+                "pulp resource manager": {},
+                "pulp workers": {},
+                "shell": {"transport": "local"},
+                "squid": {}
+            }
+        },
+        {
+            "hostname": "second.example.com",
+            "roles": {
+                "api": {"port": 2345, "scheme": "https", "verify": false},
+                "pulp celerybeat": {},
+                "pulp resource manager": {},
+                "pulp workers": {},
+                "shell": {"transport": "ssh"},
+                "squid": {}
+            }
+        }
+    ]
+}
+"""
+
+# Identical to above, but s/hosts/systems/.
+OLD_PULP_SMASH_CONFIG = """
+{
+    "pulp": {
+        "auth": ["username", "password"],
+        "version": "2.12.1"
+    },
     "systems": [
         {
             "hostname": "first.example.com",
@@ -62,8 +99,8 @@ def _gen_attrs():
             str(random.randint(1, 150)) for _ in range(4)
         ),
         'pulp_selinux_enabled': True,
-        'systems': [
-            config.PulpSystem(
+        'hosts': [
+            config.PulpHost(
                 hostname='pulp.example.com',
                 roles={
                     'amqp broker': {'service': 'qpidd'},
@@ -115,22 +152,22 @@ class ValidateConfigTestCase(unittest.TestCase):
         """An invalid config raises an exception."""
         config_dict = json.loads(PULP_SMASH_CONFIG)
         config_dict['pulp']['auth'] = []
-        config_dict['systems'][0]['hostname'] = ''
+        config_dict['hosts'][0]['hostname'] = ''
         with self.assertRaises(exceptions.ConfigValidationError) as err:
             config.validate_config(config_dict)
         self.assertEqual(sorted(err.exception.error_messages), sorted([
             'Failed to validate config[\'pulp\'][\'auth\'] because [] is too '
             'short.',
-            'Failed to validate config[\'systems\'][0][\'hostname\'] because '
+            'Failed to validate config[\'hosts\'][0][\'hostname\'] because '
             '\'\' is not a \'hostname\'.',
         ]))
 
     def test_config_missing_roles(self):
         """Missing required roles in config raises an exception."""
         config_dict = json.loads(PULP_SMASH_CONFIG)
-        for system in config_dict['systems']:
-            system['roles'].pop('api', None)
-            system['roles'].pop('pulp workers', None)
+        for host in config_dict['hosts']:
+            host['roles'].pop('api', None)
+            host['roles'].pop('pulp workers', None)
         with self.assertRaises(exceptions.ConfigValidationError) as err:
             config.validate_config(config_dict)
         self.assertEqual(
@@ -190,17 +227,27 @@ class ReadTestCase(unittest.TestCase):
     def test_read_config_file(self):
         """Ensure Pulp Smash can read the config file."""
         cfg = pulp_smash_config_read(PULP_SMASH_CONFIG)
+        self.do_validate(cfg)
+
+    def test_read_old_config_file(self):
+        """Ensure Pulp Smash can read the config file."""
+        with self.assertWarns(DeprecationWarning):
+            cfg = pulp_smash_config_read(OLD_PULP_SMASH_CONFIG)
+        self.do_validate(cfg)
+
+    def do_validate(self, cfg):
+        """Validate the attributes of a configuration object."""
         with self.subTest('check pulp_auth'):
             self.assertEqual(cfg.pulp_auth, ['username', 'password'])
         with self.subTest('check pulp_version'):
             self.assertEqual(cfg.pulp_version, config.Version('2.12.1'))
         with self.subTest('check pulp_selinux_enabled'):
             self.assertEqual(cfg.pulp_selinux_enabled, True)
-        with self.subTest('check systems'):
+        with self.subTest('check hosts'):
             self.assertEqual(
-                sorted(cfg.systems),
+                sorted(cfg.hosts),
                 sorted([
-                    config.PulpSystem(
+                    config.PulpHost(
                         hostname='first.example.com',
                         roles={
                             'amqp broker': {'service': 'qpidd'},
@@ -218,7 +265,7 @@ class ReadTestCase(unittest.TestCase):
                             'squid': {},
                         }
                     ),
-                    config.PulpSystem(
+                    config.PulpHost(
                         hostname='second.example.com',
                         roles={
                             'api': {
@@ -244,19 +291,17 @@ class HelperMethodsTestCase(unittest.TestCase):
         """Generate contents for a configuration file."""
         self.cfg = pulp_smash_config_read(PULP_SMASH_CONFIG)
 
-    def test_get_systems(self):
-        """``get_systems`` returns proper result."""
-        with self.subTest('role with multiplie matching systems'):
-            result = [
-                system.hostname for system in self.cfg.get_systems('api')]
+    def test_get_hosts(self):
+        """``get_hosts`` returns proper result."""
+        with self.subTest('role with multiple matching hosts'):
+            result = [host.hostname for host in self.cfg.get_hosts('api')]
             self.assertEqual(len(result), 2)
             self.assertEqual(
                 sorted(result),
                 sorted(['first.example.com', 'second.example.com'])
             )
-        with self.subTest('role with single match system'):
-            result = [
-                system.hostname for system in self.cfg.get_systems('mongod')]
+        with self.subTest('role with single match host'):
+            result = [host.hostname for host in self.cfg.get_hosts('mongod')]
             self.assertEqual(len(result), 1)
             self.assertEqual(
                 sorted(result),
@@ -348,15 +393,15 @@ class ReprTestCase(unittest.TestCase):
 
     def test_can_eval(self):
         """Assert that the result can be parsed by ``eval``."""
-        from pulp_smash.config import PulpSmashConfig, PulpSystem  # pylint:disable=unused-variable
+        from pulp_smash.config import PulpSmashConfig, PulpHost  # pylint:disable=unused-variable
         # pylint:disable=eval-used
         cfg = eval(self.result)
         with self.subTest('check pulp_version'):
             self.assertEqual(cfg.pulp_version, self.cfg.pulp_version)
         with self.subTest('check pulp_version'):
             self.assertEqual(cfg.pulp_version, self.cfg.pulp_version)
-        with self.subTest('check systems'):
-            self.assertEqual(cfg.systems, self.cfg.systems)
+        with self.subTest('check hosts'):
+            self.assertEqual(cfg.hosts, self.cfg.hosts)
 
 
 class GetConfigFilePathTestCase(unittest.TestCase):

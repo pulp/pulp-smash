@@ -89,8 +89,8 @@ class ClientTestCase(unittest.TestCase):
 
     def test_explicit_local_transport(self):
         """Assert it is possible to explicitly ask for a "local" transport."""
-        cfg = config.PulpSmashConfig(systems=[
-            config.PulpSystem(
+        cfg = config.PulpSmashConfig(hosts=[
+            config.PulpHost(
                 hostname=utils.uuid4(),
                 roles={
                     'pulp cli': {},
@@ -102,8 +102,8 @@ class ClientTestCase(unittest.TestCase):
 
     def test_implicit_local_transport(self):
         """Assert it is possible to implicitly ask for a "local" transport."""
-        cfg = config.PulpSmashConfig(systems=[
-            config.PulpSystem(
+        cfg = config.PulpSmashConfig(hosts=[
+            config.PulpHost(
                 hostname=socket.getfqdn(),
                 roles={
                     'pulp cli': {},
@@ -114,8 +114,8 @@ class ClientTestCase(unittest.TestCase):
 
     def test_default_response_handler(self):
         """Assert the default response handler checks return codes."""
-        cfg = config.PulpSmashConfig(systems=[
-            config.PulpSystem(
+        cfg = config.PulpSmashConfig(hosts=[
+            config.PulpHost(
                 hostname=utils.uuid4(),
                 roles={
                     'pulp cli': {},
@@ -127,8 +127,8 @@ class ClientTestCase(unittest.TestCase):
 
     def test_explicit_response_handler(self):
         """Assert it is possible to explicitly set a response handler."""
-        cfg = config.PulpSmashConfig(systems=[
-            config.PulpSystem(
+        cfg = config.PulpSmashConfig(hosts=[
+            config.PulpHost(
                 hostname=utils.uuid4(),
                 roles={
                     'pulp cli': {},
@@ -139,16 +139,16 @@ class ClientTestCase(unittest.TestCase):
         handler = mock.Mock()
         self.assertIs(cli.Client(cfg, handler).response_handler, handler)
 
-    def test_implicit_pulp_system(self):
-        """Assert it is possible to implicitly target a pulp cli PulpSystem."""
-        cfg = config.PulpSmashConfig(systems=[
-            config.PulpSystem(
+    def test_implicit_pulp_host(self):
+        """Assert it is possible to implicitly target a pulp cli PulpHost."""
+        cfg = config.PulpSmashConfig(hosts=[
+            config.PulpHost(
                 hostname=utils.uuid4(),
                 roles={
                     'pulp cli': {},
                 }
             ),
-            config.PulpSystem(
+            config.PulpHost(
                 hostname=utils.uuid4(),
                 roles={
                     'pulp cli': {},
@@ -160,18 +160,18 @@ class ClientTestCase(unittest.TestCase):
             plumbum.machines.SshMachine.return_value = machine
             self.assertEqual(cli.Client(cfg).machine, machine)
             plumbum.machines.SshMachine.assert_called_once_with(
-                cfg.systems[0].hostname)
+                cfg.hosts[0].hostname)
 
-    def test_explicit_pulp_system(self):
-        """Assert it is possible to explicitly target a pulp cli PulpSystem."""
-        cfg = config.PulpSmashConfig(systems=[
-            config.PulpSystem(
+    def test_explicit_pulp_host(self):
+        """Assert it is possible to explicitly target a pulp cli PulpHost."""
+        cfg = config.PulpSmashConfig(hosts=[
+            config.PulpHost(
                 hostname=utils.uuid4(),
                 roles={
                     'pulp cli': {},
                 }
             ),
-            config.PulpSystem(
+            config.PulpHost(
                 hostname=utils.uuid4(),
                 roles={
                     'pulp cli': {},
@@ -182,6 +182,6 @@ class ClientTestCase(unittest.TestCase):
             machine = mock.Mock()
             plumbum.machines.SshMachine.return_value = machine
             self.assertEqual(
-                cli.Client(cfg, pulp_system=cfg.systems[1]).machine, machine)
+                cli.Client(cfg, pulp_host=cfg.hosts[1]).machine, machine)
             plumbum.machines.SshMachine.assert_called_once_with(
-                cfg.systems[1].hostname)
+                cfg.hosts[1].hostname)

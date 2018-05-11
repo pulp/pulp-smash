@@ -11,6 +11,7 @@ import collections
 import itertools
 import json
 import os
+import warnings
 from copy import deepcopy
 from urllib.parse import urlunsplit
 
@@ -51,7 +52,7 @@ AMQP_SERVICES = {'qpidd', 'rabbitmq'}
 
 CONFIG_JSON_SCHEMA = {
     'additionalProperties': False,
-    'required': ['pulp', 'systems'],
+    'required': ['pulp', 'hosts'],
     'type': 'object',
     'properties': {
         'pulp': {
@@ -64,14 +65,14 @@ CONFIG_JSON_SCHEMA = {
                 'selinux enabled': {'type': 'boolean'},
             }
         },
-        'systems': {  # A misnomer. Think "hosts," not "systems."
+        'hosts': {
             'type': 'array',
             'minItems': 1,
-            'items': {'$ref': '#/definitions/system'},
+            'items': {'$ref': '#/definitions/host'},
         }
     },
     'definitions': {
-        'system': {
+        'host': {
             'additionalProperties': False,
             'required': ['hostname', 'roles'],
             'type': 'object',
@@ -214,7 +215,7 @@ def validate_config(config_dict):
     # Now that the schema is valid, let's check if all the REQUIRED_ROLES are
     # defined
     config_roles = set(itertools.chain(*[
-        list(system['roles'].keys()) for system in config_dict['systems']]))
+        list(host['roles'].keys()) for host in config_dict['hosts']]))
     if not REQUIRED_ROLES.issubset(config_roles):
         raise exceptions.ConfigValidationError([
             'The following roles are missing: {}'.format(
@@ -223,8 +224,8 @@ def validate_config(config_dict):
         ])
 
 
-# Representation of a system and its roles."""
-PulpSystem = collections.namedtuple('PulpSystem', 'hostname roles')
+# Representation of a host and its roles."""
+PulpHost = collections.namedtuple('PulpHost', 'hostname roles')
 
 
 class PulpSmashConfig():
@@ -242,12 +243,12 @@ class PulpSmashConfig():
     ...     pulp_auth=('username', 'password'),
     ...     pulp_version='2.12.2',
     ...     pulp_selinux_enabled=True,
-    ...     systems=[  # A misnomer. Think "hosts," not "systems."
-    ...         PulpSystem(
+    ...     hosts=[
+    ...         PulpHost(
     ...             hostname='pulp1.example.com',
     ...             roles={'api': {'scheme': 'https'}},
     ...         ),
-    ...         PulpSystem(
+    ...         PulpHost(
     ...             hostname='pulp.example.com',
     ...             roles={
     ...                 'amqp broker': {'service': 'qpidd'},
@@ -271,8 +272,8 @@ class PulpSmashConfig():
     ...     pulp_auth=('username', 'password'),
     ...     pulp_version='2.12.2',
     ...     pulp_selinux_enabled=True,
-    ...     systems=[  # A misnomer. Think "hosts," not "systems."
-    ...         PulpSystem(
+    ...     hosts=[
+    ...         PulpHost(
     ...             hostname='pulp.example.com',
     ...             roles={
     ...                 'amqp broker': {'service': 'qpidd'},
@@ -307,7 +308,7 @@ class PulpSmashConfig():
         library's ``packaging.version.Version`` class.
     :param pulp_selinux_enabled: A boolean. Should selinux tests be run. Defaults to
         ``true``.
-    :param pulp_smash.config.PulpSystem systems: A list of the hosts comprising
+    :param pulp_smash.config.PulpHost hosts: A list of the hosts comprising
         a Pulp application.
 
     .. _packaging: https://packaging.pypa.io/en/latest/
@@ -315,13 +316,11 @@ class PulpSmashConfig():
         http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
     """
 
-    def __init__(self, pulp_auth=None, pulp_version=None, systems=None, pulp_selinux_enabled=None):
+    def __init__(self, pulp_auth=None, pulp_version=None, hosts=None, pulp_selinux_enabled=None):
         """Initialize this object with needed instance attributes."""
         self.pulp_auth = pulp_auth
         self.pulp_version = pulp_version
-        self.systems = systems
-        if self.systems is None:
-            self.systems = []
+        self.hosts = [] if hosts is None else hosts
         self.pulp_selinux_enabled = pulp_selinux_enabled
         self._xdg_config_file = os.environ.get(
             'PULP_SMASH_CONFIG_FILE',
@@ -399,12 +398,22 @@ class PulpSmashConfig():
         pulp_auth = pulp.get('auth', ['admin', 'admin'])
         pulp_version = Version(pulp.get('version', '1!0'))
         pulp_selinux_enabled = pulp.get('selinux enabled', True)
-        systems = [
-            PulpSystem(**system) for system in config_file.get('systems', [])
-        ]
-        return PulpSmashConfig(pulp_auth, pulp_version, systems, pulp_selinux_enabled)
 
-    def get_systems(self, role):
+        if 'systems' in config_file:
+            warnings.warn(
+                (
+                    'The Pulp Smash configuration file should use a key named '
+                    '"hosts," not "systems." Please update accordingly, and '
+                    'validate the changes with `pulp-smash settings validate`.'
+                ),
+                DeprecationWarning
+            )
+            config_file['hosts'] = config_file.pop('systems')
+
+        hosts = [PulpHost(**host) for host in config_file.get('hosts', [])]
+        return PulpSmashConfig(pulp_auth, pulp_version, hosts, pulp_selinux_enabled)
+
+    def get_hosts(self, role):
         """Return a list of hosts fulfilling the given role.
 
         :param role: The role to filter the available hosts, see
@@ -415,7 +424,7 @@ class PulpSmashConfig():
                 'The given role, {}, is not recognized. Valid roles are: {}'
                 .format(role, ROLES)
             )
-        return [system for system in self.systems if role in system.roles]
+        return [host for host in self.hosts if role in host.roles]
 
     @staticmethod
     def services_for_roles(roles):
@@ -440,24 +449,24 @@ class PulpSmashConfig():
                 continue
         return set(services)
 
-    def get_base_url(self, pulp_system=None):
-        """Generate the base URL for a given ``pulp_sytem``.
+    def get_base_url(self, pulp_host=None):
+        """Generate the base URL for a given ``pulp_host``.
 
-        :param pulp_smash.config.PulpSystem pulp_system: One of the hosts that
+        :param pulp_smash.config.PulpHost pulp_host: One of the hosts that
             comprises a Pulp application. Defaults to the first host with the
             ``api`` role.
         """
-        if pulp_system is None:
-            pulp_system = self.get_systems('api')[0]
-        scheme = pulp_system.roles['api']['scheme']
-        netloc = pulp_system.hostname
+        if pulp_host is None:
+            pulp_host = self.get_hosts('api')[0]
+        scheme = pulp_host.roles['api']['scheme']
+        netloc = pulp_host.hostname
         try:
-            netloc += ':' + str(pulp_system.roles['api']['port'])
+            netloc += ':' + str(pulp_host.roles['api']['port'])
         except KeyError:
             pass
         return urlunsplit((scheme, netloc, '', '', ''))
 
-    def get_requests_kwargs(self, pulp_system=None):
+    def get_requests_kwargs(self, pulp_host=None):
         """Get kwargs for use by the Requests functions.
 
         This method returns a dict of attributes that can be unpacked and used
@@ -474,7 +483,7 @@ class PulpSmashConfig():
         >>> requests.get(
         ...     cfg.get_base_url() + '…',
         ...     auth=tuple(cfg.pulp_auth),
-        ...     verify=cfg.get_systems('api')[0].roles['api']['verify'],
+        ...     verify=cfg.get_hosts('api')[0].roles['api']['verify'],
         ... )
 
         But this latter approach is more fragile. The user must remember to get
@@ -482,9 +491,9 @@ class PulpSmashConfig():
         ``pulp_auth`` config to a tuple, and it will require maintenance if
         ``cfg`` gains or loses attributes.
         """
-        if not pulp_system:
-            pulp_system = self.get_systems('api')[0]
-        kwargs = deepcopy(pulp_system.roles['api'])
+        if not pulp_host:
+            pulp_host = self.get_hosts('api')[0]
+        kwargs = deepcopy(pulp_host.roles['api'])
         kwargs['auth'] = tuple(self.pulp_auth)
         for key in ('port', 'scheme'):
             kwargs.pop(key, None)

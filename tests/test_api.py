@@ -120,8 +120,8 @@ class ClientTestCase(unittest.TestCase):
         for method in methods:
             client = api.Client(config.PulpSmashConfig(
                 pulp_auth=['admin', 'admin'],
-                systems=[
-                    config.PulpSystem(
+                hosts=[
+                    config.PulpHost(
                         hostname='example.com',
                         roles={'api': {
                             'scheme': 'http',
@@ -157,8 +157,8 @@ class ClientTestCase2(unittest.TestCase):
         response_handler = mock.Mock()
         client = api.Client(config.PulpSmashConfig(
             pulp_auth=['admin', 'admin'],
-            systems=[
-                config.PulpSystem(
+            hosts=[
+                config.PulpHost(
                     hostname='base url',
                     roles={'api': {'scheme': 'http'}},
                 )
@@ -171,8 +171,8 @@ class ClientTestCase2(unittest.TestCase):
         json = mock.Mock()
         client = api.Client(config.PulpSmashConfig(
             pulp_auth=['admin', 'admin'],
-            systems=[
-                config.PulpSystem(
+            hosts=[
+                config.PulpHost(
                     hostname='base url',
                     roles={'api': {'scheme': 'http'}},
                 )

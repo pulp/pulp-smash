@@ -215,7 +215,7 @@ class UpdateRpmTestCase(UtilsMixin, unittest.TestCase):
         client = cli.Client(cfg)
         pkg_mgr = cli.PackageManager(cfg)
         sudo = '' if is_root(cfg) else 'sudo '
-        verify = cfg.get_systems('api')[0].roles['api'].get('verify')
+        verify = cfg.get_hosts('api')[0].roles['api'].get('verify')
 
         # Create the second repository.
         repo_id = self.create_repo(cfg)

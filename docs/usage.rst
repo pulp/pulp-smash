@@ -61,7 +61,7 @@ configuration file format is. Consider the example below:
             "version": "2.12.2",
             "selinux enable": true
         },
-        "systems": [
+        "hosts": [
             {
                 "hostname": "pulp.example.com",
                 "roles": {
@@ -82,33 +82,33 @@ configuration file format is. Consider the example below:
         ]
     }
 
-A single Pulp application may be deployed on just one system or on several
-systems. The configuration file above describes the former case. The "pulp"
-section lets you declare properties of the entire Pulp application. The
-"systems" section lets you declare properties of the individual systems that
-comprise the Pulp application.
+A single Pulp application may be deployed on just one host or on several hosts.
+The configuration file above describes the former case. The "pulp" section lets
+you declare properties of the entire Pulp application. The "hosts" section lets
+you declare properties of the individual hosts that comprise the Pulp
+application.
 
-Each system must fulfill the "shell" role. In addition, the systems must
+Each host must fulfill the "shell" role. In addition, the hosts must
 collectively fulfill the :obj:`pulp_smash.config.REQUIRED_ROLES`.
 
 Not all roles requires additional information. Currently, only the ``amqp
 broker``, ``api`` and ``shell`` roles do. The ``amqp broker`` object must have a
 ``service`` key set to either ``qpidd`` or ``rabbitmq``. The ``api`` role means
-that ``httpd`` will be running on the system. Its ``scheme`` key specifies
-whether the API should be accessed over HTTP or HTTPS, and its ``verify`` key
-specifies whether and how SSL certificates should be verified. (It may be true,
-false, or a path to a custom certificate file. In the latter case, the
-certificate must be on the Pulp Smash system.) The ``shell`` role specifies
-whether to access the system using a ``local`` shell or over ``ssh``.
+that ``httpd`` will be running on the host. Its ``scheme`` key specifies whether
+the API should be accessed over HTTP or HTTPS, and its ``verify`` key specifies
+whether and how SSL certificates should be verified. (It may be true, false, or
+a path to a custom certificate file. In the latter case, the certificate must be
+on the Pulp Smash host.) The ``shell`` role specifies whether to access the host
+using a ``local`` shell or over ``ssh``.
 
 .. note::
 
-    Pulp Smash can access a system via SSH only if the SSH connection can be
-    made without typing a password. Make sure to configure SSH so just running
-    ``ssh $hostname`` will access the system. See sshd_config(5).
+    Pulp Smash can access a host via SSH only if the SSH connection can be made
+    without typing a password. Make sure to configure SSH so just running ``ssh
+    $hostname`` will access the host. See sshd_config(5).
 
-The example below shows a configuration file that enables Pulp Smash to access
-a clustered Pulp deployment:
+The example below shows a configuration file that enables Pulp Smash to access a
+clustered Pulp deployment:
 
 .. code-block:: json
 
@@ -118,7 +118,7 @@ a clustered Pulp deployment:
             "version": "2.12.1",
             "selinux enable": true
         },
-        "systems": [
+        "hosts": [
             {
                 "hostname": "first.example.com",
                 "roles": {
@@ -148,12 +148,12 @@ a clustered Pulp deployment:
     }
 
 Note that the roles ``mongod`` and ``amqp broker`` is only available on the
-first system and that the Pulp related roles plus the ``squid`` are available
+first host and that the Pulp related roles plus the ``squid`` are available
 on both. The example shows how to have a clustered deployment where second
-system will connect to the first system's ``mongod`` and ``amqp broker``, all
-the other services will work as a failover redundancy. Like, if first system's
+host will connect to the first host's ``mongod`` and ``amqp broker``, all
+the other services will work as a failover redundancy. Like, if first host's
 ``pulp resource manager`` goes down than Pulp failover feature will activate
-and start using the second system's ``pulp resource manager``.
+and start using the second host's ``pulp resource manager``.
 
 Pulp Smash also has two other commands to help with configuration file
 management: ``pulp-smash settings show`` and ``pulp-smash settings validate``

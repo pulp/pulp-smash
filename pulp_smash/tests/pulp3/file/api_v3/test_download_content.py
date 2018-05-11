@@ -93,7 +93,7 @@ class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
 
         # …and Pulp.
         client.response_handler = api.safe_handler
-        unit_url = cfg.get_systems('api')[0].roles['api']['scheme']
+        unit_url = cfg.get_hosts('api')[0].roles['api']['scheme']
         unit_url += '://' + distribution['base_url'] + '/'
         unit_url = urljoin(unit_url, unit_path)
         pulp_hash = hashlib.sha256(client.get(unit_url).content).hexdigest()

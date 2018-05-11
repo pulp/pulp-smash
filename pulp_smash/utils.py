@@ -103,17 +103,16 @@ def reset_pulp(cfg):
     #
     # Why use `runuser` instead of `sudo`? Because some systems are configured
     # to refuse to execute `sudo` unless a tty is present (The author has
-    # encountered this on at least one RHEL 7.2 system.)
+    # encountered this on at least one RHEL 7.2 host.)
     #
     # Why not use runuser's `-u` flag? Because RHEL 6 ships an old version of
     # runuser that doesn't support the flag, and RHEL 6 is a supported Pulp
     # platform.
-    system = cfg.get_systems('mongod')[0]
-    client = cli.Client(cfg, pulp_system=system)
+    client = cli.Client(cfg, pulp_host=cfg.get_hosts('mongod')[0])
     client.run('mongo pulp_database --eval db.dropDatabase()'.split())
 
-    for index, system in enumerate(cfg.get_systems('api')):
-        prefix = '' if is_root(cfg, pulp_system=system) else 'sudo '
+    for index, host in enumerate(cfg.get_hosts('api')):
+        prefix = '' if is_root(cfg, pulp_host=host) else 'sudo '
         if index == 0:
             client.run((
                 prefix + 'runuser --shell /bin/sh apache --command '
@@ -511,16 +510,16 @@ def search_units(cfg, repo, criteria=None, response_handler=None):
     )
 
 
-def os_is_f26(cfg, pulp_system=None):
+def os_is_f26(cfg, pulp_host=None):
     """Return ``True`` if the server runs Fedora 26, or ``False`` otherwise.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the system
         being targeted.
-    :param pulp_system: A :class:`pulp_smash.config.PulpSystem` to target,
+    :param pulp_host: A :class:`pulp_smash.config.PulpHost` to target,
         instead of the default chosen by :class:`pulp_smash.cli.Client`.
     :returns: True or false.
     """
-    response = cli.Client(cfg, cli.echo_handler, pulp_system).run((
+    response = cli.Client(cfg, cli.echo_handler, pulp_host).run((
         'grep',
         '-i',
         'fedora release 26',
@@ -529,16 +528,16 @@ def os_is_f26(cfg, pulp_system=None):
     return response.returncode == 0
 
 
-def os_is_f27(cfg, pulp_system=None):
+def os_is_f27(cfg, pulp_host=None):
     """Return ``True`` if the server runs Fedora 27, or ``False`` otherwise.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the system
         being targeted.
-    :param pulp_system: A :class:`pulp_smash.config.PulpSystem` to target,
+    :param pulp_host: A :class:`pulp_smash.config.PulpHost` to target,
         instead of the default chosen by :class:`pulp_smash.cli.Client`.
     :returns: True or false.
     """
-    response = cli.Client(cfg, cli.echo_handler, pulp_system).run((
+    response = cli.Client(cfg, cli.echo_handler, pulp_host).run((
         'grep',
         '-i',
         'fedora release 27',

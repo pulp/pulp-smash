@@ -73,7 +73,7 @@ class ApplyErratumTestCase(unittest.TestCase):
 
         Also, schedule it for deletion. Return nothing.
         """
-        verify = cfg.get_systems('api')[0].roles['api'].get('verify')
+        verify = cfg.get_hosts('api')[0].roles['api'].get('verify')
         sudo = () if utils.is_root(cfg) else ('sudo',)
         repo_path = gen_yum_config_file(
             cfg,

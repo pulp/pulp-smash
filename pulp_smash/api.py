@@ -201,8 +201,8 @@ class Client():
     >>> from pulp_smash.config import PulpSmashConfig
     >>> cfg = config.PulpSmashConfig(
     ...     pulp_auth=('username', 'password'),
-    ...     systems=[
-    ...         config.PulpSystem(
+    ...     hosts=[
+    ...         config.PulpHost(
     ...             hostname='example.com',
     ...             roles={'api': {
     ...                'scheme': 'https',
@@ -266,15 +266,15 @@ class Client():
             cfg,
             response_handler=None,
             request_kwargs=None,
-            pulp_system=None,
+            pulp_host=None,
     ):
         """Initialize this object with needed instance attributes."""
-        if not pulp_system:
-            pulp_system = cfg.get_systems('api')[0]
-        self.pulp_system = pulp_system
+        if not pulp_host:
+            pulp_host = cfg.get_hosts('api')[0]
+        self.pulp_host = pulp_host
         self._cfg = cfg
-        self.request_kwargs = self._cfg.get_requests_kwargs(pulp_system)
-        self.request_kwargs['url'] = self._cfg.get_base_url(pulp_system)
+        self.request_kwargs = self._cfg.get_requests_kwargs(pulp_host)
+        self.request_kwargs['url'] = self._cfg.get_base_url(pulp_host)
         self.request_kwargs.update(
             {} if request_kwargs is None else request_kwargs
         )
@@ -332,7 +332,7 @@ class Client():
         request_kwargs = self.request_kwargs.copy()
         request_kwargs['url'] = urljoin(request_kwargs['url'], url)
         request_kwargs.update(kwargs)
-        cfg_host = urlparse(self._cfg.get_base_url(self.pulp_system)).hostname
+        cfg_host = urlparse(self._cfg.get_base_url(self.pulp_host)).hostname
         request_host = urlparse(request_kwargs['url']).hostname
         if request_host != cfg_host:
             warnings.warn(
@@ -350,7 +350,7 @@ class Client():
         )
 
 
-def poll_spawned_tasks(cfg, call_report, pulp_system=None):
+def poll_spawned_tasks(cfg, call_report, pulp_host=None):
     """Recursively wait for spawned tasks to complete. Yield response bodies.
 
     Recursively wait for each of the spawned tasks listed in the given `call
@@ -359,26 +359,26 @@ def poll_spawned_tasks(cfg, call_report, pulp_system=None):
 
     :param cfg: A :class:`pulp_smash.config.PulpSmashConfig` object.
     :param call_report: A dict-like object with a `call report`_ structure.
-    :param pulp_system: The system from where to pool the task. If ``None`` is
-        provided then the first system found with api role will be used.
+    :param pulp_host: The host to poll. If ``None`` is provided then the first
+        host found with api role will be used.
     :returns: A generator yielding task bodies.
     :raises: Same as :meth:`poll_task`.
 
     .. _call report:
         http://docs.pulpproject.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
     """
-    if not pulp_system:
-        pulp_system = cfg.get_systems('api')[0]
+    if not pulp_host:
+        pulp_host = cfg.get_hosts('api')[0]
     if cfg.pulp_version < Version('3'):
         hrefs = (task['_href'] for task in call_report['spawned_tasks'])
     else:
         hrefs = [call_report['_href']]
     for href in hrefs:
-        for final_task_state in poll_task(cfg, href, pulp_system):
+        for final_task_state in poll_task(cfg, href, pulp_host):
             yield final_task_state
 
 
-def poll_task(cfg, href, pulp_system=None):
+def poll_task(cfg, href, pulp_host=None):
     """Wait for a task and its children to complete. Yield response bodies.
 
     Poll the task at ``href``, waiting for the task to complete. When a
@@ -387,14 +387,14 @@ def poll_task(cfg, href, pulp_system=None):
 
     :param cfg: A :class:`pulp_smash.config.PulpSmashConfig` object.
     :param href: The path to a task you'd like to monitor recursively.
-    :param pulp_system: The system from where to pool the task. If ``None`` is
-        provided then the first system found with api role will be used.
+    :param pulp_host: The host to poll. If ``None`` is provided then the first
+        host found with api role will be used.
     :returns: An generator yielding response bodies.
     :raises pulp_smash.exceptions.TaskTimedOutError: If a task takes too
         long to complete.
     """
-    if not pulp_system:
-        pulp_system = cfg.get_systems('api')[0]
+    if not pulp_host:
+        pulp_host = cfg.get_hosts('api')[0]
     # 900 * 2s == 1800s == 30m
     # NOTE: The timeout counter is synchronous. We query Pulp, then count down,
     # then query pulp, then count down, etc. This is… dumb.
@@ -402,8 +402,8 @@ def poll_task(cfg, href, pulp_system=None):
     poll_counter = 0
     while True:
         response = requests.get(
-            urljoin(cfg.get_base_url(pulp_system), href),
-            **cfg.get_requests_kwargs(pulp_system)
+            urljoin(cfg.get_base_url(pulp_host), href),
+            **cfg.get_requests_kwargs(pulp_host)
         )
         response.raise_for_status()
         attrs = response.json()

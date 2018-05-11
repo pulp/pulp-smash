@@ -62,7 +62,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
                 'version': '2.13',
                 'selinux enabled': True,
             },
-            'systems': [{
+            'hosts': [{
                 'hostname': 'pulp.example.com',
                 'roles': {
                     'amqp broker': {'service': 'qpidd'},
@@ -125,12 +125,12 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             '\n'  # admin password
             '2.13\n'  # pulp version
             '\n'  # pulp_selinux_enabled
-            'pulp.example.com\n'  # system hostname
+            'pulp.example.com\n'  # host hostname
             '\n'  # published via HTTPS
             '\n'  # verify HTTPS
             '\n'  # API port
             '\n'  # using qpidd
-            '\n'  # running on Pulp system
+            '\n'  # running on Pulp host
         )
         generated_settings = self._test_common_logic(create_input)
         self.assertEqual(
@@ -144,12 +144,12 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             '\n'  # admin password
             '2.13\n'  # pulp version
             '\n'  # pulp_selinux_enabled
-            'pulp.example.com\n'  # system hostname
+            'pulp.example.com\n'  # host hostname
             '\n'  # published via HTTPS
             '\n'  # verify HTTPS
             '\n'  # API port
             '\n'  # using qpidd
-            '\n'  # running on Pulp system
+            '\n'  # running on Pulp host
         )
         generated_settings = self._test_common_logic(
             create_input, 'settings.json')
@@ -163,16 +163,16 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             '\n'  # admin password
             '2.13\n'  # pulp version
             '\n'  # pulp_selinux_enabled
-            'pulp.example.com\n'  # system hostname
+            'pulp.example.com\n'  # host hostname
             '\n'  # published via HTTPS
             'y\n'  # verify HTTPS
             '/path/to/ssl/certificate\n'  # SSL certificate path
             '\n'  # API port
             '\n'  # using qpidd
-            '\n'  # running on Pulp system
+            '\n'  # running on Pulp host
         )
         generated_settings = self._test_common_logic(create_input)
-        self.expected_config_dict['systems'][0]['roles']['api']['verify'] = (
+        self.expected_config_dict['hosts'][0]['roles']['api']['verify'] = (
             '/path/to/ssl/certificate'
         )
         self.assertEqual(
@@ -185,20 +185,20 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             'password\n'  # admin password
             '2.13\n'  # pulp version
             'n\n'  # pulp_selinux_enabled
-            'pulp.example.com\n'  # system hostname
+            'pulp.example.com\n'  # host hostname
             'n\n'  # published via HTTPS
             '\n'  # API port
             'n\n'  # using qpidd
-            'y\n'  # running on Pulp system
+            'y\n'  # running on Pulp host
         )
         generated_settings = self._test_common_logic(create_input)
         self.expected_config_dict['pulp']['auth'] = ['username', 'password']
         self.expected_config_dict['pulp']['selinux enabled'] = False
-        system_roles = self.expected_config_dict['systems'][0]['roles']
-        system_roles['amqp broker']['service'] = 'rabbitmq'
-        system_roles['api']['scheme'] = 'http'
-        system_roles['api']['verify'] = False
-        system_roles['shell']['transport'] = 'local'
+        host_roles = self.expected_config_dict['hosts'][0]['roles']
+        host_roles['amqp broker']['service'] = 'rabbitmq'
+        host_roles['api']['scheme'] = 'http'
+        host_roles['api']['verify'] = False
+        host_roles['shell']['transport'] = 'local'
         self.assertEqual(
             json.loads(generated_settings), self.expected_config_dict)
 
