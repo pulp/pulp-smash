@@ -49,19 +49,6 @@ PULP_SMASH_CONFIG = """
 """
 
 
-OLD_CONFIG = """
-{
-    "pulp": {
-        "base_url": "https://pulp.example.com",
-        "auth": ["username", "password"],
-        "verify": false,
-        "version": "2.12",
-        "cli_transport": "ssh"
-    }
-}
-"""
-
-
 def _gen_attrs():
     """Generate attributes for populating a ``PulpSmashConfig``.
 
@@ -114,39 +101,6 @@ class GetConfigTestCase(unittest.TestCase):
             with mock.patch.object(config.PulpSmashConfig, 'read') as read:
                 config.get_config()
         self.assertEqual(read.call_count, 1)
-
-
-class ConvertOldConfigTestCase(unittest.TestCase):
-    """Test :func:`pulp_smash.config.convert_old_config`."""
-
-    def test_convert_old_config(self):
-        """Assert the conversion works."""
-        expected_config = {
-            'pulp': {
-                'auth': ['username', 'password'],
-                'version': '2.12'
-            },
-            'systems': [
-                {
-                    'hostname': 'pulp.example.com',
-                    'roles': {
-                        'amqp broker': {'service': 'qpidd'},
-                        'api': {'scheme': 'https', 'verify': False},
-                        'mongod': {},
-                        'pulp celerybeat': {},
-                        'pulp cli': {},
-                        'pulp resource manager': {},
-                        'pulp workers': {},
-                        'shell': {'transport': 'ssh'},
-                        'squid': {},
-                    }
-                }
-            ]
-        }
-        self.assertEqual(
-            config.convert_old_config(json.loads(OLD_CONFIG)),
-            expected_config
-        )
 
 
 class ValidateConfigTestCase(unittest.TestCase):
@@ -285,43 +239,6 @@ class ReadTestCase(unittest.TestCase):
                     ),
                 ])
             )
-
-    def test_read_old_config_file(self):
-        """Ensure Pulp Smash can read old config file format."""
-        open_ = mock.mock_open(read_data=OLD_CONFIG)
-        with mock.patch.object(builtins, 'open', open_):
-            cfg = config.PulpSmashConfig()
-            with mock.patch.object(cfg, 'get_config_file_path'):
-                with self.assertWarns(DeprecationWarning):
-                    cfg = cfg.read()
-        with self.subTest('check pulp_auth'):
-            self.assertEqual(cfg.pulp_auth, ['username', 'password'])
-        with self.subTest('check pulp_version'):
-            self.assertEqual(cfg.pulp_version, config.Version('2.12'))
-        with self.subTest('check pulp_selinux_enabled'):
-            self.assertEqual(cfg.pulp_selinux_enabled, True)
-        with self.subTest('check systems'):
-            self.assertEqual(
-                cfg.systems,
-                [
-                    config.PulpSystem(
-                        hostname='pulp.example.com',
-                        roles={
-                            'amqp broker': {'service': 'qpidd'},
-                            'api': {
-                                'scheme': 'https',
-                                'verify': False,
-                            },
-                            'mongod': {},
-                            'pulp cli': {},
-                            'pulp celerybeat': {},
-                            'pulp resource manager': {},
-                            'pulp workers': {},
-                            'shell': {'transport': 'ssh'},
-                            'squid': {},
-                        }
-                    )
-                ])
 
 
 class HelperMethodsTestCase(unittest.TestCase):

@@ -11,9 +11,8 @@ import collections
 import itertools
 import json
 import os
-import warnings
 from copy import deepcopy
-from urllib.parse import urlparse, urlunsplit
+from urllib.parse import urlunsplit
 
 import jsonschema
 from packaging.version import Version
@@ -172,47 +171,6 @@ def get_config():
     if _CONFIG is None:
         _CONFIG = PulpSmashConfig().read()
     return deepcopy(_CONFIG)
-
-
-def convert_old_config(config_dict):
-    """Convert the old configuration dict representation to the new format."""
-    config_dict = deepcopy(config_dict)
-    converted = {
-        'pulp': {},
-        'systems': [{
-            'roles': {
-                'amqp broker': {'service': 'qpidd'},
-                'api': {},
-                'mongod': {},
-                'pulp cli': {},
-                'pulp celerybeat': {},
-                'pulp resource manager': {},
-                'pulp workers': {},
-                'shell': {},
-                'squid': {},
-            },
-        }],
-    }
-    pulp = config_dict.get('pulp', {})
-    pulp_auth = pulp.get('auth')
-    if pulp_auth:
-        converted['pulp']['auth'] = pulp_auth
-    pulp_version = pulp.get('version')
-    if pulp_version:
-        converted['pulp']['version'] = pulp_version
-    base_url = pulp.get('base_url')
-    system = converted['systems'][0]
-    if base_url:
-        parsed_url = urlparse(base_url)
-        system['hostname'] = parsed_url.hostname
-        system['roles']['api']['scheme'] = parsed_url.scheme
-    cli_transport = pulp.get('cli_transport')
-    if cli_transport:
-        system['roles']['shell']['transport'] = cli_transport
-    verify = pulp.get('verify')
-    if verify is not None:  # Verify can be either a boolean or string
-        system['roles']['api']['verify'] = verify
-    return converted
 
 
 def validate_config(config_dict):
@@ -428,8 +386,6 @@ class PulpSmashConfig():
         :returns: A new :class:`pulp_smash.config.PulpSmashConfig` object. The
             current object is not modified by this method.
         :rtype: PulpSmashConfig
-        :raises: ``warnings.DecprecationWarning`` if the configuration file
-            uses the old format instead of the new role-based format.
         """
         # Read the configuration file.
         if xdg_config_file is None:
@@ -439,23 +395,6 @@ class PulpSmashConfig():
         path = self.get_config_file_path(xdg_config_file, xdg_config_dir)
         with open(path) as handle:
             config_file = json.load(handle)
-
-        if 'systems' not in config_file:
-            # We could use textwrap.wrap() on the message, but that makes log
-            # files harder to grep.
-            warnings.warn(
-                (
-                    'Pulp Smash\'s configuration file should use a role-based '
-                    'format. However, the configuration file at "{0}" '
-                    'appears to use the old configuration file format. '
-                    'Consider updating the configuration file. Run `python3 '
-                    '-m pulp_smash for more information.'
-                    .format(path)
-                ),
-                DeprecationWarning
-            )
-            config_file = convert_old_config(config_file)
-
         pulp = config_file.get('pulp', {})
         pulp_auth = pulp.get('auth', ['admin', 'admin'])
         pulp_version = Version(pulp.get('version', '1!0'))

@@ -175,26 +175,12 @@ def settings_validate(ctx):
     path = ctx.obj['cfg_path']
     if not path:
         _raise_settings_not_found()
-
     with open(path) as handle:
         config_dict = json.load(handle)
-    if 'systems' not in config_dict and 'pulp' in config_dict:
-        message = (
-            'the settings file at {} appears to be following the old '
-            'configuration file format, please update it like below:\n'
-            .format(path)
-        )
-        message += json.dumps(config.convert_old_config(config_dict), indent=2)
-        result = click.ClickException(message)
-        result.exit_code = -1
-        raise result
     try:
         config.validate_config(config_dict)
     except exceptions.ConfigValidationError as err:
-        message = (
-            'invalid settings file {}\n'
-            .format(path)
-        )
+        message = ('Invalid settings file: {}\n' .format(path))
         for error_message in err.error_messages:
             message += error_message
         result = click.ClickException(message)
