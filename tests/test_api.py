@@ -118,17 +118,7 @@ class ClientTestCase(unittest.TestCase):
         methods = {'delete', 'get', 'head', 'options', 'patch', 'post', 'put'}
         cls.mocks = {}
         for method in methods:
-            client = api.Client(config.PulpSmashConfig(
-                pulp_auth=['admin', 'admin'],
-                hosts=[
-                    config.PulpHost(
-                        hostname='example.com',
-                        roles={'api': {
-                            'scheme': 'http',
-                        }}
-                    )
-                ]
-            ))
+            client = api.Client(_get_pulp_smash_config())
             with mock.patch.object(client, 'request') as request:
                 getattr(client, method)('')
             cls.mocks[method] = request
@@ -155,29 +145,13 @@ class ClientTestCase2(unittest.TestCase):
         The argument should be saved as an instance attribute.
         """
         response_handler = mock.Mock()
-        client = api.Client(config.PulpSmashConfig(
-            pulp_auth=['admin', 'admin'],
-            hosts=[
-                config.PulpHost(
-                    hostname='base url',
-                    roles={'api': {'scheme': 'http'}},
-                )
-            ]
-        ), response_handler)
+        client = api.Client(_get_pulp_smash_config(), response_handler)
         self.assertIs(client.response_handler, response_handler)
 
     def test_json_arg(self):
         """Assert methods with a ``json`` argument pass on that argument."""
         json = mock.Mock()
-        client = api.Client(config.PulpSmashConfig(
-            pulp_auth=['admin', 'admin'],
-            hosts=[
-                config.PulpHost(
-                    hostname='base url',
-                    roles={'api': {'scheme': 'http'}},
-                )
-            ]
-        ))
+        client = api.Client(_get_pulp_smash_config())
         for method in {'patch', 'post', 'put'}:
             with self.subTest(method=method):
                 with mock.patch.object(client, 'request') as request:
@@ -185,3 +159,21 @@ class ClientTestCase2(unittest.TestCase):
                 self.assertEqual(
                     request.call_args[0], (method.upper(), 'some url'))
                 self.assertIs(request.call_args[1]['json'], json)
+
+
+def _get_pulp_smash_config():
+    """Return a config object with made-up attributes.
+
+    :rtype: pulp_smash.config.PulpSmashConfig
+    """
+    return config.PulpSmashConfig(
+        pulp_auth=['admin', 'admin'],
+        pulp_version='1!0',
+        pulp_selinux_enabled=True,
+        hosts=[
+            config.PulpHost(
+                hostname='example.com',
+                roles={'api': {'scheme': 'http'}},
+            )
+        ]
+    )

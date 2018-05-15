@@ -201,6 +201,8 @@ class Client():
     >>> from pulp_smash.config import PulpSmashConfig
     >>> cfg = config.PulpSmashConfig(
     ...     pulp_auth=('username', 'password'),
+    ...     pulp_version='1!0',
+    ...     pulp_selinux_enabled=True,
     ...     hosts=[
     ...         config.PulpHost(
     ...             hostname='example.com',

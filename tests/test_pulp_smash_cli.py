@@ -33,16 +33,14 @@ class MissingSettingsFileMixin():
         """Ensure show outputs proper settings file."""
         with self.cli_runner.isolated_filesystem():
             with mock.patch.object(pulp_smash_cli, 'PulpSmashConfig') as psc:
-                cfg = mock.MagicMock()
-                psc.return_value = cfg
-                cfg.get_config_file_path.side_effect = (
+                psc.get_load_path.side_effect = (
                     exceptions.ConfigFileNotFoundError('No config file found.')
                 )
                 result = self.cli_runner.invoke(
                     pulp_smash_cli.settings,
                     [self.settings_subcommand],
                 )
-            self.assertNotEqual(result.exit_code, 0)
+            self.assertNotEqual(result.exit_code, 0, result.output)
             self.assertIn(
                 'there is no settings file. Use `pulp-smash settings create` '
                 'to create one.',
@@ -81,33 +79,31 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             }]
         }
 
-    def _test_common_logic(self, create_input, cfp_return_value=None):
+    def _test_common_logic(self, create_input, glp_return_value=None):
         """Test common settings create logic.
 
         :param create_input: the input stream for the prompts.
-        :param cfp_return_value: the return_value of
-            ``PulpSmashConfig.get_config_file_path`` or, if None, it will have
-            the side_effect of raising a
+        :param glp_return_value: the return_value of
+            ``PulpSmashConfig.get_load_path`` or, if None, it will
+            have the side_effect of raising a
             :obj:`pulp_smash.exceptions.ConfigFileNotFoundError`.
         :return: the generated settings.json as string
         """
         with self.cli_runner.isolated_filesystem():
             with mock.patch.object(pulp_smash_cli, 'PulpSmashConfig') as psc:
-                cfg = mock.MagicMock()
-                psc.return_value = cfg
-                if cfp_return_value is None:
-                    cfg.get_config_file_path.side_effect = (
+                if glp_return_value is None:
+                    psc.get_load_path.side_effect = (
                         exceptions.ConfigFileNotFoundError('Config not found.')
                     )
                 else:
-                    cfg.get_config_file_path.return_value = cfp_return_value
-                cfg.default_config_file_path = 'settings.json'
+                    psc.get_load_path.return_value = glp_return_value
+                psc.get_save_path.return_value = 'settings.json'
                 result = self.cli_runner.invoke(
                     pulp_smash_cli.settings,
                     ['create'],
-                    input=create_input
+                    input=create_input,
                 )
-            self.assertEqual(result.exit_code, 0)
+            self.assertEqual(result.exit_code, 0, result.output)
             self.assertIn(
                 'Creating the settings file at settings.json...\nSettings '
                 'file created, run `pulp-smash settings show` to show its '
@@ -214,9 +210,7 @@ class SettingsPathTestCase(BasePulpSmashCliTestCase, MissingSettingsFileMixin):
             with open('settings.json', 'w') as handler:
                 handler.write(PULP_SMASH_CONFIG)
             with mock.patch.object(pulp_smash_cli, 'PulpSmashConfig') as psc:
-                cfg = mock.MagicMock()
-                psc.return_value = cfg
-                cfg.get_config_file_path.return_value = 'settings.json'
+                psc.get_load_path.return_value = 'settings.json'
                 result = self.cli_runner.invoke(
                     pulp_smash_cli.settings,
                     ['path'],
@@ -239,9 +233,7 @@ class SettingsShowTestCase(BasePulpSmashCliTestCase, MissingSettingsFileMixin):
             with open('settings.json', 'w') as handler:
                 handler.write(PULP_SMASH_CONFIG)
             with mock.patch.object(pulp_smash_cli, 'PulpSmashConfig') as psc:
-                cfg = mock.MagicMock()
-                psc.return_value = cfg
-                cfg.get_config_file_path.return_value = 'settings.json'
+                psc.get_load_path.return_value = 'settings.json'
                 result = self.cli_runner.invoke(
                     pulp_smash_cli.settings,
                     ['show'],
@@ -266,9 +258,7 @@ class SettingsValidateTestCase(
             with open('settings.json', 'w') as handler:
                 handler.write(PULP_SMASH_CONFIG)
             with mock.patch.object(pulp_smash_cli, 'PulpSmashConfig') as psc:
-                cfg = mock.MagicMock()
-                psc.return_value = cfg
-                cfg.get_config_file_path.return_value = 'settings.json'
+                psc.get_load_path.return_value = 'settings.json'
                 result = self.cli_runner.invoke(
                     pulp_smash_cli.settings,
                     ['validate'],
@@ -286,9 +276,7 @@ class SettingsValidateTestCase(
             with open('settings.json', 'w') as handler:
                 handler.write(cfg_file)
             with mock.patch.object(pulp_smash_cli, 'PulpSmashConfig') as psc:
-                cfg = mock.MagicMock()
-                psc.return_value = cfg
-                cfg.get_config_file_path.return_value = 'settings.json'
+                psc.get_load_path.return_value = 'settings.json'
                 result = self.cli_runner.invoke(
                     pulp_smash_cli.settings,
                     ['validate'],

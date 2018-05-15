@@ -177,11 +177,13 @@ class PulpAdminLoginTestCase(unittest.TestCase):
         """Assert the function executes ``cli.Client.run``."""
         with mock.patch.object(cli, 'Client') as client:
             cfg = config.PulpSmashConfig(
-                pulp_auth=['u', 'p'],
+                pulp_auth=['admin', 'admin'],
+                pulp_version='1!0',
+                pulp_selinux_enabled=True,
                 hosts=[
                     config.PulpHost(
                         hostname='example.com',
-                        roles={'pulp cli': {}}
+                        roles={'pulp cli': {}},
                     )
                 ]
             )

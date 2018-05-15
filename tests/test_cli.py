@@ -89,51 +89,40 @@ class ClientTestCase(unittest.TestCase):
 
     def test_explicit_local_transport(self):
         """Assert it is possible to explicitly ask for a "local" transport."""
-        cfg = config.PulpSmashConfig(hosts=[
+        cfg = _get_pulp_smash_config(hosts=[
             config.PulpHost(
                 hostname=utils.uuid4(),
-                roles={
-                    'pulp cli': {},
-                    'shell': {'transport': 'local'},
-                }
+                roles={'pulp cli': {}, 'shell': {'transport': 'local'}},
             )
         ])
         self.assertIsInstance(cli.Client(cfg).machine, LocalMachine)
 
     def test_implicit_local_transport(self):
         """Assert it is possible to implicitly ask for a "local" transport."""
-        cfg = config.PulpSmashConfig(hosts=[
+        cfg = _get_pulp_smash_config(hosts=[
             config.PulpHost(
                 hostname=socket.getfqdn(),
-                roles={
-                    'pulp cli': {},
-                }
+                roles={'pulp cli': {}},
             )
         ])
         self.assertIsInstance(cli.Client(cfg).machine, LocalMachine)
 
     def test_default_response_handler(self):
         """Assert the default response handler checks return codes."""
-        cfg = config.PulpSmashConfig(hosts=[
+        cfg = _get_pulp_smash_config(hosts=[
             config.PulpHost(
                 hostname=utils.uuid4(),
-                roles={
-                    'pulp cli': {},
-                    'shell': {'transport': 'local'},
-                }
+                roles={'pulp cli': {}, 'shell': {'transport': 'local'}},
             )
         ])
         self.assertIs(cli.Client(cfg).response_handler, cli.code_handler)
 
     def test_explicit_response_handler(self):
         """Assert it is possible to explicitly set a response handler."""
-        cfg = config.PulpSmashConfig(hosts=[
+        cfg = _get_pulp_smash_config(hosts=[
             config.PulpHost(
                 hostname=utils.uuid4(),
-                roles={
-                    'pulp cli': {},
-                    'shell': {'transport': 'local'},
-                }
+                roles={'pulp cli': {}, 'shell': {'transport': 'local'}},
             )
         ])
         handler = mock.Mock()
@@ -141,18 +130,14 @@ class ClientTestCase(unittest.TestCase):
 
     def test_implicit_pulp_host(self):
         """Assert it is possible to implicitly target a pulp cli PulpHost."""
-        cfg = config.PulpSmashConfig(hosts=[
+        cfg = _get_pulp_smash_config(hosts=[
             config.PulpHost(
                 hostname=utils.uuid4(),
-                roles={
-                    'pulp cli': {},
-                }
+                roles={'pulp cli': {}},
             ),
             config.PulpHost(
                 hostname=utils.uuid4(),
-                roles={
-                    'pulp cli': {},
-                }
+                roles={'pulp cli': {}},
             )
         ])
         with mock.patch('pulp_smash.cli.plumbum') as plumbum:
@@ -164,18 +149,14 @@ class ClientTestCase(unittest.TestCase):
 
     def test_explicit_pulp_host(self):
         """Assert it is possible to explicitly target a pulp cli PulpHost."""
-        cfg = config.PulpSmashConfig(hosts=[
+        cfg = _get_pulp_smash_config(hosts=[
             config.PulpHost(
                 hostname=utils.uuid4(),
-                roles={
-                    'pulp cli': {},
-                }
+                roles={'pulp cli': {}},
             ),
             config.PulpHost(
                 hostname=utils.uuid4(),
-                roles={
-                    'pulp cli': {},
-                }
+                roles={'pulp cli': {}},
             )
         ])
         with mock.patch('pulp_smash.cli.plumbum') as plumbum:
@@ -185,3 +166,17 @@ class ClientTestCase(unittest.TestCase):
                 cli.Client(cfg, pulp_host=cfg.hosts[1]).machine, machine)
             plumbum.machines.SshMachine.assert_called_once_with(
                 cfg.hosts[1].hostname)
+
+
+def _get_pulp_smash_config(hosts):
+    """Return a config object with made-up attributes.
+
+    :param hosts: Passed through to :data:`pulp_smash.config.PulpSmashConfig`.
+    :rtype: pulp_smash.config.PulpSmashConfig
+    """
+    return config.PulpSmashConfig(
+        pulp_auth=['admin', 'admin'],
+        pulp_version='1!0',
+        pulp_selinux_enabled=True,
+        hosts=hosts,
+    )

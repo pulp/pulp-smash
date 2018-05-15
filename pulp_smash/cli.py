@@ -131,14 +131,10 @@ class Client():  # pylint:disable=too-few-public-methods
     """A convenience object for working with a CLI.
 
     This class provides the ability to execute shell commands on either the
-    local host or a remote host. Here is a pedagogic usage example:
+    local host or a remote host. Here is a typical usage example:
 
     >>> from pulp_smash import cli, config
-    >>> host = (
-    ...     config.PulpHost('localhost', {'shell': {'transport': 'local'}})
-    ... )
-    >>> cfg = config.PulpSmashConfig(hosts=[host])
-    >>> client = cli.Client(cfg, pulp_host=host)
+    >>> client = cli.Client(config.PulpSmashConfig.load())
     >>> response = client.run(('echo', '-n', 'foo'))
     >>> response.returncode == 0
     True
@@ -147,9 +143,14 @@ class Client():  # pylint:disable=too-few-public-methods
     >>> response.stderr == ''
     True
 
-    The above example shows how various classes fit together. It's also
-    verbose: smartly chosen defaults mean that most real code is much more
-    concise.
+    Smartly chosen defaults make this example concise, but it's also quite
+    flexible. For example, if a single Pulp application is deployed across
+    several hosts, one can choose on which host commands are executed:
+
+    >>> from pulp_smash import cli, config
+    >>> cfg = config.PulpSmashConfig.load()
+    >>> client = cli.Client(cfg, pulp_host=cfg.get_hosts('shell')[0])
+    >>> response = client.run(('echo', '-n', 'foo'))
 
     You can customize how ``Client`` objects execute commands and handle
     responses by fiddling with the two public instance attributes:
@@ -422,7 +423,7 @@ class GlobalServiceManager(BaseServiceManager):
         result = {}
         for host in self._cfg.hosts:
             intersection = services.intersection(
-                self._cfg.services_for_roles(host.roles))
+                self._cfg.get_services(host.roles))
             if intersection:
                 client = Client(self._cfg, pulp_host=host)
                 svc_mgr = self._get_service_manager(self._cfg, host)
@@ -452,7 +453,7 @@ class GlobalServiceManager(BaseServiceManager):
         result = {}
         for host in self._cfg.hosts:
             intersection = services.intersection(
-                self._cfg.services_for_roles(host.roles))
+                self._cfg.get_services(host.roles))
             if intersection:
                 client = Client(self._cfg, pulp_host=host)
                 svc_mgr = self._get_service_manager(self._cfg, host)
@@ -481,7 +482,7 @@ class GlobalServiceManager(BaseServiceManager):
         result = {}
         for host in self._cfg.hosts:
             intersection = services.intersection(
-                self._cfg.services_for_roles(host.roles))
+                self._cfg.get_services(host.roles))
             if intersection:
                 client = Client(self._cfg, pulp_host=host)
                 svc_mgr = self._get_service_manager(self._cfg, host)
@@ -508,7 +509,7 @@ class ServiceManager(BaseServiceManager):
 
     >>> from pulp_smash import cli, config
     >>> cfg = config.get_config()
-    >>> pulp_host = cfg.get_services_for_roles(('api',))[0]
+    >>> pulp_host = cfg.get_get_services(('api',))[0]
     >>> svc_mgr = cli.ServiceManager(cfg, pulp_host)
     >>> completed_process_list = svc_mgr.stop(['httpd'])
     >>> completed_process_list = svc_mgr.start(['httpd'])

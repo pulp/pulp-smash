@@ -170,7 +170,7 @@ def get_config():
     """
     global _CONFIG  # pylint:disable=global-statement
     if _CONFIG is None:
-        _CONFIG = PulpSmashConfig().read()
+        _CONFIG = PulpSmashConfig.load()
     return deepcopy(_CONFIG)
 
 
@@ -181,7 +181,7 @@ def validate_config(config_dict):
     against a schema and performing several semantic checks.
 
     :param config_dict: A dictionary returned by ``json.load`` or
-        ``json.loads`` after reading the config file.
+        ``json.loads`` after loading the config file.
     :raises pulp_smash.exceptions.ConfigValidationError: If the any validation
         error is found.
     """
@@ -303,35 +303,27 @@ class PulpSmashConfig():
 
     :param pulp_auth: A two-tuple. Credentials to use when communicating with
         the server. For example: ``('username', 'password')``.
-    :param pulp_version: A string, such as '1.2' or '0.8.rc3'. Defaults to
-        '1!0' (epoch 1, version 0). Must be compatible with the `packaging`_
-        library's ``packaging.version.Version`` class.
-    :param pulp_selinux_enabled: A boolean. Should selinux tests be run. Defaults to
-        ``true``.
-    :param pulp_smash.config.PulpHost hosts: A list of the hosts comprising
-        a Pulp application.
+    :param pulp_version: A string, such as '1.2' or '0.8.rc3'. If you are
+        unsure what to pass, consider passing '1!0' (epoch 1, version 0). Must
+        be compatible with the `packaging`_ library's
+        ``packaging.version.Version`` class.
+    :param pulp_selinux_enabled: A boolean. Determines whether selinux tests
+        are enabled.
+    :param hosts: A list of the hosts comprising a Pulp application. Each
+        element of the list should be a :class:`pulp_smash.config.PulpHost`
+        object.
 
     .. _packaging: https://packaging.pypa.io/en/latest/
     .. _XDG Base Directory Specification:
         http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
     """
 
-    def __init__(
-            self,
-            pulp_auth=None,
-            pulp_version=None,
-            pulp_selinux_enabled=None,
-            hosts=None):
+    def __init__(self, pulp_auth, pulp_version, pulp_selinux_enabled, hosts):
         """Initialize this object with needed instance attributes."""
         self.pulp_auth = pulp_auth
-        self.pulp_version = pulp_version
+        self.pulp_version = Version(pulp_version)
         self.pulp_selinux_enabled = pulp_selinux_enabled
-        self.hosts = [] if hosts is None else hosts
-        self._xdg_config_file = os.environ.get(
-            'PULP_SMASH_CONFIG_FILE',
-            'settings.json'
-        )
-        self._xdg_config_dir = 'pulp_smash'
+        self.hosts = hosts
 
     def __repr__(self):
         """Create string representation of the object."""
@@ -341,82 +333,6 @@ class PulpSmashConfig():
             '{}={}'.format(key, repr(value)) for key, value in attrs.items()
         )
         return '{}({})'.format(type(self).__name__, str_kwargs)
-
-    @property
-    def default_config_file_path(self):
-        """Build the default config file path."""
-        return os.path.join(
-            BaseDirectory.save_config_path(self._xdg_config_dir),
-            self._xdg_config_file
-        )
-
-    def get_config_file_path(self, xdg_config_file=None, xdg_config_dir=None):
-        """Search for a config file and return the first found.
-
-        Search each of the standard XDG configuration directories for a
-        configuration file. Return as soon as a configuration file is found.
-        Beware of race conditions. By the time client code attempts to open the
-        file, it may be gone or otherwise inaccessible.
-
-        :param xdg_config_file: A string. The name of the configuration file
-            that is being searched for.
-        :param xdg_config_dir: A string. The name of the directory that is
-            suffixed to the end of each of the ``XDG_CONFIG_DIRS`` paths.
-        :returns: A string. A path to a configuration file.
-        :raises pulp_smash.exceptions.ConfigFileNotFoundError: If no
-            configuration file can be found.
-        """
-        if xdg_config_file is None:
-            xdg_config_file = self._xdg_config_file
-        if xdg_config_dir is None:
-            xdg_config_dir = self._xdg_config_dir
-        path = BaseDirectory.load_first_config(xdg_config_dir, xdg_config_file)
-        if path and os.path.isfile(path):
-            return path
-        raise exceptions.ConfigFileNotFoundError(
-            'Pulp Smash is unable to find a configuration file. The following '
-            '(XDG compliant) paths have been searched: ' + ', '.join([
-                os.path.join(config_dir, xdg_config_dir, xdg_config_file)
-                for config_dir in BaseDirectory.xdg_config_dirs
-            ])
-        )
-
-    def read(self, xdg_config_file=None, xdg_config_dir=None):
-        """Read a configuration file.
-
-        :param xdg_config_file: A string. The name of the file to manipulate.
-        :param xdg_config_dir: A string. The XDG configuration directory in
-            which the configuration file resides.
-        :returns: A new :class:`pulp_smash.config.PulpSmashConfig` object. The
-            current object is not modified by this method.
-        :rtype: PulpSmashConfig
-        """
-        # Read the configuration file.
-        if xdg_config_file is None:
-            xdg_config_file = self._xdg_config_file
-        if xdg_config_dir is None:
-            xdg_config_dir = self._xdg_config_dir
-        path = self.get_config_file_path(xdg_config_file, xdg_config_dir)
-        with open(path) as handle:
-            config_file = json.load(handle)
-        pulp = config_file.get('pulp', {})
-        pulp_auth = pulp.get('auth', ['admin', 'admin'])
-        pulp_version = Version(pulp.get('version', '1!0'))
-        pulp_selinux_enabled = pulp.get('selinux enabled', True)
-
-        if 'systems' in config_file:
-            warnings.warn(
-                (
-                    'The Pulp Smash configuration file should use a key named '
-                    '"hosts," not "systems." Please update accordingly, and '
-                    'validate the changes with `pulp-smash settings validate`.'
-                ),
-                DeprecationWarning
-            )
-            config_file['hosts'] = config_file.pop('systems')
-
-        hosts = [PulpHost(**host) for host in config_file.get('hosts', [])]
-        return PulpSmashConfig(pulp_auth, pulp_version, pulp_selinux_enabled, hosts)
 
     def get_hosts(self, role):
         """Return a list of hosts fulfilling the given role.
@@ -432,8 +348,8 @@ class PulpSmashConfig():
         return [host for host in self.hosts if role in host.roles]
 
     @staticmethod
-    def services_for_roles(roles):
-        """Return the services based on the roles."""
+    def get_services(roles):
+        """Translate role names to init system service names."""
         services = []
         for role in roles:
             if role == 'amqp broker':
@@ -477,14 +393,14 @@ class PulpSmashConfig():
         This method returns a dict of attributes that can be unpacked and used
         as kwargs via the ``**`` operator. For example:
 
-        >>> cfg = PulpSmashConfig().read()
+        >>> cfg = PulpSmashConfig.load()
         >>> requests.get(cfg.get_base_url() + '…', **cfg.get_requests_kwargs())
 
         This method is useful because client code may not know which attributes
         should be passed from a ``PulpSmashConfig`` object to Requests.
         Consider that the example above could also be written like this:
 
-        >>> cfg = PulpSmashConfig().get()
+        >>> cfg = PulpSmashConfig.load()
         >>> requests.get(
         ...     cfg.get_base_url() + '…',
         ...     auth=tuple(cfg.pulp_auth),
@@ -503,3 +419,108 @@ class PulpSmashConfig():
         for key in ('port', 'scheme'):
             kwargs.pop(key, None)
         return kwargs
+
+    @classmethod
+    def load(cls, xdg_subdir=None, config_file=None):
+        """Load a configuration file from disk.
+
+        :param xdg_subdir: Passed to :meth:`get_load_path`.
+        :param config_file: Passed to :meth:`get_load_path`.
+        :returns: A new :class:`pulp_smash.config.PulpSmashConfig` object. The
+            current object is not modified by this method.
+        :rtype: PulpSmashConfig
+        """
+        # Load JSON from disk.
+        path = cls.get_load_path(xdg_subdir, config_file)
+        with open(path) as handle:
+            loaded_config = json.load(handle)
+
+        # Make arguments.
+        pulp = loaded_config.get('pulp', {})
+        pulp_auth = pulp.get('auth', ['admin', 'admin'])
+        pulp_version = pulp.get('version', '1!0')
+        pulp_selinux_enabled = pulp.get('selinux enabled', True)
+        if 'systems' in loaded_config:
+            warnings.warn(
+                (
+                    'The Pulp Smash configuration file should use a key named '
+                    '"hosts," not "systems." Please update accordingly, and '
+                    'validate the changes with `pulp-smash settings validate`.'
+                ),
+                DeprecationWarning
+            )
+            loaded_config['hosts'] = loaded_config.pop('systems')
+        hosts = [PulpHost(**host) for host in loaded_config.get('hosts', [])]
+
+        # Make object.
+        return PulpSmashConfig(
+            pulp_auth,
+            pulp_version,
+            pulp_selinux_enabled,
+            hosts,
+        )
+
+    @classmethod
+    def get_load_path(cls, xdg_subdir=None, config_file=None):
+        """Return the path to where a configuration file may be loaded from.
+
+        Search each of the ``$XDG_CONFIG_DIRS`` for a file named
+        ``$xdg_subdir/$config_file``.
+
+        :param xdg_subdir: A string. The directory to append to each of the
+            ``$XDG_CONFIG_DIRS``. Defaults to ``'pulp_smash'``.
+        :param config_file: A string. The name of the settings file. Typically
+            defaults to ``'settings.json'``.
+        :returns: A string. The path to a configuration file, if one is found.
+        :raises pulp_smash.exceptions.ConfigFileNotFoundError: If no
+            configuration file is found.
+        """
+        if xdg_subdir is None:
+            xdg_subdir = cls._get_xdg_subdir()
+        if config_file is None:
+            config_file = cls._get_config_file()
+
+        for dir_ in BaseDirectory.load_config_paths(xdg_subdir):
+            path = os.path.join(dir_, config_file)
+            if os.path.exists(path):
+                return path
+
+        raise exceptions.ConfigFileNotFoundError(
+            'Pulp Smash is unable to find a configuration file. The '
+            'following (XDG compliant) paths have been searched: '
+            ', '.join((
+                os.path.join(xdg_config_dir, xdg_subdir, config_file)
+                for xdg_config_dir in BaseDirectory.xdg_config_dirs
+            ))
+        )
+
+    @classmethod
+    def get_save_path(cls):
+        """Return a path to where a configuration file may be saved.
+
+        Create parent directories if they don't exist.
+        """
+        return os.path.join(
+            BaseDirectory.save_config_path(cls._get_xdg_subdir()),
+            cls._get_config_file(),
+        )
+
+    @staticmethod
+    def _get_xdg_subdir():
+        """Return the name (not path!) of this application's subdirectory.
+
+        This name may be appended to ``$XDG_CONFIG_DIRS``, ``$XDG_DATA_DIRS``,
+        ``$XDG_DATA_HOME``, and so on. For more, search for "subdir" within the
+        `XDG base directory specification
+        <https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_.
+        """
+        return 'pulp_smash'
+
+    @staticmethod
+    def _get_config_file():
+        """Return the name (not path!) of the Pulp Smash configuration file.
+
+        Defaults to ``settings.json``, but may be overridden by an environment
+        variable named ``PULP_SMASH_CONFIG_FILE``.
+        """
+        return os.environ.get('PULP_SMASH_CONFIG_FILE', 'settings.json')

@@ -126,18 +126,18 @@ class GetConfigTestCase(unittest.TestCase):
     """Test :func:`pulp_smash.config.get_config`."""
 
     def test_cache_full(self):
-        """No config is read from disk if the cache is populated."""
+        """No config is loaded from disk if the cache is populated."""
         with mock.patch.object(config, '_CONFIG'):
-            with mock.patch.object(config.PulpSmashConfig, 'read') as read:
+            with mock.patch.object(config.PulpSmashConfig, 'load') as load:
                 config.get_config()
-        self.assertEqual(read.call_count, 0)
+        self.assertEqual(load.call_count, 0)
 
     def test_cache_empty(self):
-        """A config is read from disk if the cache is empty."""
+        """A config is loaded from disk if the cache is empty."""
         with mock.patch.object(config, '_CONFIG', None):
-            with mock.patch.object(config.PulpSmashConfig, 'read') as read:
+            with mock.patch.object(config.PulpSmashConfig, 'load') as load:
                 config.get_config()
-        self.assertEqual(read.call_count, 1)
+        self.assertEqual(load.call_count, 1)
 
 
 class ValidateConfigTestCase(unittest.TestCase):
@@ -176,30 +176,6 @@ class ValidateConfigTestCase(unittest.TestCase):
         )
 
 
-class InitTestCase(unittest.TestCase):
-    """Test :class:`pulp_smash.config.PulpSmashConfig` instantiation."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Generate some attributes and use them to instantiate a config."""
-        cls.kwargs = _gen_attrs()
-        cls.cfg = config.PulpSmashConfig(**cls.kwargs)
-
-    def test_public_attrs(self):
-        """Assert that public attributes have correct values."""
-        attrs = config._public_attrs(self.cfg)  # pylint:disable=W0212
-        attrs['pulp_version'] = str(attrs['pulp_version'])
-        attrs['pulp_selinux_enabled'] = bool(attrs['pulp_selinux_enabled'])
-        self.assertIsNotNone(attrs['pulp_selinux_enabled'])
-        self.assertEqual(self.kwargs, attrs)
-
-    def test_private_attrs(self):
-        """Assert that private attributes have been set."""
-        for attr in ('_xdg_config_file', '_xdg_config_dir'):
-            with self.subTest(attr):
-                self.assertIsNotNone(getattr(self.cfg, attr))
-
-
 class PulpSmashConfigFileTestCase(unittest.TestCase):
     """Verify the ``PULP_SMASH_CONFIG_FILE`` environment var is respected."""
 
@@ -207,32 +183,28 @@ class PulpSmashConfigFileTestCase(unittest.TestCase):
         """Set the environment variable."""
         os_environ = {'PULP_SMASH_CONFIG_FILE': utils.uuid4()}
         with mock.patch.dict(os.environ, os_environ, clear=True):
-            cfg = config.PulpSmashConfig()
-        self.assertEqual(
-            cfg._xdg_config_file,  # pylint:disable=protected-access
-            os_environ['PULP_SMASH_CONFIG_FILE']
-        )
+            config_file = config.PulpSmashConfig._get_config_file()  # pylint:disable=protected-access
+        self.assertEqual(config_file, os_environ['PULP_SMASH_CONFIG_FILE'])
 
     def test_var_unset(self):
         """Do not set the environment variable."""
         with mock.patch.dict(os.environ, {}, clear=True):
-            cfg = config.PulpSmashConfig()
-        # pylint:disable=protected-access
-        self.assertEqual(cfg._xdg_config_file, 'settings.json')
+            config_file = config.PulpSmashConfig._get_config_file()  # pylint:disable=protected-access
+        self.assertEqual(config_file, 'settings.json')
 
 
-class ReadTestCase(unittest.TestCase):
-    """Test :meth:`pulp_smash.config.PulpSmashConfig.read`."""
+class LoadTestCase(unittest.TestCase):
+    """Test :meth:`pulp_smash.config.PulpSmashConfig.load`."""
 
-    def test_read_config_file(self):
-        """Ensure Pulp Smash can read the config file."""
-        cfg = pulp_smash_config_read(PULP_SMASH_CONFIG)
+    def test_load_config_file(self):
+        """Ensure Pulp Smash can load the config file."""
+        cfg = pulp_smash_config_load(PULP_SMASH_CONFIG)
         self.do_validate(cfg)
 
-    def test_read_old_config_file(self):
-        """Ensure Pulp Smash can read the config file."""
+    def test_load_old_config_file(self):
+        """Ensure Pulp Smash can load the config file."""
         with self.assertWarns(DeprecationWarning):
-            cfg = pulp_smash_config_read(OLD_PULP_SMASH_CONFIG)
+            cfg = pulp_smash_config_load(OLD_PULP_SMASH_CONFIG)
         self.do_validate(cfg)
 
     def do_validate(self, cfg):
@@ -289,7 +261,7 @@ class HelperMethodsTestCase(unittest.TestCase):
 
     def setUp(self):
         """Generate contents for a configuration file."""
-        self.cfg = pulp_smash_config_read(PULP_SMASH_CONFIG)
+        self.cfg = pulp_smash_config_load(PULP_SMASH_CONFIG)
 
     def test_get_hosts(self):
         """``get_hosts`` returns proper result."""
@@ -308,8 +280,8 @@ class HelperMethodsTestCase(unittest.TestCase):
                 sorted(['first.example.com'])
             )
 
-    def test_services_for_roles(self):
-        """``services_for_roles`` returns proper result."""
+    def test_get_services(self):
+        """``get_services`` returns proper result."""
         roles = {role: {} for role in config.ROLES}
         expected_roles = {
             'httpd',
@@ -321,19 +293,19 @@ class HelperMethodsTestCase(unittest.TestCase):
         }
         with self.subTest('no amqp broker service'):
             self.assertEqual(
-                self.cfg.services_for_roles(roles),
+                self.cfg.get_services(roles),
                 expected_roles
             )
         with self.subTest('qpidd amqp broker service'):
             roles['amqp broker']['service'] = 'qpidd'
             self.assertEqual(
-                self.cfg.services_for_roles(roles),
+                self.cfg.get_services(roles),
                 expected_roles.union({'qpidd'})
             )
         with self.subTest('rabbitmq amqp broker service'):
             roles['amqp broker']['service'] = 'rabbitmq'
             self.assertEqual(
-                self.cfg.services_for_roles(roles),
+                self.cfg.get_services(roles),
                 expected_roles.union({'rabbitmq'})
             )
 
@@ -404,29 +376,27 @@ class ReprTestCase(unittest.TestCase):
             self.assertEqual(cfg.hosts, self.cfg.hosts)
 
 
-class GetConfigFilePathTestCase(unittest.TestCase):
-    """Test ``pulp_smash.PulpSmashConfig.get_config_file_path``."""
+class GetConfigFileLoadPathTestCase(unittest.TestCase):
+    """Test :meth:`pulp_smash.config.PulpSmashConfig.get_load_path`."""
 
     def test_success(self):
         """Assert the method returns a path when a config file is found."""
         with mock.patch.object(xdg.BaseDirectory, 'load_config_paths') as lcp:
-            lcp.return_value = ('an_iterable', 'of_xdg', 'config_paths')
-            with mock.patch.object(os.path, 'isfile') as isfile:
-                isfile.return_value = True
-                # pylint:disable=protected-access
-                config.PulpSmashConfig().get_config_file_path()
-        self.assertGreater(isfile.call_count, 0)
+            lcp.return_value = ('/an/iterable', '/of/xdg', '/config/paths')
+            with mock.patch.object(os.path, 'exists') as exists:
+                exists.return_value = True
+                config.PulpSmashConfig.get_load_path()
+        self.assertGreater(exists.call_count, 0)
 
     def test_failures(self):
         """Assert the  method raises an exception when no config is found."""
         with mock.patch.object(xdg.BaseDirectory, 'load_config_paths') as lcp:
-            lcp.return_value = ('an_iterable', 'of_xdg', 'config_paths')
-            with mock.patch.object(os.path, 'isfile') as isfile:
-                isfile.return_value = False
+            lcp.return_value = ('/an/iterable', '/of/xdg', '/config/paths')
+            with mock.patch.object(os.path, 'exists') as exists:
+                exists.return_value = False
                 with self.assertRaises(exceptions.ConfigFileNotFoundError):
-                    # pylint:disable=protected-access
-                    config.PulpSmashConfig().get_config_file_path()
-        self.assertGreater(isfile.call_count, 0)
+                    config.PulpSmashConfig.get_load_path()
+        self.assertGreater(exists.call_count, 0)
 
 
 def _get_written_json(mock_obj):
@@ -439,8 +409,8 @@ def _get_written_json(mock_obj):
     ))
 
 
-def pulp_smash_config_read(config_str):
-    """Read an in-memory configuration file.
+def pulp_smash_config_load(config_str):
+    """Load an in-memory configuration file.
 
     :param config_str: A string. An in-memory configuration file.
     :return: A :class:`pulp_smash.config.PulpSmashConfig` object, populated
@@ -451,6 +421,5 @@ def pulp_smash_config_read(config_str):
         'open',
         mock.mock_open(read_data=config_str),
     ):
-        cfg = config.PulpSmashConfig()
-        with mock.patch.object(cfg, 'get_config_file_path'):
-            return cfg.read()
+        with mock.patch.object(config.PulpSmashConfig, 'get_load_path'):
+            return config.PulpSmashConfig.load()

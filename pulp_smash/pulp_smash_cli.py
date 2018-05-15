@@ -28,14 +28,13 @@ def pulp_smash():
 @click.pass_context
 def settings(ctx):
     """Manage settings file."""
-    cfg = PulpSmashConfig()
     try:
-        cfg_path = cfg.get_config_file_path()
+        load_path = PulpSmashConfig.get_load_path()
     except exceptions.ConfigFileNotFoundError:
-        cfg_path = None
+        load_path = None
     ctx.obj = {
-        'cfg_path': cfg_path,
-        'default_cfg_path': cfg.default_config_file_path,
+        'load_path': load_path,
+        'save_path': PulpSmashConfig.get_save_path()
     }
 
 
@@ -43,14 +42,14 @@ def settings(ctx):
 @click.pass_context
 def settings_create(ctx):  # pylint:disable=too-many-locals
     """Create a settings file."""
-    path = ctx.obj['cfg_path']
+    path = ctx.obj['load_path']
     if path:
         click.echo(
             'A settings file already exists. Continuing will override it.'
         )
         click.confirm('Do you want to continue?', abort=True)
     else:
-        path = ctx.obj['default_cfg_path']
+        path = ctx.obj['save_path']
     pulp_username = click.prompt('Pulp admin username', default='admin')
     pulp_password = click.prompt('Pulp admin password', default='admin')
     pulp_version = click.prompt('Pulp version')
@@ -150,7 +149,7 @@ def settings_create(ctx):  # pylint:disable=too-many-locals
 @click.pass_context
 def settings_path(ctx):
     """Show the path to the settings file."""
-    path = ctx.obj['cfg_path']
+    path = ctx.obj['load_path']
     if not path:
         _raise_settings_not_found()
     click.echo(path)
@@ -160,7 +159,7 @@ def settings_path(ctx):
 @click.pass_context
 def settings_show(ctx):
     """Show the settings file."""
-    path = ctx.obj['cfg_path']
+    path = ctx.obj['load_path']
     if not path:
         _raise_settings_not_found()
 
@@ -172,7 +171,7 @@ def settings_show(ctx):
 @click.pass_context
 def settings_validate(ctx):
     """Validate the settings file."""
-    path = ctx.obj['cfg_path']
+    path = ctx.obj['load_path']
     if not path:
         _raise_settings_not_found()
     with open(path) as handle:
