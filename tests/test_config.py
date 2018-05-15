@@ -189,11 +189,7 @@ class ReadTestCase(unittest.TestCase):
 
     def test_read_config_file(self):
         """Ensure Pulp Smash can read the config file."""
-        open_ = mock.mock_open(read_data=PULP_SMASH_CONFIG)
-        with mock.patch.object(builtins, 'open', open_):
-            cfg = config.PulpSmashConfig()
-            with mock.patch.object(cfg, 'get_config_file_path'):
-                cfg = cfg.read()
+        cfg = pulp_smash_config_read(PULP_SMASH_CONFIG)
         with self.subTest('check pulp_auth'):
             self.assertEqual(cfg.pulp_auth, ['username', 'password'])
         with self.subTest('check pulp_version'):
@@ -246,11 +242,7 @@ class HelperMethodsTestCase(unittest.TestCase):
 
     def setUp(self):
         """Generate contents for a configuration file."""
-        open_ = mock.mock_open(read_data=PULP_SMASH_CONFIG)
-        with mock.patch.object(builtins, 'open', open_):
-            cfg = config.PulpSmashConfig()
-            with mock.patch.object(cfg, 'get_config_file_path'):
-                self.cfg = cfg.read()
+        self.cfg = pulp_smash_config_read(PULP_SMASH_CONFIG)
 
     def test_get_systems(self):
         """``get_systems`` returns proper result."""
@@ -400,3 +392,20 @@ def _get_written_json(mock_obj):
         for call_obj
         in mock_obj().write.mock_calls
     ))
+
+
+def pulp_smash_config_read(config_str):
+    """Read an in-memory configuration file.
+
+    :param config_str: A string. An in-memory configuration file.
+    :return: A :class:`pulp_smash.config.PulpSmashConfig` object, populated
+        from the configuration file.
+    """
+    with mock.patch.object(
+        builtins,
+        'open',
+        mock.mock_open(read_data=config_str),
+    ):
+        cfg = config.PulpSmashConfig()
+        with mock.patch.object(cfg, 'get_config_file_path'):
+            return cfg.read()
