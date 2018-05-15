@@ -7,43 +7,48 @@ Configuring Pulp Smash
 ----------------------
 
 Pulp Smash needs a configuration file to be present in order to know how to
-access the Pulp system under test. To do that you can use the following
+access the Pulp application under test. To do that you can use the following
 command::
 
     pulp-smash settings create
 
-Provide the information like the authentication credentials for a Pulp admin
-user, Pulp version, the system hostname, if the system is published under HTTPS
-or not, etc.
+You will be prompted for information like the version of Pulp, API credentials,
+whether the API is accessible via HTTPS, and so on. It is assumed that both
+Pulp's CLI client and Pulp's alternate download policies are installed and
+configured.
 
-The ``pulp-smash settings create`` command will generate a settings file for a
-Pulp deployment. For more information about how to install Pulp check its
-`installation docs`_. The generated settings file will assume that both Pulp's
-Admin Client and Alternate Download Policies are installed and configured.
+.. note::
 
-If you are planning to test a clustered Pulp deployment, then you are going to
+    For information on how to install and configure Pulp (not Pulp Smash!), see
+    the `Pulp installation`_ documentation.
+
+If you are planning to test a clustered Pulp application, then you are going to
 need to manually edit the settings file. Before getting into the details of the
 settings file, let's see how Pulp Smash finds the settings file.
 
-Pulp Smash abides by the XDG Base Directory Specification. The configuration
-file may be placed in any XDG-compliant location. The first configuration file
-found is used. Settings are not cascaded.
+Pulp Smash abides by the `XDG Base Directory Specification`_. By default, Pulp
+Smash searches for a configuration file named ``settings.json``, within a
+directory named ``pulp_smash``, within any of the ``$XDG_CONFIG_DIRS``. In
+practice, this typically means that the configuration file exists at
+``~/.config/pulp_smash/settings.json``.
 
-.. note::
+``$XDG_CONFIG_DIRS`` is a precedence-ordered list. If multiple configuration
+files reside on the file system, the first file found is used. Settings are not
+cascaded.
 
-    The default settings filename is settings.json and it must be under a
-    directory called pulp_smash. The pulp_smash directory may be placed in any
-    XDG-compliant location.
+To search for a file named something other than ``settings.json``, set the
+``PULP_SMASH_CONFIG_FILE`` environment variable. It should be a file name, not a
+path. For example:
 
-A non-default configuration file can be selected with an environment variable
-like so: ``PULP_SMASH_CONFIG_FILE=alternate-settings.json python3 -m unittest
-discover pulp_smash.tests``. This variable should be a file name, not a path.
+.. code-block:: sh
 
-.. note::
+    # Valid. Search paths such as: ~/.config/pulp_smash/alternate-settings.json
+    PULP_SMASH_CONFIG_FILE=alternate-settings.json \
+      python3 -m unittest discover pulp_smash.tests
 
-    Setting ``PULP_SMASH_CONFIG_FILE`` will make Pulp Smash look for an
-    alternate filename but the file must continue be placed under the
-    pulp_smash directory on any XDG-compliant location.
+    # Invalid. Results are undefined.
+    PULP_SMASH_CONFIG_FILE=foo/alternate-settings.json \
+      python3 -m unittest discover pulp_smash.tests
 
 Now that how Pulp Smash finds the settings file is known, let's know how the
 configuration file format is. Consider the example below:
@@ -53,7 +58,8 @@ configuration file format is. Consider the example below:
     {
         "pulp": {
             "auth": ["username", "password"],
-            "version": "2.12.2"
+            "version": "2.12.2",
+            "selinux enable": true
         },
         "systems": [
             {
@@ -76,30 +82,24 @@ configuration file format is. Consider the example below:
         ]
     }
 
-Pulp Smash's configuration file format allows configuring either a Pulp
-deployment (as seen in the example above) or a clustered Pulp deployment where
-each service can be installed on its own machine. The "pulp" section lets you
-declare the version of and authentication credentials for the Pulp deployment
-under test. The "systems" section provides information about each system that
-composes the deployment. A system must have its hostname and the roles that
-system has.
+A single Pulp application may be deployed on just one system or on several
+systems. The configuration file above describes the former case. The "pulp"
+section lets you declare properties of the entire Pulp application. The
+"systems" section lets you declare properties of the individual systems that
+comprise the Pulp application.
 
-.. note::
-
-    The only required role for a system is the ``shell`` role. Pulp Smash will not
-    be able to test a Pulp deployment if any of the required roles are missing, see
-    :obj:`pulp_smash.config.REQUIRED_ROLES` for the list of required roles.
+Each system must fulfill the "shell" role. In addition, the systems must
+collectively fulfill the :obj:`pulp_smash.config.REQUIRED_ROLES`.
 
 Not all roles requires additional information. Currently, only the ``amqp
-broker``, ``api`` and ``shell`` roles do. The ``amqp broker`` expects the
-service to be defined and it can be either ``qpidd`` or ``rabbitmq``. The
-``api`` role means that ``httpd`` will be running on the system. The api's
-``scheme`` allows specifying if the API should be accessed using HTTP or HTTPS,
-``verify`` allows specifying if the request SSL certificate should be verified
-(true or false or a path to a custom certificate file, the path must be local
-to the system where Pulp Smash is being run). The ``shell`` role configures how
-the system will be accessed by using a ``local`` or ``ssh`` transport, only set
-``local`` if Pulp Smash is running on that same system.
+broker``, ``api`` and ``shell`` roles do. The ``amqp broker`` object must have a
+``service`` key set to either ``qpidd`` or ``rabbitmq``. The ``api`` role means
+that ``httpd`` will be running on the system. Its ``scheme`` key specifies
+whether the API should be accessed over HTTP or HTTPS, and its ``verify`` key
+specifies whether and how SSL certificates should be verified. (It may be true,
+false, or a path to a custom certificate file. In the latter case, the
+certificate must be on the Pulp Smash system.) The ``shell`` role specifies
+whether to access the system using a ``local`` shell or over ``ssh``.
 
 .. note::
 
@@ -115,7 +115,8 @@ a clustered Pulp deployment:
     {
         "pulp": {
             "auth": ["username", "password"],
-            "version": "2.12.1"
+            "version": "2.12.1",
+            "selinux enable": true
         },
         "systems": [
             {
@@ -173,4 +174,7 @@ Consult the unittest documentation for test selection syntax, and consult the
 :doc:`/api` to see which test modules are available, check the tests under the
 ``pulp_smash.tests.*`` namespace.
 
-.. _installation docs: http://docs.pulpproject.org/user-guide/installation/index.html
+.. _Pulp installation:
+    http://docs.pulpproject.org/user-guide/installation/index.html
+.. _XDG Base Directory Specification:
+    https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
