@@ -316,12 +316,17 @@ class PulpSmashConfig():
         http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
     """
 
-    def __init__(self, pulp_auth=None, pulp_version=None, hosts=None, pulp_selinux_enabled=None):
+    def __init__(
+            self,
+            pulp_auth=None,
+            pulp_version=None,
+            pulp_selinux_enabled=None,
+            hosts=None):
         """Initialize this object with needed instance attributes."""
         self.pulp_auth = pulp_auth
         self.pulp_version = pulp_version
-        self.hosts = [] if hosts is None else hosts
         self.pulp_selinux_enabled = pulp_selinux_enabled
+        self.hosts = [] if hosts is None else hosts
         self._xdg_config_file = os.environ.get(
             'PULP_SMASH_CONFIG_FILE',
             'settings.json'
@@ -411,7 +416,7 @@ class PulpSmashConfig():
             config_file['hosts'] = config_file.pop('systems')
 
         hosts = [PulpHost(**host) for host in config_file.get('hosts', [])]
-        return PulpSmashConfig(pulp_auth, pulp_version, hosts, pulp_selinux_enabled)
+        return PulpSmashConfig(pulp_auth, pulp_version, pulp_selinux_enabled, hosts)
 
     def get_hosts(self, role):
         """Return a list of hosts fulfilling the given role.
