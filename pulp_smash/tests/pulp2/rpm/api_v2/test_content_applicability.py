@@ -16,7 +16,7 @@ from pulp_smash.constants import (
     RPM_DATA,
     RPM2_DATA,
 )
-from pulp_smash.tests.pulp2.constants import (
+from pulp_smash.pulp2.constants import (
     CONSUMERS_ACTIONS_CONTENT_REGENERATE_APPLICABILITY_PATH,
     CONSUMERS_CONTENT_APPLICABILITY_PATH,
     CONSUMERS_PATH,

@@ -6,7 +6,7 @@ from io import StringIO
 from packaging.version import Version
 
 from pulp_smash import cli, selectors, utils
-from pulp_smash.tests.pulp2 import utils as pulp2_utils
+from pulp_smash.pulp2 import utils as pulp2_utils
 
 
 def set_up_module():

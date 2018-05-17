@@ -11,7 +11,7 @@ from pulp_smash.constants import (
     FILE_FEED_URL,
     FILE_URL,
 )
-from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     TemporaryUserMixin,
     get_dists_by_type_id,

@@ -1,6 +1,5 @@
 # coding=utf-8
 """Constants for Pulp 2 tests."""
-
 from urllib.parse import urljoin
 
 

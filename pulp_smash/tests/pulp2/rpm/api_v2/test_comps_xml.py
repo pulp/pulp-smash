@@ -14,7 +14,7 @@ from packaging.version import Version
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import RPM_SIGNED_FEED_URL
-from pulp_smash.tests.pulp2.constants import (
+from pulp_smash.pulp2.constants import (
     CONTENT_UPLOAD_PATH,
     ORPHANS_PATH,
     REPOSITORY_PATH,

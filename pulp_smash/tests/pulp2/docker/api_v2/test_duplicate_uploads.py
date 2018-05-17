@@ -16,7 +16,7 @@ The second upload should silently fail for all Pulp releases in the 2.x series.
 """
 from pulp_smash import api, utils
 from pulp_smash.constants import DOCKER_IMAGE_URL
-from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.docker.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.docker.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 

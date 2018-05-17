@@ -8,7 +8,7 @@ from urllib.parse import urljoin, urlparse
 from packaging.version import Version
 
 from pulp_smash import api, config, constants, selectors, utils
-from pulp_smash.tests.pulp2.constants import (
+from pulp_smash.pulp2.constants import (
     REPOSITORY_PATH,
     ORPHANS_PATH,
 )

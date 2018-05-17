@@ -12,7 +12,7 @@ from pulp_smash.constants import (
     RPM_WITH_NON_ASCII_URL,
     RPM_WITH_NON_UTF_8_URL,
 )
-from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 

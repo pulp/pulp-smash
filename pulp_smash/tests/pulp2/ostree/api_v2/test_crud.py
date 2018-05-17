@@ -15,7 +15,7 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, exceptions, selectors, utils
 from pulp_smash.constants import OSTREE_FEED, OSTREE_BRANCHES
-from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.ostree.utils import gen_repo
 from pulp_smash.tests.pulp2.ostree.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 

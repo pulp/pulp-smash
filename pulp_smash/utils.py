@@ -15,7 +15,7 @@ from packaging.version import Version
 
 from pulp_smash import api, cli, config, exceptions
 from pulp_smash.cli import _is_root as is_root  # for backward compatibility
-from pulp_smash.tests.pulp2.constants import (
+from pulp_smash.pulp2.constants import (
     CONTENT_UPLOAD_PATH,
     ORPHANS_PATH,
     PULP_SERVICES,

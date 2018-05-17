@@ -1,6 +1,6 @@
 # coding=utf-8
 """Utilities for interacting with OS tree."""
-from pulp_smash.tests.pulp2 import utils
+from pulp_smash.pulp2 import utils
 from pulp_smash.utils import uuid4
 
 

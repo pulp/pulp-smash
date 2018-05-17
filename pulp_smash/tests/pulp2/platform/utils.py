@@ -2,8 +2,8 @@
 """Utilities for platform tests."""
 import unittest
 
-from pulp_smash.tests.pulp2 import utils
 from pulp_smash import config
+from pulp_smash.pulp2 import utils
 
 
 def set_up_module():

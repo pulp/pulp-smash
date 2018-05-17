@@ -19,7 +19,7 @@ from pulp_smash.constants import (
     PUPPET_MODULE_URL_2,
     PUPPET_QUERY_2,
 )
-from pulp_smash.tests.pulp2.constants import (
+from pulp_smash.pulp2.constants import (
     CALL_REPORT_KEYS,
     CONTENT_UPLOAD_PATH,
     REPOSITORY_PATH

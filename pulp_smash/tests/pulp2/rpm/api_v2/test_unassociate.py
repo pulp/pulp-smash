@@ -21,7 +21,7 @@ from pulp_smash.constants import (
     RPM_UNSIGNED_URL,
     SRPM_UNSIGNED_FEED_URL,
 )
-from pulp_smash.tests.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
+from pulp_smash.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import check_issue_2620
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module
