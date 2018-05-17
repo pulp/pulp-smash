@@ -3,6 +3,7 @@
 import unittest
 
 from pulp_smash import cli, config, utils
+from pulp_smash.pulp2.utils import pulp_admin_login
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
@@ -22,7 +23,7 @@ class SearchReposWithFiltersTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Create a repository."""
         cfg = config.get_config()
-        utils.pulp_admin_login(cfg)
+        pulp_admin_login(cfg)
         cls.client = cli.Client(cfg)
         cls.repo_id = utils.uuid4()
         cls.client.run(

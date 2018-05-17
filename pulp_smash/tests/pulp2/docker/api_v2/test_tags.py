@@ -9,11 +9,9 @@ from packaging.version import Version
 
 from pulp_smash import api, config, utils
 from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
-from pulp_smash.pulp2.constants import (
-    CONTENT_UPLOAD_PATH,
-    REPOSITORY_PATH,
-)
 from pulp_smash.exceptions import TaskReportError
+from pulp_smash.pulp2.constants import CONTENT_UPLOAD_PATH, REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase, search_units, sync_repo
 from pulp_smash.tests.pulp2.docker.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.docker.utils import (
     get_upstream_name,
@@ -72,7 +70,7 @@ def import_upload(cfg, repo, params):
     return report
 
 
-class DockerTagTestCase(utils.BaseAPITestCase):
+class DockerTagTestCase(BaseAPITestCase):
     """Tests for docker repository tagging feature."""
 
     def setUp(self):
@@ -80,13 +78,13 @@ class DockerTagTestCase(utils.BaseAPITestCase):
         super().setUp()
         self.repo = create_docker_repo(self.cfg, get_upstream_name(self.cfg))
         self.addCleanup(api.Client(self.cfg).delete, self.repo['_href'])
-        utils.sync_repo(self.cfg, self.repo)
+        sync_repo(self.cfg, self.repo)
         self.repo = api.Client(self.cfg, api.json_handler).get(
             self.repo['_href'], params={'details': True})
         self.tags = self._get_tags()
 
     def _get_tags(self):
-        return utils.search_units(
+        return search_units(
             self.cfg,
             self.repo,
             {'type_ids': ['docker_tag']},
@@ -95,7 +93,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
     def test_create_tag(self):
         """Check if a tag can be created."""
         tag_name = utils.uuid4()
-        random_manifest = random.choice(utils.search_units(
+        random_manifest = random.choice(search_units(
             self.cfg, self.repo, {'type_ids': ['docker_manifest']}))
         # Create the tag
         import_upload(self.cfg, self.repo, {
@@ -110,7 +108,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
             },
         })
         # Fetch the created tag
-        tag = utils.search_units(self.cfg, self.repo, {
+        tag = search_units(self.cfg, self.repo, {
             'type_ids': ['docker_tag'],
             'filters': {'unit': {'name': tag_name}},
         })
@@ -140,7 +138,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
         tag = tag.pop()
 
         # Find the manifest the "latest" tag references.
-        old_manifest = utils.search_units(self.cfg, self.repo, {
+        old_manifest = search_units(self.cfg, self.repo, {
             'type_ids': ['docker_manifest'],
             'filters': {
                 'unit': {'digest': tag['metadata']['manifest_digest']}
@@ -210,10 +208,10 @@ class DockerTagTestCase(utils.BaseAPITestCase):
         """Check if tagging fail for a manifest from another repo."""
         other = create_docker_repo(self.cfg, 'library/swarm')
         self.addCleanup(api.Client(self.cfg).delete, other['_href'])
-        utils.sync_repo(self.cfg, other)
+        sync_repo(self.cfg, other)
         other = api.Client(self.cfg, api.json_handler).get(
             other['_href'], params={'details': True})
-        other_manifest = random.choice(utils.search_units(
+        other_manifest = random.choice(search_units(
             self.cfg, other, {'type_ids': ['docker_manifest']}))
         tag_name = utils.uuid4()
         with self.assertRaises(TaskReportError) as context:
@@ -253,7 +251,7 @@ class DockerTagTestCase(utils.BaseAPITestCase):
         }
         if self.cfg.pulp_version >= Version('2.13'):
             criteria['filters']['unit']['schema_version'] = 1
-        return utils.search_units(self.cfg, self.repo, criteria)
+        return search_units(self.cfg, self.repo, criteria)
 
     def get_manifests(self):
         """Return all manifests in this test's repo.
@@ -264,4 +262,4 @@ class DockerTagTestCase(utils.BaseAPITestCase):
         criteria = {'type_ids': ['docker_manifest']}
         if self.cfg.pulp_version >= Version('2.13'):
             criteria['filters'] = {'unit': {'schema_version': 1}}
-        return utils.search_units(self.cfg, self.repo, criteria)
+        return search_units(self.cfg, self.repo, criteria)

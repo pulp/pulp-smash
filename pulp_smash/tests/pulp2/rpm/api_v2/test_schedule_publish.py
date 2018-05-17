@@ -10,11 +10,12 @@ from urllib.parse import urljoin
 from pulp_smash import api, utils
 from pulp_smash.constants import RPM_SIGNED_FEED_URL
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo, gen_distributor
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
-class CreateSuccessTestCase(utils.BaseAPITestCase):
+class CreateSuccessTestCase(BaseAPITestCase):
     """Establish that we can create a schedule to publish the repository."""
 
     @classmethod
@@ -35,7 +36,7 @@ class CreateSuccessTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body).json()
         cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo)
+        sync_repo(cls.cfg, repo)
 
         # Schedule a publish to run every 30 seconds
         distributor = gen_distributor()
@@ -67,7 +68,7 @@ class CreateSuccessTestCase(utils.BaseAPITestCase):
         self.assertEqual(self.attrs.get('total_run_count'), 0)
 
 
-class CreateFailureTestCase(utils.BaseAPITestCase):
+class CreateFailureTestCase(BaseAPITestCase):
     """Establish that schedules are not created in `documented scenarios`_.
 
     .. _documented scenarios:
@@ -88,7 +89,7 @@ class CreateFailureTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body).json()
         cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo)
+        sync_repo(cls.cfg, repo)
 
         # Add a distibutor
         distributor = gen_distributor()
@@ -134,7 +135,7 @@ class CreateFailureTestCase(utils.BaseAPITestCase):
                 self.assertEqual(response.status_code, status_code)
 
 
-class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
+class ReadUpdateDeleteTestCase(BaseAPITestCase):
     """Establish that we can `read`_, `update`_ and `delete`_ schedules.
 
     This test case assumes the assertions in :class:`CreateSuccessTestCase`
@@ -159,7 +160,7 @@ class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo)
+        sync_repo(cls.cfg, repo)
 
         # Create schedules
         distributor = gen_distributor()
@@ -240,7 +241,7 @@ class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
                 self.assertEqual(self.schedules[1][key], attrs[key])
 
 
-class ScheduledPublishTestCase(utils.BaseAPITestCase):
+class ScheduledPublishTestCase(BaseAPITestCase):
     """Establish that publish runs according to the specified schedule.
 
     This test case assumes the assertions in :class:`CreateSuccessTestCase`
@@ -267,7 +268,7 @@ class ScheduledPublishTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo)
+        sync_repo(cls.cfg, repo)
 
         # Schedule a publish to run every 2 minutes
         distributor = gen_distributor()

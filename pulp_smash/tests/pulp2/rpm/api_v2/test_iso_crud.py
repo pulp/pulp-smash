@@ -16,6 +16,7 @@ from pulp_smash.constants import (
     FILE2_FEED_URL,
 )
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase, search_units, sync_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
@@ -61,7 +62,7 @@ def _gen_iso_repo(feed_url):
     }
 
 
-class CreateTestCase(utils.BaseAPITestCase):
+class CreateTestCase(BaseAPITestCase):
     """Create an ISO RPM repo with an importer and distributor."""
 
     @classmethod
@@ -108,7 +109,7 @@ class CreateTestCase(utils.BaseAPITestCase):
         self.assertEqual(body, attrs)
 
 
-class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
+class ReadUpdateDeleteTestCase(BaseAPITestCase):
     """Establish that we can interact with typed repositories as expected."""
 
     @classmethod
@@ -221,7 +222,7 @@ class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
                 self.assertEqual(want, have)
 
 
-class AddImporterDistributorTestCase(utils.BaseAPITestCase):
+class AddImporterDistributorTestCase(BaseAPITestCase):
     """Add an importer and a distributor to an existing untyped repository.
 
     See:
@@ -294,7 +295,7 @@ class AddImporterDistributorTestCase(utils.BaseAPITestCase):
                 self.assertEqual(len(attrs), 1, attrs)
 
 
-class PulpManifestTestCase(utils.BaseAPITestCase):
+class PulpManifestTestCase(BaseAPITestCase):
     """Ensure ISO repo properly handles PULP_MANIFEST information."""
 
     @staticmethod
@@ -324,7 +325,7 @@ class PulpManifestTestCase(utils.BaseAPITestCase):
         client = api.Client(self.cfg, api.json_handler)
         repo = client.post(REPOSITORY_PATH, _gen_iso_repo(FILE_FEED_URL))
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(self.cfg, repo)
+        sync_repo(self.cfg, repo)
         repo = client.get(repo['_href'], params={'details': True})
         self.assertEqual(repo['total_repository_units'], pulp_manifest_count)
         self.assertEqual(
@@ -348,7 +349,7 @@ class PulpManifestTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, _gen_iso_repo(FILE_MIXED_FEED_URL))
         self.addCleanup(client.delete, repo['_href'])
         with self.assertRaises(exceptions.TaskReportError) as context:
-            utils.sync_repo(self.cfg, repo)
+            sync_repo(self.cfg, repo)
         task = context.exception.task
         self.assertIsNotNone(task['error'])
         # Description is a string generated after a Python's list of dicts
@@ -407,15 +408,15 @@ class ISOUpdateTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, _gen_iso_repo(FILE_FEED_URL))
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(cfg, repo)
-        units_pre = utils.search_units(cfg, repo)
+        sync_repo(cfg, repo)
+        units_pre = search_units(cfg, repo)
 
         # Step 2
         client.put(repo['importers'][0]['_href'], {
             'importer_config': {'feed': FILE2_FEED_URL}
         })
-        utils.sync_repo(cfg, repo)
-        units_post = utils.search_units(cfg, repo)
+        sync_repo(cfg, repo)
+        units_post = search_units(cfg, repo)
 
         # Step 3
         self.assertEqual(len(units_pre), len(units_post))

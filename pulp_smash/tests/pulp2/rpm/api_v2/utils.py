@@ -12,6 +12,7 @@ from packaging.version import Version
 
 from pulp_smash import api, cli, exceptions, selectors, utils
 from pulp_smash.constants import RPM_NAMESPACES
+from pulp_smash.pulp2.utils import search_units
 
 
 def gen_repo():
@@ -432,7 +433,7 @@ def get_rpm_names_versions(cfg, repo):
         versions sorted in ascending order. For example: ``{'walrus': ['0.71',
         '5.21']}``.
     """
-    rpms = utils.search_units(cfg, repo, {'type_ids': ['rpm']})
+    rpms = search_units(cfg, repo, {'type_ids': ['rpm']})
     names_versions = {}
     for rpm in rpms:
         rpm_name = rpm['metadata']['name']

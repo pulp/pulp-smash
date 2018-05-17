@@ -7,6 +7,7 @@ from urllib.parse import urljoin
 from packaging.version import Version
 
 from pulp_smash import cli, config, constants, selectors, utils
+from pulp_smash.pulp2.utils import pulp_admin_login
 from pulp_smash.tests.pulp2.rpm.cli.utils import count_langpacks
 from pulp_smash.tests.pulp2.rpm.utils import (
     check_issue_2277,
@@ -33,7 +34,7 @@ def setUpModule():  # pylint:disable=invalid-name
     client = cli.Client(config.get_config())
 
     # log in, then create repository
-    utils.pulp_admin_login(cfg)
+    pulp_admin_login(cfg)
     client.run(
         'pulp-admin rpm repo create --repo-id {} --feed {}'
         .format(_REPO_ID, constants.RPM_SIGNED_FEED_URL).split()

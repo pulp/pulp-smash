@@ -17,9 +17,12 @@ from pulp_smash.constants import (
     RPM_UNSIGNED_FEED_URL,
     RPM_WITH_PULP_DISTRIBUTION_FEED_URL,
 )
-from pulp_smash.pulp2.constants import (
-    REPOSITORY_GROUP_PATH,
-    REPOSITORY_PATH,
+from pulp_smash.pulp2.constants import REPOSITORY_GROUP_PATH, REPOSITORY_PATH
+from pulp_smash.pulp2.utils import (
+    BaseAPITestCase,
+    BaseAPICrudTestCase,
+    publish_repo,
+    sync_repo,
 )
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
@@ -29,7 +32,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
-class CrudTestCase(utils.BaseAPICrudTestCase):
+class CrudTestCase(BaseAPICrudTestCase):
     """CRUD a minimal RPM repository."""
 
     @staticmethod
@@ -54,7 +57,7 @@ class CrudWithFeedTestCase(CrudTestCase):
         return body
 
 
-class FeedURLUnquoteTestCase(utils.BaseAPITestCase):
+class FeedURLUnquoteTestCase(BaseAPITestCase):
     """Check that feed URLs are unquoted.
 
     See https://pulp.plan.io/issues/2520.
@@ -77,7 +80,7 @@ class FeedURLUnquoteTestCase(utils.BaseAPITestCase):
         self.assertEqual(importer_config['feed'], 'http://example.com/repo')
 
 
-class PulpDistributionTestCase(utils.BaseAPITestCase):
+class PulpDistributionTestCase(BaseAPITestCase):
     """Check if a feed with PULP_DISTRIBUTION.xml syncs properly.
 
     See https://pulp.plan.io/issues/1086
@@ -100,7 +103,7 @@ class PulpDistributionTestCase(utils.BaseAPITestCase):
         }
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(self.cfg, repo)
+        sync_repo(self.cfg, repo)
         repo = client.get(repo['_href'], params={'details': True})
         self.assertEqual(repo['content_unit_counts']['distribution'], 1)
         cli_client = cli.Client(self.cfg, cli.code_handler)
@@ -136,7 +139,7 @@ class PulpDistributionTestCase(utils.BaseAPITestCase):
         self.assertEqual(release_info, response.text)
 
 
-class RepositoryGroupCrudTestCase(utils.BaseAPITestCase):
+class RepositoryGroupCrudTestCase(BaseAPITestCase):
     """CRUD a minimal RPM repositories' groups.
 
     For information on repositories' groups CRUD operations, see `Creation,
@@ -231,7 +234,7 @@ class RPMDistributorTestCase(unittest.TestCase):
             )
 
 
-class LastUnitAddedTestCase(utils.BaseAPITestCase):
+class LastUnitAddedTestCase(BaseAPITestCase):
     """Tests for ensuring proper last_unit_added behavior."""
 
     def setUp(self):
@@ -254,7 +257,7 @@ class LastUnitAddedTestCase(utils.BaseAPITestCase):
         4. Assert the repository's ``last_unit_added`` attribute is non-null.
         """
         self.assertIsNone(self.repo['last_unit_added'])
-        utils.sync_repo(self.cfg, self.repo)
+        sync_repo(self.cfg, self.repo)
         self.repo = self.client.get(
             self.repo['_href'], params={'details': True})
         self.assertIsNotNone(self.repo['last_unit_added'])
@@ -276,7 +279,7 @@ class LastUnitAddedTestCase(utils.BaseAPITestCase):
             self.skipTest('https://pulp.plan.io/issues/2688')
 
         # create a repo with a feed and sync it
-        utils.sync_repo(self.cfg, self.repo)
+        sync_repo(self.cfg, self.repo)
         self.repo = self.client.get(
             self.repo['_href'], params={'details': True})
 
@@ -302,7 +305,7 @@ class LastUnitAddedTestCase(utils.BaseAPITestCase):
             self.assertIsNotNone(repo2['last_unit_added'], repo2)
 
         # publish the second repo
-        utils.publish_repo(self.cfg, repo2)
+        publish_repo(self.cfg, repo2)
         repo2 = self.client.get(repo2['_href'], params={'details': True})
         with self.subTest(comment='after repository publish'):
             self.assertIsNotNone(repo2['last_unit_added'], repo2)

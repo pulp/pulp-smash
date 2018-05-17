@@ -12,15 +12,16 @@ one sync a limited number of outdated RPMs.
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, utils
+from pulp_smash import api
 from pulp_smash.constants import RPM_UNSIGNED_FEED_URL
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase, publish_repo, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import check_issue_3104
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
-class RetainOldCountTestCase(utils.BaseAPITestCase):
+class RetainOldCountTestCase(BaseAPITestCase):
     """Test the ``retain_old_count`` feature."""
 
     @classmethod
@@ -40,8 +41,8 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
         cls.resources.add(cls.repo['_href'])
         try:
             cls.repo = client.get(cls.repo['_href'], params={'details': True})
-            utils.sync_repo(cls.cfg, cls.repo)
-            utils.publish_repo(cls.cfg, cls.repo)
+            sync_repo(cls.cfg, cls.repo)
+            publish_repo(cls.cfg, cls.repo)
             cls.repo = client.get(cls.repo['_href'], params={'details': True})
         except:  # noqa:E722
             cls.tearDownClass()
@@ -89,5 +90,5 @@ class RetainOldCountTestCase(utils.BaseAPITestCase):
         body['importer_config']['ssl_validation'] = False
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(self.cfg, repo)
+        sync_repo(self.cfg, repo)
         return client.get(repo['_href'], params={'details': True})

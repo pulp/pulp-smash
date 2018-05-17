@@ -22,6 +22,7 @@ from pulp_smash.pulp2.constants import (
     CONSUMERS_PATH,
     REPOSITORY_PATH,
 )
+from pulp_smash.pulp2.utils import publish_repo, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
@@ -95,8 +96,8 @@ class BasicTestCase(unittest.TestCase):
         cls.repo = client.post(REPOSITORY_PATH, body)
         try:
             cls.repo = client.get(cls.repo['_href'], params={'details': True})
-            utils.sync_repo(cls.cfg, cls.repo)
-            utils.publish_repo(cls.cfg, cls.repo)
+            sync_repo(cls.cfg, cls.repo)
+            publish_repo(cls.cfg, cls.repo)
             cls.repo = client.get(cls.repo['_href'], params={'details': True})
         except:  # noqa:E722
             cls.tearDownClass()

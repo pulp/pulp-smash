@@ -21,7 +21,7 @@ except that packages are synced in to Pulp instead of being uploaded.
 import inspect
 import unittest
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, config, selectors
 from pulp_smash.constants import (
     DRPM_SIGNED_FEED_COUNT,
     DRPM_SIGNED_FEED_URL,
@@ -37,8 +37,8 @@ from pulp_smash.constants import (
     SRPM_UNSIGNED_FEED_COUNT,
     SRPM_UNSIGNED_FEED_URL,
 )
-
 from pulp_smash.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
+from pulp_smash.pulp2.utils import sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module
 
@@ -83,7 +83,7 @@ class _BaseTestCase(unittest.TestCase):
         self.addCleanup(client.delete, ORPHANS_PATH)
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(self.cfg, repo)
+        sync_repo(self.cfg, repo)
         return client.get(repo['_href'])
 
 

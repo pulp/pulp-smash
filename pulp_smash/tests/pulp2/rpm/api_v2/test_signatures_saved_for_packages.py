@@ -36,6 +36,7 @@ from pulp_smash.constants import (
     SRPM_UNSIGNED_URL,
 )
 from pulp_smash.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
+from pulp_smash.pulp2.utils import search_units, sync_repo, upload_import_unit
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import check_issue_2620
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
@@ -82,7 +83,7 @@ class _BaseTestCase(unittest.TestCase):
         if pkg_unit_type == 'drpm':
             # This is the location of the package relative to the repo root.
             pkg_filename = 'drpms/' + pkg_filename
-        units = utils.search_units(self.cfg, {'_href': repo_href}, {
+        units = search_units(self.cfg, {'_href': repo_href}, {
             'filters': {'unit': {'filename': {'$in': [pkg_filename]}}},
             'type_ids': [pkg_unit_type],
         })
@@ -117,7 +118,7 @@ class UploadPackageTestCase(_BaseTestCase):
         pkg = utils.http_get(pkg_url)
         pkg_filename = _get_pkg_filename(pkg_url)
         pkg_unit_type = _get_pkg_unit_type(pkg_filename)
-        utils.upload_import_unit(
+        upload_import_unit(
             self.cfg,
             pkg,
             {'unit_type_id': pkg_unit_type},
@@ -188,7 +189,7 @@ class SyncPackageTestCase(_BaseTestCase):
         body['importer_config']['feed'] = feed_url
         repo = self.client.post(REPOSITORY_PATH, body)
         self.addCleanup(self.client.delete, repo['_href'])
-        utils.sync_repo(self.cfg, repo)
+        sync_repo(self.cfg, repo)
         return repo['_href']
 
     def test_signed_drpm(self):

@@ -12,6 +12,12 @@ from pulp_smash.constants import (
     RPM_UNSIGNED_URL,
 )
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import (
+    publish_repo,
+    search_units,
+    sync_repo,
+    upload_import_unit,
+)
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -54,12 +60,12 @@ class UnassociateTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(cfg, repo)
-        utils.publish_repo(cfg, repo)
+        sync_repo(cfg, repo)
+        publish_repo(cfg, repo)
 
         # Pick a random content unit and verify it's accessible.
         unit = random.choice(
-            utils.search_units(cfg, repo, {'type_ids': ('rpm',)})
+            search_units(cfg, repo, {'type_ids': ('rpm',)})
         )
         filename = unit['metadata']['filename']
         get_unit(cfg, repo['distributors'][0], filename)
@@ -69,7 +75,7 @@ class UnassociateTestCase(unittest.TestCase):
             urljoin(repo['_href'], 'actions/unassociate/'),
             {'criteria': {'filters': {'unit': {'filename': filename}}}},
         )
-        utils.publish_repo(cfg, repo)
+        publish_repo(cfg, repo)
         with self.assertRaises(KeyError):
             get_unit(cfg, repo['distributors'][0], filename)
 
@@ -182,13 +188,13 @@ class RemoveOldRepodataTestCase(unittest.TestCase):
         )
         found = []
         for rpm in rpms:
-            utils.upload_import_unit(
+            upload_import_unit(
                 self.cfg,
                 rpm,
                 {'unit_type_id': 'rpm'},
                 repo,
             )
-            utils.publish_repo(self.cfg, repo)
+            publish_repo(self.cfg, repo)
             repodata_path = cli_client.run(find_repodata_cmd).stdout.strip()
             found.append(cli_client.run(sudo + (
                 'find', repodata_path, '-type', 'f'

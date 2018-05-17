@@ -19,12 +19,10 @@ from urllib.parse import urljoin
 
 from packaging.version import Version
 
-from pulp_smash import api, utils
-from pulp_smash.constants import (
-    RPM_NAMESPACES,
-    RPM_SIGNED_FEED_URL,
-)
+from pulp_smash import api
+from pulp_smash.constants import RPM_NAMESPACES, RPM_SIGNED_FEED_URL
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase, publish_repo, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -100,7 +98,7 @@ def get_file_hrefs(repomd_xml):
     return tuple((location.get('href') for location in locations))
 
 
-class RepositoryLayoutTestCase(utils.BaseAPITestCase):
+class RepositoryLayoutTestCase(BaseAPITestCase):
     """Test the YUM distributor publishing repository layout."""
 
     def test_all(self):
@@ -122,12 +120,12 @@ class RepositoryLayoutTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(self.cfg, repo)
+        sync_repo(self.cfg, repo)
         distributor = client.post(
             urljoin(repo['_href'], 'distributors/'),
             gen_distributor(),
         )
-        utils.publish_repo(self.cfg, repo, {'id': distributor['id']})
+        publish_repo(self.cfg, repo, {'id': distributor['id']})
         primary_xml = get_parse_repodata_primary_xml(self.cfg, distributor)
         package_hrefs = get_package_hrefs(primary_xml)
         self.assertGreater(len(package_hrefs), 0)

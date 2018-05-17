@@ -59,6 +59,14 @@ from pulp_smash.constants import (
     RPM_UNSIGNED_URL,
 )
 from pulp_smash.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
+from pulp_smash.pulp2.utils import (
+    BaseAPITestCase,
+    publish_repo,
+    search_units,
+    sync_repo,
+    upload_import_erratum,
+    upload_import_unit,
+)
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -140,7 +148,7 @@ def _get_updates_by_id(update_info_tree):
     }
 
 
-class UpdateInfoTestCase(utils.BaseAPITestCase):
+class UpdateInfoTestCase(BaseAPITestCase):
     """Tests to ensure ``updateinfo.xml`` can be created and is valid."""
 
     @classmethod
@@ -172,15 +180,13 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
             # Populate and publish the repo.
             repo = client.get(repo['_href'], params={'details': True})
             unit = utils.http_get(RPM_UNSIGNED_URL)
-            utils.upload_import_unit(
+            upload_import_unit(
                 cls.cfg, unit, {'unit_type_id': 'rpm'}, repo
             )
             for key, erratum in cls.errata.items():
-                report = utils.upload_import_erratum(
-                    cls.cfg, erratum, repo['_href']
-                )
+                report = upload_import_erratum(cls.cfg, erratum, repo['_href'])
                 cls.tasks[key] = tuple(api.poll_spawned_tasks(cls.cfg, report))
-            utils.publish_repo(cls.cfg, repo)
+            publish_repo(cls.cfg, repo)
 
             # Fetch and parse updateinfo.xml.
             cls.updates_element = (
@@ -335,7 +341,7 @@ class UpdateInfoTestCase(utils.BaseAPITestCase):
         self.assertEqual(erratum['version'], update_element.get('version'))
 
 
-class UpdateRepoTestCase(utils.BaseAPITestCase):
+class UpdateRepoTestCase(BaseAPITestCase):
     """Verify ``updateinfo.xml`` changes as its repo changes."""
 
     @classmethod
@@ -367,8 +373,8 @@ class UpdateRepoTestCase(utils.BaseAPITestCase):
         * one of its child ``<package>`` elements has a "name" attribute equal
           to :data:`pulp_smash.constants.RPM_ERRATUM_RPM_NAME`.
         """
-        utils.sync_repo(self.cfg, self.repo)
-        utils.publish_repo(self.cfg, self.repo)
+        sync_repo(self.cfg, self.repo)
+        publish_repo(self.cfg, self.repo)
         updates_element = (
             get_repodata(self.cfg, self.repo['distributors'][0], 'updateinfo')
         )
@@ -393,7 +399,7 @@ class UpdateRepoTestCase(utils.BaseAPITestCase):
         client.post(urljoin(self.repo['_href'], 'actions/unassociate/'), {
             'criteria': {'filters': {'unit': {'name': RPM_ERRATUM_RPM_NAME}}}
         })
-        utils.publish_repo(self.cfg, self.repo)
+        publish_repo(self.cfg, self.repo)
         updates_element = (
             get_repodata(self.cfg, self.repo['distributors'][0], 'updateinfo')
         )
@@ -442,8 +448,8 @@ class PkglistsTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(cfg, repo)
-        utils.publish_repo(cfg, repo)
+        sync_repo(cfg, repo)
+        publish_repo(cfg, repo)
 
         # Fetch and parse ``updateinfo.xml``.
         updates_element = (
@@ -511,7 +517,7 @@ class CleanUpTestCase(unittest.TestCase):
 
     def test_01_first_publish(self):
         """Populate and publish the repository."""
-        utils.sync_repo(self.cfg, self.repo)
+        sync_repo(self.cfg, self.repo)
         client = api.Client(self.cfg)
         client.post(urljoin(self.repo['_href'], 'actions/unassociate/'), {
             'criteria': {
@@ -519,12 +525,12 @@ class CleanUpTestCase(unittest.TestCase):
                 'type_ids': ('rpm',),
             }
         })
-        utils.publish_repo(self.cfg, self.repo)
+        publish_repo(self.cfg, self.repo)
         self.updateinfo_xml_hrefs.append(self.get_updateinfo_xml_href())
 
         with self.subTest(comment='check number of RPMs in repo'):
             units = (
-                utils.search_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
+                search_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
             )
             self.assertEqual(len(units), 31)
         with self.subTest(comment='check updateinfo.xml is available'):
@@ -532,14 +538,14 @@ class CleanUpTestCase(unittest.TestCase):
 
     def test_02_second_publish(self):
         """Add an additional content unit and publish the repository again."""
-        utils.sync_repo(self.cfg, self.repo)
-        utils.publish_repo(self.cfg, self.repo)
+        sync_repo(self.cfg, self.repo)
+        publish_repo(self.cfg, self.repo)
         self.updateinfo_xml_hrefs.append(self.get_updateinfo_xml_href())
 
         client = api.Client(self.cfg)
         with self.subTest(comment='check number of RPMs in repo'):
             units = (
-                utils.search_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
+                search_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
             )
             self.assertEqual(len(units), 32)
         with self.subTest(comment='check updateinfo.xml has a new path'):
@@ -611,9 +617,9 @@ class OpenSuseErrataTestCase(unittest.TestCase):
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(cfg, repo)
+        sync_repo(cfg, repo)
         repo = client.get(repo['_href'], params={'details': True})
-        utils.publish_repo(cfg, repo)
+        publish_repo(cfg, repo)
 
         # Download the published errata and verify its attributes.
         type(self).updates_element = (

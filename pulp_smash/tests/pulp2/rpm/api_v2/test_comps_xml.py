@@ -19,6 +19,7 @@ from pulp_smash.pulp2.constants import (
     ORPHANS_PATH,
     REPOSITORY_PATH,
 )
+from pulp_smash.pulp2.utils import BaseAPITestCase, publish_repo, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -115,7 +116,7 @@ def _upload_import_package_group(cfg, repo, unit_metadata):
     return call_report
 
 
-class SyncRepoTestCase(utils.BaseAPITestCase):
+class SyncRepoTestCase(BaseAPITestCase):
     """Sync in content from another RPM repository and publish it.
 
     More specifically, this test case does the following:
@@ -142,8 +143,8 @@ class SyncRepoTestCase(utils.BaseAPITestCase):
         repo = client.get(repo['_href'], params={'details': True})
 
         # Sync and publish the repo.
-        utils.sync_repo(cls.cfg, repo)
-        utils.publish_repo(cls.cfg, repo)
+        sync_repo(cls.cfg, repo)
+        publish_repo(cls.cfg, repo)
 
         # Fetch and parse comps.xml.
         cls.root_element = (
@@ -178,7 +179,7 @@ class SyncRepoTestCase(utils.BaseAPITestCase):
         self.assertEqual(len(match_elements), 2, self.xml_as_str)
 
 
-class UploadPackageGroupsTestCase(utils.BaseAPITestCase):
+class UploadPackageGroupsTestCase(BaseAPITestCase):
     """Upload custom package groups to an RPM repository and publish it.
 
     More specifically, this test case does the following:
@@ -216,7 +217,7 @@ class UploadPackageGroupsTestCase(utils.BaseAPITestCase):
         for key, package_group in cls.package_groups.items():
             report = _upload_import_package_group(cls.cfg, repo, package_group)
             cls.tasks[key] = tuple(api.poll_spawned_tasks(cls.cfg, report))
-        utils.publish_repo(cls.cfg, repo)
+        publish_repo(cls.cfg, repo)
 
         # Fetch the generated repodata of type 'group' (a.k.a. 'comps')
         cls.root_element = (
@@ -469,12 +470,12 @@ class UploadTwiceTestCase(unittest.TestCase):
         package_group = {'id': utils.uuid4(), 'name': utils.uuid4()}
         _upload_import_package_group(cfg, repo, package_group)
         repo = client.get(repo['_href'], params={'details': True})
-        utils.publish_repo(cfg, repo)
+        publish_repo(cfg, repo)
 
         # Update the repository's package group, and re-publish the repository.
         package_group['name'] = utils.uuid4()
         _upload_import_package_group(cfg, repo, package_group)
-        utils.publish_repo(cfg, repo)
+        publish_repo(cfg, repo)
 
         # Fetch the generated repodata of type 'group' (a.k.a. 'comps'). Verify
         # the package group portion.

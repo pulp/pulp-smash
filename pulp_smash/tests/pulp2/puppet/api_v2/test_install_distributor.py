@@ -11,6 +11,11 @@ from requests.exceptions import HTTPError
 from pulp_smash import api, cli, utils, selectors
 from pulp_smash.constants import PUPPET_MODULE_1, PUPPET_MODULE_URL_1
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import (
+    BaseAPITestCase,
+    publish_repo,
+    upload_import_unit,
+)
 from pulp_smash.tests.pulp2.puppet.api_v2.utils import (
     gen_install_distributor,
     gen_repo,
@@ -18,7 +23,7 @@ from pulp_smash.tests.pulp2.puppet.api_v2.utils import (
 from pulp_smash.tests.pulp2.puppet.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
-class InstallDistributorTestCase(utils.BaseAPITestCase):
+class InstallDistributorTestCase(BaseAPITestCase):
     """Test Puppet install distributor."""
 
     def test_all(self):
@@ -58,11 +63,11 @@ class InstallDistributorTestCase(utils.BaseAPITestCase):
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
         unit = utils.http_get(PUPPET_MODULE_URL_1)
-        utils.upload_import_unit(
+        upload_import_unit(
             self.cfg, unit, {'unit_type_id': 'puppet_module'}, repo)
 
         # Publish, and verify the module is present. (Dir has 700 permissions.)
-        utils.publish_repo(self.cfg, repo)
+        publish_repo(self.cfg, repo)
         proc = cli_client.run(sudo + (
             'runuser', '--shell', '/bin/sh', '--command',
             'ls -1 {}'.format(install_path), '-', 'apache'
@@ -70,7 +75,7 @@ class InstallDistributorTestCase(utils.BaseAPITestCase):
         self.assertIn(PUPPET_MODULE_1['name'], proc.stdout.split('\n'), proc)
 
 
-class InstallDistributorThrowsOnErrorTestCase(utils.BaseAPITestCase):
+class InstallDistributorThrowsOnErrorTestCase(BaseAPITestCase):
     """Test Puppet install distributor."""
 
     def test_all(self):

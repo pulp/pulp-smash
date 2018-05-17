@@ -22,6 +22,13 @@ from pulp_smash.constants import (
     SRPM_UNSIGNED_FEED_URL,
 )
 from pulp_smash.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
+from pulp_smash.pulp2.utils import (
+    BaseAPITestCase,
+    publish_repo,
+    search_units,
+    sync_repo,
+    upload_import_unit,
+)
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import check_issue_2620
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module
@@ -78,8 +85,8 @@ class RemoveUnitsTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(self.cfg, repo)
-        self.initial_units = utils.search_units(self.cfg, repo)
+        sync_repo(self.cfg, repo)
+        self.initial_units = search_units(self.cfg, repo)
 
         for type_id in type_ids:
             with self.subTest(type_id=type_id):
@@ -89,7 +96,7 @@ class RemoveUnitsTestCase(unittest.TestCase):
             removed_ids = {_get_unit_id(unit) for unit in self.removed_units}
             remaining_ids = {
                 _get_unit_id(unit)
-                for unit in utils.search_units(self.cfg, repo)
+                for unit in search_units(self.cfg, repo)
             }
             self.assertEqual(removed_ids & remaining_ids, set())
 
@@ -141,7 +148,7 @@ class RemoveUnitsTestCase(unittest.TestCase):
             .json()['last_unit_removed'])
 
 
-class RepublishTestCase(utils.BaseAPITestCase):
+class RepublishTestCase(BaseAPITestCase):
     """Repeatedly publish a repository, with different content each time.
 
     Specifically, do the following:
@@ -178,13 +185,13 @@ class RepublishTestCase(utils.BaseAPITestCase):
         """Add a content unit to the repository. Publish the repository."""
         repo_before = self.get_repo()
         rpm = utils.http_get(RPM_UNSIGNED_URL)
-        utils.upload_import_unit(
+        upload_import_unit(
             self.cfg,
             rpm,
             {'unit_type_id': 'rpm'},
             self.repo,
         )
-        utils.publish_repo(self.cfg, repo_before)
+        publish_repo(self.cfg, repo_before)
         repo_after = self.get_repo()
         with self.subTest(comment='last_unit_added'):
             if selectors.bug_is_untestable(1847, self.cfg.pulp_version):
@@ -206,18 +213,18 @@ class RepublishTestCase(utils.BaseAPITestCase):
 
     def test_02_find_unit(self):
         """Search for the content unit. Assert it is available."""
-        units = utils.search_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
+        units = search_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
         self.assertEqual(len(units), 1, units)
         self.assertEqual(units[0]['metadata']['filename'], RPM)
 
     def test_03_unassociate_unit(self):
         """Unassociate the unit from the repository. Publish the repository."""
         repo_before = self.get_repo()
-        units = utils.search_units(self.cfg, self.repo)
+        units = search_units(self.cfg, self.repo)
         self.assertEqual(len(units), 1, units)
         _remove_unit(self.cfg, self.repo, units[0])
         time.sleep(1)  # ensure last_publish increments
-        utils.publish_repo(self.cfg, repo_before)
+        publish_repo(self.cfg, repo_before)
         repo_after = self.get_repo()
         with self.subTest(comment='last_unit_added'):
             if selectors.bug_is_untestable(1847, self.cfg.pulp_version):
@@ -237,7 +244,7 @@ class RepublishTestCase(utils.BaseAPITestCase):
 
     def test_04_find_unit(self):
         """Search for the content unit. Assert it isn't available."""
-        units = utils.search_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
+        units = search_units(self.cfg, self.repo, {'type_ids': ('rpm',)})
         self.assertEqual(len(units), 0, units)
 
     def get_repo(self):
@@ -283,7 +290,7 @@ def _remove_unit(cfg, repo, unit):
     return api.Client(cfg).post(path, body).json()
 
 
-class SelectiveAssociateTestCase(utils.BaseAPITestCase):
+class SelectiveAssociateTestCase(BaseAPITestCase):
     """Ensure Pulp only associate needed content.
 
     Test steps:
@@ -308,9 +315,9 @@ class SelectiveAssociateTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_UNSIGNED_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(self.cfg, repo)
+        sync_repo(self.cfg, repo)
         rpm_units = (
-            _get_units_by_type(utils.search_units(self.cfg, repo), 'rpm')
+            _get_units_by_type(search_units(self.cfg, repo), 'rpm')
         )
         # Let's select up to 1/5 of the available units to remove
         to_remove = random.sample(

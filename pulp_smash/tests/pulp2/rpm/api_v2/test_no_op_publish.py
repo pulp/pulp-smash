@@ -32,10 +32,8 @@ from packaging.version import Version
 
 from pulp_smash import api, config, exceptions, utils
 from pulp_smash.constants import RPM_SIGNED_FEED_URL
-from pulp_smash.pulp2.constants import (
-    ORPHANS_PATH,
-    REPOSITORY_PATH,
-)
+from pulp_smash.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase, publish_repo, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277, check_issue_3104
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module
@@ -76,7 +74,7 @@ def setUpModule():  # pylint:disable=invalid-name
     _REPO.update(client.post(REPOSITORY_PATH, body))
     _CLEANUP.append((client.delete, [_REPO['_href']], {}))
     try:
-        utils.sync_repo(cfg, _REPO)
+        sync_repo(cfg, _REPO)
     except (exceptions.CallReportError, exceptions.TaskReportError,
             exceptions.TaskTimedOutError):
         tearDownModule()
@@ -102,7 +100,7 @@ def get_repomd_xml_path(distributor_rel_url):
     )
 
 
-class BaseTestCase(utils.BaseAPITestCase):
+class BaseTestCase(BaseAPITestCase):
     """Provide common behaviour for the test cases in this module."""
 
     @classmethod
@@ -176,7 +174,7 @@ class PubTwiceTestCase(BaseTestCase, NoOpPublishMixin):
         distributor = cls.repo['distributors'][0]
         for _ in range(2):
             cls.call_reports.append(
-                utils.publish_repo(cls.cfg, cls.repo).json()
+                publish_repo(cls.cfg, cls.repo).json()
             )
             cls.repomd_xmls.append(client.get(
                 get_repomd_xml_path(distributor['config']['relative_url'])
@@ -193,7 +191,7 @@ class PubTwiceWithOverrideTestCase(BaseTestCase, NoOpPublishMixin):
         client = api.Client(cls.cfg)
         relative_url = utils.uuid4() + '/'
         for _ in range(2):
-            cls.call_reports.append(utils.publish_repo(cls.cfg, cls.repo, {
+            cls.call_reports.append(publish_repo(cls.cfg, cls.repo, {
                 'id': cls.repo['distributors'][0]['id'],
                 'override_config': {'relative_url': relative_url},
             }).json())
@@ -216,7 +214,7 @@ class ChangeRepoTestCase(BaseTestCase):
 
         # Publish, remove a unit, and publish again
         cls.call_reports.append(
-            utils.publish_repo(cls.cfg, cls.repo).json()
+            publish_repo(cls.cfg, cls.repo).json()
         )
         cls.repomd_xmls.append(client.get(get_repomd_xml_path(relative_url)))
         client.post(
@@ -224,7 +222,7 @@ class ChangeRepoTestCase(BaseTestCase):
             {'criteria': {'type_ids': ['rpm'], 'limit': 1}}
         )
         cls.call_reports.append(
-            utils.publish_repo(cls.cfg, cls.repo).json()
+            publish_repo(cls.cfg, cls.repo).json()
         )
         cls.repomd_xmls.append(client.get(get_repomd_xml_path(relative_url)))
 

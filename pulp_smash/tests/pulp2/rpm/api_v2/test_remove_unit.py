@@ -8,15 +8,10 @@ import random
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, config, selectors, utils
-from pulp_smash.constants import (
-    RPM_SIGNED_FEED_URL,
-    RPM_UNSIGNED_FEED_URL,
-)
-from pulp_smash.pulp2.constants import (
-    ORPHANS_PATH,
-    REPOSITORY_PATH,
-)
+from pulp_smash import api, config, selectors
+from pulp_smash.constants import RPM_SIGNED_FEED_URL, RPM_UNSIGNED_FEED_URL
+from pulp_smash.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
+from pulp_smash.pulp2.utils import publish_repo, search_units, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import (
     check_issue_2277,
@@ -80,8 +75,8 @@ class RemoveMissingTestCase(unittest.TestCase):
         body['distributors'] = [gen_distributor()]
         self.repos['root'] = client.post(REPOSITORY_PATH, body)
         self.repos['root'] = _get_details(self.cfg, self.repos['root'])
-        utils.sync_repo(self.cfg, self.repos['root'])
-        utils.publish_repo(self.cfg, self.repos['root'])
+        sync_repo(self.cfg, self.repos['root'])
+        publish_repo(self.cfg, self.repos['root'])
 
     def test_02_create_immediate_child(self):
         """Create a child repository with the "immediate" download policy.
@@ -104,7 +99,7 @@ class RemoveMissingTestCase(unittest.TestCase):
         self.repos['immediate'] = (
             _get_details(self.cfg, self.repos['immediate'])
         )
-        utils.sync_repo(self.cfg, self.repos['immediate'])
+        sync_repo(self.cfg, self.repos['immediate'])
 
         # Verify the two repositories have the same contents.
         root_ids = _get_rpm_ids(_get_rpms(self.cfg, self.repos['root']))
@@ -134,7 +129,7 @@ class RemoveMissingTestCase(unittest.TestCase):
         self.repos['on demand'] = (
             _get_details(self.cfg, self.repos['on demand'])
         )
-        utils.sync_repo(self.cfg, self.repos['on demand'])
+        sync_repo(self.cfg, self.repos['on demand'])
 
         # Verify the two repositories have the same contents.
         root_ids = _get_rpm_ids(_get_rpms(self.cfg, self.repos['root']))
@@ -154,10 +149,10 @@ class RemoveMissingTestCase(unittest.TestCase):
             urljoin(self.repos['root']['_href'], 'actions/unassociate/'),
             {'criteria': criteria}
         ).json()
-        utils.publish_repo(self.cfg, self.repos['root'])
+        publish_repo(self.cfg, self.repos['root'])
 
         # Verify the removed unit cannot be found via a search.
-        units = utils.search_units(self.cfg, self.repos['root'], criteria)
+        units = search_units(self.cfg, self.repos['root'], criteria)
         self.assertEqual(len(units), 0, units)
 
     def test_04_sync_immediate_child(self):
@@ -165,7 +160,7 @@ class RemoveMissingTestCase(unittest.TestCase):
 
         Verify it has the same contents as the root repository.
         """
-        utils.sync_repo(self.cfg, self.repos['immediate'])
+        sync_repo(self.cfg, self.repos['immediate'])
         root_ids = _get_rpm_ids(_get_rpms(self.cfg, self.repos['root']))
         immediate_ids = _get_rpm_ids(
             _get_rpms(self.cfg, self.repos['immediate'])
@@ -177,7 +172,7 @@ class RemoveMissingTestCase(unittest.TestCase):
 
         Verify it has the same contents as the root repository.
         """
-        utils.sync_repo(self.cfg, self.repos['on demand'])
+        sync_repo(self.cfg, self.repos['on demand'])
         root_ids = _get_rpm_ids(_get_rpms(self.cfg, self.repos['root']))
         on_demand_ids = _get_rpm_ids(
             _get_rpms(self.cfg, self.repos['on demand'])
@@ -218,8 +213,8 @@ class RemoveCountTestCase(unittest.TestCase):
         repos.append(client.post(REPOSITORY_PATH, body))
         self.addCleanup(client.delete, repos[0]['_href'])
         repos[0] = _get_details(cfg, repos[0])
-        utils.sync_repo(cfg, repos[0])
-        utils.publish_repo(cfg, repos[0])
+        sync_repo(cfg, repos[0])
+        publish_repo(cfg, repos[0])
 
         # Create 2nd repo, sync.
         body = gen_repo()
@@ -232,7 +227,7 @@ class RemoveCountTestCase(unittest.TestCase):
         repos.append(client.post(REPOSITORY_PATH, body))
         self.addCleanup(client.delete, repos[1]['_href'])
         repos[1] = _get_details(cfg, repos[1])
-        utils.sync_repo(cfg, repos[1])
+        sync_repo(cfg, repos[1])
 
         # Remove an arbitrary number of units from 1st repo, re-publish it.
         units = _get_rpms(cfg, repos[0])
@@ -246,10 +241,10 @@ class RemoveCountTestCase(unittest.TestCase):
                 urljoin(repos[0]['_href'], 'actions/unassociate/'),
                 {'criteria': criteria},
             )
-        utils.publish_repo(cfg, repos[0])
+        publish_repo(cfg, repos[0])
 
         # Re-sync 2nd repo.
-        report = utils.sync_repo(cfg, repos[1])
+        report = sync_repo(cfg, repos[1])
         tasks = tuple(api.poll_spawned_tasks(cfg, report.json()))
         self.assertEqual(
             tasks[0]['result']['removed_count'],
@@ -259,7 +254,7 @@ class RemoveCountTestCase(unittest.TestCase):
 
 def _get_rpms(cfg, repo):
     """Return RPM content units in the given repository."""
-    return utils.search_units(cfg, repo, {'type_ids': ('rpm',)})
+    return search_units(cfg, repo, {'type_ids': ('rpm',)})
 
 
 def _get_rpm_ids(search_body):

@@ -6,6 +6,7 @@ import unittest
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import DOCKER_V2_FEED_URL
+from pulp_smash.pulp2.utils import pulp_admin_login, upload_import_unit
 from pulp_smash.tests.pulp2.docker.api_v2.utils import SyncPublishMixin
 from pulp_smash.tests.pulp2.docker.utils import (
     get_upstream_name,
@@ -16,7 +17,7 @@ from pulp_smash.tests.pulp2.docker.utils import (
 def setUpModule():  # pylint:disable=invalid-name
     """Execute ``pulp-admin login``."""
     set_up_module()
-    utils.pulp_admin_login(config.get_config())
+    pulp_admin_login(config.get_config())
 
 
 class UploadManifestListV2TestCase(SyncPublishMixin, unittest.TestCase):
@@ -74,7 +75,7 @@ class UploadManifestListV2TestCase(SyncPublishMixin, unittest.TestCase):
         # Upload a modified manifest list.
         modified_manifest_list = copy.deepcopy(manifest_list)
         modified_manifest_list['manifests'].pop()
-        utils.upload_import_unit(
+        upload_import_unit(
             self.cfg,
             json.dumps(modified_manifest_list).encode('utf-8'),
             {'unit_type_id': 'docker_manifest_list'},

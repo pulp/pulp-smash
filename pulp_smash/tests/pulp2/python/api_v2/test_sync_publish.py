@@ -8,9 +8,12 @@ from urllib.parse import urljoin, urlparse
 from packaging.version import Version
 
 from pulp_smash import api, config, constants, selectors, utils
-from pulp_smash.pulp2.constants import (
-    REPOSITORY_PATH,
-    ORPHANS_PATH,
+from pulp_smash.pulp2.constants import REPOSITORY_PATH, ORPHANS_PATH
+from pulp_smash.pulp2.utils import (
+    publish_repo,
+    search_units,
+    sync_repo,
+    upload_import_unit,
 )
 from pulp_smash.tests.pulp2.python.api_v2.utils import (
     gen_distributor,
@@ -80,7 +83,7 @@ class BaseTestCase(unittest.TestCase):
         }
         repo = client.post(REPOSITORY_PATH, body)
         self.repos.append(repo)
-        call_report = utils.sync_repo(self.cfg, repo)
+        call_report = sync_repo(self.cfg, repo)
         with self.subTest(comment='verify the sync succeeded'):
             self.verify_sync(self.cfg, call_report)
         with self.subTest(comment='verify content units are present'):
@@ -108,7 +111,7 @@ class BaseTestCase(unittest.TestCase):
 
         This test targets `Pulp #1883 <https://pulp.plan.io/issues/1883>`_.
         """
-        units = utils.search_units(cfg, repo)
+        units = search_units(cfg, repo)
         unit_types = {unit['metadata']['packagetype'] for unit in units}
         self.assertEqual(unit_types, {'sdist', 'bdist_wheel'})
 
@@ -136,13 +139,13 @@ class SyncTestCase(BaseTestCase):
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
         self.repos.append(repo)
-        call_report = utils.sync_repo(self.cfg, repo)
+        call_report = sync_repo(self.cfg, repo)
         with self.subTest(comment='verify the sync succeeded'):
             self.verify_sync(self.cfg, call_report)
         with self.subTest(comment='verify content units are present'):
             self.verify_package_types(self.cfg, repo)
         repo = get_details(self.cfg, repo)
-        utils.publish_repo(self.cfg, repo)
+        publish_repo(self.cfg, repo)
 
 
 class UploadTestCase(BaseTestCase):
@@ -167,20 +170,20 @@ class UploadTestCase(BaseTestCase):
         self.repos.append(repo)
 
         # A for loop is easier, but it produces hard-to-debug test failures.
-        def upload_import_unit(url):
+        def _upload_import_unit(url):
             """Upload and import the unit at ``url`` to ``repo``."""
             unit = utils.http_get(url)
-            utils.upload_import_unit(self.cfg, unit, {
+            upload_import_unit(self.cfg, unit, {
                 'unit_key': {'filename': basename(urlparse(url).path)},
                 'unit_type_id': 'python_package',
             }, repo)
 
-        upload_import_unit(constants.PYTHON_EGG_URL)
-        upload_import_unit(constants.PYTHON_WHEEL_URL)
+        _upload_import_unit(constants.PYTHON_EGG_URL)
+        _upload_import_unit(constants.PYTHON_WHEEL_URL)
         with self.subTest(comment='verify content units are present'):
             self.verify_package_types(self.cfg, repo)
         repo = get_details(self.cfg, repo)
-        utils.publish_repo(self.cfg, repo)
+        publish_repo(self.cfg, repo)
 
 
 def get_details(cfg, repo):

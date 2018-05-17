@@ -5,9 +5,10 @@ from urllib.parse import urljoin
 
 from packaging.version import Version
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, config, selectors
 from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase
 from pulp_smash.tests.pulp2.docker.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.docker.utils import (
     get_upstream_name,
@@ -26,7 +27,7 @@ class UpstreamNameTestsMixin():
     """Provides tests that sync a repository and override ``upstream_name``.
 
     Any class inheriting from this mixin must also inherit from
-    :class:`pulp_smash.utils.BaseAPITestCase`.
+    :class:`pulp_smash.pulp2.utils.BaseAPITestCase`.
     """
 
     def test_valid_upstream_name(self):
@@ -54,7 +55,7 @@ class UpstreamNameTestsMixin():
         self.assertEqual(response.status_code, 400)
 
 
-class UpstreamNameV1TestCase(UpstreamNameTestsMixin, utils.BaseAPITestCase):
+class UpstreamNameV1TestCase(UpstreamNameTestsMixin, BaseAPITestCase):
     """Sync a v1 docker repository with various ``upstream_name`` options.
 
     This test targets `Pulp #2230 <https://pulp.plan.io/issues/2230-docker>`_.
@@ -79,7 +80,7 @@ class UpstreamNameV1TestCase(UpstreamNameTestsMixin, utils.BaseAPITestCase):
         cls.resources.add(cls.repo_href)
 
 
-class UpstreamNameV2TestCase(UpstreamNameTestsMixin, utils.BaseAPITestCase):
+class UpstreamNameV2TestCase(UpstreamNameTestsMixin, BaseAPITestCase):
     """Sync a v2 docker repository with various ``upstream_name`` options.
 
     This test targets `Pulp #2230 <https://pulp.plan.io/issues/2230-docker>`_.

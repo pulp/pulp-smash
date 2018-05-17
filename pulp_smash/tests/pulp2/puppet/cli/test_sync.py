@@ -4,6 +4,7 @@ import unittest
 
 from pulp_smash import cli, config, selectors, utils
 from pulp_smash.constants import PUPPET_FEED_2, PUPPET_QUERY_2
+from pulp_smash.pulp2.utils import pulp_admin_login
 from pulp_smash.tests.pulp2.puppet.utils import set_up_module
 
 
@@ -73,7 +74,7 @@ class SyncDownloadedContentTestCase(unittest.TestCase):
         cfg = config.get_config()
         if selectors.bug_is_untestable(1937, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1937')
-        utils.pulp_admin_login(cfg)
+        pulp_admin_login(cfg)
 
         # Create two repos, schedule them for deletion, and sync them.
         client = cli.Client(cfg)
@@ -130,7 +131,7 @@ class SyncFromPuppetForgeTestCase(unittest.TestCase):
     def test_sync_puppet_forge(self):
         """Create a Puppet repository and trigger a sync."""
         cfg = config.get_config()
-        utils.pulp_admin_login(cfg)
+        pulp_admin_login(cfg)
 
         # Create a repository and schedule it for deletion.
         repo_id = utils.uuid4()

@@ -15,6 +15,7 @@ The assumptions explored in this module have the following dependencies::
 """
 from pulp_smash import api, utils
 from pulp_smash.pulp2.constants import LOGIN_PATH, USER_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase
 from pulp_smash.tests.pulp2.platform.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
@@ -23,7 +24,7 @@ def _logins(search_response):
     return {resp['login'] for resp in search_response.json()}
 
 
-class CreateTestCase(utils.BaseAPITestCase):
+class CreateTestCase(BaseAPITestCase):
     """Establish that we can create users. No prior assumptions are made."""
 
     @classmethod
@@ -72,7 +73,7 @@ class CreateTestCase(utils.BaseAPITestCase):
                 self.assertEqual(body, attrs)
 
 
-class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
+class ReadUpdateDeleteTestCase(BaseAPITestCase):
     """Establish that we can read, update and delete users.
 
     This test case assumes that the assertions in :class:`CreateTestCase` are
@@ -157,7 +158,7 @@ class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
         self.assertEqual(response.status_code, 409)
 
 
-class SearchTestCase(utils.BaseAPITestCase):
+class SearchTestCase(BaseAPITestCase):
     """Establish we can search for users.
 
     This test case assumes the assertions in :class:`ReadUpdateDeleteTestCase`

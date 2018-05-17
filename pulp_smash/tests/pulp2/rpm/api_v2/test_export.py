@@ -14,17 +14,14 @@ from dateutil.parser import parse
 from packaging.version import Version
 
 from pulp_smash import api, cli, config, selectors, utils
-from pulp_smash.constants import (
-    RPM,
-    RPM_SIGNED_FEED_URL,
-    RPM_SIGNED_URL,
-)
+from pulp_smash.constants import RPM, RPM_SIGNED_FEED_URL, RPM_SIGNED_URL
 from pulp_smash.pulp2.constants import (
     REPOSITORY_EXPORT_DISTRIBUTOR,
     REPOSITORY_GROUP_EXPORT_DISTRIBUTOR,
     REPOSITORY_GROUP_PATH,
     REPOSITORY_PATH,
 )
+from pulp_smash.pulp2.utils import BaseAPITestCase, publish_repo, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     DisableSELinuxMixin,
     gen_distributor,
@@ -153,7 +150,7 @@ class ExportDirMixin(DisableSELinuxMixin):
         :returns: The path to the export directory.
         """
         export_dir = self.create_export_dir()
-        utils.publish_repo(self.cfg, repo={'_href': entity_href}, json={
+        publish_repo(self.cfg, repo={'_href': entity_href}, json={
             'id': distributor_id,
             'override_config': {'export_dir': export_dir},
         })
@@ -161,7 +158,7 @@ class ExportDirMixin(DisableSELinuxMixin):
         return export_dir
 
 
-class BaseExportChecksumTypeTestCase(ExportDirMixin, utils.BaseAPITestCase):
+class BaseExportChecksumTypeTestCase(ExportDirMixin, BaseAPITestCase):
     """Base class for repo and repo group export with checksum type tests."""
 
     @classmethod
@@ -183,7 +180,7 @@ class BaseExportChecksumTypeTestCase(ExportDirMixin, utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         cls.repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
         cls.resources.add(cls.repo['_href'])
-        utils.sync_repo(cls.cfg, cls.repo)
+        sync_repo(cls.cfg, cls.repo)
 
     def _publish_to_web(self, entity, distributor):
         """Publish ``entity`` to web using the ``distributor``.
@@ -405,7 +402,7 @@ class RepoGroupExportChecksumTypeTestCase(BaseExportChecksumTypeTestCase):
         )
 
 
-class ExportDistributorTestCase(ExportDirMixin, utils.BaseAPITestCase):
+class ExportDistributorTestCase(ExportDirMixin, BaseAPITestCase):
     """Establish we can publish a repository using an export distributor."""
 
     @classmethod
@@ -422,7 +419,7 @@ class ExportDistributorTestCase(ExportDirMixin, utils.BaseAPITestCase):
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         cls.repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
         cls.resources.add(cls.repo['_href'])
-        utils.sync_repo(cls.cfg, cls.repo)
+        sync_repo(cls.cfg, cls.repo)
         if (cls.cfg.pulp_version >= Version('2.9') and
                 selectors.bug_is_untestable(1928, cls.cfg.pulp_version)):
             cls.distributor = None
@@ -451,7 +448,7 @@ class ExportDistributorTestCase(ExportDirMixin, utils.BaseAPITestCase):
         from both locations, and assert that the fetch was successful.
         """
         # Publish the repository, and re-read the distributor.
-        utils.publish_repo(self.cfg, self.repo, {'id': self.distributor['id']})
+        publish_repo(self.cfg, self.repo, {'id': self.distributor['id']})
         client = api.Client(self.cfg)
         distributor = client.get(self.distributor['_href']).json()
 

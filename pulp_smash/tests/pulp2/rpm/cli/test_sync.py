@@ -5,8 +5,8 @@ import unittest
 
 from pulp_smash import cli, config, selectors, utils
 from pulp_smash.constants import RPM_UNSIGNED_FEED_URL
+from pulp_smash.pulp2.utils import pulp_admin_login, reset_pulp
 from pulp_smash.tests.pulp2.rpm.utils import check_issue_2620, set_up_module
-from pulp_smash.utils import is_root
 
 
 def setUpModule():  # pylint:disable=invalid-name
@@ -20,8 +20,8 @@ def setUpModule():  # pylint:disable=invalid-name
     """
     cfg = config.get_config()
     set_up_module()
-    utils.reset_pulp(cfg)
-    utils.pulp_admin_login(cfg)
+    reset_pulp(cfg)
+    pulp_admin_login(cfg)
 
 
 class _BaseTestCase(unittest.TestCase):
@@ -126,7 +126,7 @@ class ForceSyncTestCase(_BaseTestCase):
         rpms = self._list_rpms(cfg)
         rpm = random.choice(rpms)
         cmd = []
-        if not is_root(cfg):
+        if not utils.is_root(cfg):
             cmd.append('sudo')
         cmd.extend(('rm', '-rf', rpm))
         client.run(cmd)

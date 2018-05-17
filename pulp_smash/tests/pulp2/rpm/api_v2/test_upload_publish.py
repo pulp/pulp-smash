@@ -27,6 +27,13 @@ from pulp_smash.constants import (
     SRPM_UNSIGNED_URL,
 )
 from pulp_smash.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
+from pulp_smash.pulp2.utils import (
+    BaseAPITestCase,
+    publish_repo,
+    search_units,
+    sync_repo,
+    upload_import_unit,
+)
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -58,8 +65,8 @@ class UploadDrpmTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, gen_repo()).json()
         self.addCleanup(client.delete, repo['_href'])
         drpm = utils.http_get(DRPM_UNSIGNED_URL)
-        utils.upload_import_unit(cfg, drpm, {'unit_type_id': 'drpm'}, repo)
-        units = utils.search_units(cfg, repo)
+        upload_import_unit(cfg, drpm, {'unit_type_id': 'drpm'}, repo)
+        units = search_units(cfg, repo)
 
         # Test if DRPM has been uploaded successfully
         self.assertEqual(len(units), 1)
@@ -68,7 +75,7 @@ class UploadDrpmTestCase(unittest.TestCase):
         self.assertEqual(units[0]['metadata']['filename'], DRPM)
 
 
-class UploadDrpmTestCaseWithCheckSumType(utils.BaseAPITestCase):
+class UploadDrpmTestCaseWithCheckSumType(BaseAPITestCase):
     """Test whether one can upload a DRPM into a repository.
 
     `Pulp issue #2627 <https://https://pulp.plan.io/issues/2627>`_ caused
@@ -101,7 +108,7 @@ class UploadDrpmTestCaseWithCheckSumType(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, gen_repo()).json()
         self.addCleanup(client.delete, repo['_href'])
         drpm = utils.http_get(DRPM_UNSIGNED_URL)
-        utils.upload_import_unit(
+        upload_import_unit(
             self.cfg,
             drpm,
             {
@@ -110,7 +117,7 @@ class UploadDrpmTestCaseWithCheckSumType(utils.BaseAPITestCase):
             },
             repo,
         )
-        units = utils.search_units(self.cfg, repo, {})
+        units = search_units(self.cfg, repo, {})
         self.assertEqual(len(units), 1, units)
         # Test if DRPM extracted correct metadata for creating filename.
         self.assertEqual(
@@ -143,11 +150,11 @@ class UploadedDrpmChecksumTypeTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
         drpm = utils.http_get(DRPM_UNSIGNED_URL)
-        utils.upload_import_unit(cfg, drpm, {
+        upload_import_unit(cfg, drpm, {
             'unit_metadata': {'checksumtype': 'md5'},
             'unit_type_id': 'drpm',
         }, repo)
-        units = utils.search_units(cfg, repo)
+        units = search_units(cfg, repo)
 
         with self.subTest(comment='verify checksumtype'):
             self.assertEqual(units[0]['metadata']['checksumtype'], 'md5')
@@ -160,7 +167,7 @@ class UploadedDrpmChecksumTypeTestCase(unittest.TestCase):
             )
 
 
-class UploadSrpmTestCase(utils.BaseAPITestCase):
+class UploadSrpmTestCase(BaseAPITestCase):
     """Test whether one can upload a SRPM into a repository.
 
     This test case targets `Pulp Smash #402
@@ -184,8 +191,8 @@ class UploadSrpmTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, gen_repo()).json()
         cls.resources.add(repo['_href'])
         srpm = utils.http_get(SRPM_UNSIGNED_URL)
-        utils.upload_import_unit(cls.cfg, srpm, {'unit_type_id': 'srpm'}, repo)
-        cls.units = utils.search_units(cls.cfg, repo, {}, api.safe_handler)
+        upload_import_unit(cls.cfg, srpm, {'unit_type_id': 'srpm'}, repo)
+        cls.units = search_units(cls.cfg, repo, {}, api.safe_handler)
 
     def test_status_code_units(self):
         """Verify the HTTP status code for repo units response."""
@@ -203,7 +210,7 @@ class UploadSrpmTestCase(utils.BaseAPITestCase):
         )
 
 
-class UploadRpmTestCase(utils.BaseAPITestCase):
+class UploadRpmTestCase(BaseAPITestCase):
     """Test whether one can upload, associate and publish RPMs.
 
     The test procedure is as follows:
@@ -251,13 +258,13 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
         Execute :meth:`verify_repo_search` and :meth:`verify_repo_download`.
         """
         repo = self.repos[0]
-        utils.upload_import_unit(
+        upload_import_unit(
             self.cfg,
             self.rpm,
             {'unit_type_id': 'rpm'},
             repo,
         )
-        utils.publish_repo(self.cfg, repo)
+        publish_repo(self.cfg, repo)
         self.verify_repo_search(repo)
         self.verify_repo_download(repo)
 
@@ -270,14 +277,14 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
             urljoin(self.repos[1]['_href'], 'actions/associate/'),
             {'source_repo_id': self.repos[0]['id']}
         )
-        utils.publish_repo(self.cfg, self.repos[1])
+        publish_repo(self.cfg, self.repos[1])
         self.verify_repo_search(self.repos[1])
         self.verify_repo_download(self.repos[1])
 
     def test_03_compare_repos(self):
         """Verify the two repositories contain the same content unit."""
-        repo_0_units = utils.search_units(self.cfg, self.repos[0])
-        repo_1_units = utils.search_units(self.cfg, self.repos[1])
+        repo_0_units = search_units(self.cfg, self.repos[0])
+        repo_1_units = search_units(self.cfg, self.repos[1])
         self.assertEqual(
             repo_0_units[0]['unit_id'],
             repo_1_units[0]['unit_id'],
@@ -291,7 +298,7 @@ class UploadRpmTestCase(utils.BaseAPITestCase):
         <https://pulp.plan.io/issues/2365>`_ and `Pulp #2754
         <https://pulp.plan.io/issues/2754>`_
         """
-        units = utils.search_units(self.cfg, repo)
+        units = search_units(self.cfg, repo)
         self.assertEqual(len(units), 1)
 
         # filename and derived attributes
@@ -395,7 +402,7 @@ class VendorInfoTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
         rpm = utils.http_get(RPM_WITH_VENDOR_URL)
-        utils.upload_import_unit(self.cfg, rpm, {'unit_type_id': 'rpm'}, repo)
+        upload_import_unit(self.cfg, rpm, {'unit_type_id': 'rpm'}, repo)
         self.do_test(repo)
 
     def test_sync(self):
@@ -409,7 +416,7 @@ class VendorInfoTestCase(unittest.TestCase):
         body['importer_config']['feed'] = RPM_WITH_VENDOR_FEED_URL
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(self.cfg, repo)
+        sync_repo(self.cfg, repo)
         self.do_test(repo)
 
     def do_test(self, repo):
@@ -430,7 +437,7 @@ class VendorInfoTestCase(unittest.TestCase):
         search syntax is correct.
         """
         with self.subTest(comment='filter with a valid unit license'):
-            units = utils.search_units(self.cfg, repo, {
+            units = search_units(self.cfg, repo, {
                 'filters': {'unit': {
                     'license': RPM_WITH_VENDOR_DATA['metadata']['license']
                 }},
@@ -439,7 +446,7 @@ class VendorInfoTestCase(unittest.TestCase):
             self._verify_search_results(units)
 
         with self.subTest(comment='filter with a valid unit vendor'):
-            units = utils.search_units(self.cfg, repo, {
+            units = search_units(self.cfg, repo, {
                 'filters': {'unit': {
                     'vendor': RPM_WITH_VENDOR_DATA['metadata']['vendor']
                 }},
@@ -448,14 +455,14 @@ class VendorInfoTestCase(unittest.TestCase):
             self._verify_search_results(units)
 
         with self.subTest(comment='filter with an invalid unit license'):
-            units = utils.search_units(self.cfg, repo, {
+            units = search_units(self.cfg, repo, {
                 'filters': {'unit': {'license': utils.uuid4()}},
                 'type_ids': ['rpm'],
             })
             self.assertEqual(len(units), 0, units)
 
         with self.subTest(comment='filter with an invalid unit vendor'):
-            units = utils.search_units(self.cfg, repo, {
+            units = search_units(self.cfg, repo, {
                 'filters': {'unit': {'vendor': utils.uuid4()}},
                 'type_ids': ['rpm'],
             })
@@ -502,7 +509,7 @@ class UploadInvalidRPMTestCase(unittest.TestCase):
         # Upload invalid RPM
         rpm = utils.http_get(RPM_INVALID_URL)
         with self.assertRaises(exceptions.TaskReportError) as context:
-            utils.upload_import_unit(cfg, rpm, {'unit_type_id': 'rpm'}, repo)
+            upload_import_unit(cfg, rpm, {'unit_type_id': 'rpm'}, repo)
         task = context.exception.task
 
         # Assert that rturned error contains a descriptive message
@@ -510,5 +517,5 @@ class UploadInvalidRPMTestCase(unittest.TestCase):
         self.assertIn('upload', task['error']['description'])
 
         # Verify that the repository contains no RPMs
-        rpm = utils.search_units(cfg, repo, {'type_ids': ('rpm',)})
+        rpm = search_units(cfg, repo, {'type_ids': ('rpm',)})
         self.assertEqual(len(rpm), 0)

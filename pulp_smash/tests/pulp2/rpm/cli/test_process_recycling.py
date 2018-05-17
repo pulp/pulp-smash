@@ -6,13 +6,14 @@ import unittest
 from pulp_smash import cli, config, selectors, utils
 from pulp_smash.constants import RPM_UNSIGNED_FEED_URL
 from pulp_smash.pulp2.constants import PULP_SERVICES
+from pulp_smash.pulp2.utils import pulp_admin_login
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module
 
 
 def setUpModule():  # pylint:disable=invalid-name
     """Conditionally skip this module, and execute ``pulp-admin login``."""
     set_up_module()
-    utils.pulp_admin_login(config.get_config())
+    pulp_admin_login(config.get_config())
 
 
 def get_pulp_worker_procs(cfg):

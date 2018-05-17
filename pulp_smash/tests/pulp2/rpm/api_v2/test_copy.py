@@ -12,6 +12,12 @@ from pulp_smash.constants import (
     RPM_UPDATED_INFO_FEED_URL,
 )
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import (
+    publish_repo,
+    search_units,
+    sync_repo,
+    upload_import_unit,
+)
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
@@ -49,7 +55,7 @@ class CopyErrataRecursiveTestCase(unittest.TestCase):
         body['distributors'] = [gen_distributor()]
         repos.append(client.post(REPOSITORY_PATH, body))
         self.addCleanup(client.delete, repos[0]['_href'])
-        utils.sync_repo(cfg, repos[0])
+        sync_repo(cfg, repos[0])
 
         # Create a second repository.
         repos.append(client.post(REPOSITORY_PATH, gen_repo()))
@@ -63,7 +69,7 @@ class CopyErrataRecursiveTestCase(unittest.TestCase):
         })
 
         # Assert that RPM packages were copied.
-        units = utils.search_units(cfg, repos[1], {'type_ids': ['rpm']})
+        units = search_units(cfg, repos[1], {'type_ids': ['rpm']})
         self.assertGreater(len(units), 0)
 
 
@@ -100,8 +106,8 @@ class MtimeTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(cfg, repo)
-        utils.publish_repo(cfg, repo)
+        sync_repo(cfg, repo)
+        publish_repo(cfg, repo)
 
         # Get the mtime of the sqlite files.
         cli_client = cli.Client(cfg, cli.echo_handler)
@@ -117,8 +123,8 @@ class MtimeTestCase(unittest.TestCase):
 
         # Upload to the repo, and sync it.
         rpm = utils.http_get(RPM_SIGNED_URL)
-        utils.upload_import_unit(cfg, rpm, {'unit_type_id': 'rpm'}, repo)
-        utils.sync_repo(cfg, repo)
+        upload_import_unit(cfg, rpm, {'unit_type_id': 'rpm'}, repo)
+        sync_repo(cfg, repo)
 
         # Get the mtime of the sqlite files again.
         time.sleep(1)

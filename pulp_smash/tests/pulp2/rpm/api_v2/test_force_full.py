@@ -11,14 +11,15 @@ This module tests Pulp's handling of "full" publishes.
 """
 from packaging.version import Version
 
-from pulp_smash import api, selectors, utils
+from pulp_smash import api, selectors
 from pulp_smash.constants import RPM_SIGNED_FEED_URL
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase, publish_repo, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
-class ForceFullTestCase(utils.BaseAPITestCase):
+class ForceFullTestCase(BaseAPITestCase):
     """Test the ``force_full`` option.
 
     Repeatedly publish a repository. Set the ``force_full`` option to various
@@ -35,7 +36,7 @@ class ForceFullTestCase(utils.BaseAPITestCase):
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo)
+        sync_repo(cls.cfg, repo)
         cls.repo = client.get(repo['_href'], params={'details': True})
 
     def get_step(self, steps, step_type):
@@ -59,7 +60,7 @@ class ForceFullTestCase(utils.BaseAPITestCase):
 
         A full publish should occur.
         """
-        call_report = utils.publish_repo(self.cfg, self.repo, {
+        call_report = publish_repo(self.cfg, self.repo, {
             'id': self.repo['distributors'][0]['id'],
             'override_config': {'force_full': False}
         }).json()
@@ -78,7 +79,7 @@ class ForceFullTestCase(utils.BaseAPITestCase):
         if (self.cfg.pulp_version >= Version('2.9') and
                 selectors.bug_is_untestable(1966, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/1966')
-        call_report = utils.publish_repo(self.cfg, self.repo).json()
+        call_report = publish_repo(self.cfg, self.repo).json()
         last_task = next(api.poll_spawned_tasks(self.cfg, call_report))
         task_steps = last_task['result']['details']
         step = self.get_step(task_steps, 'rpms')
@@ -98,7 +99,7 @@ class ForceFullTestCase(utils.BaseAPITestCase):
                 'This test requires Pulp 2.9. See: '
                 'https://pulp.plan.io/issues/1938'
             )
-        call_report = utils.publish_repo(self.cfg, self.repo, {
+        call_report = publish_repo(self.cfg, self.repo, {
             'id': self.repo['distributors'][0]['id'],
             'override_config': {'force_full': True}
         }).json()

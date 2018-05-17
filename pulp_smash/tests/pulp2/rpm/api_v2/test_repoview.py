@@ -15,6 +15,7 @@ from packaging.version import Version
 
 from pulp_smash import api, config, constants, selectors, utils
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import publish_repo, upload_import_unit
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
 
@@ -46,7 +47,7 @@ class RepoviewTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, body).json()
         self.addCleanup(client.delete, repo['_href'])
         rpm = utils.http_get(constants.RPM_UNSIGNED_URL)
-        utils.upload_import_unit(cfg, rpm, {'unit_type_id': 'rpm'}, repo)
+        upload_import_unit(cfg, rpm, {'unit_type_id': 'rpm'}, repo)
 
         # Get info about the repo distributor
         repo = client.get(repo['_href'], params={'details': True}).json()
@@ -56,13 +57,13 @@ class RepoviewTestCase(unittest.TestCase):
         )
 
         # Publish the repo
-        utils.publish_repo(cfg, repo)
+        publish_repo(cfg, repo)
         response = client.get(pub_path)
         with self.subTest(comment='first publish'):
             self.assertEqual(len(response.history), 0, response.history)
 
         # Publish the repo a second time
-        utils.publish_repo(cfg, repo, {
+        publish_repo(cfg, repo, {
             'id': repo['distributors'][0]['id'],
             'override_config': {'generate_sqlite': True, 'repoview': True},
         })
@@ -77,7 +78,7 @@ class RepoviewTestCase(unittest.TestCase):
         # Publish the repo a third time
         if selectors.bug_is_untestable(2349, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2349')
-        utils.publish_repo(cfg, repo)
+        publish_repo(cfg, repo)
         response = client.get(pub_path)
         with self.subTest(comment='third publish'):
             self.assertEqual(len(response.history), 0, response.history)

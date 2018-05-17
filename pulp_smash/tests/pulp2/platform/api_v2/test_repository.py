@@ -20,11 +20,12 @@ from packaging.version import Version
 
 from pulp_smash import api, utils
 from pulp_smash.pulp2.constants import REPOSITORY_PATH, ERROR_KEYS
+from pulp_smash.pulp2.utils import BaseAPITestCase
 from pulp_smash.selectors import bug_is_untestable, require
 from pulp_smash.tests.pulp2.platform.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
-class CreateSuccessTestCase(utils.BaseAPITestCase):
+class CreateSuccessTestCase(BaseAPITestCase):
     """Establish we can create repositories."""
 
     @classmethod
@@ -103,7 +104,7 @@ class CreateSuccessTestCase(utils.BaseAPITestCase):
                 self.assertEqual(body, attrs)
 
 
-class CreateFailureTestCase(utils.BaseAPITestCase):
+class CreateFailureTestCase(BaseAPITestCase):
     """Establish that repositories are not created in documented scenarios."""
 
     @classmethod
@@ -166,7 +167,7 @@ class CreateFailureTestCase(utils.BaseAPITestCase):
                 self.assertEqual(response_keys, ERROR_KEYS)
 
 
-class ReadUpdateDeleteTestCase(utils.BaseAPITestCase):
+class ReadUpdateDeleteTestCase(BaseAPITestCase):
     """Establish we can read, update and delete repositories.
 
     This test case assumes the assertions in :class:`CreateSuccessTestCase`

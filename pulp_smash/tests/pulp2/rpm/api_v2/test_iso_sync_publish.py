@@ -12,6 +12,7 @@ from pulp_smash.constants import (
     FILE_URL,
 )
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import publish_repo, sync_repo, upload_import_unit
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     TemporaryUserMixin,
     get_dists_by_type_id,
@@ -101,12 +102,12 @@ class ServeHttpsFalseTestCase(TemporaryUserMixin, unittest.TestCase):
         #     "/var/lib/pulp/published/https/isos/repo-id/PULP_MANIFEST"
         #     failed: No such file or directory (2)
         #
-        utils.sync_repo(self.cfg, repo)
+        sync_repo(self.cfg, repo)
         dists = get_dists_by_type_id(self.cfg, repo)
-        utils.publish_repo(self.cfg, repo, {
+        publish_repo(self.cfg, repo, {
             'id': dists['iso_distributor']['id'],
         })
-        utils.publish_repo(self.cfg, repo, {
+        publish_repo(self.cfg, repo, {
             'id': dists['iso_rsync_distributor']['id'],
         })
 
@@ -153,7 +154,7 @@ class UploadIsoTestCase(unittest.TestCase):
         # upload an ISO to the repository
         iso = utils.http_get(FILE_URL)
         iso_name = os.path.basename(urlsplit(FILE_URL).path)
-        utils.upload_import_unit(cfg, iso, {
+        upload_import_unit(cfg, iso, {
             'unit_type_id': 'iso',
             'unit_key': {
                 'checksum': hashlib.sha256(iso).hexdigest(),
@@ -163,7 +164,7 @@ class UploadIsoTestCase(unittest.TestCase):
         }, repo)
 
         # publish the repository, and get the published ISO
-        utils.publish_repo(cfg, repo)
+        publish_repo(cfg, repo)
         client.response_handler = api.safe_handler
         path = urljoin(urljoin('/pulp/isos/', repo['id'] + '/'), iso_name)
         iso2 = client.get(path).content

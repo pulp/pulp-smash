@@ -11,15 +11,13 @@ from urllib.parse import urljoin
 from requests.exceptions import HTTPError
 
 from pulp_smash import api, cli, config, selectors, utils
-from pulp_smash.constants import (
-    RPM_MIRRORLIST_LARGE,
-    RPM_UNSIGNED_FEED_URL,
-)
+from pulp_smash.constants import RPM_MIRRORLIST_LARGE, RPM_UNSIGNED_FEED_URL
 from pulp_smash.pulp2.constants import (
     PULP_SERVICES,
     REPOSITORY_PATH,
     TASKS_PATH,
 )
+from pulp_smash.pulp2.utils import get_broker, reset_pulp, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
@@ -79,7 +77,7 @@ class MissingWorkersTestCase(unittest.TestCase):
         client.put(repo['_href'], {
             'importer_config': {'feed': RPM_UNSIGNED_FEED_URL},
         })
-        utils.sync_repo(self.cfg, repo)
+        sync_repo(self.cfg, repo)
 
     def tearDown(self):
         """Reset the number of Pul pworkers, and reset Pulp.
@@ -89,7 +87,7 @@ class MissingWorkersTestCase(unittest.TestCase):
         sudo = () if utils.is_root(self.cfg) else ('sudo',)
         # Delete last line from file.
         cli.Client(self.cfg).run(sudo + ('sed', '-i', '$d', _PULP_WORKERS_CFG))
-        utils.reset_pulp(self.cfg)
+        reset_pulp(self.cfg)
 
 
 class TaskDispatchTestCase(unittest.TestCase):
@@ -122,14 +120,14 @@ class TaskDispatchTestCase(unittest.TestCase):
         self.addCleanup(client.delete, repo['_href'])
 
         # Stop the AMQP broker.
-        broker = [utils.get_broker(cfg)]
+        broker = [get_broker(cfg)]
         svc_mgr = cli.GlobalServiceManager(cfg)
         svc_mgr.stop(broker)
         self.addCleanup(svc_mgr.start, broker)
 
         # Sync the repo, and assert no tasks are left in the waiting state.
         try:
-            utils.sync_repo(cfg, repo)
+            sync_repo(cfg, repo)
         except HTTPError:
             pass
         tasks = client.post(

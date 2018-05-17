@@ -1,6 +1,7 @@
 # coding=utf-8
 """Tests for syncing and publishing docker repositories."""
 from pulp_smash import cli, config, selectors, utils
+from pulp_smash.pulp2.utils import BaseAPITestCase, pulp_admin_login
 from pulp_smash.tests.pulp2.docker.cli.utils import repo_create, repo_delete
 from pulp_smash.tests.pulp2.docker.utils import (
     get_upstream_name,
@@ -11,10 +12,10 @@ from pulp_smash.tests.pulp2.docker.utils import (
 def setUpModule():  # pylint:disable=invalid-name
     """Execute ``pulp-admin login``."""
     set_up_module()
-    utils.pulp_admin_login(config.get_config())
+    pulp_admin_login(config.get_config())
 
 
-class InvalidFeedTestCase(utils.BaseAPITestCase):
+class InvalidFeedTestCase(BaseAPITestCase):
     """Show Pulp behaves correctly when syncing a repo with an invalid feed."""
 
     def test_all(self):

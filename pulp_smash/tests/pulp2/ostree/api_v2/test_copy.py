@@ -4,9 +4,10 @@ import random
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, config, utils
+from pulp_smash import api, config
 from pulp_smash.constants import OSTREE_BRANCHES, OSTREE_FEED
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import search_units, sync_repo
 from pulp_smash.tests.pulp2.ostree.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.ostree.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
@@ -36,7 +37,7 @@ class FilterTestCase(unittest.TestCase):
         body['distributors'] = [gen_distributor()]
         repos.append(client.post(REPOSITORY_PATH, body))
         self.addCleanup(client.delete, repos[0]['_href'])
-        utils.sync_repo(cfg, repos[0])
+        sync_repo(cfg, repos[0])
 
         # Create a destination repository.
         repos.append(client.post(REPOSITORY_PATH, gen_repo()))
@@ -44,7 +45,7 @@ class FilterTestCase(unittest.TestCase):
 
         # Copy a random unit between the repos, and verify the result.
         src_unit_id = random.choice(
-            utils.search_units(cfg, repos[0])
+            search_units(cfg, repos[0])
         )['metadata']['_id']
         client.post(urljoin(repos[1]['_href'], 'actions/associate/'), {
             'source_repo_id': repos[0]['id'],
@@ -55,6 +56,6 @@ class FilterTestCase(unittest.TestCase):
         })
         dst_unit_ids = [
             unit['metadata']['_id'] for unit in
-            utils.search_units(cfg, repos[1], {'type_ids': ['ostree']})
+            search_units(cfg, repos[1], {'type_ids': ['ostree']})
         ]
         self.assertEqual([src_unit_id], dst_unit_ids)

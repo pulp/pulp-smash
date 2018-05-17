@@ -60,6 +60,7 @@ from pulp_smash.constants import (
     SRPM_UNSIGNED_URL,
 )
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase, upload_import_unit
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module
 
@@ -116,7 +117,7 @@ def _create_repository(cfg, importer_config):
 # repository for each test method. This allows for better test isolation in
 # case of failure. However, re-using just one repo per test case is faster, and
 # it ensures that Pulp doesn't do anything tricky with deduplication logic.
-class RequireValidKeyTestCase(utils.BaseAPITestCase):
+class RequireValidKeyTestCase(BaseAPITestCase):
     """Use an importer that requires signatures and has a valid key ID.
 
     The importer should have the following pseudocode configuration:
@@ -143,7 +144,7 @@ class RequireValidKeyTestCase(utils.BaseAPITestCase):
         """
         for key, package in _SIGNED_PACKAGES.items():
             with self.subTest(key=key):
-                utils.upload_import_unit(
+                upload_import_unit(
                     self.cfg,
                     package,
                     {'unit_type_id': key.split(' ')[-1]},
@@ -158,7 +159,7 @@ class RequireValidKeyTestCase(utils.BaseAPITestCase):
         for key, package in _UNSIGNED_PACKAGES.items():
             with self.subTest(key=key):
                 with self.assertRaises(exceptions.TaskReportError):
-                    utils.upload_import_unit(
+                    upload_import_unit(
                         self.cfg,
                         package,
                         {'unit_type_id': key.split(' ')[-1]},
@@ -166,7 +167,7 @@ class RequireValidKeyTestCase(utils.BaseAPITestCase):
                     )
 
 
-class RequireInvalidKeyTestCase(utils.BaseAPITestCase):
+class RequireInvalidKeyTestCase(BaseAPITestCase):
     """Use an importer that requires signatures and has an invalid key ID.
 
     The importer should have the following pseudocode configuration:
@@ -196,7 +197,7 @@ class RequireInvalidKeyTestCase(utils.BaseAPITestCase):
                 _UNSIGNED_PACKAGES.items()):
             with self.subTest(key=key):
                 with self.assertRaises(exceptions.TaskReportError):
-                    utils.upload_import_unit(
+                    upload_import_unit(
                         self.cfg,
                         package,
                         {'unit_type_id': key.split(' ')[-1]},
@@ -204,7 +205,7 @@ class RequireInvalidKeyTestCase(utils.BaseAPITestCase):
                     )
 
 
-class RequireAnyKeyTestCase(utils.BaseAPITestCase):
+class RequireAnyKeyTestCase(BaseAPITestCase):
     """Use an importer that requires signatures and has no key IDs.
 
     The importer should have the following pseudocode configuration:
@@ -231,7 +232,7 @@ class RequireAnyKeyTestCase(utils.BaseAPITestCase):
         """
         for key, package in _SIGNED_PACKAGES.items():
             with self.subTest(key=key):
-                utils.upload_import_unit(
+                upload_import_unit(
                     self.cfg,
                     package,
                     {'unit_type_id': key.split(' ')[-1]},
@@ -246,7 +247,7 @@ class RequireAnyKeyTestCase(utils.BaseAPITestCase):
         for key, package in _UNSIGNED_PACKAGES.items():
             with self.subTest(key=key):
                 with self.assertRaises(exceptions.TaskReportError):
-                    utils.upload_import_unit(
+                    upload_import_unit(
                         self.cfg,
                         package,
                         {'unit_type_id': key.split(' ')[-1]},
@@ -254,7 +255,7 @@ class RequireAnyKeyTestCase(utils.BaseAPITestCase):
                     )
 
 
-class AllowInvalidKeyTestCase(utils.BaseAPITestCase):
+class AllowInvalidKeyTestCase(BaseAPITestCase):
     """Use an importer that allows unsigned packages and has an invalid key ID.
 
     The importer should have the following pseudocode configuration:
@@ -282,7 +283,7 @@ class AllowInvalidKeyTestCase(utils.BaseAPITestCase):
         for key, package in _SIGNED_PACKAGES.items():
             with self.subTest(key=key):
                 with self.assertRaises(exceptions.TaskReportError):
-                    utils.upload_import_unit(
+                    upload_import_unit(
                         self.cfg,
                         package,
                         {'unit_type_id': key.split(' ')[-1]},
@@ -296,7 +297,7 @@ class AllowInvalidKeyTestCase(utils.BaseAPITestCase):
         """
         for key, package in _UNSIGNED_PACKAGES.items():
             with self.subTest(key=key):
-                utils.upload_import_unit(
+                upload_import_unit(
                     self.cfg,
                     package,
                     {'unit_type_id': key.split(' ')[-1]},
@@ -304,7 +305,7 @@ class AllowInvalidKeyTestCase(utils.BaseAPITestCase):
                 )
 
 
-class AllowValidKeyTestCase(utils.BaseAPITestCase):
+class AllowValidKeyTestCase(BaseAPITestCase):
     """Use an importer that allows unsigned packages and has a valid key ID.
 
     The importer should have the following pseudocode configuration:
@@ -333,7 +334,7 @@ class AllowValidKeyTestCase(utils.BaseAPITestCase):
                 _SIGNED_PACKAGES.items(),
                 _UNSIGNED_PACKAGES.items()):
             with self.subTest(key=key):
-                utils.upload_import_unit(
+                upload_import_unit(
                     self.cfg,
                     package,
                     {'unit_type_id': key.split(' ')[-1]},
@@ -341,7 +342,7 @@ class AllowValidKeyTestCase(utils.BaseAPITestCase):
                 )
 
 
-class AllowAnyKeyTestCase(utils.BaseAPITestCase):
+class AllowAnyKeyTestCase(BaseAPITestCase):
     """Use an importer that allows unsigned packages and has no key IDs.
 
     The importer should have the following pseudocode configuration:
@@ -370,7 +371,7 @@ class AllowAnyKeyTestCase(utils.BaseAPITestCase):
                 _SIGNED_PACKAGES.items(),
                 _UNSIGNED_PACKAGES.items()):
             with self.subTest(key=key):
-                utils.upload_import_unit(
+                upload_import_unit(
                     self.cfg,
                     package,
                     {'unit_type_id': key.split(' ')[-1]},

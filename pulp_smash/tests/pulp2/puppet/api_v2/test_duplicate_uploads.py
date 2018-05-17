@@ -17,13 +17,12 @@ The second upload should silently fail for all Pulp releases in the 2.x series.
 from pulp_smash import api, utils
 from pulp_smash.constants import PUPPET_MODULE_URL_1
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase, DuplicateUploadsMixin
 from pulp_smash.tests.pulp2.puppet.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.puppet.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
-class DuplicateUploadsTestCase(
-        utils.BaseAPITestCase,
-        utils.DuplicateUploadsMixin):
+class DuplicateUploadsTestCase(BaseAPITestCase, DuplicateUploadsMixin):
     """Test how well Pulp can deal with duplicate content unit uploads."""
 
     @classmethod

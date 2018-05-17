@@ -8,6 +8,7 @@ from urllib.parse import urlsplit
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import FILE_URL, RPM_UNSIGNED_URL
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import upload_import_unit
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
@@ -79,7 +80,7 @@ class DuplicateUploadsTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         for _ in range(2):
-            call_report = utils.upload_import_unit(self.cfg, unit, {
+            call_report = upload_import_unit(self.cfg, unit, {
                 'unit_type_id': type_id,
                 'unit_key': unit_key
             }, repo)

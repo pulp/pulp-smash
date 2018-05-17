@@ -12,12 +12,14 @@ from urllib.parse import urljoin
 from packaging.version import Version
 
 from pulp_smash import api, cli, config, selectors, utils
-from pulp_smash.constants import (
-    RPM,
-    RPM_SIGNED_FEED_URL,
-    RPM_SIGNED_URL,
-)
+from pulp_smash.constants import RPM, RPM_SIGNED_FEED_URL, RPM_SIGNED_URL
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import (
+    BaseAPITestCase,
+    reset_pulp,
+    reset_squid,
+    sync_repo,
+)
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -67,7 +69,7 @@ def _create_repo(cfg, download_policy):
     return api.Client(cfg).post(REPOSITORY_PATH, body).json()
 
 
-class BackgroundTestCase(utils.BaseAPITestCase):
+class BackgroundTestCase(BaseAPITestCase):
     """Ensure the "background" download policy works."""
 
     @classmethod
@@ -89,13 +91,13 @@ class BackgroundTestCase(utils.BaseAPITestCase):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1905')
 
         # Required to ensure content is actually downloaded.
-        utils.reset_squid(cls.cfg)
-        utils.reset_pulp(cls.cfg)
+        reset_squid(cls.cfg)
+        reset_pulp(cls.cfg)
 
         # Create, sync and publish a repository.
         repo = _create_repo(cls.cfg, 'background')
         cls.resources.add(repo['_href'])
-        report = utils.sync_repo(cls.cfg, repo).json()
+        report = sync_repo(cls.cfg, repo).json()
 
         # Record the tasks spawned when syncing the repository, and the state
         # of the repository itself after the sync.
@@ -143,7 +145,7 @@ class BackgroundTestCase(utils.BaseAPITestCase):
         self.assertEqual('finished', tasks[0]['state'])
 
 
-class OnDemandTestCase(utils.BaseAPITestCase):
+class OnDemandTestCase(BaseAPITestCase):
     """Ensure the "on demand" download policy works."""
 
     @classmethod
@@ -163,13 +165,13 @@ class OnDemandTestCase(utils.BaseAPITestCase):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
 
         # Ensure `locally_stored_units` is 0 before we start.
-        utils.reset_squid(cls.cfg)
-        utils.reset_pulp(cls.cfg)
+        reset_squid(cls.cfg)
+        reset_pulp(cls.cfg)
 
         # Create, sync and publish a repository.
         repo = _create_repo(cls.cfg, 'on_demand')
         cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo)
+        sync_repo(cls.cfg, repo)
 
         # Read the repository.
         client = api.Client(cls.cfg)
@@ -237,7 +239,7 @@ class OnDemandTestCase(utils.BaseAPITestCase):
         self.assertIn('HIT', headers['X-Cache-Lookup'], headers)
 
 
-class FixFileCorruptionTestCase(utils.BaseAPITestCase):
+class FixFileCorruptionTestCase(BaseAPITestCase):
     """Ensure the "on demand" download policy can fix file corruption."""
 
     @classmethod
@@ -261,12 +263,12 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
 
         # Ensure Pulp is empty of units otherwise we might just associate pre-
         # existing units.
-        utils.reset_pulp(cls.cfg)
+        reset_pulp(cls.cfg)
 
         # Create, sync and publish a repository.
         repo = _create_repo(cls.cfg, 'on_demand')
         cls.resources.add(repo['_href'])
-        utils.sync_repo(cls.cfg, repo)
+        sync_repo(cls.cfg, repo)
 
         # Trigger a repository download. Read the repo before and after.
         api_client = api.Client(cls.cfg, api.json_handler)
@@ -359,7 +361,7 @@ class FixFileCorruptionTestCase(utils.BaseAPITestCase):
         self.assertEqual(self.sha_pre_corruption, self.verified_file_sha)
 
 
-class SwitchPoliciesTestCase(utils.BaseAPITestCase):
+class SwitchPoliciesTestCase(BaseAPITestCase):
     """Ensure that repo's download policy can be updated and works.
 
     Each test exercises a different download policy permutation by doing the
@@ -379,8 +381,8 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
         if check_issue_3104(self.cfg):
             self.skipTest('https://pulp.plan.io/issues/3104')
         # Required to ensure content is actually downloaded.
-        utils.reset_squid(self.cfg)
-        utils.reset_pulp(self.cfg)
+        reset_squid(self.cfg)
+        reset_pulp(self.cfg)
 
     def repository_setup(self, first, second):
         """Set up a repository for download policy switch test.
@@ -407,7 +409,7 @@ class SwitchPoliciesTestCase(utils.BaseAPITestCase):
             repo['_href'], params={'details': True}).json()
         self.assertEqual(
             repo['importers'][0]['config']['download_policy'], second)
-        report = utils.sync_repo(self.cfg, repo).json()
+        report = sync_repo(self.cfg, repo).json()
         tasks = tuple(api.poll_spawned_tasks(self.cfg, report))
         return repo, tasks
 

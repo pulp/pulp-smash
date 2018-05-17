@@ -24,6 +24,13 @@ from pulp_smash.pulp2.constants import (
     CONTENT_UPLOAD_PATH,
     REPOSITORY_PATH
 )
+from pulp_smash.pulp2.utils import (
+    BaseAPITestCase,
+    publish_repo,
+    reset_pulp,
+    search_units,
+    sync_repo,
+)
 from pulp_smash.tests.pulp2.puppet.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -31,7 +38,7 @@ from pulp_smash.tests.pulp2.puppet.api_v2.utils import (
 from pulp_smash.tests.pulp2.puppet.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
-class CreateTestCase(utils.BaseAPITestCase):
+class CreateTestCase(BaseAPITestCase):
     """Create two puppet repos, with and without feed URLs respectively."""
 
     @classmethod
@@ -84,7 +91,7 @@ class CreateTestCase(utils.BaseAPITestCase):
                 self.assertEqual(body['importer_' + key], importers[0][key])
 
 
-class SyncValidFeedTestCase(utils.BaseAPITestCase):
+class SyncValidFeedTestCase(BaseAPITestCase):
     """Create and sync puppet repositories with valid feeds."""
 
     def test_matching_query(self):
@@ -111,10 +118,10 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        self.sync_repo(repo)
+        self._sync_repo(repo)
 
         # Publish the repository.
-        utils.publish_repo(self.cfg, repo)
+        publish_repo(self.cfg, repo)
         module = '/'.join((PUPPET_MODULE_2['author'], PUPPET_MODULE_2['name']))
         response = client.get(
             '/v3/releases',
@@ -155,10 +162,10 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        self.sync_repo(repo)
+        self._sync_repo(repo)
 
         # Publish the repository.
-        utils.publish_repo(self.cfg, repo)
+        publish_repo(self.cfg, repo)
         module = '/'.join((PUPPET_MODULE_2['author'], PUPPET_MODULE_2['name']))
         with self.assertRaises(HTTPError):
             client.get(
@@ -167,16 +174,16 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
                 params={'module': module},
             )
 
-    def sync_repo(self, repo):
+    def _sync_repo(self, repo):
         """Sync a repository, and verify no tasks contain an error message."""
-        report = utils.sync_repo(self.cfg, repo).json()
+        report = sync_repo(self.cfg, repo).json()
         for task in api.poll_spawned_tasks(self.cfg, report):
             self.assertIsNone(
                 task['progress_report']['puppet_importer']['metadata']['error_message']  # pylint:disable=line-too-long
             )
 
 
-class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
+class SyncInvalidFeedTestCase(BaseAPITestCase):
     """If an invalid feed is given a sync should complete with errors."""
 
     @classmethod
@@ -215,7 +222,7 @@ class SyncInvalidFeedTestCase(utils.BaseAPITestCase):
         )
 
 
-class SyncNoFeedTestCase(utils.BaseAPITestCase):
+class SyncNoFeedTestCase(BaseAPITestCase):
     """Create and sync a puppet repository with no feed.
 
     At least one of the sync tasks should fail. The task should fail in a
@@ -237,7 +244,7 @@ class SyncNoFeedTestCase(utils.BaseAPITestCase):
         # Sync the repository. An error *should* occur. We just want the error
         # to be sane.
         with self.assertRaises(exceptions.TaskReportError) as err:
-            utils.sync_repo(cfg, repo)
+            sync_repo(cfg, repo)
         with self.subTest(comment='check task "error" field'):
             self.assertIsNotNone(err.exception.task['error'])
             self.assertNotEqual(
@@ -251,7 +258,7 @@ class SyncNoFeedTestCase(utils.BaseAPITestCase):
             self.assertIsNone(err.exception.task['traceback'])
 
 
-class SyncValidManifestFeedTestCase(utils.BaseAPITestCase):
+class SyncValidManifestFeedTestCase(BaseAPITestCase):
     """A valid Puppet manifest should sync correctly."""
 
     @classmethod
@@ -267,7 +274,7 @@ class SyncValidManifestFeedTestCase(utils.BaseAPITestCase):
         cls.resources.add(repo['_href'])
 
         # Trigger a repository sync and collect completed tasks.
-        cls.report = utils.sync_repo(cls.cfg, repo)
+        cls.report = sync_repo(cls.cfg, repo)
         cls.tasks = list(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
 
     def test_status_code(self):
@@ -287,7 +294,7 @@ class SyncValidManifestFeedTestCase(utils.BaseAPITestCase):
                 )
 
 
-class PublishTestCase(utils.BaseAPITestCase):
+class PublishTestCase(BaseAPITestCase):
     """Test repository syncing, publishing and data integrity.
 
     Test uploading custom puppet module to repository, copying content between
@@ -310,7 +317,7 @@ class PublishTestCase(utils.BaseAPITestCase):
         modules back from them.
         """
         super(PublishTestCase, cls).setUpClass()
-        utils.reset_pulp(cls.cfg)  # See: https://pulp.plan.io/issues/1406
+        reset_pulp(cls.cfg)  # See: https://pulp.plan.io/issues/1406
         cls.responses = {}
         cls.modules = []  # Raw puppet modules.
 
@@ -404,7 +411,7 @@ class PublishTestCase(utils.BaseAPITestCase):
 
         # Search for all units in each of the two repositories.
         cls.responses['repo units'] = [
-            utils.search_units(cls.cfg, repo, {}, api.safe_handler)
+            search_units(cls.cfg, repo, {}, api.safe_handler)
             for repo in repos
         ]
 

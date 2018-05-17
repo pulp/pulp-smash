@@ -3,9 +3,10 @@
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, config, selectors
 from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import sync_repo
 from pulp_smash.tests.pulp2.docker.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.docker.utils import get_upstream_name
 from pulp_smash.tests.pulp2.docker.utils import set_up_module as setUpModule  # pylint:disable=unused-import
@@ -39,7 +40,7 @@ class CopyV1ContentTestCase(unittest.TestCase):
             'upstream_name': get_upstream_name(self.cfg),
         })
         type(self).repo = client.post(REPOSITORY_PATH, body)
-        utils.sync_repo(self.cfg, self.repo)
+        sync_repo(self.cfg, self.repo)
         type(self).repo = client.get(
             self.repo['_href'],
             params={'details': True}
@@ -93,7 +94,7 @@ class CopyV2ContentTestCase(unittest.TestCase):
             'upstream_name': get_upstream_name(self.cfg),
         })
         type(self).repo = client.post(REPOSITORY_PATH, body)
-        utils.sync_repo(self.cfg, self.repo)
+        sync_repo(self.cfg, self.repo)
         type(self).repo = client.get(
             self.repo['_href'],
             params={'details': True}

@@ -13,6 +13,7 @@ from pulp_smash.constants import (
     RPM_WITH_NON_UTF_8_URL,
 )
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import upload_import_unit
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
@@ -34,7 +35,7 @@ class UploadNonAsciiTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
         rpm = utils.http_get(RPM_WITH_NON_ASCII_URL)
-        utils.upload_import_unit(cfg, rpm, {'unit_type_id': 'rpm'}, repo)
+        upload_import_unit(cfg, rpm, {'unit_type_id': 'rpm'}, repo)
 
 
 class UploadNonUtf8TestCase(unittest.TestCase):
@@ -58,4 +59,4 @@ class UploadNonUtf8TestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
         rpm = utils.http_get(RPM_WITH_NON_UTF_8_URL)
-        utils.upload_import_unit(cfg, rpm, {'unit_type_id': 'rpm'}, repo)
+        upload_import_unit(cfg, rpm, {'unit_type_id': 'rpm'}, repo)

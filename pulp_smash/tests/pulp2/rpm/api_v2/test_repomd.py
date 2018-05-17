@@ -8,11 +8,9 @@ import unittest
 from urllib.parse import urljoin
 
 from pulp_smash import api, cli, config, selectors, utils
-from pulp_smash.constants import (
-    RPM_NAMESPACES,
-    RPM_UNSIGNED_FEED_URL,
-)
+from pulp_smash.constants import RPM_NAMESPACES, RPM_UNSIGNED_FEED_URL
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase, publish_repo, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -22,7 +20,7 @@ from pulp_smash.tests.pulp2.rpm.utils import check_issue_2277, check_issue_3104
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
-class RepoMDTestCase(utils.BaseAPITestCase):
+class RepoMDTestCase(BaseAPITestCase):
     """Tests to ensure ``repomd.xml`` can be created and is valid."""
 
     @classmethod
@@ -47,7 +45,7 @@ class RepoMDTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, body)
         repo = client.get(repo['_href'], params={'details': True})
         cls.resources.add(repo['_href'])
-        utils.publish_repo(cls.cfg, repo)
+        publish_repo(cls.cfg, repo)
 
         # Fetch and parse repomd.xml
         client.response_handler = xml_handler
@@ -116,7 +114,7 @@ class FastForwardIntegrityTestCase(unittest.TestCase):
         new_phrase = utils.uuid4()
 
         # Publish the repository, and verify its […]-primary.xml file.
-        utils.publish_repo(cfg, repo)
+        publish_repo(cfg, repo)
         primary_xml = self._read_primary_xml(cfg, repo)
         self.assertIn(old_phrase, primary_xml)
         self.assertNotIn(new_phrase, primary_xml)
@@ -129,7 +127,7 @@ class FastForwardIntegrityTestCase(unittest.TestCase):
                 'type_ids': ['rpm'],
             }
         })
-        utils.publish_repo(cfg, repo)
+        publish_repo(cfg, repo)
         primary_xml = self._read_primary_xml(cfg, repo)
         self.assertIn(old_phrase, primary_xml)
         self.assertNotIn(new_phrase, primary_xml)
@@ -137,8 +135,8 @@ class FastForwardIntegrityTestCase(unittest.TestCase):
         # Create a dummy-primary.xml. Trigger an incremental fast-forward pub.
         # Fast-forward publish described here: https://pulp.plan.io/issues/2113
         self._create_dummy_primary_xml(cfg, repo, old_phrase, new_phrase)
-        utils.sync_repo(cfg, repo)
-        utils.publish_repo(cfg, repo)
+        sync_repo(cfg, repo)
+        publish_repo(cfg, repo)
         primary_xml = self._read_primary_xml(cfg, repo)
         self.assertIn(old_phrase, primary_xml)
         self.assertNotIn(new_phrase, primary_xml)
@@ -201,7 +199,7 @@ class FastForwardIntegrityTestCase(unittest.TestCase):
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(cfg, repo)
+        sync_repo(cfg, repo)
         repo = client.get(repo['_href'], params={'details': True})
         return client.get(repo['_href'], params={'details': True})
 

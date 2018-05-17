@@ -30,12 +30,9 @@ import unittest
 from packaging.version import Version
 
 from pulp_smash import api, cli, config, selectors, utils
-from pulp_smash.constants import (
-    RPM,
-    RPM_SIGNED_FEED_URL,
-    RPM_SIGNED_URL,
-)
+from pulp_smash.constants import RPM, RPM_SIGNED_FEED_URL, RPM_SIGNED_URL
 from pulp_smash.pulp2.constants import PULP_SERVICES, REPOSITORY_PATH
+from pulp_smash.pulp2.utils import get_broker, publish_repo, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -61,7 +58,7 @@ class BrokerTestCase(unittest.TestCase):
             self.skipTest('https://pulp.plan.io/issues/2277')
         if check_issue_2387(self.cfg):
             self.skipTest('https://pulp.plan.io/issues/2387')
-        self.broker = (utils.get_broker(self.cfg),)
+        self.broker = (get_broker(self.cfg),)
         self.svc_mgr = cli.GlobalServiceManager(self.cfg)
 
     def tearDown(self):
@@ -128,8 +125,8 @@ class BrokerTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(self.cfg, repo)
-        utils.publish_repo(self.cfg, repo)
+        sync_repo(self.cfg, repo)
+        publish_repo(self.cfg, repo)
         pulp_rpm = get_unit(self.cfg, repo['distributors'][0], RPM).content
 
         # Does this RPM match the original RPM?

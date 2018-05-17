@@ -26,10 +26,8 @@ from pulp_smash.constants import (
     RPM_UNSIGNED_URL,
 )
 from pulp_smash.exceptions import TaskReportError
-from pulp_smash.pulp2.constants import (
-    ORPHANS_PATH,
-    REPOSITORY_PATH,
-)
+from pulp_smash.pulp2.utils import publish_repo, sync_repo
+from pulp_smash.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -146,8 +144,8 @@ class GoodMirrorlistTestCase(UtilsMixin, unittest.TestCase):
         self.check_issue_2277(cfg)
         self.check_issue_2326(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_GOOD)
-        utils.sync_repo(cfg, repo)
-        utils.publish_repo(cfg, repo)
+        sync_repo(cfg, repo)
+        publish_repo(cfg, repo)
         actual_rpm = get_unit(cfg, repo['distributors'][0], RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
         self.assertEqual(actual_rpm, target_rpm)
@@ -164,8 +162,8 @@ class GoodRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
         self.check_issue_2277(cfg)
         self.check_issue_2326(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_GOOD, _gen_rel_url())
-        utils.sync_repo(cfg, repo)
-        utils.publish_repo(cfg, repo)
+        sync_repo(cfg, repo)
+        publish_repo(cfg, repo)
         actual_rpm = get_unit(cfg, repo['distributors'][0], RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
         self.assertEqual(actual_rpm, target_rpm)
@@ -188,8 +186,8 @@ class MixedMirrorlistTestCase(UtilsMixin, unittest.TestCase):
         self.check_issue_2277(cfg)
         self.check_issue_2321(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_MIXED)
-        utils.sync_repo(cfg, repo)
-        utils.publish_repo(cfg, repo)
+        sync_repo(cfg, repo)
+        publish_repo(cfg, repo)
         actual_rpm = get_unit(cfg, repo['distributors'][0], RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
         self.assertEqual(actual_rpm, target_rpm)
@@ -206,8 +204,8 @@ class MixedRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
         self.check_issue_2277(cfg)
         self.check_issue_2321(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_MIXED, _gen_rel_url())
-        utils.sync_repo(cfg, repo)
-        utils.publish_repo(cfg, repo)
+        sync_repo(cfg, repo)
+        publish_repo(cfg, repo)
         actual_rpm = get_unit(cfg, repo['distributors'][0], RPM).content
         target_rpm = utils.http_get(RPM_UNSIGNED_URL)
         self.assertEqual(actual_rpm, target_rpm)
@@ -229,7 +227,7 @@ class BadMirrorlistTestCase(UtilsMixin, unittest.TestCase):
         self.check_issue_2363(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_BAD)
         with self.assertRaises(TaskReportError):
-            utils.sync_repo(cfg, repo)
+            sync_repo(cfg, repo)
 
 
 class BadRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
@@ -241,4 +239,4 @@ class BadRelativeUrlTestCase(UtilsMixin, unittest.TestCase):
         self.check_issue_2363(cfg)
         repo = self.create_repo(cfg, RPM_MIRRORLIST_BAD, _gen_rel_url())
         with self.assertRaises(TaskReportError):
-            utils.sync_repo(cfg, repo)
+            sync_repo(cfg, repo)

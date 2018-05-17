@@ -8,6 +8,7 @@ from packaging.version import Version
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import publish_repo, sync_repo
 from pulp_smash.tests.pulp2.docker.api_v2.utils import (
     SyncPublishMixin,
     gen_distributor,
@@ -460,8 +461,8 @@ class NoAmd64LinuxTestCase(SyncPublishMixin, unittest.TestCase):
             self.repo['_href'],
             params={'details': True}
         )
-        utils.sync_repo(self.cfg, self.repo)
-        utils.publish_repo(self.cfg, self.repo)
+        sync_repo(self.cfg, self.repo)
+        publish_repo(self.cfg, self.repo)
 
         # Make Crane read metadata. (Now!)
         cli.GlobalServiceManager(self.cfg).restart(('httpd',))

@@ -16,6 +16,7 @@ from requests.exceptions import HTTPError
 from pulp_smash import api, config, exceptions, selectors, utils
 from pulp_smash.constants import OSTREE_FEED, OSTREE_BRANCHES
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase, BaseAPICrudTestCase
 from pulp_smash.tests.pulp2.ostree.utils import gen_repo
 from pulp_smash.tests.pulp2.ostree.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
@@ -34,7 +35,7 @@ def _gen_rel_path(segments=2):
     return '/'.join((utils.uuid4() for _ in range(segments)))
 
 
-class CrudTestCase(utils.BaseAPICrudTestCase):
+class CrudTestCase(BaseAPICrudTestCase):
     """CRUD a minimal OSTree repository."""
 
     @staticmethod
@@ -59,7 +60,7 @@ class CrudWithFeedTestCase(CrudTestCase):
         return body
 
 
-class CreateDistributorsTestCase(utils.BaseAPITestCase):
+class CreateDistributorsTestCase(BaseAPITestCase):
     """Show Pulp can create OSTree distributors and prevent path conflicts.
 
     This test case targets:
@@ -172,7 +173,7 @@ class CreateDistributorsTestCase(utils.BaseAPITestCase):
             client.post(path, body)
 
 
-class UpdateDistributorsTestCase(utils.BaseAPITestCase):
+class UpdateDistributorsTestCase(BaseAPITestCase):
     """Test the update of ostree distributors.
 
     This test case targets:

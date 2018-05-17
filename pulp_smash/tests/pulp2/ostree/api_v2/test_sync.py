@@ -12,6 +12,7 @@ from urllib.parse import urljoin
 from pulp_smash import api, selectors, utils
 from pulp_smash.constants import OSTREE_FEED, OSTREE_BRANCHES
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase, sync_repo
 from pulp_smash.tests.pulp2.ostree.utils import gen_repo
 from pulp_smash.tests.pulp2.ostree.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
@@ -86,7 +87,7 @@ class _SyncImportFailedMixin():  # pylint:disable=too-few-public-methods
             self.assertGreater(num_error_details, 0)
 
 
-class SyncTestCase(_SyncMixin, utils.BaseAPITestCase):
+class SyncTestCase(_SyncMixin, BaseAPITestCase):
     """Create an OSTree repository with a valid feed and branch, and sync it.
 
     The sync should complete with no errors reported.
@@ -103,7 +104,7 @@ class SyncTestCase(_SyncMixin, utils.BaseAPITestCase):
         body['importer_config']['branches'] = OSTREE_BRANCHES
         repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
         cls.resources.add(repo['_href'])
-        cls.report = utils.sync_repo(cls.cfg, repo)
+        cls.report = sync_repo(cls.cfg, repo)
         cls.tasks = tuple(api.poll_spawned_tasks(cls.cfg, cls.report.json()))
 
     def test_task_progress_report(self):
@@ -118,7 +119,7 @@ class SyncInvalidFeedTestCase(
         _SyncMixin,
         _SyncFailedMixin,
         _SyncImportFailedMixin,
-        utils.BaseAPITestCase):
+        BaseAPITestCase):
     """Create an OSTree repository with an invalid feed and sync it."""
 
     @classmethod
@@ -138,7 +139,7 @@ class SyncInvalidBranchesTestCase(
         _SyncMixin,
         _SyncFailedMixin,
         _SyncImportFailedMixin,
-        utils.BaseAPITestCase):
+        BaseAPITestCase):
     """Create an OSTree repository with invalid branches and sync it."""
 
     @classmethod
@@ -157,7 +158,7 @@ class SyncInvalidBranchesTestCase(
 class SyncMissingAttrsTestCase(
         _SyncMixin,
         _SyncFailedMixin,
-        utils.BaseAPITestCase):
+        BaseAPITestCase):
     """Create an OSTree repository with no feed or branches and sync it."""
 
     @classmethod

@@ -4,6 +4,7 @@ from urllib.parse import urlsplit, urlunsplit
 
 from pulp_smash import api, cli, utils
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import publish_repo, sync_repo
 
 
 def gen_repo():
@@ -112,7 +113,7 @@ class SyncPublishMixin():
 
         # Sync, publish, and re-read metadata.
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(cfg, repo)
-        utils.publish_repo(cfg, repo)
+        sync_repo(cfg, repo)
+        publish_repo(cfg, repo)
         cli.GlobalServiceManager(cfg).restart(('httpd',))
         return client.get(repo['_href'], params={'details': True})

@@ -12,9 +12,10 @@ Client Tasks`_.
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, config, selectors
 from pulp_smash.constants import RPM_SIGNED_FEED_URL
 from pulp_smash.pulp2.constants import REPOSITORY_PATH, TASKS_PATH
+from pulp_smash.pulp2.utils import publish_repo, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_distributor, gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
@@ -59,8 +60,8 @@ class TasksOperationsTestCase(unittest.TestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(cfg, repo)
-        utils.publish_repo(cfg, repo)
+        sync_repo(cfg, repo)
+        publish_repo(cfg, repo)
 
         with self.subTest('list tasks'):
             client.get(TASKS_PATH)

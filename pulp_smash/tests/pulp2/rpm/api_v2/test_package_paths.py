@@ -38,6 +38,7 @@ from pulp_smash.constants import (
     RPM_UNSIGNED_FEED_URL,
 )
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import publish_repo, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -93,9 +94,9 @@ class ReuseContentTestCase(unittest.TestCase):
             for feed in (RPM_ALT_LAYOUT_FEED_URL, RPM_UNSIGNED_FEED_URL)
         ]
         for repo in repos:
-            utils.sync_repo(cfg, repo)
+            sync_repo(cfg, repo)
         for repo in repos:
-            utils.publish_repo(cfg, repo)
+            publish_repo(cfg, repo)
         rpms = []
         for repo in repos:
             with self.subTest(repo=repo):

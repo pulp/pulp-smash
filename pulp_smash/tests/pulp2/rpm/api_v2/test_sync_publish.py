@@ -34,6 +34,7 @@ from pulp_smash.constants import (
     SRPM_SIGNED_FEED_URL,
 )
 from pulp_smash.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase, publish_repo, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -44,7 +45,7 @@ from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pyl
 
 
 # This class is left public for documentation purposes.
-class SyncRepoBaseTestCase(utils.BaseAPITestCase):
+class SyncRepoBaseTestCase(BaseAPITestCase):
     """A parent class for repository syncronization test cases.
 
     :meth:`get_feed_url` should be overridden by concrete child classes. This
@@ -62,7 +63,7 @@ class SyncRepoBaseTestCase(utils.BaseAPITestCase):
         body['importer_config']['feed'] = cls.get_feed_url()
         cls.repo = client.post(REPOSITORY_PATH, body)
         cls.resources.add(cls.repo['_href'])
-        cls.report = utils.sync_repo(cls.cfg, cls.repo)
+        cls.report = sync_repo(cls.cfg, cls.repo)
 
     @staticmethod
     def get_feed_url():
@@ -124,7 +125,7 @@ class SyncRpmRepoTestCase(SyncRepoBaseTestCase):
         If the repository have not changed then Pulp must state that anything
         was changed when doing a second sync.
         """
-        report = utils.sync_repo(self.cfg, self.repo)
+        report = sync_repo(self.cfg, self.repo)
         tasks = tuple(api.poll_spawned_tasks(self.cfg, report.json()))
         with self.subTest(comment='spawned tasks'):
             self.assertEqual(len(tasks), 1)
@@ -194,7 +195,7 @@ class SyncInvalidMetadataTestCase(unittest.TestCase):
         self.addCleanup(client.delete, repo['_href'])
 
         with self.assertRaises(exceptions.TaskReportError) as context:
-            utils.sync_repo(cfg, repo)
+            sync_repo(cfg, repo)
         task = context.exception.task
         self.assertEqual(
             'NOT_STARTED',
@@ -203,7 +204,7 @@ class SyncInvalidMetadataTestCase(unittest.TestCase):
         )
 
 
-class ChangeFeedTestCase(utils.BaseAPITestCase):
+class ChangeFeedTestCase(BaseAPITestCase):
     """Sync a repository, change its feed, and sync it again.
 
     Specifically, the test case procedure is as follows:
@@ -248,8 +249,8 @@ class ChangeFeedTestCase(utils.BaseAPITestCase):
         self.assertEqual(repo['importers'][0]['config']['feed'], feed)
 
         # Sync and publish repository C.
-        utils.sync_repo(self.cfg, repo)
-        utils.publish_repo(self.cfg, repo)
+        sync_repo(self.cfg, repo)
+        publish_repo(self.cfg, repo)
 
         rpm = utils.http_get(RPM_UNSIGNED_URL)
         response = get_unit(self.cfg, repo['distributors'][0], RPM)
@@ -273,8 +274,8 @@ class ChangeFeedTestCase(utils.BaseAPITestCase):
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
         repo = client.get(repo['_href'], params={'details': True})
-        utils.sync_repo(self.cfg, repo)
-        utils.publish_repo(self.cfg, repo)
+        sync_repo(self.cfg, repo)
+        publish_repo(self.cfg, repo)
         return repo
 
     def get_feed(self, repo):
@@ -332,8 +333,7 @@ class SyncInParallelTestCase(unittest.TestCase):
             thread.join()
 
         threads = tuple(
-            Thread(target=utils.sync_repo, args=(cfg, repo))
-            for repo in repos
+            Thread(target=sync_repo, args=(cfg, repo)) for repo in repos
         )
         for thread in threads:
             thread.start()
@@ -385,7 +385,7 @@ class ErrorReportTestCase(unittest.TestCase):
         repo = client.get(repo['_href'], params={'details': True})
 
         with self.assertRaises(exceptions.TaskReportError) as context:
-            utils.sync_repo(cfg, repo)
+            sync_repo(cfg, repo)
         task = context.exception.task
 
         with self.subTest(comment='check task error description'):
@@ -416,9 +416,9 @@ class NonExistentRepoTestCase(unittest.TestCase):
     def test_sync(self):
         """Sync a non-existent repository."""
         with self.assertRaises(HTTPError):
-            utils.sync_repo(self.cfg, self.repo)
+            sync_repo(self.cfg, self.repo)
 
     def test_publish(self):
         """Publish a non-existent repository."""
         with self.assertRaises(HTTPError):
-            utils.publish_repo(self.cfg, self.repo, {'id': utils.uuid4()})
+            publish_repo(self.cfg, self.repo, {'id': utils.uuid4()})

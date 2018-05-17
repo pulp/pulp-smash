@@ -65,10 +65,8 @@ from pulp_smash.constants import (
     RPM_SIGNED_FEED_URL,
     RPM_UNSIGNED_URL,
 )
-from pulp_smash.pulp2.constants import (
-    ORPHANS_PATH,
-    REPOSITORY_PATH,
-)
+from pulp_smash.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
+from pulp_smash.pulp2.utils import publish_repo, sync_repo, upload_import_unit
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     DisableSELinuxMixin,
     TemporaryUserMixin,
@@ -290,7 +288,7 @@ class PublishBeforeYumDistTestCase(
         # Publish with the rsync distributor.
         distribs = get_dists_by_type_id(cfg, repo)
         args = (cfg, repo, {'id': distribs['rpm_rsync_distributor']['id']})
-        self.verify_publish_is_skip(cfg, utils.publish_repo(*args).json())
+        self.verify_publish_is_skip(cfg, publish_repo(*args).json())
 
         # Verify that the rsync distributor hasn't placed files.
         dirs = self.remote_root_files(cfg, distribs['rpm_rsync_distributor'])
@@ -298,7 +296,7 @@ class PublishBeforeYumDistTestCase(
 
         # Publish with the rsync distributor again, and verify again.
         if selectors.bug_is_testable(2722, cfg.pulp_version):
-            self.verify_publish_is_skip(cfg, utils.publish_repo(*args).json())
+            self.verify_publish_is_skip(cfg, publish_repo(*args).json())
             dirs = self.remote_root_files(cfg,
                                           distribs['rpm_rsync_distributor'])
             self.assertNotIn('content', dirs)
@@ -351,21 +349,21 @@ class ForceFullTestCase(
             'ssh_identity_file': ssh_identity_file,
             'ssh_user': ssh_user,
         }})
-        utils.sync_repo(cfg, repo)
+        sync_repo(cfg, repo)
 
         # Publish the repo with the yum and rsync distributors, respectively.
         # Verify that the RPM rsync distributor has placed files.
         distribs = get_dists_by_type_id(cfg, repo)
         self.maybe_disable_selinux(cfg, 2199)
         for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
-            utils.publish_repo(cfg, repo, {'id': distribs[type_id]['id']})
+            publish_repo(cfg, repo, {'id': distribs[type_id]['id']})
         self.verify_remote_units_path(cfg, distribs['rpm_rsync_distributor'])
 
         # Remove all files from the target directory, and publish again. Verify
         # that the RPM rsync distributor didn't place any files.
         cmd = sudo + 'rm -rf /home/{}/content'.format(ssh_user)
         cli_client.run(cmd.split())
-        self.verify_publish_is_skip(cfg, utils.publish_repo(
+        self.verify_publish_is_skip(cfg, publish_repo(
             cfg,
             repo,
             {'id': distribs['rpm_rsync_distributor']['id']}
@@ -377,7 +375,7 @@ class ForceFullTestCase(
         # rsync distributor placed files.
         if selectors.bug_is_untestable(2202, cfg.pulp_version):
             return
-        utils.publish_repo(cfg, repo, {
+        publish_repo(cfg, repo, {
             'id': distribs['rpm_rsync_distributor']['id'],
             'override_config': {'force_full': True},
         })
@@ -519,14 +517,14 @@ class RemoteUnitsPathTestCase(
             'remote_units_path': paths[0],
         })
         distribs = get_dists_by_type_id(cfg, repo)
-        utils.sync_repo(cfg, repo)
+        sync_repo(cfg, repo)
 
         # Publish the repo with the yum and rpm rsync distributors,
         # respectively. Verify that files have been correctly placed.
         distribs = get_dists_by_type_id(cfg, repo)
         self.maybe_disable_selinux(cfg, 2199)
         for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
-            utils.publish_repo(cfg, repo, {
+            publish_repo(cfg, repo, {
                 'id': distribs[type_id]['id'],
                 'config': {'remote_units_path': paths[1]},
             })
@@ -572,21 +570,21 @@ class DeleteTestCase(
             'ssh_identity_file': ssh_identity_file,
             'ssh_user': ssh_user,
         }})
-        utils.sync_repo(cfg, repo)
+        sync_repo(cfg, repo)
 
         # Publish the repo with the yum and rsync distributors, respectively.
         # Verify that the RPM rsync distributor has placed files.
         distribs = get_dists_by_type_id(cfg, repo)
         self.maybe_disable_selinux(cfg, 2199)
         for type_id in ('yum_distributor', 'rpm_rsync_distributor'):
-            utils.publish_repo(cfg, repo, {'id': distribs[type_id]['id']})
+            publish_repo(cfg, repo, {'id': distribs[type_id]['id']})
         self.verify_remote_units_path(cfg, distribs['rpm_rsync_distributor'])
 
         # Disassociate all units from the repo, publish the repo, and verify.
         api_client.post(urljoin(repo['_href'], 'actions/unassociate/'), {
             'criteria': {}
         })
-        utils.publish_repo(
+        publish_repo(
             cfg,
             repo,
             {'id': distribs['yum_distributor']['id']}
@@ -674,14 +672,13 @@ class AddUnitTestCase(
         # Add content, publish w/yum, add more content, publish w/rsync.
         dists = get_dists_by_type_id(cfg, repo)
         for i, key in enumerate(('yum_distributor', 'rpm_rsync_distributor')):
-            utils.upload_import_unit(
-                cfg, rpms[i], {'unit_type_id': 'rpm'}, repo)
-            utils.publish_repo(cfg, repo, {'id': dists[key]['id']})
+            upload_import_unit(cfg, rpms[i], {'unit_type_id': 'rpm'}, repo)
+            publish_repo(cfg, repo, {'id': dists[key]['id']})
         self.verify_remote_units_path(cfg, dists['rpm_rsync_distributor'], 1)
 
         # Publish with yum and rsync, respectively.
         for key in 'yum_distributor', 'rpm_rsync_distributor':
-            utils.publish_repo(cfg, repo, {'id': dists[key]['id']})
+            publish_repo(cfg, repo, {'id': dists[key]['id']})
         self.verify_remote_units_path(cfg, dists['rpm_rsync_distributor'], 1)
 
 
@@ -726,7 +723,7 @@ class PublishTwiceTestCase(
 
         # Add content.
         for url in (RPM_UNSIGNED_URL, RPM2_UNSIGNED_URL):
-            utils.upload_import_unit(
+            upload_import_unit(
                 cfg,
                 utils.http_get(url),
                 {'unit_type_id': 'rpm'},
@@ -740,7 +737,7 @@ class PublishTwiceTestCase(
         # Publish with yum and rsync.
         for dist in 'yum_distributor', 'rpm_rsync_distributor':
             report = (
-                utils.publish_repo(cfg, repo, {'id': dists[dist]['id']}).json()
+                publish_repo(cfg, repo, {'id': dists[dist]['id']}).json()
             )
             publish_task = self.get_publish_task(cfg, report)
         num_processed = self.get_num_processed(publish_task)
@@ -750,7 +747,7 @@ class PublishTwiceTestCase(
         # Publish with yum and rsync again.
         for dist in 'yum_distributor', 'rpm_rsync_distributor':
             report = (
-                utils.publish_repo(cfg, repo, {'id': dists[dist]['id']}).json()
+                publish_repo(cfg, repo, {'id': dists[dist]['id']}).json()
             )
             publish_task = self.get_publish_task(cfg, report)
         num_processed = self.get_num_processed(publish_task)
@@ -804,15 +801,15 @@ class RsyncExtraArgsTestCase(
             'ssh_identity_file': ssh_identity_file,
             'ssh_user': ssh_user,
         }})
-        utils.sync_repo(cfg, repo)
+        sync_repo(cfg, repo)
 
         # Publish the repo with the yum and rsync distributors, respectively.
         distribs = get_dists_by_type_id(cfg, repo)
         self.maybe_disable_selinux(cfg, 2199)
-        utils.publish_repo(cfg, repo, {
+        publish_repo(cfg, repo, {
             'id': distribs['yum_distributor']['id']
         })
-        utils.publish_repo(cfg, repo, {
+        publish_repo(cfg, repo, {
             'id': distribs['rpm_rsync_distributor']['id'],
             'override_config': {'rsync_extra_args': ['--dry-run']},
         })
@@ -823,7 +820,7 @@ class RsyncExtraArgsTestCase(
         self.assertSetEqual(files, set())
 
         # Publish the repo again with the rsync distributor (force full)
-        utils.publish_repo(cfg, repo, {
+        publish_repo(cfg, repo, {
             'id': distribs['rpm_rsync_distributor']['id'],
             'override_config': {'force_full': True},
         })

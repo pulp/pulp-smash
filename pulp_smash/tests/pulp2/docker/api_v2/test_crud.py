@@ -11,6 +11,7 @@ from packaging.version import Version
 
 from pulp_smash import api, config, utils
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPICrudTestCase, BaseAPITestCase
 from pulp_smash.tests.pulp2.docker.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.docker.utils import set_up_module
 
@@ -35,7 +36,7 @@ def _gen_distributor():
     }
 
 
-class CrudTestCase(utils.BaseAPICrudTestCase):
+class CrudTestCase(BaseAPICrudTestCase):
     """CRUD a minimal Docker repository."""
 
     @staticmethod
@@ -60,7 +61,7 @@ class CrudWithFeedTestCase(CrudTestCase):
         return body
 
 
-class UpdateTestCase(utils.BaseAPITestCase):
+class UpdateTestCase(BaseAPITestCase):
     """Show it is possible to update a distributor for a docker repository."""
 
     @classmethod

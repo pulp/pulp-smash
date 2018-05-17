@@ -36,6 +36,7 @@ from pulp_smash.constants import (
     SRPM_UNSIGNED_URL,
 )
 from pulp_smash.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
+from pulp_smash.pulp2.utils import upload_import_unit
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module
 
@@ -67,12 +68,12 @@ def setUpModule():  # pylint:disable=invalid-name
         repo = client.post(REPOSITORY_PATH, gen_repo())
         _REPOS['signed'] = repo
         for type_id, pkg in _SIGNED_PACKAGES.items():
-            utils.upload_import_unit(cfg, pkg, {'unit_type_id': type_id}, repo)
+            upload_import_unit(cfg, pkg, {'unit_type_id': type_id}, repo)
 
         repo = client.post(REPOSITORY_PATH, gen_repo())
         _REPOS['unsigned'] = repo
         for type_id, pkg in _UNSIGNED_PACKAGES.items():
-            utils.upload_import_unit(cfg, pkg, {'unit_type_id': type_id}, repo)
+            upload_import_unit(cfg, pkg, {'unit_type_id': type_id}, repo)
     except:  # noqa:E722
         _SIGNED_PACKAGES.clear()
         _UNSIGNED_PACKAGES.clear()

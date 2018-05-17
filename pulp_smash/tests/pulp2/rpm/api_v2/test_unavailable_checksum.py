@@ -2,7 +2,7 @@
 """Tests that publish repositories with unavailable checksum types."""
 import unittest
 
-from pulp_smash import api, config, utils
+from pulp_smash import api, config
 from pulp_smash.constants import (
     DRPM_UNSIGNED_FEED_URL,
     RPM_NAMESPACES,
@@ -11,6 +11,7 @@ from pulp_smash.constants import (
 )
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.exceptions import TaskReportError
+from pulp_smash.pulp2.utils import publish_repo, search_units, sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,
@@ -62,11 +63,11 @@ class UnavailableChecksumTestCase(unittest.TestCase):
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(cfg, repo)
+        sync_repo(cfg, repo)
         repo = client.get(repo['_href'], params={'details': True})
 
         # Figure out which checksum type the units in the repository use.
-        units = utils.search_units(cfg, repo, {'type_ids': type_id})
+        units = search_units(cfg, repo, {'type_ids': type_id})
         checksums = {'md5', 'sha1', 'sha256'}
 
         # Publish this repo with checksums that aren't available.
@@ -76,7 +77,7 @@ class UnavailableChecksumTestCase(unittest.TestCase):
                 'distributor_config': {'checksum_type': checksum}
             })
             with self.assertRaises(TaskReportError):
-                utils.publish_repo(cfg, repo)
+                publish_repo(cfg, repo)
 
 
 class UpdatedChecksumTestCase(unittest.TestCase):
@@ -134,7 +135,7 @@ class UpdatedChecksumTestCase(unittest.TestCase):
         body['distributors'] = [gen_distributor()]
         repo = client.post(REPOSITORY_PATH, body)
         self.addCleanup(client.delete, repo['_href'])
-        utils.sync_repo(cfg, repo)
+        sync_repo(cfg, repo)
         repo = client.get(repo['_href'], params={'details': True})
         distributor = repo['distributors'][0]
 
@@ -142,7 +143,7 @@ class UpdatedChecksumTestCase(unittest.TestCase):
         client.put(distributor['_href'], {
             'distributor_config': {'checksum_type': 'sha256'}
         })
-        utils.publish_repo(cfg, repo)
+        publish_repo(cfg, repo)
         with self.subTest(comment='primary.xml'):
             self.verify_primary_xml(cfg, distributor, 'sha256')
         with self.subTest(comment='filelists.xml'):
@@ -157,7 +158,7 @@ class UpdatedChecksumTestCase(unittest.TestCase):
         client.put(distributor['_href'], {
             'distributor_config': {'checksum_type': 'sha1', 'force_full': True}
         })
-        utils.publish_repo(cfg, repo)
+        publish_repo(cfg, repo)
         with self.subTest(comment='primary.xml'):
             self.verify_primary_xml(cfg, distributor, 'sha1')
         with self.subTest(comment='filelists.xml'):

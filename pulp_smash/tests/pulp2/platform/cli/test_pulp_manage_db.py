@@ -11,6 +11,7 @@ import inspect
 import unittest
 
 from pulp_smash import cli, config, exceptions, selectors, utils
+from pulp_smash.pulp2.utils import pulp_admin_login, reset_pulp
 from pulp_smash.tests.pulp2.platform.utils import set_up_module
 
 REQUIRED_SERVICES = frozenset(('mongod',))
@@ -27,12 +28,12 @@ CONFLICTING_SERVICES = frozenset((
 def setUpModule():  # pylint:disable=invalid-name
     """Log in."""
     set_up_module()
-    utils.pulp_admin_login(config.get_config())
+    pulp_admin_login(config.get_config())
 
 
 def tearDownModule():  # pylint:disable=invalid-name
     """Reset Pulp, in case one of the test cases breaks Pulp."""
-    utils.reset_pulp(config.get_config())
+    reset_pulp(config.get_config())
 
 
 class BaseTestCase(unittest.TestCase):

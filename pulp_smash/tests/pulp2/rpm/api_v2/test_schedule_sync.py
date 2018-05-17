@@ -12,6 +12,7 @@ from packaging.version import Version
 from pulp_smash import api, utils
 from pulp_smash.constants import RPM_SIGNED_FEED_URL
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
@@ -52,7 +53,7 @@ class CreateRepoMixin():  # pylint:disable=too-few-public-methods
         return (href, body['importer_type_id'])
 
 
-class CreateSuccessTestCase(CreateRepoMixin, utils.BaseAPITestCase):
+class CreateSuccessTestCase(CreateRepoMixin, BaseAPITestCase):
     """Establish that we can create a schedule to sync the repository."""
 
     @classmethod
@@ -85,7 +86,7 @@ class CreateSuccessTestCase(CreateRepoMixin, utils.BaseAPITestCase):
         self.assertTrue(self.response_json['enabled'])
 
 
-class CreateFailureTestCase(CreateRepoMixin, utils.BaseAPITestCase):
+class CreateFailureTestCase(CreateRepoMixin, BaseAPITestCase):
     """Establish that schedules are not created in `documented scenarios`_.
 
     .. _documented scenarios:
@@ -143,7 +144,7 @@ class CreateFailureTestCase(CreateRepoMixin, utils.BaseAPITestCase):
                 self.assertEqual(response.status_code, status_code)
 
 
-class ReadUpdateDeleteTestCase(CreateRepoMixin, utils.BaseAPITestCase):
+class ReadUpdateDeleteTestCase(CreateRepoMixin, BaseAPITestCase):
     """Establish that we can `read`_, `update`_ and `delete`_ schedules.
 
     This test case assumes the assertions in :class:`CreateSuccessTestCase`
@@ -226,7 +227,7 @@ class ReadUpdateDeleteTestCase(CreateRepoMixin, utils.BaseAPITestCase):
         self.assertIsNone(self.responses['delete'].json())
 
 
-class ScheduledSyncTestCase(CreateRepoMixin, utils.BaseAPITestCase):
+class ScheduledSyncTestCase(CreateRepoMixin, BaseAPITestCase):
     """Establish that sync runs according to the specified schedule.
 
     This test case assumes the assertions in :class:`CreateSuccessTestCase`

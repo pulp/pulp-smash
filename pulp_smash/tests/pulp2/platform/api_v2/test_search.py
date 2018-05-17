@@ -31,6 +31,7 @@ import unittest
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.pulp2.constants import USER_PATH
+from pulp_smash.pulp2.utils import BaseAPITestCase
 from pulp_smash.tests.pulp2.platform.utils import set_up_module
 
 
@@ -58,7 +59,7 @@ def tearDownModule():  # pylint:disable=invalid-name
         client.delete(_USERS.pop()['_href'])
 
 
-class _BaseTestCase(utils.BaseAPITestCase):
+class _BaseTestCase(BaseAPITestCase):
     """Create an empty dict of searches, and add a common test method."""
 
     @classmethod
