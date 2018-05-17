@@ -147,18 +147,45 @@ def settings_create(ctx):  # pylint:disable=too-many-locals
 
 @settings.command('path')
 @click.pass_context
-def settings_path(ctx):
-    """Show the path to the settings file."""
+def settings_path(ctx):  # noqa:D401
+    """Deprecated in favor of 'load-path'."""
+    ctx.forward(settings_load_path)
+
+
+@settings.command('load-path')
+@click.pass_context
+def settings_load_path(ctx):
+    """Print the path from which settings are loaded.
+
+    Search several paths for a settings file, in order of preference. If a file
+    is found, print its path. Otherwise, return a non-zero exit code. This load
+    path is used by sibling commands such as "show".
+    """
     path = ctx.obj['load_path']
     if not path:
         _raise_settings_not_found()
     click.echo(path)
 
 
+@settings.command('save-path')
+@click.pass_context
+def settings_save_path(ctx):
+    """Print the path to which settings are saved.
+
+    As a side-effect, create all directories in the path that don't yet exist.
+    As a result, it's safe to execute a Bash expression such as:
+
+        echo '{...}' > "$(pulp-smash settings path)"
+
+    This save path is used by sibling commands such as "create".
+    """
+    click.echo(ctx.obj['save_path'])
+
+
 @settings.command('show')
 @click.pass_context
 def settings_show(ctx):
-    """Show the settings file."""
+    """Print the settings file."""
     path = ctx.obj['load_path']
     if not path:
         _raise_settings_not_found()

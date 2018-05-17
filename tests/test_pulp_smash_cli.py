@@ -205,21 +205,59 @@ class SettingsPathTestCase(BasePulpSmashCliTestCase, MissingSettingsFileMixin):
     settings_subcommand = 'path'
 
     def test_settings_path(self):
-        """Ensure path outputs proper settings file path."""
+        """Ensure ``path`` outputs proper settings file path."""
         with self.cli_runner.isolated_filesystem():
             with open('settings.json', 'w') as handler:
                 handler.write(PULP_SMASH_CONFIG)
             with mock.patch.object(pulp_smash_cli, 'PulpSmashConfig') as psc:
-                psc.get_load_path.return_value = 'settings.json'
+                psc.get_load_path.return_value = utils.uuid4()
                 result = self.cli_runner.invoke(
                     pulp_smash_cli.settings,
-                    ['path'],
+                    [self.settings_subcommand],
                 )
-            self.assertEqual(result.exit_code, 0)
-            self.assertIn(
-                'settings.json',
-                result.output,
+            self.assertEqual(result.exit_code, 0, result.output)
+            self.assertEqual(
+                psc.get_load_path.return_value,
+                result.output.strip(),
             )
+
+
+class SettingsLoadPathTestCase(BasePulpSmashCliTestCase, MissingSettingsFileMixin):
+    """Test ``pulp_smash.pulp_smash_cli.settings_load_path`` command."""
+
+    settings_subcommand = 'load-path'
+
+    def test_settings_load_path(self):
+        """Ensure ``load-path`` outputs proper settings file path."""
+        with self.cli_runner.isolated_filesystem():
+            with open('settings.json', 'w') as handler:
+                handler.write(PULP_SMASH_CONFIG)
+            with mock.patch.object(pulp_smash_cli, 'PulpSmashConfig') as psc:
+                psc.get_load_path.return_value = utils.uuid4()
+                result = self.cli_runner.invoke(
+                    pulp_smash_cli.settings,
+                    [self.settings_subcommand],
+                )
+            self.assertEqual(result.exit_code, 0, result.output)
+            self.assertEqual(
+                psc.get_load_path.return_value,
+                result.output.strip(),
+            )
+
+
+class SettingsSavePathTestCase(BasePulpSmashCliTestCase):
+    """Test ``pulp_smash.pulp_smash_cli.settings_save_path`` command."""
+
+    def test_settings_save_path(self):
+        """Ensure ``save-path`` outputs proper settings file path."""
+        with mock.patch.object(pulp_smash_cli, 'PulpSmashConfig') as psc:
+            psc.get_save_path.return_value = utils.uuid4()
+            result = self.cli_runner.invoke(
+                pulp_smash_cli.settings,
+                ['save-path'],
+            )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertEqual(psc.get_save_path.return_value, result.output.strip())
 
 
 class SettingsShowTestCase(BasePulpSmashCliTestCase, MissingSettingsFileMixin):
