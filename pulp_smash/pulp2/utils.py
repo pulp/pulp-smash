@@ -5,7 +5,7 @@ import unittest
 from packaging.version import Version
 
 from pulp_smash import api, config, selectors, utils
-from pulp_smash.tests.pulp2.constants import PLUGIN_TYPES_PATH
+from pulp_smash.pulp2.constants import PLUGIN_TYPES_PATH
 
 
 def get_unit_types():

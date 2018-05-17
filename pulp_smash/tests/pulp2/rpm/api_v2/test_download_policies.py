@@ -17,7 +17,7 @@ from pulp_smash.constants import (
     RPM_SIGNED_FEED_URL,
     RPM_SIGNED_URL,
 )
-from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     gen_distributor,
     gen_repo,

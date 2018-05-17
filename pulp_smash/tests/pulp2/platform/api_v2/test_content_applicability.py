@@ -6,8 +6,8 @@ call report and starts executing tasks in series. Starting with Pulp 2.8, it is
 possible for a user to explicitly request that Pulp execute tasks in parallel
 instead. This functionality is only available for certain API calls, and when
 this is done, Pulp returns a group call report instead of a regular call
-report.  (See :data:`pulp_smash.tests.pulp2.constants.CALL_REPORT_KEYS` and
-:data:`pulp_smash.tests.pulp2.constants.GROUP_CALL_REPORT_KEYS`.)
+report.  (See :data:`pulp_smash.pulp2.constants.CALL_REPORT_KEYS` and
+:data:`pulp_smash.pulp2.constants.GROUP_CALL_REPORT_KEYS`.)
 :class:`SeriesTestCase` and :class:`ParallelTestCase` test these two use
 cases, respectively.
 
@@ -20,7 +20,7 @@ import unittest
 from packaging.version import Version
 
 from pulp_smash import api, config
-from pulp_smash.tests.pulp2.constants import (
+from pulp_smash.pulp2.constants import (
     CALL_REPORT_KEYS,
     GROUP_CALL_REPORT_KEYS,
 )

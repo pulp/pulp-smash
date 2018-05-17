@@ -24,7 +24,7 @@ from pulp_smash.constants import (
     SRPM,
     SRPM_SIGNED_FEED_URL,
 )
-from pulp_smash.tests.pulp2.constants import (
+from pulp_smash.pulp2.constants import (
     CONTENT_UNITS_PATH,
     REPOSITORY_PATH,
 )

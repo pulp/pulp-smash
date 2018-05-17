@@ -9,7 +9,7 @@ from packaging.version import Version
 
 from pulp_smash import api, config, utils
 from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
-from pulp_smash.tests.pulp2.constants import (
+from pulp_smash.pulp2.constants import (
     CONTENT_UPLOAD_PATH,
     REPOSITORY_PATH,
 )

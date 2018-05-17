@@ -16,11 +16,13 @@ developers, not a gospel.
     api/pulp_smash.config
     api/pulp_smash.constants
     api/pulp_smash.exceptions
+    api/pulp_smash.pulp2
+    api/pulp_smash.pulp2.constants
+    api/pulp_smash.pulp2.utils
     api/pulp_smash.pulp_smash_cli
     api/pulp_smash.selectors
     api/pulp_smash.tests
     api/pulp_smash.tests.pulp2
-    api/pulp_smash.tests.pulp2.constants
     api/pulp_smash.tests.pulp2.docker
     api/pulp_smash.tests.pulp2.docker.api_v2
     api/pulp_smash.tests.pulp2.docker.api_v2.test_copy
@@ -126,7 +128,6 @@ developers, not a gospel.
     api/pulp_smash.tests.pulp2.rpm.cli.test_upload
     api/pulp_smash.tests.pulp2.rpm.cli.utils
     api/pulp_smash.tests.pulp2.rpm.utils
-    api/pulp_smash.tests.pulp2.utils
     api/pulp_smash.tests.pulp3
     api/pulp_smash.tests.pulp3.constants
     api/pulp_smash.tests.pulp3.file

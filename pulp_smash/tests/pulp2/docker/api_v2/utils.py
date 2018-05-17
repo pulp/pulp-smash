@@ -3,7 +3,7 @@
 from urllib.parse import urlsplit, urlunsplit
 
 from pulp_smash import api, cli, utils
-from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
+from pulp_smash.pulp2.constants import REPOSITORY_PATH
 
 
 def gen_repo():

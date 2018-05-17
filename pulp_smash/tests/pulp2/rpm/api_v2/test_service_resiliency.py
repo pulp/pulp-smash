@@ -15,7 +15,7 @@ from pulp_smash.constants import (
     RPM_MIRRORLIST_LARGE,
     RPM_UNSIGNED_FEED_URL,
 )
-from pulp_smash.tests.pulp2.constants import (
+from pulp_smash.pulp2.constants import (
     PULP_SERVICES,
     REPOSITORY_PATH,
     TASKS_PATH,

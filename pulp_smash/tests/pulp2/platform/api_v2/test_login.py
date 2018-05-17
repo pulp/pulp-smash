@@ -83,7 +83,7 @@
 import unittest
 
 from pulp_smash import api, config, selectors
-from pulp_smash.tests.pulp2.constants import (
+from pulp_smash.pulp2.constants import (
     ERROR_KEYS,
     LOGIN_KEYS,
     LOGIN_PATH,

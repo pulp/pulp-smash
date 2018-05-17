@@ -5,7 +5,7 @@ import unittest
 
 from pulp_smash import cli, config, selectors, utils
 from pulp_smash.constants import RPM_UNSIGNED_FEED_URL
-from pulp_smash.tests.pulp2.constants import PULP_SERVICES
+from pulp_smash.pulp2.constants import PULP_SERVICES
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module
 
 

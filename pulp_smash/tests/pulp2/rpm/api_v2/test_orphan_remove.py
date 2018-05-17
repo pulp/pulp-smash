@@ -18,7 +18,7 @@ from packaging.version import Version
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import RPM_SIGNED_FEED_URL
-from pulp_smash.tests.pulp2.constants import (
+from pulp_smash.pulp2.constants import (
     ORPHANS_PATH,
     REPOSITORY_PATH,
 )
@@ -164,10 +164,10 @@ class OrphansTestCase(unittest.TestCase):
         """Ensure that a specific orphan is well and truly deleted.
 
         :param orphans_pre: The response to GET
-            :data:`pulp_smash.tests.pulp2.constants.ORPHANS_PATH` before the
+            :data:`pulp_smash.pulp2.constants.ORPHANS_PATH` before the
             orphan was deleted.
         :param orphans_post: The response to GET
-            :data:`pulp_smash.tests.pulp2.constants.ORPHANS_PATH` after the
+            :data:`pulp_smash.pulp2.constants.ORPHANS_PATH` after the
             orphan was deleted.
         :param orphan: A dict describing the orphan that was deleted.
         :returns: Nothing.

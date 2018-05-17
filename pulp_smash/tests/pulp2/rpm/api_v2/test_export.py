@@ -19,7 +19,7 @@ from pulp_smash.constants import (
     RPM_SIGNED_FEED_URL,
     RPM_SIGNED_URL,
 )
-from pulp_smash.tests.pulp2.constants import (
+from pulp_smash.pulp2.constants import (
     REPOSITORY_EXPORT_DISTRIBUTOR,
     REPOSITORY_GROUP_EXPORT_DISTRIBUTOR,
     REPOSITORY_GROUP_PATH,
