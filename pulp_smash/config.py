@@ -318,7 +318,8 @@ class PulpSmashConfig():
         http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
     """
 
-    def __init__(self, pulp_auth, pulp_version, pulp_selinux_enabled, hosts):
+    def __init__(
+            self, pulp_auth, pulp_version, pulp_selinux_enabled, *, hosts):
         """Initialize this object with needed instance attributes."""
         self.pulp_auth = pulp_auth
         self.pulp_version = Version(pulp_version)
@@ -457,7 +458,7 @@ class PulpSmashConfig():
             pulp_auth,
             pulp_version,
             pulp_selinux_enabled,
-            hosts,
+            hosts=hosts,
         )
 
     @classmethod
