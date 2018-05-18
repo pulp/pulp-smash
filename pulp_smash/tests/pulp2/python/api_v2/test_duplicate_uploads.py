@@ -14,7 +14,6 @@ The second upload should silently fail for all Pulp releases in the 2.x series.
 .. _Pulp #1406: https://pulp.plan.io/issues/1406
 .. _Pulp Smash #81: https://github.com/PulpQE/pulp-smash/issues/81
 """
-import unittest
 from urllib.parse import urlsplit
 
 from packaging.version import Version
@@ -35,16 +34,13 @@ class DuplicateUploadsTestCase(
     def setUpClass(cls):
         """Create a Python repo. Upload a Python package into it twice."""
         super(DuplicateUploadsTestCase, cls).setUpClass()
+        unit = utils.http_get(PYTHON_EGG_URL)
+        import_params = {'unit_key': {}, 'unit_type_id': 'python_package'}
         if (cls.cfg.pulp_version >= Version('2.11') and
                 selectors.bug_is_untestable(2334, cls.cfg.pulp_version)):
-            raise unittest.SkipTest('https://pulp.plan.io/issues/2334')
-        unit = utils.http_get(PYTHON_EGG_URL)
-        import_params = {
-            'unit_key': {
-                'filename': urlsplit(PYTHON_EGG_URL).path.split('/')[-1],
-            },
-            'unit_type_id': 'python_package',
-        }
+            import_params['unit_key']['filename'] = (
+                urlsplit(PYTHON_EGG_URL).path.split('/')[-1]
+            )
         repo = api.Client(cls.cfg).post(REPOSITORY_PATH, gen_repo()).json()
         cls.upload_import_unit_args = (cls.cfg, unit, import_params, repo)
         cls.resources.add(repo['_href'])
