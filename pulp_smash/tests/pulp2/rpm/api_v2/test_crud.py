@@ -9,11 +9,8 @@ import os
 import unittest
 from urllib.parse import urljoin
 
-# pylint:disable=ungrouped-imports
 import requests
 from packaging import version
-from requests.exceptions import HTTPError
-# pylint:enable=ungrouped-imports
 
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
@@ -325,12 +322,12 @@ class NonExistentRepoTestCase(unittest.TestCase):
 
     def test_delete(self):
         """Delete a non-existent repository."""
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(requests.exceptions.HTTPError):
             self.client.delete(self.href)
 
     def test_update(self):
         """Update a non-existent repository."""
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(requests.exceptions.HTTPError):
             self.client.put(self.href, {
                 'delta': {'display_name': utils.uuid4()}
             })
