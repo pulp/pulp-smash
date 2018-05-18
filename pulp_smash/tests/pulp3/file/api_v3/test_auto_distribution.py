@@ -135,6 +135,12 @@ class AutoDistributionTestCase(unittest.TestCase):
 class SetupAutoDistributionTestCase(unittest.TestCase):
     """Verify the set up of parameters related to auto distribution."""
 
+    def setUp(self):
+        """Create test-wide variables."""
+        self.cfg = config.get_config()
+        self.client = api.Client(self.cfg, api.json_handler)
+        self.client.request_kwargs['auth'] = get_auth()
+
     def test_all(self):
         """Verify the set up of parameters related to auto distribution.
 
@@ -147,52 +153,61 @@ class SetupAutoDistributionTestCase(unittest.TestCase):
         * `Pulp Smash #883 <https://github.com/PulpQE/pulp-smash/issues/883>`_
         * `Pulp Smash #917 <https://github.com/PulpQE/pulp-smash/issues/917>`_
         """
-        cfg = config.get_config()
-        client = api.Client(cfg, api.json_handler)
-        client.request_kwargs['auth'] = get_auth()
-        repo = client.post(REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo['_href'])
+        # Create a repository and a publisher.
+        repo = self.client.post(REPO_PATH, gen_repo())
+        self.addCleanup(self.client.delete, repo['_href'])
+        publisher = self.client.post(FILE_PUBLISHER_PATH, gen_publisher())
+        self.addCleanup(self.client.delete, publisher['_href'])
+
+        # Create a distribution.
+        self.try_create_distribution(publisher=publisher['_href'])
+        self.try_create_distribution(repository=repo['_href'])
         body = gen_distribution()
-
-        # Create a distribution with a repository but no publisher.
-        body['repository'] = repo['_href']
-        with self.assertRaises(HTTPError):
-            client.post(DISTRIBUTION_PATH, body)
-
-        # Create a distribution with a repository and publisher.
-        publisher = client.post(FILE_PUBLISHER_PATH, gen_publisher())
-        self.addCleanup(client.delete, publisher['_href'])
         body['publisher'] = publisher['_href']
-        distribution = client.post(DISTRIBUTION_PATH, body)
-        self.addCleanup(client.delete, distribution['_href'])
+        body['repository'] = repo['_href']
+        distribution = self.client.post(DISTRIBUTION_PATH, body)
+        self.addCleanup(self.client.delete, distribution['_href'])
 
-        # Update distribution`s repository to None.
-        distribution['repository'] = None
-        with self.assertRaises(HTTPError):
-            client.patch(distribution['_href'], distribution)
-        distribution = client.get(distribution['_href'])
-        self.assertIsNotNone(distribution['repository'], distribution)
-
-        # Update distribution`s publisher to None.
-        distribution['publisher'] = None
-        with self.assertRaises(HTTPError):
-            client.patch(distribution['_href'], distribution)
-        distribution = client.get(distribution['_href'])
-        self.assertIsNotNone(distribution['publisher'], distribution)
-
-        # Update distributions` publisher and repository to None.
-        distribution['publisher'] = None
-        distribution['repository'] = None
-        distribution = client.patch(distribution['_href'], distribution)
+        # Update the distribution.
+        self.try_update_distribution(distribution, publisher=None)
+        self.try_update_distribution(distribution, repository=None)
+        distribution = self.client.patch(distribution['_href'], {
+            'publisher': None,
+            'repository': None,
+        })
         self.assertIsNone(distribution['publisher'], distribution)
         self.assertIsNone(distribution['repository'], distribution)
 
         # Publish the repository. Assert that distribution does not point to
-        # the new publication.
-        body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
-        remote = client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote['_href'])
-        sync(cfg, remote, repo)
-        publication = publish(cfg, publisher, repo)
-        self.addCleanup(client.delete, publication['_href'])
+        # the new publication (because publisher and repository are unset).
+        remote = self.client.post(
+            FILE_REMOTE_PATH,
+            gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST')),
+        )
+        self.addCleanup(self.client.delete, remote['_href'])
+        sync(self.cfg, remote, repo)
+        publication = publish(self.cfg, publisher, repo)
+        self.addCleanup(self.client.delete, publication['_href'])
+        distribution = self.client.get(distribution['_href'])
         self.assertNotEqual(distribution['publication'], publication['_href'])
+
+    def try_create_distribution(self, **kwargs):
+        """Unsuccessfully create a distribution.
+
+        Merge the given kwargs into the body of the request.
+        """
+        body = gen_distribution()
+        body.update(kwargs)
+        with self.assertRaises(HTTPError):
+            self.client.post(DISTRIBUTION_PATH, body)
+
+    def try_update_distribution(self, distribution, **kwargs):
+        """Unsuccessfully update a distribution with HTTP PATCH.
+
+        Use the given kwargs as the body of the request.
+        """
+        with self.assertRaises(HTTPError):
+            self.client.patch(distribution['_href'], kwargs)
+        distribution = self.client.get(distribution['_href'])
+        self.assertIsNotNone(distribution['publisher'], distribution)
+        self.assertIsNotNone(distribution['repository'], distribution)
