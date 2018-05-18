@@ -585,6 +585,7 @@ class OpenSuseErrataTestCase(unittest.TestCase):
     This test targets:
 
     * `Pulp #3377 <https://pulp.plan.io/issues/3377>`_
+    * `Pulp #3682 <https://pulp.plan.io/issues/3682>`_
     * `Pulp Smash #904 <https://github.com/PulpQE/pulp-smash/issues/904>`_
 
     .. WARNING:: This test is extremely slow, due to the heavy single-threaded
@@ -602,6 +603,8 @@ class OpenSuseErrataTestCase(unittest.TestCase):
         cfg = config.get_config()
         if selectors.bug_is_untestable(3377, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/3377')
+        if selectors.bug_is_untestable(3682, cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/3682')
 
         # Create, sync, and publish a repository.
         client = api.Client(cfg, api.json_handler)
