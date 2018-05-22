@@ -24,7 +24,7 @@ def check_issue_2277(cfg):
     .. _Pulp #2277: https://pulp.plan.io/issues/2277
     """
     if (cfg.pulp_version >= Version('2.10') and
-            selectors.bug_is_untestable(2277, cfg.pulp_version)):
+            not selectors.bug_is_fixed(2277, cfg.pulp_version)):
         return True
     return False
 
@@ -37,7 +37,7 @@ def check_issue_2387(cfg):
     .. _Pulp #2387: https://pulp.plan.io/issues/2387
     """
     if (cfg.pulp_version >= Version('2.10') and os_is_rhel6(cfg) and
-            selectors.bug_is_untestable(2387, cfg.pulp_version)):
+            not selectors.bug_is_fixed(2387, cfg.pulp_version)):
         return True
     return False
 
@@ -50,7 +50,7 @@ def check_issue_2354(cfg):
     .. _Pulp #2354: https://pulp.plan.io/issues/2354
     """
     if (cfg.pulp_version >= Version('2.10') and
-            selectors.bug_is_untestable(2354, cfg.pulp_version)):
+            not selectors.bug_is_fixed(2354, cfg.pulp_version)):
         return True
     return False
 
@@ -63,7 +63,7 @@ def check_issue_2620(cfg):
     .. _Pulp #2620: https://pulp.plan.io/issues/2620
     """
     if (cfg.pulp_version >= Version('2.12') and
-            selectors.bug_is_untestable(2620, cfg.pulp_version)):
+            not selectors.bug_is_fixed(2620, cfg.pulp_version)):
         return True
     return False
 
@@ -76,7 +76,7 @@ def check_issue_2798(cfg):
     .. _Pulp #2798: https://pulp.plan.io/issues/2798
     """
     return (cfg.pulp_version >= Version('2.14') and
-            selectors.bug_is_untestable(2798, cfg.pulp_version))
+            not selectors.bug_is_fixed(2798, cfg.pulp_version))
 
 
 def check_issue_2844(cfg):
@@ -87,7 +87,7 @@ def check_issue_2844(cfg):
     .. _Pulp #2844: https://pulp.plan.io/issues/2844
     """
     return (cfg.pulp_version >= Version('2.14') and
-            selectors.bug_is_untestable(2844, cfg.pulp_version))
+            not selectors.bug_is_fixed(2844, cfg.pulp_version))
 
 
 def check_issue_3104(cfg):
@@ -98,7 +98,7 @@ def check_issue_3104(cfg):
     .. _Pulp #3104: https://pulp.plan.io/issues/3104
     """
     return (cfg.pulp_version >= Version('2.15') and
-            selectors.bug_is_untestable(3104, cfg.pulp_version))
+            not selectors.bug_is_fixed(3104, cfg.pulp_version))
 
 
 def os_is_rhel6(cfg):

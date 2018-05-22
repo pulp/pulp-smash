@@ -314,7 +314,7 @@ def require_issue_3159():
     .. _Pulp #3159: https://pulp.plan.io/issues/3159
     """
     cfg = config.get_config()
-    if (selectors.bug_is_untestable(3159, cfg.pulp_version) and
+    if (not selectors.bug_is_fixed(3159, cfg.pulp_version) and
             utils.os_is_f27(cfg)):
         raise unittest.SkipTest('https://pulp.plan.io/issues/3159')
 

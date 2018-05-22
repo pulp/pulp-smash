@@ -421,7 +421,7 @@ class ExportDistributorTestCase(ExportDirMixin, BaseAPITestCase):
         cls.resources.add(cls.repo['_href'])
         sync_repo(cls.cfg, cls.repo)
         if (cls.cfg.pulp_version >= Version('2.9') and
-                selectors.bug_is_untestable(1928, cls.cfg.pulp_version)):
+                not selectors.bug_is_fixed(1928, cls.cfg.pulp_version)):
             cls.distributor = None
         else:
             cls.distributor = _create_distributor(

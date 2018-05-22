@@ -29,7 +29,7 @@ class DuplicateUploadsTestCase(unittest.TestCase):
         * `Pulp Smash #81 <https://github.com/PulpQE/pulp-smash/issues/81>`_
         * `Pulp #1406 <https://pulp.plan.io/issues/1406>`_
         """
-        if selectors.bug_is_untestable(1406, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(1406, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1406')
         self.do_test(RPM_UNSIGNED_URL, 'rpm', gen_repo())
 
@@ -41,7 +41,7 @@ class DuplicateUploadsTestCase(unittest.TestCase):
         * `Pulp Smash #582 <https://github.com/PulpQE/pulp-smash/issues/582>`_
         * `Pulp #2274 <https://pulp.plan.io/issues/2274>`_
         """
-        if selectors.bug_is_untestable(2274, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(2274, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2274')
         body = {
             'id': utils.uuid4(),

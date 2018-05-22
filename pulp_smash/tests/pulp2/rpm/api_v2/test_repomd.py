@@ -107,7 +107,7 @@ class FastForwardIntegrityTestCase(unittest.TestCase):
     def test_all(self):
         """Ensure fast-forward publishes use files referenced by repomd.xml."""
         cfg = config.get_config()
-        if selectors.bug_is_untestable(1088, cfg.pulp_version):
+        if not selectors.bug_is_fixed(1088, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1088')
         repo = self._create_sync_repo(cfg)
         old_phrase = 'A dummy package of'

@@ -246,7 +246,7 @@ class UpdateInfoTestCase(BaseAPITestCase):
         .. _Pulp #1782: https://pulp.plan.io/issues/1782
         .. _Pulp #2032: https://pulp.plan.io/issues/2032
         """
-        if selectors.bug_is_untestable(2032, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(2032, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2032')
         erratum = self.errata['full']
         update_element = (
@@ -437,7 +437,7 @@ class PkglistsTestCase(unittest.TestCase):
         cfg = config.get_config()
         if check_issue_3104(cfg):
             self.skipTest('https://pulp.plan.io/issues/3104')
-        if selectors.bug_is_untestable(2227, cfg.pulp_version):
+        if not selectors.bug_is_fixed(2227, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2277')
 
         # Create, sync and publish a repository.
@@ -606,7 +606,7 @@ class OpenSuseErrataTestCase(unittest.TestCase):
     def test_01_create_sync_publish(self):
         """Create, sync, and publish an openSUSE repository."""
         cfg = config.get_config()
-        if selectors.bug_is_untestable(3377, cfg.pulp_version):
+        if not selectors.bug_is_fixed(3377, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/3377')
 
         # Create, sync, and publish a repository.

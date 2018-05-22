@@ -73,7 +73,7 @@ class BaseTestCase(unittest.TestCase):
         completely independent Pulp application.
         """
         if (self.cfg.pulp_version < Version('2.13') or
-                selectors.bug_is_untestable(140, self.cfg.pulp_version)):
+                not selectors.bug_is_fixed(140, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/140')
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
@@ -128,7 +128,7 @@ class SyncTestCase(BaseTestCase):
         * `Pulp Smash #494 <https://github.com/PulpQE/pulp-smash/issues/494>`_
         """
         if (self.cfg.pulp_version < Version('2.13') or
-                selectors.bug_is_untestable(135, self.cfg.pulp_version)):
+                not selectors.bug_is_fixed(135, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/135')
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
@@ -161,7 +161,7 @@ class UploadTestCase(BaseTestCase):
         * `Pulp Smash #492 <https://github.com/PulpQE/pulp-smash/issues/492>`_
         """
         if (self.cfg.pulp_version < Version('2.13') or
-                selectors.bug_is_untestable(136, self.cfg.pulp_version)):
+                not selectors.bug_is_fixed(136, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/136')
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()

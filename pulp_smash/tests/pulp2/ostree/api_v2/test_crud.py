@@ -126,7 +126,7 @@ class CreateDistributorsTestCase(BaseAPITestCase):
         path is ``foo/bar``, then this relative path would be ``foo/bar``.
         """
         if (self.cfg.pulp_version >= Version('2.14') and
-                selectors.bug_is_untestable(2769, self.cfg.pulp_version)):
+                not selectors.bug_is_fixed(2769, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2769')
         client = api.Client(self.cfg, api.json_handler)
         path = urljoin(self.repos[1]['_href'], 'distributors/')
@@ -143,7 +143,7 @@ class CreateDistributorsTestCase(BaseAPITestCase):
         path is ``foo/bar``, then this relative path would be ``foo/bar/biz``.
         """
         if (self.cfg.pulp_version >= Version('2.14') and
-                selectors.bug_is_untestable(2769, self.cfg.pulp_version)):
+                not selectors.bug_is_fixed(2769, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2769')
         client = api.Client(self.cfg, api.json_handler)
         path = urljoin(self.repos[1]['_href'], 'distributors/')
@@ -162,7 +162,7 @@ class CreateDistributorsTestCase(BaseAPITestCase):
         ``/foo/bar``.
         """
         if (self.cfg.pulp_version >= Version('2.14') and
-                selectors.bug_is_untestable(2769, self.cfg.pulp_version)):
+                not selectors.bug_is_fixed(2769, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2769')
         client = api.Client(self.cfg, api.json_handler)
         path = urljoin(self.repos[1]['_href'], 'distributors/')
@@ -254,7 +254,7 @@ class UpdateDistributorsTestCase(BaseAPITestCase):
         path is ``foo/bar``, then this relative path would be ``foo/bar``.
         """
         if (self.cfg.pulp_version >= Version('2.14') and
-                selectors.bug_is_untestable(2769, self.cfg.pulp_version)):
+                not selectors.bug_is_fixed(2769, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2769')
 
         # update
@@ -280,7 +280,7 @@ class UpdateDistributorsTestCase(BaseAPITestCase):
         path is ``foo/bar``, then this relative path would be ``foo/bar/biz``.
         """
         if (self.cfg.pulp_version >= Version('2.14') and
-                selectors.bug_is_untestable(2769, self.cfg.pulp_version)):
+                not selectors.bug_is_fixed(2769, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2769')
 
         # update
@@ -310,7 +310,7 @@ class UpdateDistributorsTestCase(BaseAPITestCase):
         ``/foo/bar``.
         """
         if (self.cfg.pulp_version >= Version('2.14') and
-                selectors.bug_is_untestable(2769, self.cfg.pulp_version)):
+                not selectors.bug_is_fixed(2769, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2769')
 
         # update
@@ -351,7 +351,7 @@ class UpdateImportersTestCase(unittest.TestCase):
         3. Perform assertions about the just updated ``importer``.
         """
         cfg = config.get_config()
-        if selectors.bug_is_untestable(3210, cfg.pulp_version):
+        if not selectors.bug_is_fixed(3210, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/3210')
         client = api.Client(cfg, api.json_handler)
         body = gen_repo()

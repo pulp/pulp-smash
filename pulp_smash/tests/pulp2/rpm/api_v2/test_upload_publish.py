@@ -59,7 +59,7 @@ class UploadDrpmTestCase(unittest.TestCase):
     def test_all(self):
         """Import a DRPM into a repository and search it for content units."""
         cfg = config.get_config()
-        if selectors.bug_is_untestable(1806, cfg.pulp_version):
+        if not selectors.bug_is_fixed(1806, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1806')
         client = api.Client(cfg)
         repo = client.post(REPOSITORY_PATH, gen_repo()).json()
@@ -100,9 +100,9 @@ class UploadDrpmTestCaseWithCheckSumType(BaseAPITestCase):
 
     def test_all(self):
         """Test that uploading DRPM with checksumtype specified works."""
-        if selectors.bug_is_untestable(1806, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(1806, self.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1806')
-        if selectors.bug_is_untestable(2627, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(2627, self.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2627')
         client = api.Client(self.cfg)
         repo = client.post(REPOSITORY_PATH, gen_repo()).json()
@@ -159,7 +159,7 @@ class UploadedDrpmChecksumTypeTestCase(unittest.TestCase):
         with self.subTest(comment='verify checksumtype'):
             self.assertEqual(units[0]['metadata']['checksumtype'], 'md5')
         with self.subTest(comment='verify checksum'):
-            if selectors.bug_is_untestable(2774, cfg.pulp_version):
+            if not selectors.bug_is_fixed(2774, cfg.pulp_version):
                 self.skipTest('https://pulp.plan.io/issues/2774')
             self.assertEqual(
                 units[0]['metadata']['checksum'],
@@ -336,7 +336,7 @@ class UploadRpmTestCase(BaseAPITestCase):
                 RPM_DATA['metadata']['files'],
             )
 
-        if selectors.bug_is_testable(2754, self.cfg.pulp_version):
+        if selectors.bug_is_fixed(2754, self.cfg.pulp_version):
             # Test that additional fields are available.
             # Affected by Pulp issue #2754
 
@@ -389,7 +389,7 @@ class VendorInfoTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Create class-wide variables."""
         cls.cfg = config.get_config()
-        if selectors.bug_is_untestable(2781, cls.cfg.pulp_version):
+        if not selectors.bug_is_fixed(2781, cls.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2781')
 
     def test_upload(self):
@@ -498,9 +498,9 @@ class UploadInvalidRPMTestCase(unittest.TestCase):
         3. Verify that the repository contains no RPMs.
         """
         cfg = config.get_config()
-        if selectors.bug_is_untestable(2543, cfg.pulp_version):
+        if not selectors.bug_is_fixed(2543, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2543')
-        if selectors.bug_is_untestable(3090, cfg.pulp_version):
+        if not selectors.bug_is_fixed(3090, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/3090')
         client = api.Client(cfg, api.json_handler)
         repo = client.post(REPOSITORY_PATH, gen_repo())

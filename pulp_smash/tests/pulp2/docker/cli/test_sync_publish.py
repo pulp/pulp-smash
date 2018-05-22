@@ -32,7 +32,7 @@ class InvalidFeedTestCase(BaseAPITestCase):
         proc = client.run((
             'pulp-admin', 'docker', 'repo', 'sync', 'run', '--repo-id', repo_id
         ))
-        if selectors.bug_is_testable(427, self.cfg.pulp_version):
+        if selectors.bug_is_fixed(427, self.cfg.pulp_version):
             with self.subTest():
                 self.assertNotEqual(proc.returncode, 0)
         with self.subTest():

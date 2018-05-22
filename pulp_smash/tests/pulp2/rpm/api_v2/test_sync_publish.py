@@ -389,14 +389,14 @@ class ErrorReportTestCase(unittest.TestCase):
         task = context.exception.task
 
         with self.subTest(comment='check task error description'):
-            if selectors.bug_is_untestable(1376, cfg.pulp_version):
+            if not selectors.bug_is_fixed(1376, cfg.pulp_version):
                 self.skipTest('https://pulp.plan.io/issues/1376')
             self.assertNotEqual(
                 'Unsupported scheme: ',
                 task['error']['description']
             )
         with self.subTest(comment='check task traceback'):
-            if selectors.bug_is_untestable(1455, cfg.pulp_version):
+            if not selectors.bug_is_fixed(1455, cfg.pulp_version):
                 self.skipTest('https://pulp.plan.io/issues/1455')
             self.assertIsNotNone(task['traceback'], task)
 

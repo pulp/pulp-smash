@@ -70,8 +70,8 @@ class GetBugTestCase(unittest.TestCase):
             selectors._get_bug('1')
 
 
-class BugIsTestableTestCase(unittest.TestCase):
-    """Test :meth:`pulp_smash.selectors.bug_is_testable` and its partner."""
+class BugIsFixedTestCase(unittest.TestCase):
+    """Test :meth:`pulp_smash.selectors.bug_is_fixed`."""
 
     def test_testable_status(self):
         """Assert the method correctly handles "testable" bug statuses."""
@@ -80,8 +80,7 @@ class BugIsTestableTestCase(unittest.TestCase):
             bug = selectors._Bug(bug_status, ver)
             with mock.patch.object(selectors, '_get_bug', return_value=bug):
                 with self.subTest(bug_status=bug_status):
-                    self.assertTrue(selectors.bug_is_testable(None, ver))
-                    self.assertFalse(selectors.bug_is_untestable(None, ver))
+                    self.assertTrue(selectors.bug_is_fixed(None, ver))
 
     def test_untestable_status(self):
         """Assert the method correctly handles "untestable" bug statuses."""
@@ -90,8 +89,7 @@ class BugIsTestableTestCase(unittest.TestCase):
             bug = selectors._Bug(bug_status, ver)
             with mock.patch.object(selectors, '_get_bug', return_value=bug):
                 with self.subTest(bug_status=bug_status):
-                    self.assertFalse(selectors.bug_is_testable(None, ver))
-                    self.assertTrue(selectors.bug_is_untestable(None, ver))
+                    self.assertFalse(selectors.bug_is_fixed(None, ver))
 
     def test_unknown_status(self):
         """Assert the method correctly handles an unknown bug status."""
@@ -99,7 +97,7 @@ class BugIsTestableTestCase(unittest.TestCase):
         bug = selectors._Bug('foo', ver)
         with mock.patch.object(selectors, '_get_bug', return_value=bug):
             with self.assertRaises(exceptions.BugStatusUnknownError):
-                selectors.bug_is_testable(None, ver)
+                selectors.bug_is_fixed(None, ver)
 
     def test_connection_error(self):
         """Make the dependent function raise a connection error."""
@@ -107,6 +105,4 @@ class BugIsTestableTestCase(unittest.TestCase):
         with mock.patch.object(selectors, '_get_bug') as get_bug:
             get_bug.side_effect = requests.exceptions.ConnectionError
             with self.assertWarns(RuntimeWarning):
-                selectors.bug_is_testable(None, ver)
-            with self.assertWarns(RuntimeWarning):
-                selectors.bug_is_untestable(None, ver)
+                selectors.bug_is_fixed(None, ver)

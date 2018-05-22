@@ -18,10 +18,9 @@ from urllib.parse import urljoin, urlparse
 
 from packaging.version import Version
 
-from pulp_smash import api, utils
+from pulp_smash import api, selectors, utils
 from pulp_smash.pulp2.constants import REPOSITORY_PATH, ERROR_KEYS
 from pulp_smash.pulp2.utils import BaseAPITestCase
-from pulp_smash.selectors import bug_is_untestable, require
 from pulp_smash.tests.pulp2.platform.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
@@ -56,7 +55,7 @@ class CreateSuccessTestCase(BaseAPITestCase):
             with self.subTest(body=body):
                 self.assertEqual(response.status_code, 201)
 
-    @require('2.7')  # https://pulp.plan.io/issues/695
+    @selectors.require('2.7')  # https://pulp.plan.io/issues/695
     def test_location_header(self):
         """Assert the Location header is correctly set in each response.
 
@@ -161,7 +160,7 @@ class CreateFailureTestCase(BaseAPITestCase):
         """Assert the JSON body returned contains the correct keys."""
         for body, response in zip(self.bodies, self.responses):
             with self.subTest(body=body):
-                if bug_is_untestable(1413, self.cfg.pulp_version):
+                if not selectors.bug_is_fixed(1413, self.cfg.pulp_version):
                     self.skipTest('https://pulp.plan.io/issues/1413')
                 response_keys = frozenset(response.json().keys())
                 self.assertEqual(response_keys, ERROR_KEYS)

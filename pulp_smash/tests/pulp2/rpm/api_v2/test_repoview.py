@@ -76,7 +76,7 @@ class RepoviewTestCase(unittest.TestCase):
             )
 
         # Publish the repo a third time
-        if selectors.bug_is_untestable(2349, cfg.pulp_version):
+        if not selectors.bug_is_fixed(2349, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2349')
         publish_repo(cfg, repo)
         response = client.get(pub_path)

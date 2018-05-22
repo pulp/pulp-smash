@@ -45,7 +45,7 @@ class UpstreamNameTestsMixin():
 
         Verify the sync request is rejected with an HTTP 400 status code.
         """
-        if selectors.bug_is_untestable(2230, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(2230, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2230')
         docker_upstream_name = get_upstream_name(self.cfg).replace('/', ' ')
         response = api.Client(self.cfg, api.echo_handler).post(

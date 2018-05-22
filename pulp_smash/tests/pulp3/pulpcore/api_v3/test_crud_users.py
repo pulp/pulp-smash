@@ -46,7 +46,7 @@ class UsersCRUDTestCase(unittest.TestCase, utils.SmokeTest):
     @selectors.skip_if(bool, 'user', False)
     def test_02_read_username(self):
         """Read a user by its username."""
-        if selectors.bug_is_untestable(3142, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(3142, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/3142')
         page = self.client.get(USER_PATH, params={
             'username': self.user['username']
@@ -71,7 +71,7 @@ class UsersCRUDTestCase(unittest.TestCase, utils.SmokeTest):
     def test_03_fully_update_user(self):
         """Update a user info using HTTP PUT."""
         attrs = _gen_verbose_user_attrs()
-        if selectors.bug_is_untestable(3125, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(3125, self.cfg.pulp_version):
             attrs['username'] = self.user['username']
         self.client.put(self.user['_href'], attrs)
         user = self.client.get(self.user['_href'])
@@ -86,7 +86,7 @@ class UsersCRUDTestCase(unittest.TestCase, utils.SmokeTest):
     def test_03_partially_update_user(self):
         """Update a user info using HTTP PATCH."""
         attrs = _gen_verbose_user_attrs()
-        if selectors.bug_is_untestable(3125, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(3125, self.cfg.pulp_version):
             del attrs['username']
         self.client.patch(self.user['_href'], attrs)
         user = self.client.get(self.user['_href'])

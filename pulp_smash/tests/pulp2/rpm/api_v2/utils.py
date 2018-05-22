@@ -175,7 +175,7 @@ class DisableSELinuxMixin():  # pylint:disable=too-few-public-methods
         # We cannot execute `PATH=${PATH}:/usr/sbin which getenforce` because
         # Plumbum does a good job of preventing shell expansions. See:
         # https://github.com/PulpQE/pulp-smash/issues/89
-        if selectors.bug_is_testable(pulp_issue_id, cfg.pulp_version):
+        if selectors.bug_is_fixed(pulp_issue_id, cfg.pulp_version):
             return
         client = cli.Client(cfg, cli.echo_handler)
         cmd = 'test -e /usr/sbin/getenforce'.split()

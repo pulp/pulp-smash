@@ -14,7 +14,7 @@ def setUpModule():  # pylint:disable=invalid-name
     See `Pulp #2574 <https://pulp.plan.io/issues/2574>`_.
     """
     set_up_module()
-    if selectors.bug_is_untestable(2574, config.get_config()):
+    if not selectors.bug_is_fixed(2574, config.get_config()):
         raise unittest.SkipTest('https://pulp.plan.io/issues/2574')
 
 
@@ -72,7 +72,7 @@ class SyncDownloadedContentTestCase(unittest.TestCase):
         non-zero content unit counts.
         """
         cfg = config.get_config()
-        if selectors.bug_is_untestable(1937, cfg.pulp_version):
+        if not selectors.bug_is_fixed(1937, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1937')
         pulp_admin_login(cfg)
 

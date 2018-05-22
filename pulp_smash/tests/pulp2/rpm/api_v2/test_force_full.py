@@ -77,7 +77,7 @@ class ForceFullTestCase(BaseAPITestCase):
         .. _Pulp #1966: https://pulp.plan.io/issues/1966
         """
         if (self.cfg.pulp_version >= Version('2.9') and
-                selectors.bug_is_untestable(1966, self.cfg.pulp_version)):
+                not selectors.bug_is_fixed(1966, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/1966')
         call_report = publish_repo(self.cfg, self.repo).json()
         last_task = next(api.poll_spawned_tasks(self.cfg, call_report))

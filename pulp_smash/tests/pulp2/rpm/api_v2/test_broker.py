@@ -104,10 +104,10 @@ class BrokerTestCase(unittest.TestCase):
         * `Pulp #1635 <https://pulp.plan.io/issues/1635>`_
         * `Pulp #2613 <https://pulp.plan.io/issues/2613>`_
         """
-        if selectors.bug_is_untestable(1635, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(1635, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1635')
         if (self.cfg.pulp_version >= Version('2.13') and
-                selectors.bug_is_untestable(2613, self.cfg.pulp_version)):
+                not selectors.bug_is_fixed(2613, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2613')
         # We assume that the broker and other services are already running. As
         # a result, we skip step 1 and go straight to step 2.

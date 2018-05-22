@@ -50,7 +50,7 @@ def setUpModule():  # pylint:disable=invalid-name
     set_up_module()
     cfg = config.get_config()
     if (cfg.pulp_version >= Version('2.15.1') and
-            selectors.bug_is_untestable(3310, cfg.pulp_version)):
+            not selectors.bug_is_fixed(3310, cfg.pulp_version)):
         raise unittest.SkipTest('https://pulp.plan.io/issues/3310')
 
 
@@ -103,7 +103,7 @@ class UtilsMixin():
         .. _issue #2321: https://pulp.plan.io/issues/2321
         """
         if (cfg.pulp_version >= Version('2.11') and
-                selectors.bug_is_untestable(2321, cfg.pulp_version)):
+                not selectors.bug_is_fixed(2321, cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2321')
 
     def check_issue_2326(self, cfg):
@@ -112,7 +112,7 @@ class UtilsMixin():
         .. _issue #2326: https://pulp.plan.io/issues/2326
         """
         if (cfg.pulp_version >= Version('2.11') and
-                selectors.bug_is_untestable(2326, cfg.pulp_version)):
+                not selectors.bug_is_fixed(2326, cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2326')
 
     def check_issue_2363(self, cfg):
@@ -121,7 +121,7 @@ class UtilsMixin():
         .. _issue #2363: https://pulp.plan.io/issues/2363
         """
         if (cfg.pulp_version >= Version('2.11') and
-                selectors.bug_is_untestable(2363, cfg.pulp_version)):
+                not selectors.bug_is_fixed(2363, cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/2363')
 
 

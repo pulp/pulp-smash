@@ -127,7 +127,7 @@ class LargePackageListTestCase(unittest.TestCase):
            errors.
         """
         cfg = config.get_config()
-        if selectors.bug_is_untestable(2681, cfg.pulp_version):
+        if not selectors.bug_is_fixed(2681, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2681')
         repos = []
         client = api.Client(cfg, api.json_handler)

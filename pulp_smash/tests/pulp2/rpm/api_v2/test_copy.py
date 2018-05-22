@@ -45,7 +45,7 @@ class CopyErrataRecursiveTestCase(unittest.TestCase):
         4. Assert that RPM packages were copied.
         """
         cfg = config.get_config()
-        if selectors.bug_is_untestable(3004, cfg.pulp_version):
+        if not selectors.bug_is_fixed(3004, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/3004')
 
         repos = []
@@ -94,7 +94,7 @@ class MtimeTestCase(unittest.TestCase):
            are the same.
         """
         cfg = config.get_config()
-        if selectors.bug_is_untestable(2783, cfg.pulp_version):
+        if not selectors.bug_is_fixed(2783, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2783')
 
         # Create, sync and publish a repository.

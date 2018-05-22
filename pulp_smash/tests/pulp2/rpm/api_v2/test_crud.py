@@ -275,7 +275,7 @@ class LastUnitAddedTestCase(BaseAPITestCase):
         4. Publish the second repository. Assert its ``last_unit_added``
            attribute is non-null.
         """
-        if selectors.bug_is_untestable(2688, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(2688, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2688')
 
         # create a repo with a feed and sync it

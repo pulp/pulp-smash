@@ -328,7 +328,7 @@ class UploadPackageGroupsTestCase(BaseAPITestCase):
 
     def test_display_order_occurences(self):
         """Assert ``display_order`` occurs once if omitted from the unit."""
-        if selectors.bug_is_untestable(1787, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(1787, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1787')
         input_id = self.package_groups['minimal']['id']
         output = _get_groups_by_id(self.root_element)[input_id]
@@ -340,7 +340,7 @@ class UploadPackageGroupsTestCase(BaseAPITestCase):
         This test may be skipped if `Pulp #1787
         <https://pulp.plan.io/issues/1787>`_ is open.
         """
-        if selectors.bug_is_untestable(1787, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(1787, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1787')
         input_id = self.package_groups['minimal']['id']
         output = _get_groups_by_id(self.root_element)[input_id]

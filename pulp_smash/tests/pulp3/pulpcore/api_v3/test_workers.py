@@ -70,7 +70,7 @@ class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
     @selectors.skip_if(bool, 'worker', False)
     def test_03_positive_filters(self):
         """Read a worker using a set of query parameters."""
-        if selectors.bug_is_untestable(3586, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(3586, self.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3586')
         page = self.client.get(WORKER_PATH, params={
             'last_heartbeat__gte': self.worker['last_heartbeat'],

@@ -104,7 +104,7 @@ class SyncValidFeedTestCase(BaseAPITestCase):
           yields one result.
         * The synced-in module can be downloaded.
         """
-        if selectors.bug_is_untestable(3692, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(3692, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/3692')
 
         # Create and sync a repository.
@@ -233,7 +233,7 @@ class SyncNoFeedTestCase(BaseAPITestCase):
     def test_all(self):
         """Create and sync a puppet repository with no feed."""
         cfg = config.get_config()
-        if selectors.bug_is_untestable(2628, cfg.pulp_version):
+        if not selectors.bug_is_fixed(2628, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2628')
 
         # Create a repository.
@@ -380,7 +380,7 @@ class PublishTestCase(BaseAPITestCase):
         cls.responses['puppet releases'] = []
         author_name = PUPPET_MODULE_1['author'] + '/' + PUPPET_MODULE_1['name']
         for repo in repos:
-            if selectors.bug_is_untestable(1440, cls.cfg.pulp_version):
+            if not selectors.bug_is_fixed(1440, cls.cfg.pulp_version):
                 continue
             cls.responses['puppet releases'].append(client.get(
                 '/api/v1/releases.json',

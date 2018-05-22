@@ -207,7 +207,7 @@ class ReadUpdateDeleteTestCase(BaseAPITestCase):
     def test_read_distributors(self):
         """Assert each read w/distributors contains info about distributors."""
         if (self.cfg.pulp_version < Version('2.8') and
-                selectors.bug_is_untestable(1452, self.cfg.pulp_version)):
+                not selectors.bug_is_fixed(1452, self.cfg.pulp_version)):
             self.skipTest('https://pulp.plan.io/issues/1452')
         for key in {'read_distributors', 'read_details'}:
             with self.subTest(key=key):
@@ -246,7 +246,7 @@ class AddImporterDistributorTestCase(BaseAPITestCase):
         """
         super(AddImporterDistributorTestCase, cls).setUpClass()
         if (cls.cfg.pulp_version >= Version('2.10') and
-                selectors.bug_is_untestable(2082, cls.cfg.pulp_version)):
+                not selectors.bug_is_fixed(2082, cls.cfg.pulp_version)):
             raise SkipTest('https://pulp.plan.io/issues/2082')
 
         # Steps 1 and 2.
@@ -400,7 +400,7 @@ class ISOUpdateTestCase(unittest.TestCase):
         """
         cfg = config.get_config()
         for issue_id in (2773, 3047, 3100):
-            if selectors.bug_is_untestable(issue_id, cfg.pulp_version):
+            if not selectors.bug_is_fixed(issue_id, cfg.pulp_version):
                 self.skipTest('https://pulp.plan.io/issues/' + str(issue_id))
 
         # Step 1

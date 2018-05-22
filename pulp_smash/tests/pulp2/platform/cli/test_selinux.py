@@ -181,7 +181,7 @@ class FileLabelsTestCase(unittest.TestCase):
             ('/usr/share/pulp/wsgi', ':object_r:httpd_sys_content_t:s0'),
             ('/var/log/pulp', ':object_r:httpd_sys_rw_content_t:s0'),
         ]
-        if selectors.bug_is_testable(2508, config.get_config().pulp_version):
+        if selectors.bug_is_fixed(2508, config.get_config().pulp_version):
             files_labels.append(
                 ('/var/lib/pulp', ':object_r:httpd_sys_rw_content_t:s0')
             )

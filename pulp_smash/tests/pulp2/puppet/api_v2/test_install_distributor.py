@@ -36,7 +36,7 @@ class InstallDistributorTestCase(BaseAPITestCase):
         3. Publish the repository
         4. Check if the puppet_install_distributor config was properly used
         """
-        if (selectors.bug_is_untestable(3314, self.cfg.pulp_version) and
+        if (not selectors.bug_is_fixed(3314, self.cfg.pulp_version) and
                 utils.os_is_f27(self.cfg)):
             self.skipTest('https://pulp.plan.io/issues/3314')
         cli_client = cli.Client(self.cfg)
@@ -90,7 +90,7 @@ class InstallDistributorThrowsOnErrorTestCase(BaseAPITestCase):
         3. Assert that an error is thrown
         4. Assert that no repo is created
         """
-        if selectors.bug_is_untestable(1237, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(1237, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1237')
         distributor = gen_install_distributor()
         distributor['distributor_config']['install_path'] = ''

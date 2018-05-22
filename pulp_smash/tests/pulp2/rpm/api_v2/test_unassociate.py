@@ -100,7 +100,7 @@ class RemoveUnitsTestCase(unittest.TestCase):
             }
             self.assertEqual(removed_ids & remaining_ids, set())
 
-        if selectors.bug_is_testable(2630, self.cfg.pulp_version):
+        if selectors.bug_is_fixed(2630, self.cfg.pulp_version):
             with self.subTest('last removed unit'):
                 lur_before = self.get_repo_last_unit_removed(repo)
                 time.sleep(1)  # ensure last_unit_removed increments
@@ -194,7 +194,7 @@ class RepublishTestCase(BaseAPITestCase):
         publish_repo(self.cfg, repo_before)
         repo_after = self.get_repo()
         with self.subTest(comment='last_unit_added'):
-            if selectors.bug_is_untestable(1847, self.cfg.pulp_version):
+            if not selectors.bug_is_fixed(1847, self.cfg.pulp_version):
                 self.skipTest('https://pulp.plan.io/issues/1847')
             pre = repo_before['last_unit_added']
             post = repo_after['last_unit_added']
@@ -227,7 +227,7 @@ class RepublishTestCase(BaseAPITestCase):
         publish_repo(self.cfg, repo_before)
         repo_after = self.get_repo()
         with self.subTest(comment='last_unit_added'):
-            if selectors.bug_is_untestable(1847, self.cfg.pulp_version):
+            if not selectors.bug_is_fixed(1847, self.cfg.pulp_version):
                 self.skipTest('https://pulp.plan.io/issues/1847')
             pre = parse(repo_before['last_unit_added'])
             post = parse(repo_after['last_unit_added'])

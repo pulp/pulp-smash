@@ -134,7 +134,7 @@ def _get_bug(bug_id):
     return _BUG_STATUS_CACHE[bug_id]
 
 
-def bug_is_testable(bug_id, pulp_version):
+def bug_is_fixed(bug_id, pulp_version):
     """Tell the caller whether bug ``bug_id`` should be tested.
 
     :param bug_id: An integer bug ID, taken from https://pulp.plan.io.
@@ -168,11 +168,6 @@ def bug_is_testable(bug_id, pulp_version):
             bug.target_platform_release <= pulp_version):
         return True
     return False
-
-
-def bug_is_untestable(bug_id, pulp_version):
-    """Return the inverse of :meth:`bug_is_testable`."""
-    return not bug_is_testable(bug_id, pulp_version)
 
 
 def require(version_string):

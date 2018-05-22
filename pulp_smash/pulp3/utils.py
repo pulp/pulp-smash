@@ -104,7 +104,7 @@ def get_auth(cfg=None):
     if not cfg:
         cfg = config.get_config()
     choices = [_get_basic_auth]
-    if selectors.bug_is_testable(3248, cfg.pulp_version):
+    if selectors.bug_is_fixed(3248, cfg.pulp_version):
         choices.append(_get_jwt_auth)
     return random.choice(choices)(cfg)
 

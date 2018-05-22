@@ -53,7 +53,7 @@ class UploadNonUtf8TestCase(unittest.TestCase):
     def test_all(self):
         """Test whether one can upload an RPM with non-ascii metadata."""
         cfg = config.get_config()
-        if selectors.bug_is_untestable(1903, cfg.pulp_version):
+        if not selectors.bug_is_fixed(1903, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1903')
         client = api.Client(cfg, api.json_handler)
         repo = client.post(REPOSITORY_PATH, gen_repo())

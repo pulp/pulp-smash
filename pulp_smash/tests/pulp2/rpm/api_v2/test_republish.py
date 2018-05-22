@@ -111,7 +111,7 @@ class RemoveOldRepodataTestCase(unittest.TestCase):
 
         Assert that there are more metadata files after the second publish.
         """
-        if selectors.bug_is_untestable(2788, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(2788, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2788')
         found = self.do_test({
             'generate_sqlite': True,
@@ -127,7 +127,7 @@ class RemoveOldRepodataTestCase(unittest.TestCase):
         Assert that there are the same number of metadata files after the
         second publish.
         """
-        if selectors.bug_is_untestable(2788, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(2788, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2788')
         found = self.do_test({
             'generate_sqlite': True,
@@ -141,7 +141,7 @@ class RemoveOldRepodataTestCase(unittest.TestCase):
 
         Assert there are more metadata files after the second publish.
         """
-        if selectors.bug_is_untestable(2788, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(2788, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2788')
         found = self.do_test({
             'generate_sqlite': True,

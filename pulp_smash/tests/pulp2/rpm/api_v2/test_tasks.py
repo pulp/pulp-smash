@@ -45,11 +45,11 @@ class TasksOperationsTestCase(unittest.TestCase):
         6. Purge tasks.
         """
         cfg = config.get_config()
-        if selectors.bug_is_untestable(1418, cfg.pulp_version):
+        if not selectors.bug_is_fixed(1418, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1418')
-        if selectors.bug_is_untestable(1483, cfg.pulp_version):
+        if not selectors.bug_is_fixed(1483, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1483')
-        if selectors.bug_is_untestable(1664, cfg.pulp_version):
+        if not selectors.bug_is_fixed(1664, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1664')
 
         # Create, sync and publish a repository.

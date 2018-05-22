@@ -40,7 +40,7 @@ class CRUDDistributionsTestCase(unittest.TestCase, utils.SmokeTest):
     @selectors.skip_if(bool, 'distribution', False)
     def test_02_read_distributions(self):
         """Read a distribution using query parameters."""
-        if selectors.bug_is_untestable(3082, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(3082, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/3082')
         for params in (
                 {'name': self.distribution['name']},

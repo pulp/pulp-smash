@@ -49,7 +49,7 @@ _UNSIGNED_PACKAGES = {}
 def setUpModule():  # pylint:disable=invalid-name
     """Conditionally skip tests. Create repositories with fixture data."""
     cfg = config.get_config()
-    if selectors.bug_is_untestable(1991, cfg.pulp_version):
+    if not selectors.bug_is_fixed(1991, cfg.pulp_version):
         raise unittest.SkipTest('https://pulp.plan.io/issues/1991')
     set_up_module()
 
@@ -58,7 +58,7 @@ def setUpModule():  # pylint:disable=invalid-name
     _SIGNED_PACKAGES['srpm'] = utils.http_get(SRPM_SIGNED_URL)
     _UNSIGNED_PACKAGES['rpm'] = utils.http_get(RPM_UNSIGNED_URL)
     _UNSIGNED_PACKAGES['srpm'] = utils.http_get(SRPM_UNSIGNED_URL)
-    if selectors.bug_is_testable(1806, cfg.pulp_version):
+    if selectors.bug_is_fixed(1806, cfg.pulp_version):
         _SIGNED_PACKAGES['drpm'] = utils.http_get(DRPM_SIGNED_URL)
         _UNSIGNED_PACKAGES['drpm'] = utils.http_get(DRPM_UNSIGNED_URL)
 

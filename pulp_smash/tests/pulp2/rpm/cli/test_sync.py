@@ -107,7 +107,7 @@ class ForceSyncTestCase(_BaseTestCase):
     def test_all(self):
         """Test whether one can force Pulp to perform a full sync."""
         cfg = config.get_config()
-        if selectors.bug_is_untestable(1982, cfg.pulp_version):
+        if not selectors.bug_is_fixed(1982, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1982')
 
         # Create and sync a repository.

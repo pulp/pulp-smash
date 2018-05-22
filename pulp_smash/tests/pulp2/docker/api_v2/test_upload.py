@@ -29,10 +29,10 @@ class UploadManifestListV2TestCase(SyncPublishMixin, unittest.TestCase):
         super().setUpClass()
         cls.cfg = config.get_config()
         if (utils.os_is_f26(cls.cfg) and
-                selectors.bug_is_untestable(3036, cls.cfg.pulp_version)):
+                not selectors.bug_is_fixed(3036, cls.cfg.pulp_version)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3036')
         for issue_id in (2287, 2384, 2993):
-            if selectors.bug_is_untestable(issue_id, cls.cfg.pulp_version):
+            if not selectors.bug_is_fixed(issue_id, cls.cfg.pulp_version):
                 raise unittest.SkipTest(
                     'https://pulp.plan.io/issues/{}'.format(issue_id)
                 )

@@ -128,7 +128,7 @@ class UpdateEnableV1TestCase(unittest.TestCase):
 
         if cls.cfg.pulp_version < version.Version('2.8'):
             raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
-        if selectors.bug_is_untestable(1710, cls.cfg.pulp_version):
+        if not selectors.bug_is_fixed(1710, cls.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1710')
 
         pulp_admin_login(cls.cfg)
@@ -182,7 +182,7 @@ class UpdateEnableV2TestCase(unittest.TestCase):
 
         if cls.cfg.pulp_version < version.Version('2.8'):
             raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
-        if selectors.bug_is_untestable(1710, cls.cfg.pulp_version):
+        if not selectors.bug_is_fixed(1710, cls.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1710')
 
         pulp_admin_login(cls.cfg)
@@ -236,7 +236,7 @@ class UpdateDistributorTestCase(unittest.TestCase):
         cls.cfg = config.get_config()
         if cls.cfg.pulp_version < version.Version('2.8'):
             raise unittest.SkipTest('These tests require Pulp 2.8 or above.')
-        if selectors.bug_is_untestable(1710, cls.cfg.pulp_version):
+        if not selectors.bug_is_fixed(1710, cls.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1710')
 
         pulp_admin_login(cls.cfg)

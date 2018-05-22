@@ -47,7 +47,7 @@ class MissingWorkersTestCase(unittest.TestCase):
     def setUp(self):
         """Ensure there is only one Pulp worker."""
         self.cfg = config.get_config()
-        if selectors.bug_is_untestable(2835, self.cfg.pulp_version):
+        if not selectors.bug_is_fixed(2835, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2835')
         sudo = '' if utils.is_root(self.cfg) else 'sudo'
         cli.Client(self.cfg).machine.session().run(
@@ -109,7 +109,7 @@ class TaskDispatchTestCase(unittest.TestCase):
            so, and assert that no tasks are left in the ``waiting`` state.
         """
         cfg = config.get_config()
-        if selectors.bug_is_untestable(2770, cfg.pulp_version):
+        if not selectors.bug_is_fixed(2770, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2770')
 
         # Create a repository.

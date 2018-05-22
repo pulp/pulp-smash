@@ -28,9 +28,9 @@ From a Pulp Smash developer's perspective, some work needs to be done to make
 this happen. There are two especially common ways to make this happen. First,
 bug-specific skipping logic can be implemented with the methods in
 :mod:`pulp_smash.selectors`, especially
-:func:`pulp_smash.selectors.bug_is_testable` and it's sibling. Second, a
-`setUpModule`_ function must be present in **every** ``test*`` module. In the
-simplest case, this can be done with pre-defined functions. For example,
+:func:`pulp_smash.selectors.bug_is_fixed`. Second, a `setUpModule`_ function
+must be present in **every** ``test*`` module. In the simplest case, this can
+be done with pre-defined functions. For example,
 :mod:`pulp_smash.tests.pulp2.rpm.api_v2.test_broker` might do the following:
 
 .. code-block:: python

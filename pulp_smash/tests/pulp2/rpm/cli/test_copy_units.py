@@ -170,7 +170,7 @@ class CopyLangpacksTestCase(UtilsMixin, unittest.TestCase):
         * A non-zero number of langpacks are present in the target repository.
         """
         cfg = config.get_config()
-        if selectors.bug_is_untestable(1367, cfg.pulp_version):
+        if not selectors.bug_is_fixed(1367, cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/1367')
         repo_id = self.create_repo(cfg)
         completed_proc = cli.Client(cfg).run(

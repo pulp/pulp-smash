@@ -151,6 +151,6 @@ class LoginTestCase(unittest.TestCase):
         # The `version` attribute should correspond to the version of the Pulp
         # server under test. This block of code says "if bug 1412 is not fixed
         # in Pulp version X, then skip this test."
-        if selectors.bug_is_testable(1412, cfg.pulp_version):
+        if selectors.bug_is_fixed(1412, cfg.pulp_version):
             with self.subTest(comment='check response body'):
                 self.assertEqual(frozenset(response.json().keys()), ERROR_KEYS)
