@@ -2,6 +2,7 @@
 """Tests related to the workers."""
 import unittest
 from random import choice
+from datetime import datetime, timedelta
 
 from requests.exceptions import HTTPError
 
@@ -90,7 +91,7 @@ class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
     def test_04_negative_filters(self):
         """Read a worker with a query that does not match any worker."""
         page = self.client.get(WORKER_PATH, params={
-            'last_heartbeat': utils.uuid4(),
+            'last_heartbeat__gte': str(datetime.now() + timedelta(days=1)),
             'name': self.worker['name'],
             'online': self.worker['online'],
             'missing': self.worker['missing'],
