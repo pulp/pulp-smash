@@ -309,6 +309,14 @@ class SmokeTestsTestCase(BasePulpSmashCliTestCase):
         fq_names = result.output.strip().splitlines()
         self.assertGreater(len(fq_names), 0)
         for fq_name in fq_names:
+            # By default, deprecation warnings are suppressed. However,
+            # unittest undoes that filtering. In addition, Click's CliRunner
+            # captures both stdout and stderr, and combines them into a single
+            # `output` stream, with no apparent way to separate them. As a
+            # result, the normally invisible warning raised by BaseAPITestCase
+            # makes its way to here and can cause this test to fail.
+            if 'DeprecationWarning' in fq_name:
+                continue
             with self.subTest(fq_name=fq_name):
                 module_name, _, class_name = fq_name.rpartition('.')
                 module = importlib.import_module(module_name)

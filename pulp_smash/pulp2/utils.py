@@ -3,6 +3,7 @@
 import inspect
 import io
 import unittest
+import warnings
 from urllib.parse import urljoin, urlparse
 
 from packaging.version import Version
@@ -134,9 +135,27 @@ class BaseAPITestCase(unittest.TestCase):
     """A class with behaviour that is of use in many API test cases.
 
     This test case provides set-up and tear-down behaviour that is common to
-    many API test cases. It is not necessary to use this class as the parent of
-    all API test cases, but it serves well in many cases.
+    many API test cases.
+
+    .. WARNING:: Avoid using BaseAPITestCase. Its design encourages fragile
+        clean-up logic, and it slows down tests by unnecessarily deleting
+        orphans. Try using the `addCleanup`_ instance method instead, and only
+        delete orphans as needed.
+
+    .. _addCleanup:
+        https://docs.python.org/3.6/library/unittest.html#unittest.TestCase.addCleanup
     """
+
+    def __init__(self, *args, **kwargs):
+        """Raise a deprecation warning."""
+        warnings.warn(
+            'Avoid using BaseAPITestCase. Its design encourages fragile '
+            'clean-up logic, and it slows down tests by unnecessarily '
+            'deleting orphans. Try using the addCleanup instance method '
+            'instead, and only delete orphans as needed.',
+            DeprecationWarning
+        )
+        super().__init__(*args, **kwargs)
 
     @classmethod
     def setUpClass(cls):
