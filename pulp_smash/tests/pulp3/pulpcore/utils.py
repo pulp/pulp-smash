@@ -1,6 +1,6 @@
 # coding=utf-8
 """Utilities for Pulpcore tests."""
-from pulp_smash.tests.pulp3.utils import require_pulp_3, require_pulp_plugins
+from pulp_smash.pulp3.utils import require_pulp_3, require_pulp_plugins
 
 
 def set_up_module():

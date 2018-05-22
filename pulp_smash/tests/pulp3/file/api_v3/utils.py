@@ -1,7 +1,7 @@
 # coding=utf-8
 """Utilities for file plugin tests."""
 from pulp_smash import utils
-from pulp_smash.tests.pulp3.utils import get_content
+from pulp_smash.pulp3.utils import get_content
 
 
 def gen_publisher():

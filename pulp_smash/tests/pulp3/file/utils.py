@@ -4,12 +4,12 @@ from urllib.parse import urljoin
 
 from pulp_smash import api
 from pulp_smash.constants import FILE_FEED_URL
-from pulp_smash.tests.pulp3.constants import (
+from pulp_smash.pulp3.constants import (
     FILE_CONTENT_PATH,
     FILE_REMOTE_PATH,
     REPO_PATH,
 )
-from pulp_smash.tests.pulp3.utils import (
+from pulp_smash.pulp3.utils import (
     gen_remote,
     gen_repo,
     require_pulp_3,

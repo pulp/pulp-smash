@@ -8,7 +8,7 @@ from requests import HTTPError
 
 from pulp_smash import api, config, utils
 from pulp_smash.constants import FILE_FEED_URL, FILE_URL
-from pulp_smash.tests.pulp3.constants import (
+from pulp_smash.pulp3.constants import (
     DISTRIBUTION_PATH,
     FILE_CONTENT_PATH,
     FILE_PUBLISHER_PATH,
@@ -18,7 +18,7 @@ from pulp_smash.tests.pulp3.constants import (
 from pulp_smash.tests.pulp3.file.api_v3.utils import gen_publisher
 from pulp_smash.tests.pulp3.file.utils import populate_pulp
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
-from pulp_smash.tests.pulp3.utils import (
+from pulp_smash.pulp3.utils import (
     gen_distribution,
     gen_remote,
     gen_repo,
