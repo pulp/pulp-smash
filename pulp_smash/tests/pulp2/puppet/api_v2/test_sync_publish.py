@@ -97,6 +97,9 @@ class SyncValidFeedTestCase(utils.BaseAPITestCase):
           yields one result.
         * The synced-in module can be downloaded.
         """
+        if selectors.bug_is_untestable(3692, self.cfg.pulp_version):
+            self.skipTest('https://pulp.plan.io/issues/3692')
+
         # Create and sync a repository.
         client = api.Client(self.cfg, api.json_handler)
         body = gen_repo()
