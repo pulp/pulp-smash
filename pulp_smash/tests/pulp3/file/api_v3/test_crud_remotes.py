@@ -7,9 +7,9 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.constants import FILE_FEED_URL, FILE2_FEED_URL
-from pulp_smash.tests.pulp3.constants import FILE_REMOTE_PATH, REPO_PATH
+from pulp_smash.pulp3.constants import FILE_REMOTE_PATH, REPO_PATH
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
-from pulp_smash.tests.pulp3.utils import gen_remote, gen_repo, get_auth
+from pulp_smash.pulp3.utils import gen_remote, gen_repo, get_auth
 
 
 class CRUDRemotesTestCase(unittest.TestCase, utils.SmokeTest):

@@ -19,6 +19,9 @@ developers, not a gospel.
     api/pulp_smash.pulp2
     api/pulp_smash.pulp2.constants
     api/pulp_smash.pulp2.utils
+    api/pulp_smash.pulp3
+    api/pulp_smash.pulp3.constants
+    api/pulp_smash.pulp3.utils
     api/pulp_smash.pulp_smash_cli
     api/pulp_smash.selectors
     api/pulp_smash.tests

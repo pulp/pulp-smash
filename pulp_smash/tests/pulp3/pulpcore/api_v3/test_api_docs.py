@@ -5,7 +5,7 @@ import unittest
 from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, selectors, utils
-from pulp_smash.tests.pulp3.constants import API_DOCS_PATH
+from pulp_smash.pulp3.constants import API_DOCS_PATH
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 

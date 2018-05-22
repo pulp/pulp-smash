@@ -5,10 +5,9 @@ import unittest
 from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, selectors, utils
-from pulp_smash.tests.pulp3.constants import DISTRIBUTION_PATH
+from pulp_smash.pulp3.constants import DISTRIBUTION_PATH
+from pulp_smash.pulp3.utils import gen_distribution, get_auth
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
-from pulp_smash.tests.pulp3.utils import gen_distribution, get_auth
-from pulp_smash.utils import uuid4
 
 
 class CRUDDistributionsTestCase(unittest.TestCase, utils.SmokeTest):
@@ -105,18 +104,18 @@ class DistributionBasePathTestCase(unittest.TestCase):
 
     def test_spaces(self):
         """Test that spaces can not be part of ``base_path``."""
-        self.try_create_distribution(base_path=uuid4().replace('-', ' '))
-        self.try_update_distribution(base_path=uuid4().replace('-', ' '))
+        self.try_create_distribution(base_path=utils.uuid4().replace('-', ' '))
+        self.try_update_distribution(base_path=utils.uuid4().replace('-', ' '))
 
     def test_begin_slash(self):
         """Test that slash cannot be in the begin of ``base_path``."""
-        self.try_create_distribution(base_path='/' + uuid4())
-        self.try_update_distribution(base_path='/' + uuid4())
+        self.try_create_distribution(base_path='/' + utils.uuid4())
+        self.try_update_distribution(base_path='/' + utils.uuid4())
 
     def test_end_slash(self):
         """Test that slash cannot be in the end of ``base_path``."""
-        self.try_create_distribution(base_path=uuid4() + '/')
-        self.try_update_distribution(base_path=uuid4() + '/')
+        self.try_create_distribution(base_path=utils.uuid4() + '/')
+        self.try_update_distribution(base_path=utils.uuid4() + '/')
 
     def test_unique_base_path(self):
         """Test that ``base_path`` can not be duplicated."""
