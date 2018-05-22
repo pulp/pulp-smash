@@ -18,7 +18,7 @@ from urllib.parse import urlsplit
 
 from packaging.version import Version
 
-from pulp_smash import api, selectors, utils
+from pulp_smash import api, utils
 from pulp_smash.constants import PYTHON_EGG_URL
 from pulp_smash.tests.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.tests.pulp2.python.api_v2.utils import gen_repo
@@ -36,8 +36,7 @@ class DuplicateUploadsTestCase(
         super(DuplicateUploadsTestCase, cls).setUpClass()
         unit = utils.http_get(PYTHON_EGG_URL)
         import_params = {'unit_key': {}, 'unit_type_id': 'python_package'}
-        if (cls.cfg.pulp_version >= Version('2.11') and
-                selectors.bug_is_untestable(2334, cls.cfg.pulp_version)):
+        if cls.cfg.pulp_version >= Version('2.11'):
             import_params['unit_key']['filename'] = (
                 urlsplit(PYTHON_EGG_URL).path.split('/')[-1]
             )
