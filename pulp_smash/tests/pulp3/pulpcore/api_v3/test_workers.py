@@ -1,8 +1,8 @@
 # coding=utf-8
 """Tests related to the workers."""
 import unittest
-from random import choice
 from datetime import datetime, timedelta
+from random import choice
 
 from requests.exceptions import HTTPError
 
