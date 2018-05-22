@@ -8,6 +8,7 @@ from pulp_smash import api, config, selectors, utils
 from pulp_smash.tests.pulp3.constants import DISTRIBUTION_PATH
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.utils import gen_distribution, get_auth
+from pulp_smash.utils import uuid4
 
 
 class CRUDDistributionsTestCase(unittest.TestCase, utils.SmokeTest):
@@ -78,3 +79,63 @@ class CRUDDistributionsTestCase(unittest.TestCase, utils.SmokeTest):
         self.client.delete(self.distribution['_href'])
         with self.assertRaises(HTTPError):
             self.client.get(self.distribution['_href'])
+
+
+class DistributionBasePathTestCase(unittest.TestCase):
+    """Test possible values for ``base_path`` on a distribution.
+
+    This test targets the following issues:
+
+    * `Pulp #3412 <https://pulp.plan.io/issues/3412>`_
+    * `Pulp Smash #906 <https://github.com/PulpQE/pulp-smash/issues/906>`_
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables."""
+        cls.cfg = config.get_config()
+        cls.client = api.Client(cls.cfg, api.json_handler)
+        cls.client.request_kwargs['auth'] = get_auth()
+        cls.distribution = cls.client.post(DISTRIBUTION_PATH, gen_distribution())
+
+    @classmethod
+    def tearDownClass(cls):
+        """Clean up resources."""
+        cls.client.delete(cls.distribution['_href'])
+
+    def test_spaces(self):
+        """Test that spaces can not be part of ``base_path``."""
+        self.try_create_distribution(base_path=uuid4().replace('-', ' '))
+        self.try_update_distribution(base_path=uuid4().replace('-', ' '))
+
+    def test_begin_slash(self):
+        """Test that slash cannot be in the begin of ``base_path``."""
+        self.try_create_distribution(base_path='/' + uuid4())
+        self.try_update_distribution(base_path='/' + uuid4())
+
+    def test_end_slash(self):
+        """Test that slash cannot be in the end of ``base_path``."""
+        self.try_create_distribution(base_path=uuid4() + '/')
+        self.try_update_distribution(base_path=uuid4() + '/')
+
+    def test_unique_base_path(self):
+        """Test that ``base_path`` can not be duplicated."""
+        self.try_create_distribution(base_path=self.distribution['base_path'])
+
+    def try_create_distribution(self, **kwargs):
+        """Unsuccessfully create a distribution.
+
+        Merge the given kwargs into the body of the request.
+        """
+        body = gen_distribution()
+        body.update(kwargs)
+        with self.assertRaises(HTTPError):
+            self.client.post(DISTRIBUTION_PATH, body)
+
+    def try_update_distribution(self, **kwargs):
+        """Unsuccessfully update a distribution with HTTP PATCH.
+
+        Use the given kwargs as the body of the request.
+        """
+        with self.assertRaises(HTTPError):
+            self.client.patch(self.distribution['_href'], kwargs)
