@@ -85,8 +85,10 @@ class DistributionBasePathTestCase(unittest.TestCase):
 
     This test targets the following issues:
 
+    * `Pulp #2987 <https://pulp.plan.io/issues/2987>`_
     * `Pulp #3412 <https://pulp.plan.io/issues/3412>`_
     * `Pulp Smash #906 <https://github.com/PulpQE/pulp-smash/issues/906>`_
+    * `Pulp Smash #956 <https://github.com/PulpQE/pulp-smash/issues/956>`_
     """
 
     @classmethod
@@ -95,7 +97,9 @@ class DistributionBasePathTestCase(unittest.TestCase):
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
         cls.client.request_kwargs['auth'] = get_auth()
-        cls.distribution = cls.client.post(DISTRIBUTION_PATH, gen_distribution())
+        body = gen_distribution()
+        body['base_path'] = body['base_path'].replace('-', '/')
+        cls.distribution = cls.client.post(DISTRIBUTION_PATH, body)
 
     @classmethod
     def tearDownClass(cls):
@@ -120,6 +124,20 @@ class DistributionBasePathTestCase(unittest.TestCase):
     def test_unique_base_path(self):
         """Test that ``base_path`` can not be duplicated."""
         self.try_create_distribution(base_path=self.distribution['base_path'])
+
+    def test_overlapping_base_path(self):
+        """Test that distributions can't have overlapping ``base_path``.
+
+        See: `Pulp #2987`_.
+        """
+        base_path = self.distribution['base_path'].rsplit('/', 1)[0]
+        self.try_create_distribution(base_path=base_path)
+
+        base_path = '/'.join((
+            self.distribution['base_path'],
+            utils.uuid4().replace('-', '/'),
+        ))
+        self.try_create_distribution(base_path=base_path)
 
     def try_create_distribution(self, **kwargs):
         """Unsuccessfully create a distribution.
