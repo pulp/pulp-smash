@@ -15,9 +15,9 @@ def set_up_module():
 def require_selinux():
     """Test if selinux is disabled in config.
 
-    Note: We expect selinux tests are always run. However some test environments
-    (such as OSX + Container) selinux is unsupported. Tests should be skipped in this case.
-    See `pulp_smash.Config``
+    Note: We expect selinux tests are always run. However some test
+    environments (such as OSX + Container) selinux is unsupported. Tests should
+    be skipped in this case.  See :class:`pulp_smash.config.PulpSmashConfig`.
     """
     cfg = config.get_config()
     assert cfg.pulp_selinux_enabled is not None, 'pulp_selinux_enabled must be True or False'
