@@ -5,12 +5,13 @@ This module may make use of :mod:`pulp_smash.api` and :mod:`pulp_smash.cli`,
 but the reverse should not be done.
 """
 import hashlib
+import unittest
 import uuid
 from urllib.parse import urlparse
 
 import requests
 
-from pulp_smash import cli
+from pulp_smash import cli, config
 from pulp_smash.cli import _is_root as is_root  # pylint:disable=unused-import
 
 # A mapping between URLs and SHA 256 checksums. Used by get_sha256_checksum().
@@ -103,3 +104,16 @@ def os_is_f27(cfg, pulp_host=None):
 def uuid4():
     """Return a random UUID4 as a string."""
     return str(uuid.uuid4())
+
+
+def require_selinux():
+    """Test if selinux is disabled in config.
+
+    Note: We expect selinux tests are always run. However some test
+    environments (such as OSX + Container) selinux is unsupported. Tests should
+    be skipped in this case.  See :class:`pulp_smash.config.PulpSmashConfig`.
+    """
+    cfg = config.get_config()
+    assert cfg.pulp_selinux_enabled is not None, 'pulp_selinux_enabled must be True or False'
+    if not cfg.pulp_selinux_enabled:
+        raise unittest.SkipTest("Selinux tests disabled by user's settings.json")

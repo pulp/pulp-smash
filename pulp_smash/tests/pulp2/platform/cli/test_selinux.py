@@ -5,7 +5,7 @@ import unittest
 from collections import namedtuple
 
 from pulp_smash import cli, config, selectors, utils
-from pulp_smash.tests.pulp2.platform.utils import set_up_module, require_selinux
+from pulp_smash.tests.pulp2.platform.utils import set_up_module
 
 
 CELERY_LABEL = ':system_r:celery_t:s0'
@@ -38,7 +38,7 @@ def setUpModule():  # pylint:disable=invalid-name
     selinux is disabled by user config.
     """
     set_up_module()
-    require_selinux()
+    utils.require_selinux()
 
 
 class ProcessLabelsTestCase(unittest.TestCase):
