@@ -150,7 +150,7 @@ class RepositoryGroupCrudTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create, update, read and delete a repository group."""
-        super(RepositoryGroupCrudTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg)
         cls.bodies = {
             'create': gen_repo_group(),

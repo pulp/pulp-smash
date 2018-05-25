@@ -34,7 +34,7 @@ class CreateTestCase(BaseAPITestCase):
         Create one user with the minimum required attributes, and another with
         all available attributes.
         """
-        super(CreateTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg)
         cls.bodies = (
             {'login': utils.uuid4()},
@@ -83,7 +83,7 @@ class ReadUpdateDeleteTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create three users and read, update and delete them respectively."""
-        super(ReadUpdateDeleteTestCase, cls).setUpClass()
+        super().setUpClass()
 
         # Create three users and save their attributes.
         client = api.Client(cls.cfg, response_handler=api.json_handler)
@@ -177,7 +177,7 @@ class SearchTestCase(BaseAPITestCase):
         * A user by their login.
         * A non-existent user by their login.
         """
-        super(SearchTestCase, cls).setUpClass()
+        super().setUpClass()
 
         # Create a super-user.
         client = api.Client(cls.cfg, response_handler=api.json_handler)

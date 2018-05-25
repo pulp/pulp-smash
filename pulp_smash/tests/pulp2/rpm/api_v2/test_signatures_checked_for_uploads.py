@@ -130,7 +130,7 @@ class RequireValidKeyTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create a repository with an importer."""
-        super(RequireValidKeyTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.repo = _create_repository(cls.cfg, {
             'allowed_keys': [PULP_FIXTURES_KEY_ID],
             'require_signature': True,
@@ -180,7 +180,7 @@ class RequireInvalidKeyTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create a repository with an importer."""
-        super(RequireInvalidKeyTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.repo = _create_repository(cls.cfg, {
             'allowed_keys': [_INVALID_KEY_ID],
             'require_signature': True,
@@ -218,7 +218,7 @@ class RequireAnyKeyTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create a repository with an importer."""
-        super(RequireAnyKeyTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.repo = _create_repository(cls.cfg, {
             'allowed_keys': [],
             'require_signature': True,
@@ -268,7 +268,7 @@ class AllowInvalidKeyTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create a repository with an importer."""
-        super(AllowInvalidKeyTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.repo = _create_repository(cls.cfg, {
             'allowed_keys': [_INVALID_KEY_ID],
             'require_signature': False,
@@ -318,7 +318,7 @@ class AllowValidKeyTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create a repository with an importer."""
-        super(AllowValidKeyTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.repo = _create_repository(cls.cfg, {
             'allowed_keys': [PULP_FIXTURES_KEY_ID],
             'require_signature': False,
@@ -355,7 +355,7 @@ class AllowAnyKeyTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create a repository with an importer."""
-        super(AllowAnyKeyTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.repo = _create_repository(cls.cfg, {
             'allowed_keys': [],
             'require_signature': False,

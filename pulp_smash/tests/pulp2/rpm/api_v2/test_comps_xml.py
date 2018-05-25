@@ -129,7 +129,7 @@ class SyncRepoTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create, sync and publish a repository. Fetch its ``comps.xml``."""
-        super(SyncRepoTestCase, cls).setUpClass()
+        super().setUpClass()
         if check_issue_3104(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         client = api.Client(cls.cfg, api.json_handler)
@@ -195,7 +195,7 @@ class UploadPackageGroupsTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create an RPM repository, upload package groups, and publish."""
-        super(UploadPackageGroupsTestCase, cls).setUpClass()
+        super().setUpClass()
         if check_issue_3104(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
 

@@ -76,7 +76,7 @@ class UpdateTestCase(BaseAPITestCase):
            and ensure the distributor is updated by packing certain data in the
            request body.
         """
-        super(UpdateTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.sent_ids = tuple(('test/' + utils.uuid4() for _ in range(2)))
         cls.responses = {}
 

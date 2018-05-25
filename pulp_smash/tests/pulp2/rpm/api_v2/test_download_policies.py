@@ -83,7 +83,7 @@ class BackgroundTestCase(BaseAPITestCase):
         3. Sync and publish the repository.
         4. Download an RPM from the repository.
         """
-        super(BackgroundTestCase, cls).setUpClass()
+        super().setUpClass()
         if check_issue_3104(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         if (not selectors.bug_is_fixed(1905, cls.cfg.pulp_version) and
@@ -160,7 +160,7 @@ class OnDemandTestCase(BaseAPITestCase):
         4. Download an RPM from the published repository.
         5. Download the same RPM to ensure it is served by the cache.
         """
-        super(OnDemandTestCase, cls).setUpClass()
+        super().setUpClass()
         if check_issue_3104(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
 
@@ -256,7 +256,7 @@ class FixFileCorruptionTestCase(BaseAPITestCase):
         6. Trigger a repository download, without unit verification.
         7. Trigger a repository download, with unit verification.
         """
-        super(FixFileCorruptionTestCase, cls).setUpClass()
+        super().setUpClass()
         if (not selectors.bug_is_fixed(1905, cls.cfg.pulp_version) and
                 os_is_rhel6(cls.cfg)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1905')

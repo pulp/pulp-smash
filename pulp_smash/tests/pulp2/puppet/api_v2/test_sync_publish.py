@@ -44,7 +44,7 @@ class CreateTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create two puppet repositories, with and without feed URLs."""
-        super(CreateTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.bodies = tuple((gen_repo() for _ in range(2)))
         cls.bodies[1]['importer_config'] = {
             'feed': 'http://' + utils.uuid4(),  # Pulp checks for a URI scheme
@@ -189,7 +189,7 @@ class SyncInvalidFeedTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create a puppet repository with an invalid feed and sync it."""
-        super(SyncInvalidFeedTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config'] = {'feed': 'http://' + utils.uuid4()}
@@ -264,7 +264,7 @@ class SyncValidManifestFeedTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create repository with the feed pointing to a valid manifest."""
-        super(SyncValidManifestFeedTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg)
         body = gen_repo()
         body['importer_config'] = {
@@ -316,7 +316,7 @@ class PublishTestCase(BaseAPITestCase):
         distributors to the repositories, publish repositories and download
         modules back from them.
         """
-        super(PublishTestCase, cls).setUpClass()
+        super().setUpClass()
         reset_pulp(cls.cfg)  # See: https://pulp.plan.io/issues/1406
         cls.responses = {}
         cls.modules = []  # Raw puppet modules.

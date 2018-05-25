@@ -65,7 +65,7 @@ class CreateSuccessTestCase(CreateRepoMixin, BaseAPITestCase):
         1. Create a repository with a valid feed
         2. Schedule sync to run every 30 seconds
         """
-        super(CreateSuccessTestCase, cls).setUpClass()
+        super().setUpClass()
         href, importer_type_id = cls.create_repo()
 
         # Schedule a sync
@@ -99,7 +99,7 @@ class CreateFailureTestCase(CreateRepoMixin, BaseAPITestCase):
 
         Each schedule tests a different failure scenario.
         """
-        super(CreateFailureTestCase, cls).setUpClass()
+        super().setUpClass()
         href, importer_type_id = cls.create_repo()
 
         # We'll need these below.
@@ -161,7 +161,7 @@ class ReadUpdateDeleteTestCase(CreateRepoMixin, BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create three schedules and read, update and delete them."""
-        super(ReadUpdateDeleteTestCase, cls).setUpClass()
+        super().setUpClass()
         href, importer_type_id = cls.create_repo()
         cls.schedules = []
         cls.responses = {}
@@ -246,7 +246,7 @@ class ScheduledSyncTestCase(CreateRepoMixin, BaseAPITestCase):
            "sync" runs.
 
         """
-        super(ScheduledSyncTestCase, cls).setUpClass()
+        super().setUpClass()
         href, importer_type_id = cls.create_repo()
 
         # Schedule a sync to run every 30 seconds. Wait 40 seconds and read it.

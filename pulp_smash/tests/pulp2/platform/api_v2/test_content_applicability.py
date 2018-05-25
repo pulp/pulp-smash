@@ -59,7 +59,7 @@ class SeriesTestCase(_SuccessTestCase):
     @classmethod
     def setUpClass(cls):
         """Make calls to the server and save the responses."""
-        super(SeriesTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg, api.echo_handler)
         for key, path in _PATHS.items():
             cls.responses[key] = client.post(path, {key + '_criteria': {}})
@@ -82,7 +82,7 @@ class ParallelTestCase(_SuccessTestCase):
     @classmethod
     def setUpClass(cls):
         """Make calls to the server and save the responses."""
-        super(ParallelTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.responses['repo'] = (
             api
             .Client(cls.cfg, api.echo_handler)

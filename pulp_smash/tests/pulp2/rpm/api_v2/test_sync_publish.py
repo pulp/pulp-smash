@@ -57,7 +57,7 @@ class SyncRepoBaseTestCase(BaseAPITestCase):
         """Create an RPM repository with a valid feed and sync it."""
         if inspect.getmro(cls)[0] == SyncRepoBaseTestCase:
             raise unittest.SkipTest('Abstract base class.')
-        super(SyncRepoBaseTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = cls.get_feed_url()

@@ -162,7 +162,7 @@ class UpdateInfoTestCase(BaseAPITestCase):
            erratum references the RPM, and the other does not.
         3. Publish the repository Fetch and parse its ``updateinfo.xml`` file.
         """
-        super(UpdateInfoTestCase, cls).setUpClass()
+        super().setUpClass()
         if check_issue_3104(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         cls.errata = {key: _gen_errata() for key in ('full', 'partial')}

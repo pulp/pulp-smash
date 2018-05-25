@@ -68,7 +68,7 @@ class UpstreamNameV1TestCase(UpstreamNameTestsMixin, BaseAPITestCase):
         The importer has no ``upstream_name`` set. it must be passed via
         ``override_config`` when a sync is requested.
         """
-        super(UpstreamNameV1TestCase, cls).setUpClass()
+        super().setUpClass()
         body = gen_repo()
         body['importer_config'] = {
             'enable_v1': True,
@@ -93,7 +93,7 @@ class UpstreamNameV2TestCase(UpstreamNameTestsMixin, BaseAPITestCase):
         The importer has no ``upstream_name`` set. it must be passed via
         ``override_config`` when a sync is requested.
         """
-        super(UpstreamNameV2TestCase, cls).setUpClass()
+        super().setUpClass()
         body = gen_repo()
         body['importer_config'] = {'feed': DOCKER_V2_FEED_URL}
         cls.repo_href = (

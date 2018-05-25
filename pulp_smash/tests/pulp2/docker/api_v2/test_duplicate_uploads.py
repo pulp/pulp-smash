@@ -28,7 +28,7 @@ class DuplicateUploadsTestCase(BaseAPITestCase, DuplicateUploadsMixin):
     @classmethod
     def setUpClass(cls):
         """Create a Docker repository."""
-        super(DuplicateUploadsTestCase, cls).setUpClass()
+        super().setUpClass()
         unit = utils.http_get(DOCKER_IMAGE_URL)
         import_params = {'unit_type_id': 'docker_image'}
         repo = api.Client(cls.cfg).post(REPOSITORY_PATH, gen_repo()).json()

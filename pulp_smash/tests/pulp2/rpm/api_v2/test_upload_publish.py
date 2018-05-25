@@ -96,7 +96,7 @@ class UploadDrpmTestCaseWithCheckSumType(BaseAPITestCase):
             "sha256"
         3. Search for all content units in the repository.
         """
-        super(UploadDrpmTestCaseWithCheckSumType, cls).setUpClass()
+        super().setUpClass()
 
     def test_all(self):
         """Test that uploading DRPM with checksumtype specified works."""
@@ -184,7 +184,7 @@ class UploadSrpmTestCase(BaseAPITestCase):
         2. Upload a SRPM into the repository.
         3. Search for all content units in the repository.
         """
-        super(UploadSrpmTestCase, cls).setUpClass()
+        super().setUpClass()
         if check_issue_2620(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2620')
         client = api.Client(cls.cfg)

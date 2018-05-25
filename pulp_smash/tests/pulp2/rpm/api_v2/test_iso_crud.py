@@ -68,7 +68,7 @@ class CreateTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create an ISO RPM repo with an importer and distributor."""
-        super(CreateTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.body = {
             'description': utils.uuid4(),
             'display_name': utils.uuid4(),
@@ -115,7 +115,7 @@ class ReadUpdateDeleteTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create three repositories and read, update and delete them."""
-        super(ReadUpdateDeleteTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.bodies = {
             'read': {
                 'distributors': [_DISTRIBUTOR],
@@ -244,7 +244,7 @@ class AddImporterDistributorTestCase(BaseAPITestCase):
         3. Add an importer and distributor to the repo.
         4. Re-read the repository's importers and distributors.
         """
-        super(AddImporterDistributorTestCase, cls).setUpClass()
+        super().setUpClass()
         if (cls.cfg.pulp_version >= Version('2.10') and
                 not selectors.bug_is_fixed(2082, cls.cfg.pulp_version)):
             raise SkipTest('https://pulp.plan.io/issues/2082')

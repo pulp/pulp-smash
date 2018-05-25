@@ -32,7 +32,7 @@ class RepoMDTestCase(BaseAPITestCase):
         1. Create an RPM repository with a YUM distributor and publish it.
         2. Fetch the ``repomd.xml`` file from the distributor, and parse it.
         """
-        super(RepoMDTestCase, cls).setUpClass()
+        super().setUpClass()
         if check_issue_3104(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         if check_issue_2277(cls.cfg):

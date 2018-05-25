@@ -39,7 +39,7 @@ class BaseSearchTestCase(BaseAPITestCase):
         """Create and sync a repository."""
         if inspect.getmro(cls)[0] == BaseSearchTestCase:
             raise unittest.SkipTest('Abstract base class.')
-        super(BaseSearchTestCase, cls).setUpClass()
+        super().setUpClass()
         if check_issue_2620(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2620')
         body = gen_repo()

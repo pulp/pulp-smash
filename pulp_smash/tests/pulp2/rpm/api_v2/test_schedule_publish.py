@@ -28,7 +28,7 @@ class CreateSuccessTestCase(BaseAPITestCase):
         2. Sync it
         3. Schedule publish to run every 30 seconds
         """
-        super(CreateSuccessTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg)
 
         # Create a repo with a valid feed and sync it
@@ -81,7 +81,7 @@ class CreateFailureTestCase(BaseAPITestCase):
 
         Each schedule is created to test a different failure scenario.
         """
-        super(CreateFailureTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg)
 
         # Create a repo with a valid feed and sync it
@@ -152,7 +152,7 @@ class ReadUpdateDeleteTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create three schedules and read, update and delete them."""
-        super(ReadUpdateDeleteTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
 
         # Create a repo with a valid feed and sync it
@@ -260,7 +260,7 @@ class ScheduledPublishTestCase(BaseAPITestCase):
         4. Wait for 130 seconds and read the schedule to get the number of
            "publish" runs
         """
-        super(ScheduledPublishTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
 
         # Create a repo with a valid feed and sync it

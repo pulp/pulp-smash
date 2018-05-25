@@ -32,7 +32,7 @@ class DuplicateUploadsTestCase(BaseAPITestCase, DuplicateUploadsMixin):
     @classmethod
     def setUpClass(cls):
         """Create a Python repo. Upload a Python package into it twice."""
-        super(DuplicateUploadsTestCase, cls).setUpClass()
+        super().setUpClass()
         unit = utils.http_get(PYTHON_EGG_URL)
         import_params = {'unit_key': {}, 'unit_type_id': 'python_package'}
         if cls.cfg.pulp_version >= Version('2.11'):

@@ -28,7 +28,7 @@ class DuplicateUploadsTestCase(BaseAPITestCase, DuplicateUploadsMixin):
     @classmethod
     def setUpClass(cls):
         """Create a Puppet repository."""
-        super(DuplicateUploadsTestCase, cls).setUpClass()
+        super().setUpClass()
         unit = utils.http_get(PUPPET_MODULE_URL_1)
         import_params = {'unit_type_id': 'puppet_module'}
         repo = api.Client(cls.cfg).post(REPOSITORY_PATH, gen_repo()).json()

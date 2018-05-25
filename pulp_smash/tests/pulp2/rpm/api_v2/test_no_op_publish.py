@@ -111,7 +111,7 @@ class BaseTestCase(BaseAPITestCase):
         """
         if inspect.getmro(cls)[0] == BaseTestCase:
             raise unittest.SkipTest('Abstract base class.')
-        super(BaseTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
         repo_href = client.post(REPOSITORY_PATH, gen_repo())['_href']
         cls.resources.add(repo_href)  # mark for deletion
@@ -169,7 +169,7 @@ class PubTwiceTestCase(BaseTestCase, NoOpPublishMixin):
     @classmethod
     def setUpClass(cls):
         """Publish a repository twice."""
-        super(PubTwiceTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg)
         distributor = cls.repo['distributors'][0]
         for _ in range(2):
@@ -187,7 +187,7 @@ class PubTwiceWithOverrideTestCase(BaseTestCase, NoOpPublishMixin):
     @classmethod
     def setUpClass(cls):
         """Publish a repository twice, with an override config both times."""
-        super(PubTwiceWithOverrideTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg)
         relative_url = utils.uuid4() + '/'
         for _ in range(2):
@@ -206,7 +206,7 @@ class ChangeRepoTestCase(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         """Publish a repository, change it, and publish it again."""
-        super(ChangeRepoTestCase, cls).setUpClass()
+        super().setUpClass()
         if check_issue_3104(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         client = api.Client(cls.cfg)

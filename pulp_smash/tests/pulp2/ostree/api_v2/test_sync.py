@@ -96,7 +96,7 @@ class SyncTestCase(_SyncMixin, BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create an OSTree repository with a valid feed and branch."""
-        super(SyncTestCase, cls).setUpClass()
+        super().setUpClass()
         if not selectors.bug_is_fixed(1934, cls.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1934')
         body = gen_repo()
@@ -125,7 +125,7 @@ class SyncInvalidFeedTestCase(
     @classmethod
     def setUpClass(cls):
         """Set ``cls.body``."""
-        super(SyncInvalidFeedTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg)
         body = gen_repo()
         body['importer_config']['feed'] = utils.uuid4()
@@ -145,7 +145,7 @@ class SyncInvalidBranchesTestCase(
     @classmethod
     def setUpClass(cls):
         """Create and sync an OSTree repository."""
-        super(SyncInvalidBranchesTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg)
         body = gen_repo()
         body['importer_config']['feed'] = OSTREE_FEED
@@ -164,7 +164,7 @@ class SyncMissingAttrsTestCase(
     @classmethod
     def setUpClass(cls):
         """Create and sync an OSTree repository."""
-        super(SyncMissingAttrsTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg)
         body = gen_repo()
         repo_href = client.post(REPOSITORY_PATH, body).json()['_href']

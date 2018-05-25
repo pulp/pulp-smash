@@ -89,7 +89,7 @@ class ExportDirMixin(DisableSELinuxMixin):
     def __init__(self, *args, **kwargs):
         """Initialize variables."""
         self.__sudo = None
-        super(ExportDirMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def sudo(self):
         """Return either ``''`` or ``'sudo '``.
@@ -173,7 +173,7 @@ class BaseExportChecksumTypeTestCase(ExportDirMixin, BaseAPITestCase):
         """
         if inspect.getmro(cls)[0] == BaseExportChecksumTypeTestCase:
             raise unittest.SkipTest('Abstract base class.')
-        super(BaseExportChecksumTypeTestCase, cls).setUpClass()
+        super().setUpClass()
         if cls.cfg.pulp_version < Version('2.9'):
             raise unittest.SkipTest('This test requires Pulp 2.9 or newer')
         body = gen_repo()
@@ -303,7 +303,7 @@ class ExportChecksumTypeTestCase(BaseExportChecksumTypeTestCase):
 
         Each distributor is configured with a valid checksum type.
         """
-        super(ExportChecksumTypeTestCase, cls).setUpClass()
+        super().setUpClass()
         if check_issue_3104(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         cls.distributors = [
@@ -356,7 +356,7 @@ class RepoGroupExportChecksumTypeTestCase(BaseExportChecksumTypeTestCase):
         2. Creates some distributors. Each distributor is configured with a
            valid checksum type.
         """
-        super(RepoGroupExportChecksumTypeTestCase, cls).setUpClass()
+        super().setUpClass()
         if check_issue_3104(cls.cfg):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3104')
         body = gen_repo_group()
@@ -414,7 +414,7 @@ class ExportDistributorTestCase(ExportDirMixin, BaseAPITestCase):
 
         .. _Pulp #1928: https://pulp.plan.io/issues/1928
         """
-        super(ExportDistributorTestCase, cls).setUpClass()
+        super().setUpClass()
         body = gen_repo()
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
         cls.repo = api.Client(cls.cfg).post(REPOSITORY_PATH, body).json()
@@ -433,7 +433,7 @@ class ExportDistributorTestCase(ExportDirMixin, BaseAPITestCase):
         Create an export distributor only if one is not already present. (See
         :meth:`setUpClass`.)
         """
-        super(ExportDistributorTestCase, self).setUp()
+        super().setUp()
         if self.distributor is None:
             self.distributor = _create_distributor(
                 self.cfg,

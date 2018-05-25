@@ -34,7 +34,7 @@ class CreateSuccessTestCase(BaseAPITestCase):
         Create one repository with the minimum required attributes, and a
         second with all available attributes except importers and distributors.
         """
-        super(CreateSuccessTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg)
         cls.bodies = [{'id': utils.uuid4()}]
         cls.bodies.append({
@@ -113,7 +113,7 @@ class CreateFailureTestCase(BaseAPITestCase):
         Each repository is created to test a different failure scenario. The
         first repository is created in order to test duplicate ids.
         """
-        super(CreateFailureTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
         repo = client.post(REPOSITORY_PATH, {'id': utils.uuid4()})
         cls.resources.add(repo['_href'])
@@ -176,7 +176,7 @@ class ReadUpdateDeleteTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create three repositories and read, update and delete them."""
-        super(ReadUpdateDeleteTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
         cls.repos = tuple((
             client.post(REPOSITORY_PATH, {'id': utils.uuid4()})

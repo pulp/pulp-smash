@@ -65,7 +65,7 @@ class _BaseTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create an empty dict of searches performed."""
-        super(_BaseTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.searches = {}
 
     def test_status_code(self):
@@ -87,7 +87,7 @@ class MinimalTestCase(_BaseTestCase):
     @classmethod
     def setUpClass(cls):
         """Create one user. Execute searches."""
-        super(MinimalTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg)
         cls.searches = {
             'get': client.get(_SEARCH_PATH),
@@ -116,7 +116,7 @@ class SortTestCase(_BaseTestCase):
     @classmethod
     def setUpClass(cls):
         """Create two users. Execute searches."""
-        super(SortTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg)
         for order in {'ascending', 'descending'}:
             json = {'criteria': {'sort': [['id', order]]}}
@@ -147,7 +147,7 @@ class FieldTestCase(_BaseTestCase):
     @classmethod
     def setUpClass(cls):
         """Create one user. Execute searches."""
-        super(FieldTestCase, cls).setUpClass()
+        super().setUpClass()
         if not selectors.bug_is_fixed(1933, cls.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1933')
         client = api.Client(cls.cfg)
@@ -179,7 +179,7 @@ class FieldsTestCase(_BaseTestCase):
     @classmethod
     def setUpClass(cls):
         """Create one user. Execute searches."""
-        super(FieldsTestCase, cls).setUpClass()
+        super().setUpClass()
         if not selectors.bug_is_fixed(1933, cls.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/1933')
         client = api.Client(cls.cfg)
@@ -214,7 +214,7 @@ class FiltersIdTestCase(_BaseTestCase):
     @classmethod
     def setUpClass(cls):
         """Search for exactly one user."""
-        super(FiltersIdTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.user = random.choice(_USERS)
         json = {'criteria': {'filters': {'id': cls.user['id']}}}
         cls.searches['post'] = api.Client(cls.cfg).post(_SEARCH_PATH, json)
@@ -241,7 +241,7 @@ class FiltersIdsTestCase(_BaseTestCase):
     @classmethod
     def setUpClass(cls):
         """Search for exactly two users."""
-        super(FiltersIdsTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.user_ids = [user['id'] for user in random.sample(_USERS, 2)]  # pylint:disable=unsubscriptable-object
         cls.searches['post'] = api.Client(cls.cfg).post(
             _SEARCH_PATH,
@@ -272,7 +272,7 @@ class LimitSkipTestCase(_BaseTestCase):
     @classmethod
     def setUpClass(cls):
         """Create two users. Execute searches."""
-        super(LimitSkipTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.user_ids = [user['id'] for user in random.sample(_USERS, 2)]  # pylint:disable=unsubscriptable-object
         client = api.Client(cls.cfg)
         for criterion in {'limit', 'skip'}:

@@ -29,7 +29,7 @@ class ForceFullTestCase(BaseAPITestCase):
     @classmethod
     def setUpClass(cls):
         """Create and sync a repository."""
-        super(ForceFullTestCase, cls).setUpClass()
+        super().setUpClass()
         client = api.Client(cls.cfg, api.json_handler)
         body = gen_repo()
         body['importer_config']['feed'] = RPM_SIGNED_FEED_URL
