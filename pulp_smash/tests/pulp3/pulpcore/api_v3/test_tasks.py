@@ -5,10 +5,13 @@ import unittest
 from requests import HTTPError
 
 from pulp_smash import api, config, selectors, utils
-from pulp_smash.api import P3_TASK_END_STATES
-from pulp_smash.pulp3.constants import REPO_PATH, TASKS_PATH
-from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
+from pulp_smash.pulp3.constants import (
+    P3_TASK_END_STATES,
+    REPO_PATH,
+    TASKS_PATH,
+)
 from pulp_smash.pulp3.utils import gen_repo, get_auth
+from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 _DYNAMIC_TASKS_ATTRS = ('finished_at',)
 """Task attributes that are dynamically set by Pulp, not set by a user."""

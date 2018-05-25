@@ -2,6 +2,7 @@
 """Constants for Pulp 3 tests."""
 from urllib.parse import urljoin
 
+from pulp_smash.api import _P3_TASK_END_STATES as P3_TASK_END_STATES  # pylint:disable=unused-import
 
 BASE_PATH = '/pulp/api/v3/'
 
