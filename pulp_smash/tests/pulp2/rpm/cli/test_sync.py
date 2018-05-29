@@ -126,7 +126,7 @@ class ForceSyncTestCase(_BaseTestCase):
         rpms = self._list_rpms(cfg)
         rpm = random.choice(rpms)
         cmd = []
-        if not utils.is_root(cfg):
+        if not cli.is_root(cfg):
             cmd.append('sudo')
         cmd.extend(('rm', '-rf', rpm))
         client.run(cmd)

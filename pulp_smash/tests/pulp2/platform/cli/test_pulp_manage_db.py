@@ -10,7 +10,7 @@ and when :data:`CONFLICTING_SERVICES` are stopped. See:
 import inspect
 import unittest
 
-from pulp_smash import cli, config, exceptions, selectors, utils
+from pulp_smash import cli, config, exceptions, selectors
 from pulp_smash.pulp2.utils import pulp_admin_login, reset_pulp
 from pulp_smash.tests.pulp2.platform.utils import set_up_module
 
@@ -47,7 +47,7 @@ class BaseTestCase(unittest.TestCase):
         cls.cfg = config.get_config()
         if not selectors.bug_is_fixed(2186, cls.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2186')
-        cls.cmd = () if utils.is_root(cls.cfg) else ('sudo',)
+        cls.cmd = () if cli.is_root(cls.cfg) else ('sudo',)
         cls.cmd += (
             'runuser', '--shell', '/bin/sh', '--command', 'pulp-manage-db',
             '-', 'apache'
@@ -76,7 +76,7 @@ class PositiveTestCase(BaseTestCase):
         """Make sure pulp-manage-db runs if --dry-run is passed."""
         if not selectors.bug_is_fixed(2776, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2776')
-        cmd = () if utils.is_root(self.cfg) else ('sudo',)
+        cmd = () if cli.is_root(self.cfg) else ('sudo',)
         cmd += (
             'runuser', '--shell', '/bin/sh', '--command',
             'pulp-manage-db --dry-run', '-', 'apache'

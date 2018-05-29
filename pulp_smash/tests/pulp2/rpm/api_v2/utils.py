@@ -187,7 +187,7 @@ class DisableSELinuxMixin():  # pylint:disable=too-few-public-methods
             return
 
         # Temporarily disable SELinux.
-        sudo = '' if utils.is_root(cfg) else 'sudo '
+        sudo = '' if cli.is_root(cfg) else 'sudo '
         cmd = (sudo + 'setenforce 0').split()
         client.run(cmd)
         cmd = (sudo + 'setenforce 1').split()
@@ -241,7 +241,7 @@ class TemporaryUserMixin():
         be left in place.
         """
         client = cli.Client(cfg)
-        sudo = '' if utils.is_root(cfg) else 'sudo '
+        sudo = '' if cli.is_root(cfg) else 'sudo '
 
         # According to useradd(8), usernames may be up to 32 characters long.
         # But long names break the rsync publish process: (SNIP == username)
@@ -278,7 +278,7 @@ class TemporaryUserMixin():
            limit is exceeded.
         2. Delete ``username``.
         """
-        sudo = () if utils.is_root(cfg) else ('sudo',)
+        sudo = () if cli.is_root(cfg) else ('sudo',)
         client = cli.Client(cfg)
 
         # values are arbitrary
@@ -317,7 +317,7 @@ class TemporaryUserMixin():
             host being targeted.
         :returns: The path to the private key on disk, as a string.
         """
-        sudo = '' if utils.is_root(cfg) else 'sudo '
+        sudo = '' if cli.is_root(cfg) else 'sudo '
         client = cli.Client(cfg)
         ssh_identity_file = client.run(['mktemp']).stdout.strip()
         self.addCleanup(client.run, (sudo + 'rm ' + ssh_identity_file).split())
@@ -411,7 +411,7 @@ def set_pulp_manage_rsync(cfg, boolean):
         was executed.
     :rtype: pulp_smash.cli.CompletedProcess
     """
-    sudo = () if utils.is_root(cfg) else ('sudo',)
+    sudo = () if cli.is_root(cfg) else ('sudo',)
     client = cli.Client(cfg)
     try:
         # setsebool is installed at /usr/sbin/setsebool on some distros, and

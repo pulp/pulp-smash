@@ -2,7 +2,7 @@
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, cli, config, selectors, utils
+from pulp_smash import api, cli, config, selectors
 from pulp_smash.constants import RPM_LARGE_UPDATEINFO, RPM_UNSIGNED_FEED_URL
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.pulp2.utils import publish_repo, sync_repo
@@ -75,7 +75,7 @@ class ApplyErratumTestCase(unittest.TestCase):
         Also, schedule it for deletion. Return nothing.
         """
         verify = cfg.get_hosts('api')[0].roles['api'].get('verify')
-        sudo = () if utils.is_root(cfg) else ('sudo',)
+        sudo = () if cli.is_root(cfg) else ('sudo',)
         repo_path = gen_yum_config_file(
             cfg,
             baseurl=urljoin(cfg.get_base_url(), urljoin(

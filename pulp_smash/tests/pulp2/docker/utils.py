@@ -44,7 +44,7 @@ def write_manifest_list(cfg, manifest_list):
     :return: The path to created file, and the path to dir that stores the
         file.
     """
-    sudo = '' if utils.is_root(cfg) else 'sudo'
+    sudo = '' if cli.is_root(cfg) else 'sudo'
     client = cli.Client(cfg)
     dir_path = client.run('mktemp --directory'.split()).stdout.strip()
     file_path = os.path.join(dir_path, utils.uuid4() + '.json')

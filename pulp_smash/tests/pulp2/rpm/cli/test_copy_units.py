@@ -16,7 +16,6 @@ from pulp_smash.tests.pulp2.rpm.utils import (
     gen_yum_config_file,
     set_up_module,
 )
-from pulp_smash.utils import is_root
 
 _REPO_ID = utils.uuid4()
 """The ID of the repository created by ``setUpModule``."""
@@ -215,7 +214,7 @@ class UpdateRpmTestCase(UtilsMixin, unittest.TestCase):
             raise unittest.SkipTest('https://pulp.plan.io/issues/2620')
         client = cli.Client(cfg)
         pkg_mgr = cli.PackageManager(cfg)
-        sudo = '' if is_root(cfg) else 'sudo '
+        sudo = '' if cli.is_root(cfg) else 'sudo '
         verify = cfg.get_hosts('api')[0].roles['api'].get('verify')
 
         # Create the second repository.

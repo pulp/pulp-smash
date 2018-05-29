@@ -281,7 +281,7 @@ class FixFileCorruptionTestCase(BaseAPITestCase):
         # Corrupt an RPM. The file is there, but the checksum isn't right.
         rpm_abs_path = cls.get_rpm_abs_path()
         cli_client = cli.Client(cls.cfg)
-        sudo = '' if utils.is_root(cls.cfg) else 'sudo '
+        sudo = '' if cli.is_root(cls.cfg) else 'sudo '
         checksum_cmd = (sudo + 'sha256sum ' + rpm_abs_path).split()
         cls.sha_pre_corruption = cli_client.run(checksum_cmd).stdout.strip()
         cli_client.run((sudo + 'rm ' + rpm_abs_path).split())

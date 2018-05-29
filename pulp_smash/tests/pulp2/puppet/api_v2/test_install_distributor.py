@@ -40,7 +40,7 @@ class InstallDistributorTestCase(BaseAPITestCase):
                 utils.os_is_f27(self.cfg)):
             self.skipTest('https://pulp.plan.io/issues/3314')
         cli_client = cli.Client(self.cfg)
-        sudo = () if utils.is_root(self.cfg) else ('sudo',)
+        sudo = () if cli.is_root(self.cfg) else ('sudo',)
 
         # Create a directory and make sure Pulp can write to it.
         install_path = cli_client.run(('mktemp', '--directory')).stdout.strip()

@@ -108,7 +108,7 @@ class PulpDistributionTestCase(BaseAPITestCase):
         self.assertEqual(repo['content_unit_counts']['distribution'], 1)
         cli_client = cli.Client(self.cfg, cli.code_handler)
         relative_url = repo['distributors'][0]['config']['relative_url']
-        sudo = () if utils.is_root(self.cfg) else ('sudo',)
+        sudo = () if cli.is_root(self.cfg) else ('sudo',)
         pulp_distribution = cli_client.run(sudo + (
             'cat',
             os.path.join(

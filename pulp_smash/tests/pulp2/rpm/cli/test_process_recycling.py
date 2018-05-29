@@ -23,7 +23,7 @@ def get_pulp_worker_procs(cfg):
         deployment being targeted.
     :return: An iterable of strings, one per line of matching output.
     """
-    sudo = () if utils.is_root(cfg) else ('sudo',)
+    sudo = () if cli.is_root(cfg) else ('sudo',)
     cmd = sudo + ('ps', 'aux')
     return tuple((
         proc for proc in cli.Client(cfg).run(cmd).stdout.splitlines()
@@ -61,7 +61,7 @@ class MaxTasksPerChildTestCase(unittest.TestCase):
             self.skipTest('https://pulp.plan.io/issues/2172')
         pulp_3540_testable = selectors.bug_is_fixed(3540, cfg.pulp_version)
         svc_mgr = cli.GlobalServiceManager(cfg)
-        sudo = () if utils.is_root(cfg) else ('sudo',)
+        sudo = () if cli.is_root(cfg) else ('sudo',)
         set_cmd = sudo + (
             'sed', '-i', '-e',
             's/.*PULP_MAX_TASKS_PER_CHILD=[0-9]*$/PULP_MAX_TASKS_PER_CHILD=2/',

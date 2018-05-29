@@ -113,7 +113,7 @@ class ServeHttpsFalseTestCase(TemporaryUserMixin, unittest.TestCase):
 
         # Verify the correct units are on the remote system.
         cli_client = cli.Client(self.cfg)
-        sudo = () if utils.is_root(self.cfg) else ('sudo',)
+        sudo = () if cli.is_root(self.cfg) else ('sudo',)
         path = dists['iso_rsync_distributor']['config']['remote']['root']
         path = os.path.join(path, 'content/units')
         cmd = sudo + ('find', path, '-name', '*.iso')

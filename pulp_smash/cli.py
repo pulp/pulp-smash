@@ -22,7 +22,7 @@ _SERVICE_MANAGERS = {}
 _PACKAGE_MANAGERS = {}
 
 
-def _is_root(cfg, pulp_host=None):
+def is_root(cfg, pulp_host=None):
     """Tell if we are root on the target host.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp
@@ -31,10 +31,11 @@ def _is_root(cfg, pulp_host=None):
         instead of the first host with the ``pulp cli`` role.
     :returns: Either ``True`` or ``False``.
     """
-    result = Client(cfg, pulp_host=pulp_host).run(('id', '-u'))
-    if result.stdout.strip() == '0':
-        return True
-    return False
+    return (
+        Client(cfg, pulp_host=pulp_host)
+        .run(('id', '-u'))
+        .stdout
+        .strip()) == '0'
 
 
 def echo_handler(completed_proc):
@@ -407,10 +408,8 @@ class GlobalServiceManager(BaseServiceManager):
             return self._is_root_cache[pulp_host.hostname]
         except KeyError:
             pass
-
-        is_root = _is_root(self._cfg, pulp_host)
-        self._is_root_cache[pulp_host.hostname] = is_root
-        return is_root
+        self._is_root_cache[pulp_host.hostname] = is_root(self._cfg, pulp_host)
+        return self._is_root_cache[pulp_host.hostname]
 
     def start(self, services):
         """Start the services on every host that has the services.
@@ -542,7 +541,7 @@ class ServiceManager(BaseServiceManager):
         """Initialize a new object."""
         super().__init__()
         self._client = Client(cfg, pulp_host=pulp_host)
-        self._sudo = not _is_root(cfg, pulp_host)
+        self._sudo = not is_root(cfg, pulp_host)
         self._svc_mgr = self._get_service_manager(cfg, pulp_host)
 
     def start(self, services):
@@ -631,7 +630,7 @@ class PackageManager():
     def __init__(self, cfg):
         """Initialize a new object."""
         self._client = Client(cfg)
-        self._sudo = () if _is_root(cfg) else ('sudo',)
+        self._sudo = () if is_root(cfg) else ('sudo',)
         self._pkg_mgr = self._get_package_manager(cfg)
 
     @staticmethod

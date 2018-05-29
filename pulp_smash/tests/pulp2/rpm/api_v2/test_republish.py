@@ -179,7 +179,7 @@ class RemoveOldRepodataTestCase(unittest.TestCase):
 
         # Upload an RPM, publish the repo, and count metadata files twice.
         cli_client = cli.Client(self.cfg)
-        sudo = () if utils.is_root(self.cfg) else ('sudo',)
+        sudo = () if cli.is_root(self.cfg) else ('sudo',)
         find_repodata_cmd = sudo + (
             'find', os.path.join(
                 '/var/lib/pulp/published/yum/master/yum_distributor/',

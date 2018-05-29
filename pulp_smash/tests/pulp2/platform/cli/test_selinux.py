@@ -4,7 +4,7 @@ import re
 import unittest
 from collections import namedtuple
 
-from pulp_smash import cli, config, selectors, utils
+from pulp_smash import cli, config, selectors
 from pulp_smash.tests.pulp2.platform.utils import set_up_module, require_selinux
 
 
@@ -52,7 +52,7 @@ class ProcessLabelsTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Get all of the processes running on the target Pulp system."""
         cfg = config.get_config()
-        cmd = [] if utils.is_root(config.get_config()) else ['sudo']
+        cmd = [] if cli.is_root(config.get_config()) else ['sudo']
         cmd.extend(('ps', '-A', '-w', '-w', '-o', ','.join(PS_FIELDS)))
         cls.procs = [
             Process(*line.split(maxsplit=1))
@@ -134,7 +134,7 @@ class FileLabelsTestCase(unittest.TestCase):
         #     # file: etc/passwd
         #     security.selinux="system_u:object_r:passwd_file_t:s0"
         #
-        cmd = [] if utils.is_root(config.get_config()) else ['sudo']
+        cmd = [] if cli.is_root(config.get_config()) else ['sudo']
         cmd.extend(('getfattr', '--name=security.selinux'))
         if recursive:
             cmd.append('--recursive')

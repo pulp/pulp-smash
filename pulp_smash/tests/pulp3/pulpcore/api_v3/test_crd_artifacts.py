@@ -133,7 +133,7 @@ class ArtifactsDeleteFileSystemTestCase(unittest.TestCase, utils.SmokeTest):
         files = {'file': utils.http_get(FILE_URL)}
         artifact = api_client.post(ARTIFACTS_PATH, files=files)
         self.addCleanup(api_client.delete, artifact['_href'])
-        sudo = () if utils.is_root(cfg) else ('sudo',)
+        sudo = () if cli.is_root(cfg) else ('sudo',)
         cmd = sudo + ('ls', artifact['file'])
         cli_client.run(cmd)
 

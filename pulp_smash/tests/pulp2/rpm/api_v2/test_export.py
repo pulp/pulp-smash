@@ -97,7 +97,7 @@ class ExportDirMixin(DisableSELinuxMixin):
         Return the former if root, and the latter if not.
         """
         if self.__sudo is None:
-            self.__sudo = '' if utils.is_root(self.cfg) else 'sudo '
+            self.__sudo = '' if cli.is_root(self.cfg) else 'sudo '
         return self.__sudo
 
     def create_export_dir(self):

@@ -168,6 +168,22 @@ class ClientTestCase(unittest.TestCase):
                 cfg.hosts[1].hostname)
 
 
+class IsRootTestCase(unittest.TestCase):
+    """Tests for :class:`pulp_smash.cli.is_root`."""
+
+    def test_positive(self):
+        """Test what happens when we are root on the target host."""
+        with mock.patch.object(cli, 'Client') as client:
+            client.return_value.run.return_value.stdout = ' 0 '
+            self.assertTrue(cli.is_root(mock.MagicMock()))
+
+    def test_negative(self):
+        """Test what happens when we aren't root on the target host."""
+        with mock.patch.object(cli, 'Client') as client:
+            client.return_value.run.return_value.stdout = ' 1 '
+            self.assertFalse(cli.is_root(mock.MagicMock()))
+
+
 def _get_pulp_smash_config(hosts):
     """Return a config object with made-up attributes.
 

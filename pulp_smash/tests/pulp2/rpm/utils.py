@@ -5,7 +5,7 @@ from io import StringIO
 
 from packaging.version import Version
 
-from pulp_smash import cli, selectors, utils
+from pulp_smash import cli, selectors
 from pulp_smash.pulp2 import utils as pulp2_utils
 
 
@@ -141,7 +141,7 @@ def gen_yum_config_file(cfg, repositoryid, **kwargs):
         cli.Client(cfg).machine.session().run(
             'echo "{}" | {}tee {} > /dev/null'.format(
                 section.getvalue(),
-                '' if utils.is_root(cfg) else 'sudo ',
+                '' if cli.is_root(cfg) else 'sudo ',
                 path
             )
         )

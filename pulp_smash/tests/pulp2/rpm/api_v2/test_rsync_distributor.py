@@ -213,7 +213,7 @@ class _RsyncDistUtilsMixin():  # pylint:disable=too-few-public-methods
         if num_units is None:
             num_units = RPM_SIGNED_FEED_COUNT
         cli_client = cli.Client(cfg)
-        sudo = () if utils.is_root(cfg) else ('sudo',)
+        sudo = () if cli.is_root(cfg) else ('sudo',)
         path = distributor_cfg['config']['remote']['root']
         remote_units_path = (
             distributor_cfg['config'].get('remote_units_path', 'content/units')
@@ -241,7 +241,7 @@ class _RsyncDistUtilsMixin():  # pylint:disable=too-few-public-methods
         :returns: set of file/directory names
         """
         path = distributor_cfg['config']['remote']['root']
-        sudo = () if utils.is_root(cfg) else ('sudo',)
+        sudo = () if cli.is_root(cfg) else ('sudo',)
         cmd = sudo + ('ls', '-1', path)
         return set(cli.Client(cfg).run(cmd).stdout.splitlines())
 
@@ -338,7 +338,7 @@ class ForceFullTestCase(
         """Use the ``force_full`` RPM rsync distributor option."""
         cfg = config.get_config()
         cli_client = cli.Client(cfg)
-        sudo = '' if utils.is_root(cfg) else 'sudo '
+        sudo = '' if cli.is_root(cfg) else 'sudo '
 
         # Create a user and repo with an importer and distribs. Sync the repo.
         ssh_user, priv_key = self.make_user(cfg)
@@ -618,7 +618,7 @@ class DeleteTestCase(
             yum_distributor['config']['relative_url'],
         )
         cmd = ['find', path, '-name', '*.rpm']
-        if not utils.is_root(cfg):
+        if not cli.is_root(cfg):
             cmd.insert(0, 'sudo')
         files = cli.Client(cfg).run(cmd).stdout.strip().split('\n')
         self.assertEqual(files, [''])  # strange, but correct

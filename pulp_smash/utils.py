@@ -11,7 +11,6 @@ from urllib.parse import urlparse
 import requests
 
 from pulp_smash import cli
-from pulp_smash.cli import _is_root as is_root  # pylint:disable=unused-import
 
 # A mapping between URLs and SHA 256 checksums. Used by get_sha256_checksum().
 _CHECKSUM_CACHE = {}

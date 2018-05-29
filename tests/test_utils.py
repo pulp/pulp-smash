@@ -15,19 +15,19 @@ class UUID4TestCase(unittest.TestCase):
 
 
 class IsRootTestCase(unittest.TestCase):
-    """Test ``pulp_smash.utils.is_root``."""
+    """Test ``pulp_smash.cli.is_root``."""
 
     def test_true(self):
         """Assert the method returns ``True`` when root."""
         with mock.patch.object(cli, 'Client') as clien:
             clien.return_value.run.return_value.stdout.strip.return_value = '0'
-            self.assertTrue(utils.is_root(None))
+            self.assertTrue(cli.is_root(None))
 
     def test_false(self):
         """Assert the method returns ``False`` when non-root."""
         with mock.patch.object(cli, 'Client') as clien:
             clien.return_value.run.return_value.stdout.strip.return_value = '1'
-            self.assertFalse(utils.is_root(None))
+            self.assertFalse(cli.is_root(None))
 
 
 class GetSha256ChecksumTestCase(unittest.TestCase):

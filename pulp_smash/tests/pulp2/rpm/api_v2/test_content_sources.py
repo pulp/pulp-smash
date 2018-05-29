@@ -71,7 +71,7 @@ class ValidHeadersTestCase(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         """Destroy the created content source."""
-        sudo = () if utils.is_root(cls.cfg) else ('sudo',)
+        sudo = () if cli.is_root(cls.cfg) else ('sudo',)
         cli.Client(cls.cfg).run(sudo + ('rm', '-f', cls.cs_path))
 
 
@@ -121,7 +121,7 @@ class InvalidHeadersTestCase(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         """Destroy the created content source."""
-        sudo = () if utils.is_root(cls.cfg) else ('sudo',)
+        sudo = () if cli.is_root(cls.cfg) else ('sudo',)
         cli.Client(cls.cfg).run(sudo + ('rm', '-f', cls.cs_path))
 
 
@@ -132,7 +132,7 @@ def _gen_content_source(cfg, content_source_body):
         content source file. Consider using :func:`_gen_content_source_body`.
     :return: The path to the content source file.
     """
-    sudo = '' if utils.is_root(cfg) else 'sudo'
+    sudo = '' if cli.is_root(cfg) else 'sudo'
     path = os.path.join(CONTENT_SOURCES_PATH, utils.uuid4() + '.conf')
     client = cli.Client(cfg)
     client.machine.session().run(

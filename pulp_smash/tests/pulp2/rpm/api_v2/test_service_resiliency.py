@@ -10,7 +10,7 @@ from urllib.parse import urljoin
 
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, cli, config, selectors, utils
+from pulp_smash import api, cli, config, selectors
 from pulp_smash.constants import RPM_MIRRORLIST_LARGE, RPM_UNSIGNED_FEED_URL
 from pulp_smash.pulp2.constants import (
     PULP_SERVICES,
@@ -49,7 +49,7 @@ class MissingWorkersTestCase(unittest.TestCase):
         self.cfg = config.get_config()
         if not selectors.bug_is_fixed(2835, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2835')
-        sudo = '' if utils.is_root(self.cfg) else 'sudo'
+        sudo = '' if cli.is_root(self.cfg) else 'sudo'
         cli.Client(self.cfg).machine.session().run(
             "{} bash -c 'echo PULP_CONCURRENCY=1 >> {}'"
             .format(sudo, _PULP_WORKERS_CFG)
@@ -84,7 +84,7 @@ class MissingWorkersTestCase(unittest.TestCase):
 
         Reset Pulp because :meth:`test_all` may break Pulp.
         """
-        sudo = () if utils.is_root(self.cfg) else ('sudo',)
+        sudo = () if cli.is_root(self.cfg) else ('sudo',)
         # Delete last line from file.
         cli.Client(self.cfg).run(sudo + ('sed', '-i', '$d', _PULP_WORKERS_CFG))
         reset_pulp(self.cfg)

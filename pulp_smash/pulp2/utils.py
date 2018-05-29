@@ -376,7 +376,7 @@ def reset_pulp(cfg):
     client.run('mongo pulp_database --eval db.dropDatabase()'.split())
 
     for index, host in enumerate(cfg.get_hosts('api')):
-        prefix = '' if utils.is_root(cfg, pulp_host=host) else 'sudo '
+        prefix = '' if cli.is_root(cfg, pulp_host=host) else 'sudo '
         if index == 0:
             client.run((
                 prefix + 'runuser --shell /bin/sh apache --command '
@@ -400,7 +400,7 @@ def reset_squid(cfg):
     svc_mgr.stop(('squid',))
 
     # Remove and re-initialize the cache directory.
-    sudo = () if utils.is_root(cfg) else ('sudo',)
+    sudo = () if cli.is_root(cfg) else ('sudo',)
     client = cli.Client(cfg)
     client.run(sudo + ('rm', '-rf', '/var/spool/squid'))
     client.run(sudo + (
