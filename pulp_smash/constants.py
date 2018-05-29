@@ -134,7 +134,7 @@ FILE2_FEED_URL = urljoin(PULP_FIXTURES_BASE_URL, 'file2/')
 FILE2_URL = urljoin(FILE2_FEED_URL, '1.iso')
 """The URL to an ISO file at :data:`FILE2_FEED_URL`."""
 
-OPENSUSE_FEED_URL = 'https://download.opensuse.org/update/openSUSE-stable/'
+OPENSUSE_FEED_URL = 'https://download.opensuse.org/update/leap/42.3/oss/'
 """The URL to an openSUSE repository.
 
 The repository contains at least one erratum.
