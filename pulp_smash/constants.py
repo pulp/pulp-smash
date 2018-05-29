@@ -194,7 +194,7 @@ response to a certain HTTP GET request. However:
 .. _Puppet Forge API: https://forgeapi.puppetlabs.com/
 """
 
-PUPPET_FEED_2 = 'http://forge.puppetlabs.com'
+PUPPET_FEED_2 = 'https://forge.puppet.com'
 """The URL to a repository of Puppet modules."""
 
 PUPPET_MODULE_2 = {'author': 'puppetlabs', 'name': 'motd', 'version': '1.9.0'}
