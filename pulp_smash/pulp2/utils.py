@@ -319,6 +319,17 @@ def require_issue_3159():
         raise unittest.SkipTest('https://pulp.plan.io/issues/3159')
 
 
+def require_issue_3687():
+    """Skip tests if Fedora 27 is under test and `Pulp #3687`_ is open.
+
+    .. _Pulp #3687: https://pulp.plan.io/issues/3687
+    """
+    cfg = config.get_config()
+    if (not selectors.bug_is_fixed(3687, cfg.pulp_version) and
+            utils.os_is_f27(cfg)):
+        raise unittest.SkipTest('https://pulp.plan.io/issues/3687')
+
+
 def require_pulp_2():
     """Skip tests if Pulp 2 isn't under test."""
     cfg = config.get_config()

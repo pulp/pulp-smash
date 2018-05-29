@@ -10,6 +10,7 @@ def set_up_module():
     """Skip tests if Pulp 2 isn't under test."""
     utils.require_pulp_2()
     utils.require_issue_3159()
+    utils.require_issue_3687()
 
 
 def require_selinux():

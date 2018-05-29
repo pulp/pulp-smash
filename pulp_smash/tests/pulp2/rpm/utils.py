@@ -13,6 +13,7 @@ def set_up_module():
     """Skip tests if Pulp 2 isn't under test or if RPM isn't installed."""
     pulp2_utils.require_pulp_2()
     pulp2_utils.require_issue_3159()
+    pulp2_utils.require_issue_3687()
     pulp2_utils.require_unit_types({'rpm'})
 
 
