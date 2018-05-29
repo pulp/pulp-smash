@@ -197,7 +197,7 @@ response to a certain HTTP GET request. However:
 PUPPET_FEED_2 = 'http://forge.puppetlabs.com'
 """The URL to a repository of Puppet modules."""
 
-PUPPET_MODULE_2 = {'author': 'pulp', 'name': 'pulp', 'version': '1.0.0'}
+PUPPET_MODULE_2 = {'author': 'puppetlabs', 'name': 'motd', 'version': '1.9.0'}
 """Information about a Puppet module available at :data:`PUPPET_FEED_2`."""
 
 PUPPET_MODULE_URL_2 = ('{}/v3/files/{}-{}-{}.tar.gz'.format(
