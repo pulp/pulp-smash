@@ -56,8 +56,7 @@ test:
 	python3 $(TEST_OPTIONS)
 
 test-coverage:
-	coverage run --source pulp_smash.api,pulp_smash.cli,pulp_smash.config,pulp_smash.exceptions,pulp_smash.pulp_smash_cli,pulp_smash.selectors,pulp_smash.utils \
-	$(TEST_OPTIONS)
+	coverage run --include 'pulp_smash/*' --omit 'pulp_smash/tests/*' $(TEST_OPTIONS)
 
 .PHONY: help all docs-html docs-clean lint-flake8 lint-pylint lint test \
     test-coverage dist-clean publish
