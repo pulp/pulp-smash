@@ -331,19 +331,19 @@ class Client():
         #
         #     request(method, url, **kwargs)
         #
+        intended_host = self.pulp_host.hostname
         request_kwargs = self.request_kwargs.copy()
         request_kwargs['url'] = urljoin(request_kwargs['url'], url)
         request_kwargs.update(kwargs)
-        cfg_host = urlparse(self._cfg.get_base_url(self.pulp_host)).hostname
-        request_host = urlparse(request_kwargs['url']).hostname
-        if request_host != cfg_host:
+        actual_host = urlparse(request_kwargs['url']).hostname
+        if intended_host != actual_host:
             warnings.warn(
-                'This client was originally created for communicating with '
-                '{0}, but a request is being made to {1}. The request will be '
-                'made, but beware that information intended for {0} (such as '
+                'This client should be used to communicate with {0}, but a '
+                'request is being made to {1}. The request will be made, but '
+                'beware that information intended for {0} (such as '
                 "authentication tokens) may now be sent to {1}. Here's the "
                 'full list of options being sent with this request: {2}'
-                .format(cfg_host, request_host, request_kwargs),
+                .format(intended_host, actual_host, request_kwargs),
                 RuntimeWarning
             )
         return self.response_handler(
