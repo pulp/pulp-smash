@@ -71,7 +71,7 @@ class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
     def test_03_positive_filters(self):
         """Read a worker using a set of query parameters."""
         if not selectors.bug_is_fixed(3586, self.cfg.pulp_version):
-            raise unittest.SkipTest('https://pulp.plan.io/issues/3586')
+            raise self.skipTest('https://pulp.plan.io/issues/3586')
         page = self.client.get(WORKER_PATH, params={
             'last_heartbeat__gte': self.worker['last_heartbeat'],
             'name': self.worker['name'],
@@ -90,6 +90,8 @@ class WorkersTestCase(unittest.TestCase, utils.SmokeTest):
     @selectors.skip_if(bool, 'worker', False)
     def test_04_negative_filters(self):
         """Read a worker with a query that does not match any worker."""
+        if not selectors.bug_is_fixed(3586, self.cfg.pulp_version):
+            raise self.skipTest('https://pulp.plan.io/issues/3586')
         page = self.client.get(WORKER_PATH, params={
             'last_heartbeat__gte': str(datetime.now() + timedelta(days=1)),
             'name': self.worker['name'],
