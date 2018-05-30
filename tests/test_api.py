@@ -3,6 +3,8 @@
 import unittest
 from unittest import mock
 
+from packaging.version import Version
+
 from pulp_smash import api, config
 
 
@@ -104,6 +106,46 @@ class JsonHandlerTestCase(unittest.TestCase):
         with mock.patch.object(api, '_handle_202'):
             api.json_handler(**kwargs)
         self.assertEqual(kwargs['response'].json.call_count, 0)
+
+
+class PageHandlerTestCase(unittest.TestCase):
+    """Tests for :func:`pulp_smash.api.page_handler`."""
+
+    def test_pulp_2_error(self):
+        """Assert this handler can't be used with Pulp 2."""
+        kwargs = {key: mock.Mock() for key in _HANDLER_ARGS}
+        kwargs['client']._cfg.pulp_version = Version('2')  # pylint:disable=protected-access
+        with self.assertRaises(ValueError):
+            api.page_handler(**kwargs)
+
+    def test_204_check_run(self):
+        """Assert HTTP 204 responses are immediately returned."""
+        kwargs = {key: mock.Mock() for key in _HANDLER_ARGS}
+        kwargs['client']._cfg.pulp_version = Version('3')  # pylint:disable=protected-access
+        with mock.patch.object(api, 'json_handler') as json_handler:
+            json_handler.return_value = mock.Mock()
+            return_value = api.page_handler(**kwargs)
+        self.assertIs(return_value, json_handler.return_value)
+
+    def test_not_a_page(self):
+        """Assert non-paginated responses are immediately returned."""
+        kwargs = {key: mock.Mock() for key in _HANDLER_ARGS}
+        kwargs['client']._cfg.pulp_version = Version('3')  # pylint:disable=protected-access
+        with mock.patch.object(api, 'json_handler') as json_handler:
+            json_handler.return_value = {}
+            return_value = api.page_handler(**kwargs)
+        self.assertIs(return_value, json_handler.return_value)
+
+    def test_is_a_page(self):
+        """Assert paginated responses are collected."""
+        kwargs = {key: mock.Mock() for key in _HANDLER_ARGS}
+        kwargs['client']._cfg.pulp_version = Version('3')  # pylint:disable=protected-access
+        with mock.patch.object(api, 'json_handler') as json_handler:
+            json_handler.return_value = {'results': None}
+            with mock.patch.object(api, '_walk_pages') as walk_pages:
+                walk_pages.return_value = ((1, 2), (3, 4))
+                return_value = api.page_handler(**kwargs)
+        self.assertEqual(return_value, [1, 2, 3, 4])
 
 
 class ClientTestCase(unittest.TestCase):

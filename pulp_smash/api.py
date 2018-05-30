@@ -88,6 +88,17 @@ def _handle_202(cfg, response, pulp_host):
             _check_tasks(tasks, ('error',))
 
 
+def _walk_pages(cfg, page, pulp_host):
+    """Walk through pages, yielding the "results" in each page."""
+    client = Client(cfg, json_handler, pulp_host=pulp_host)
+    while True:
+        yield page['results']
+        if page['next']:
+            page = client.get(page['next'])
+        else:
+            break
+
+
 def echo_handler(client, response):  # pylint:disable=unused-argument
     """Immediately return ``response``."""
     return response
@@ -136,6 +147,45 @@ def json_handler(client, response):
         return response
     _handle_202(client._cfg, response, client.pulp_host)  # pylint:disable=protected-access
     return response.json()
+
+
+def page_handler(client, response):
+    """Call :meth:`json_handler`, optionally collect results, and return.
+
+    Do the following:
+
+    1. If ``response`` has an HTTP No Content (204) `status code`_, return
+       ``response``.
+    2. Call :meth:`json_handler`.
+    3. If the response appears to be paginated, walk through each page of
+       results, and collect them into a single list. Otherwise, do nothing.
+       Return either the list of results or the single decoded response.
+
+    :raises: ``ValueError`` if the target Pulp application under test is older
+        than version 3 or at least version 4.
+
+    .. _status code: https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+    """
+    # pylint:disable=protected-access
+    if (client._cfg.pulp_version < Version('3') or
+            client._cfg.pulp_version >= Version('4')):
+        raise ValueError(
+            'This method is designed to handle responses returned by Pulp 3. '
+            'However, the targeted Pulp application is declared as being '
+            'version {}. Please use a different response handler.'
+            .format(client._cfg.pulp_version)
+        )
+
+    maybe_page = json_handler(client, response)
+    if not isinstance(maybe_page, dict):
+        return maybe_page  # HTTP 204 No Content
+    if 'results' not in maybe_page:
+        return maybe_page  # Content isn't a page.
+
+    collected_results = []
+    for result in _walk_pages(client._cfg, maybe_page, client.pulp_host):
+        collected_results.extend(result)
+    return collected_results
 
 
 class Client():
@@ -188,6 +238,7 @@ class Client():
     * :func:`pulp_smash.api.code_handler`
     * :func:`pulp_smash.api.safe_handler`
     * :func:`pulp_smash.api.json_handler`
+    * :func:`pulp_smash.api.page_handler`
 
     As mentioned, this class has configurable request and response handling
     mechanisms. We've covered response handling mechanisms — let's move on to
