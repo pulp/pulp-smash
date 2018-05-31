@@ -271,19 +271,22 @@ class Client():
             pulp_host=None,
     ):
         """Initialize this object with needed instance attributes."""
-        if not pulp_host:
-            pulp_host = cfg.get_hosts('api')[0]
-        self.pulp_host = pulp_host
         self._cfg = cfg
-        self.request_kwargs = self._cfg.get_requests_kwargs(pulp_host)
-        self.request_kwargs['url'] = self._cfg.get_base_url(pulp_host)
-        self.request_kwargs.update(
-            {} if request_kwargs is None else request_kwargs
-        )
-        if response_handler is None:
-            self.response_handler = safe_handler
-        else:
+
+        if response_handler:
             self.response_handler = response_handler
+        else:
+            self.response_handler = safe_handler
+
+        if pulp_host:
+            self.pulp_host = pulp_host
+        else:
+            self.pulp_host = self._cfg.get_hosts('api')[0]
+
+        self.request_kwargs = self._cfg.get_requests_kwargs(self.pulp_host)
+        self.request_kwargs['url'] = self._cfg.get_base_url(self.pulp_host)
+        if request_kwargs:
+            self.request_kwargs.update(request_kwargs)
 
     def delete(self, url, **kwargs):
         """Send an HTTP DELETE request."""
