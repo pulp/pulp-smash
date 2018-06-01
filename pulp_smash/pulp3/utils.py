@@ -272,8 +272,8 @@ def get_versions(repo, params=None):
     """
     versions = (
         api
-        .Client(config.get_config(), api.json_handler)
-        .get(repo['_versions_href'], params=params)['results'])
+        .Client(config.get_config(), api.page_handler)
+        .get(repo['_versions_href'], params=params))
     versions.sort(
         key=lambda version: int(urlsplit(version['_href']).path.split('/')[-2])
     )
