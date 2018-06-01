@@ -75,12 +75,12 @@ def _check_tasks(tasks, task_errors):
                 raise exceptions.TaskReportError(msg, task)
 
 
-def _handle_202(cfg, response):
+def _handle_202(cfg, response, pulp_host):
     """Check for an HTTP 202 response and handle it appropriately."""
     if response.status_code == 202:  # "Accepted"
         _check_http_202_content_type(response)
         call_report = response.json()
-        tasks = tuple(poll_spawned_tasks(cfg, call_report))
+        tasks = tuple(poll_spawned_tasks(cfg, call_report, pulp_host))
         if cfg.pulp_version < Version('3'):
             _check_call_report(call_report)
             _check_tasks(tasks, ('error', 'exception', 'traceback'))
@@ -88,12 +88,12 @@ def _handle_202(cfg, response):
             _check_tasks(tasks, ('error',))
 
 
-def echo_handler(cfg, response):  # pylint:disable=unused-argument
+def echo_handler(client, response):  # pylint:disable=unused-argument
     """Immediately return ``response``."""
     return response
 
 
-def code_handler(cfg, response):  # pylint:disable=unused-argument
+def code_handler(client, response):  # pylint:disable=unused-argument
     """Check the response status code, and return the response.
 
     Unlike :meth:`safe_handler`, this method doesn't wait for asynchronous
@@ -106,7 +106,7 @@ def code_handler(cfg, response):  # pylint:disable=unused-argument
     return response
 
 
-def safe_handler(cfg, response):
+def safe_handler(client, response):
     """Check status code, wait for tasks to complete, and check tasks.
 
     Inspect the response's HTTP status code. If the response has an HTTP
@@ -121,11 +121,11 @@ def safe_handler(cfg, response):
         an error.
     """
     response.raise_for_status()
-    _handle_202(cfg, response)
+    _handle_202(client._cfg, response, client.pulp_host)  # pylint:disable=protected-access
     return response
 
 
-def json_handler(cfg, response):
+def json_handler(client, response):
     """Like ``safe_handler``, but also return a JSON-decoded response body.
 
     Do what :func:`pulp_smash.api.safe_handler` does. In addition, decode the
@@ -134,7 +134,7 @@ def json_handler(cfg, response):
     response.raise_for_status()
     if response.status_code == 204:
         return response
-    _handle_202(cfg, response)
+    _handle_202(client._cfg, response, client.pulp_host)  # pylint:disable=protected-access
     return response.json()
 
 
@@ -173,7 +173,7 @@ class Client():
 
     >>> from pulp_smash.api import Client
     >>> from pulp_smash.config import get_config
-    >>> def response_handler(cfg, response):
+    >>> def response_handler(client, response):
     ...     response.raise_for_status()
     ...     return response.json()
     >>> client = Client(get_config(), response_handler=response_handler)
@@ -181,12 +181,13 @@ class Client():
     >>> response = client.get(response['_href'])
     >>> print(response)
 
-    Pulp Smash ships with several response handlers. See:
+    Pulp Smash ships with several response handlers. In order of increasing
+    complexity, see:
 
-    * :func:`pulp_smash.api.code_handler`
     * :func:`pulp_smash.api.echo_handler`
-    * :func:`pulp_smash.api.json_handler`
+    * :func:`pulp_smash.api.code_handler`
     * :func:`pulp_smash.api.safe_handler`
+    * :func:`pulp_smash.api.json_handler`
 
     As mentioned, this class has configurable request and response handling
     mechanisms. We've covered response handling mechanisms — let's move on to
@@ -224,43 +225,118 @@ class Client():
     >>> client.request_kwargs['verify'] = None
     >>> response = client.get('/index.html')  # Do default SSL verification
 
-    Anything accepted by the `Requests`_ functions may be placed in
-    ``request_kwargs`` or passed in to a specific call. You can set ``verify``
-    for example.
+    As shown above, an argument that's passed to one of this class' methods is
+    passed to the corresponding Requests method. And an argument that's set in
+    ``requests_kwargs`` is passed to Requests during every call.
 
-    The ``url`` argument is slightly special. When making a call, it is
-    possible to pass in a relative URL, as shown in the examples above. (e.g.
-    ``/index.html``.) The default URL and passed-in URL are joined like so:
+    The ``url`` argument is special. When making an HTTP request with Requests,
+    an absolute URL is required. But when making an HTTP request with one of
+    this class' methods, either an absolute or a relative URL may be passed. If
+    a relative URL is passed, it's joined to this class' default URL like so:
 
-    >>> urljoin(request_kwargs['url'], passed_in_url)
+    >>> urljoin(self.request_kwargs['url'], passed_in_url)
 
     This allows one to easily use the hrefs returned by Pulp in constructing
     new requests.
 
-    The remainder of this docstring contains design notes. They are useful to
-    advanced users and developers.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about a Pulp app.
+    :param response_handler: A callback function, invoked after each request is
+        made. Must accept two arguments: a
+        :class:`pulp_smash.config.PulpSmashConfig` object, and a
+        ``requests.Response`` object. Defaults to :func:`safe_handler`.
+    :param request_kwargs: A dict of parameters to send with each request. This
+        dict is merged into the default dict of parameters that's sent with
+        each request.
+    :param pulp_smash.config.PulpHost pulp_host: The host with which to
+        communicate. Defaults to the first host that fulfills the "api" role.
 
-    Requests' ``requests.api.post`` method has the following signature::
+    **Supplementary information on writing response handlers.**
 
-        def post(url, data=None, json=None, **kwargs)
+    This class accepts a :class:`pulp_smash.config.PulpSmashConfig` parameter.
+    This object may be accessed via the ``_cfg`` attribute. This attribute
+    should be used sparingly, as careless accesses can be an easy way to
+    inadverdently create bugs. For example, if given the choice between calling
+    ``self._cfg.get_request_kwargs()`` or referencing ``self.request_kwargs``,
+    reference the latter. To explain why, consider this scenario:
 
-    Pulp supports only JSON for most of its API endpoints, so it makes sense
-    for us to demote ``data`` to being a regular kwarg and list ``json`` as the
-    one and only positional argument.
+    >>> from pulp_smash import api, config
+    >>> client = api.Client(config.get_config())
+    >>> client.request_kwargs['verify'] == '~/Documents/my.crt'
+    >>> client.get('https://example.com')
 
-    We make ``json`` a positional argument for ``post()``, ``put()`` and
-    ``patch()``, but not the other methods. Why? Because HTTP OPTIONS, GET,
+    The API client has been told to use an SSL certificate for verification.
+    Yet if the client uses ``self._cfg.get_requests_kwargs()`` when making an
+    HTTP GET call, the SSL certificate won't be used.
+
+    If this attribute is so problematic, why does it exist? It exists so that
+    each API client may share context with its response handler. For example, a
+    response handler might need to know which version of Pulp it is
+    communicating with:
+
+    >>> def example_handler(client, response):
+    ...     if client._cfg.pulp_version < Version('3'):
+    ...         return pulp_2_procedure(response)
+    ...     else:
+    ...         return pulp_3_procedure(response)
+
+    However, this same logic could also be implemented by calling
+    :func:`pulp_smash.config.get_config`:
+
+    >>> def example_handler(client, response):
+    ...     if config.get_config().pulp_version < Version('3'):
+    ...         return pulp_2_procedure(response)
+    ...     else:
+    ...         return pulp_3_procedure(response)
+
+    Given this, why lug around a :class:`pulp_smash.config.PulpSmashConfig`
+    object? This is done because it is fundamentally correct for a response
+    handler to learn about its calling API client's state by accessing the
+    calling API client, and it is fundamentally incorrect for a response
+    handler to learn about its calling API client's state by accessing a global
+    cache. To illustrate, consider one possible failure scenario:
+
+    1. No settings file exists at any of the default load paths, e.g.
+       ``~/.config/pulp_smash/settings.json``.
+    2. An API client is created by reading a non-default configuration file.
+    3. The API client makes a request, and a response handler is invoked to
+       handle the response.
+    4. The response handler needs to learn which version of Pulp is being
+       targeted.
+
+       * If it invokes :func:`pulp_smash.config.get_config`, no configuration
+         file will be found, and an exception will be raised.
+       * If it accesses the calling API client, it will find what it needs.
+
+    Letting a response handler access its calling API client prevents incorrect
+    behaviour in other scenarios too, such as when working with multi-threaded
+    code.
+
+    **Supplementary information on method signatures.**
+
+    `requests.post`_ has the following signature::
+
+        requests.post(url, data=None, json=None, **kwargs)
+
+    However, :func:`post` has a different signature. Why? Pulp supports only
+    JSON for most of its API endpoints, so it makes sense for us to demote
+    ``data`` to being a regular kwarg and list ``json`` as the one and only
+    positional argument.
+
+    We make ``json`` a positional argument for :func:`post`, :func:`put`, and
+    :func:`patch`, but not the other methods. Why? Because HTTP OPTIONS, GET,
     HEAD and DELETE **must not** have bodies. This is stated by the HTTP/1.1
     specification, and network intermediaries such as caches are at liberty to
     drop such bodies.
 
-    Why the sentinel? Imagine the following scenario: a user provides a default
-    JSON payload in ``self.request_kwargs``, but they want to skip sending that
-    payload for just one request. How can they do that? With ``client.post(url,
-    None)``.
+    Why is a sentinel object used in several function signatures? Imagine the
+    following scenario: a user provides a default JSON payload in
+    ``self.request_kwargs``, but they want to skip sending that payload for
+    just one request. How can they do that?  With ``client.post(url,
+    json=None)``.
 
     .. _Pulp: http://www.pulpproject.org/
     .. _Requests: http://docs.python-requests.org/en/latest/
+    .. _requests.post: http://docs.python-requests.org/en/master/api/#requests.post
     """
 
     def __init__(
@@ -350,7 +426,7 @@ class Client():
                 RuntimeWarning
             )
         return self.response_handler(
-            self._cfg,
+            self,
             requests.request(method, **request_kwargs),
         )
 
