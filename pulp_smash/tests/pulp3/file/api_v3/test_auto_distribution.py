@@ -19,6 +19,7 @@ from pulp_smash.tests.pulp3.file.api_v3.utils import gen_publisher
 from pulp_smash.tests.pulp3.file.utils import populate_pulp
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.pulp3.utils import (
+    delete_orphans,
     gen_distribution,
     gen_remote,
     gen_repo,
@@ -40,6 +41,7 @@ class AutoDistributionTestCase(unittest.TestCase):
         Add content to Pulp.
         """
         cls.cfg = config.get_config()
+        delete_orphans(cls.cfg)
         cls.client = api.Client(cls.cfg, api.json_handler)
         cls.client.request_kwargs['auth'] = get_auth()
         populate_pulp(cls.cfg)
