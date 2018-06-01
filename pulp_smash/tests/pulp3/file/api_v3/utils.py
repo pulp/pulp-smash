@@ -15,7 +15,5 @@ def get_content_unit_paths(repo):
     :param repo: A dict of information about the repository.
     :returns: A list with the paths of units present in a given repository.
     """
-    return [
-        content_unit['relative_path']  # file path and name
-        for content_unit in get_content(repo)['results']
-    ]
+    # The "relative_path" is actually a file path and name
+    return [content_unit['relative_path'] for content_unit in get_content(repo)]

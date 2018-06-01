@@ -205,13 +205,13 @@ def get_content(repo, version_href=None):
     :param repo: A dict of information about the repository.
     :param version_href: The repository version to read. If none, read the
         latest repository version.
-    :returns: A dict of information about the content units present in a given
+    :returns: A list of information about the content units present in a given
         repository version.
     """
     if version_href is None:
         version_href = repo['_latest_version_href']
     return (api
-            .Client(config.get_config(), api.json_handler)
+            .Client(config.get_config(), api.page_handler)
             .get(urljoin(version_href, 'content/')))
 
 
@@ -287,10 +287,8 @@ def get_artifact_paths(repo, version_href=None):
     :param version_href: The repository version to read.
     :returns: A set with the paths of units present in a given repository.
     """
-    return {
-        content_unit['artifact']  # file path and name
-        for content_unit in get_content(repo, version_href)['results']
-    }
+    # content['artifact'] consists of a file path and name.
+    return {content['artifact'] for content in get_content(repo, version_href)}
 
 
 def delete_version(repo, version_href=None):

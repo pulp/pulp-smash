@@ -137,10 +137,7 @@ class DeleteContentUnitRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
         self.addCleanup(client.delete, repo['_href'])
         sync(cfg, remote, repo)
         repo = client.get(repo['_href'])
-        content = get_content(repo)['results']
+        content = get_content(repo)
         with self.assertRaises(HTTPError):
             client.delete(choice(content)['_href'])
-        self.assertEqual(
-            len(content),
-            len(get_content(repo)['results'])
-        )
+        self.assertEqual(len(content), len(get_content(repo)))

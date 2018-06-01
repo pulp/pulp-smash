@@ -141,4 +141,4 @@ class MultiResourceLockingTestCase(unittest.TestCase, utils.SmokeTest):
         repo = client.get(repo['_href'])
         remote = client.get(remote['_href'])
         self.assertEqual(remote['url'], url['url'])
-        self.assertEqual(len(get_content(repo)['results']), FILE_FEED_COUNT)
+        self.assertEqual(len(get_content(repo)), FILE_FEED_COUNT)
