@@ -221,13 +221,13 @@ def get_added_content(repo, version_href=None):
     :param repo: A dict of information about a repository.
     :param version_href: The repository version to read. If none, read the
         latest repository version.
-    :returns: A dict of information about the content added since the previous
+    :returns: A list of information about the content added since the previous
         repository version.
     """
     if version_href is None:
         version_href = repo['_latest_version_href']
     return (api
-            .Client(config.get_config(), api.json_handler)
+            .Client(config.get_config(), api.page_handler)
             .get(urljoin(version_href, 'added_content/')))
 
 

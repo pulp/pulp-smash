@@ -115,7 +115,7 @@ class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
         self.assertEqual(len(content), FILE_FEED_COUNT)
 
         added_content = get_added_content(repo)
-        self.assertEqual(len(added_content['results']), 3, added_content)
+        self.assertEqual(len(added_content), 3, added_content)
 
         removed_content = get_removed_content(repo)
         self.assertEqual(len(removed_content['results']), 0, removed_content)
@@ -146,7 +146,7 @@ class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
         self.assertEqual(len(content), FILE_FEED_COUNT - 1)
 
         added_content = get_added_content(repo)
-        self.assertEqual(len(added_content['results']), 0, added_content)
+        self.assertEqual(len(added_content), 0, added_content)
 
         removed_content = get_removed_content(repo)
         self.assertEqual(len(removed_content['results']), 1, removed_content)
@@ -176,7 +176,7 @@ class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
         self.assertEqual(len(content), FILE_FEED_COUNT)
 
         added_content = get_added_content(repo)
-        self.assertEqual(len(added_content['results']), 1, added_content)
+        self.assertEqual(len(added_content), 1, added_content)
 
         removed_content = get_removed_content(repo)
         self.assertEqual(len(removed_content['results']), 0, removed_content)
