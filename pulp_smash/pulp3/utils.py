@@ -237,13 +237,13 @@ def get_removed_content(repo, version_href=None):
     :param repo: A dict of information about the repository.
     :param version_href: The repository version to read. If none, read the
         latest repository version.
-    :returns: A dict of information about the content removed since the
+    :returns: A list of information about the content removed since the
         previous repository version.
     """
     if version_href is None:
         version_href = repo['_latest_version_href']
     return (api
-            .Client(config.get_config(), api.json_handler)
+            .Client(config.get_config(), api.page_handler)
             .get(urljoin(version_href, 'removed_content/')))
 
 
