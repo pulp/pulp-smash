@@ -364,16 +364,14 @@ def poll_spawned_tasks(cfg, call_report, pulp_host=None):
 
     :param cfg: A :class:`pulp_smash.config.PulpSmashConfig` object.
     :param call_report: A dict-like object with a `call report`_ structure.
-    :param pulp_host: The host to poll. If ``None`` is provided then the first
-        host found with api role will be used.
+    :param pulp_host: The host to poll. If ``None``, a host will automatically
+        be selected by :class:`Client`.
     :returns: A generator yielding task bodies.
     :raises: Same as :meth:`poll_task`.
 
     .. _call report:
         http://docs.pulpproject.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
     """
-    if not pulp_host:
-        pulp_host = cfg.get_hosts('api')[0]
     if cfg.pulp_version < Version('3'):
         hrefs = (task['_href'] for task in call_report['spawned_tasks'])
     else:
@@ -392,37 +390,31 @@ def poll_task(cfg, href, pulp_host=None):
 
     :param cfg: A :class:`pulp_smash.config.PulpSmashConfig` object.
     :param href: The path to a task you'd like to monitor recursively.
-    :param pulp_host: The host to poll. If ``None`` is provided then the first
-        host found with api role will be used.
+    :param pulp_host: The host to poll. If ``None``, a host will automatically
+        be selected by :class:`Client`.
     :returns: An generator yielding response bodies.
     :raises pulp_smash.exceptions.TaskTimedOutError: If a task takes too
         long to complete.
     """
-    if not pulp_host:
-        pulp_host = cfg.get_hosts('api')[0]
     # 900 * 2s == 1800s == 30m
     # NOTE: The timeout counter is synchronous. We query Pulp, then count down,
     # then query pulp, then count down, etc. This is… dumb.
     poll_limit = 900
     poll_counter = 0
+    json_client = Client(cfg, json_handler, pulp_host=pulp_host)
     while True:
-        response = requests.get(
-            urljoin(cfg.get_base_url(pulp_host), href),
-            **cfg.get_requests_kwargs(pulp_host)
-        )
-        response.raise_for_status()
-        attrs = response.json()
+        task = json_client.get(href)
         if cfg.pulp_version < Version('3'):
             task_end_states = _TASK_END_STATES
         else:
             task_end_states = _P3_TASK_END_STATES
-        if attrs['state'] in task_end_states:
-            # This task has completed. Yield its final state, then iterate
-            # through each of its children and yield their final states.
-            yield attrs
-            for href_ in (task['_href'] for task in attrs['spawned_tasks']):
-                for final_task_state in poll_task(cfg, href_):
-                    yield final_task_state
+        if task['state'] in task_end_states:
+            # This task has completed. Yield its final state, then recursively
+            # iterate through children and yield their final states.
+            yield task
+            for spawned_task in task['spawned_tasks']:
+                for descendant_tsk in poll_task(cfg, spawned_task['_href'], pulp_host):
+                    yield descendant_tsk
             break
         poll_counter += 1
         if poll_counter > poll_limit:
