@@ -175,7 +175,7 @@ def settings_save_path(ctx):
     As a side-effect, create all directories in the path that don't yet exist.
     As a result, it's safe to execute a Bash expression such as:
 
-        echo '{...}' > "$(pulp-smash settings path)"
+        echo '{...}' > "$(pulp-smash settings save-path)"
 
     This save path is used by sibling commands such as "create".
     """
