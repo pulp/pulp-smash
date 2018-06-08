@@ -33,7 +33,7 @@ class CRUDRemotesTestCase(unittest.TestCase, utils.SmokeTest):
         cls.client.delete(cls.repo['_href'])
 
     def test_01_create_remote(self):
-        """Create an remote."""
+        """Create a remote."""
         body = _gen_verbose_remote()
         type(self).remote = self.client.post(FILE_REMOTE_PATH, body)
         for key in ('username', 'password'):
@@ -41,6 +41,18 @@ class CRUDRemotesTestCase(unittest.TestCase, utils.SmokeTest):
         for key, val in body.items():
             with self.subTest(key=key):
                 self.assertEqual(self.remote[key], val)
+
+    @selectors.skip_if(bool, 'remote', False)
+    def test_02_create_same_name(self):
+        """Try to create a second remote with an identical name.
+
+        See: `Pulp Smash #1055
+        <https://github.com/PulpQE/pulp-smash/issues/1055>`_.
+        """
+        body = gen_remote(FILE_FEED_URL)
+        body['name'] = self.remote['name']
+        with self.assertRaises(HTTPError):
+            self.client.post(FILE_REMOTE_PATH, body)
 
     @selectors.skip_if(bool, 'remote', False)
     def test_02_read_remote(self):
