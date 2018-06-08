@@ -167,6 +167,7 @@ developers, not a gospel.
     api/tests.test_cli
     api/tests.test_config
     api/tests.test_pulp2_utils
+    api/tests.test_pulp3_utils
     api/tests.test_pulp_smash_cli
     api/tests.test_selectors
     api/tests.test_utils

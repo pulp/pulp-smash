@@ -7,24 +7,28 @@ from pulp_smash.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.pulp2.utils import publish_repo, sync_repo
 
 
-def gen_repo():
+def gen_repo(**kwargs):
     """Return a semi-random dict that used for creating a Docker repo."""
-    return {
+    data = {
         'id': utils.uuid4(),
         'importer_config': {},
         'importer_type_id': 'docker_importer',
-        'notes': {'_repo-type': 'docker-repo'},
+        'notes': {'_repo-type': 'docker-repo'}
     }
+    data.update(kwargs)
+    return data
 
 
-def gen_distributor():
+def gen_distributor(**kwargs):
     """Return a semi-random dict for use in creating a Docker distributor."""
-    return {
+    data = {
         'auto_publish': False,
         'distributor_config': {},
         'distributor_id': utils.uuid4(),
-        'distributor_type_id': 'docker_distributor_web',
+        'distributor_type_id': 'docker_distributor_web'
     }
+    data.update(kwargs)
+    return data
 
 
 class SyncPublishMixin():
