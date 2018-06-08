@@ -25,9 +25,22 @@ class CRUDDistributionsTestCase(unittest.TestCase, utils.SmokeTest):
         """Create a distribution."""
         body = gen_distribution()
         type(self).distribution = self.client.post(DISTRIBUTION_PATH, body)
+
         for key, val in body.items():
             with self.subTest(key=key):
                 self.assertEqual(self.distribution[key], val)
+
+    @selectors.skip_if(bool, 'distribution', False)
+    def test_02_create_same_name(self):
+        """Try to create a second distribution with an identical name.
+
+        See: `Pulp Smash #1055
+        <https://github.com/PulpQE/pulp-smash/issues/1055>`_.
+        """
+        body = gen_distribution()
+        body['name'] = self.distribution['name']
+        with self.assertRaises(HTTPError):
+            self.client.post(DISTRIBUTION_PATH, body)
 
     @selectors.skip_if(bool, 'distribution', False)
     def test_02_read_distribution(self):
