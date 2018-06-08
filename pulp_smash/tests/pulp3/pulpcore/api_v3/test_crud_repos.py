@@ -29,6 +29,18 @@ class CRUDRepoTestCase(unittest.TestCase, utils.SmokeTest):
         type(self).repo = self.client.post(REPO_PATH, gen_repo())
 
     @selectors.skip_if(bool, 'repo', False)
+    def test_02_create_same_name(self):
+        """Try to create a second repository with an identical name.
+
+        See: `Pulp Smash #1055
+        <https://github.com/PulpQE/pulp-smash/issues/1055>`_.
+        """
+        body = gen_repo()
+        body['name'] = self.repo['name']
+        with self.assertRaises(HTTPError):
+            self.client.post(REPO_PATH, body)
+
+    @selectors.skip_if(bool, 'repo', False)
     def test_02_read_repo(self):
         """Read a repository by its href."""
         repo = self.client.get(self.repo['_href'])
