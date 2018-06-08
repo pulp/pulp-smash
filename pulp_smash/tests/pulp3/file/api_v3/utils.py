@@ -4,9 +4,11 @@ from pulp_smash import utils
 from pulp_smash.pulp3.utils import get_content
 
 
-def gen_publisher():
+def gen_publisher(**kwargs):
     """Return a semi-random dict for use in creating a publisher."""
-    return {'name': utils.uuid4()}
+    data = {'name': utils.uuid4()}
+    data.update(kwargs)
+    return data
 
 
 def get_content_unit_paths(repo):

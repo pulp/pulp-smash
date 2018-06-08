@@ -3,19 +3,23 @@
 from pulp_smash import utils
 
 
-def gen_repo():
+def gen_repo(**kwargs):
     """Return a semi-random dict for use in creating a Python repository."""
-    return {
+    data = {
         'id': utils.uuid4(),
         'importer_config': {},
         'importer_type_id': 'python_importer',
-        'notes': {'_repo-type': 'PYTHON'},
+        'notes': {'_repo-type': 'PYTHON'}
     }
+    data.update(kwargs)
+    return data
 
 
-def gen_distributor():
+def gen_distributor(**kwargs):
     """Return a semi-random dict for use in creating a Python distributor."""
-    return {
+    data = {
         'distributor_id': utils.uuid4(),
-        'distributor_type_id': 'python_distributor',
+        'distributor_type_id': 'python_distributor'
     }
+    data.update(kwargs)
+    return data

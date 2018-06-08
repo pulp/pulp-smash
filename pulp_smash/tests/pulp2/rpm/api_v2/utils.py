@@ -15,26 +15,28 @@ from pulp_smash.constants import RPM_NAMESPACES
 from pulp_smash.pulp2.utils import search_units
 
 
-def gen_repo():
+def gen_repo(**kwargs):
     """Return a semi-random dict for use in creating an RPM repository."""
-    return {
+    data = {
         'id': utils.uuid4(),
         'importer_config': {},
         'importer_type_id': 'yum_importer',
-        'notes': {'_repo-type': 'rpm-repo'},
+        'notes': {'_repo-type': 'rpm-repo'}
     }
+    data.update(kwargs)
+    return data
 
 
-def gen_repo_group():
+def gen_repo_group(**kwargs):
     """Return a semi-random dict for use in creating a RPM repository group."""
-    return {
-        'id': utils.uuid4(),
-    }
+    data = {'id': utils.uuid4()}
+    data.update(kwargs)
+    return data
 
 
-def gen_distributor():
+def gen_distributor(**kwargs):
     """Return a semi-random dict for use in creating a YUM distributor."""
-    return {
+    data = {
         'auto_publish': False,
         'distributor_id': utils.uuid4(),
         'distributor_type_id': 'yum_distributor',
@@ -42,8 +44,10 @@ def gen_distributor():
             'http': True,
             'https': True,
             'relative_url': utils.uuid4() + '/',
-        },
+        }
     }
+    data.update(kwargs)
+    return data
 
 
 def get_repodata_repomd_xml(cfg, distributor, response_handler=None):

@@ -12,18 +12,20 @@ def set_up_module():
     utils.require_unit_types({'ostree'})
 
 
-def gen_repo():
+def gen_repo(**kwargs):
     """Return a semi-random dict for use in creating an OSTree repository."""
-    return {
+    data = {
         'id': uuid4(),
         'importer_type_id': 'ostree_web_importer',
         'importer_config': {},
         'distributors': [],
-        'notes': {'_repo-type': 'OSTREE'},
+        'notes': {'_repo-type': 'OSTREE'}
     }
+    data.update(kwargs)
+    return data
 
 
-def gen_distributor():
+def gen_distributor(**kwargs):
     """Return a semi-random dict for use in creating an OSTree distributor.
 
     For more information, see the generic `repository CRUD`_ documentation and
@@ -39,7 +41,9 @@ def gen_distributor():
         http://docs.pulpproject.org/plugins/pulp_ostree/tech-reference/distributor.html
     .. _Pulp #2254: https://pulp.plan.io/issues/2254
     """
-    return {
+    data = {
         'distributor_id': uuid4(),
-        'distributor_type_id': 'ostree_web_distributor',
+        'distributor_type_id': 'ostree_web_distributor'
     }
+    data.update(kwargs)
+    return data
