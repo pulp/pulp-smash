@@ -288,9 +288,11 @@ class BaseServiceManager(metaclass=ABCMeta):
         sudo = ('sudo',) if sudo else ()
         if self._on_jenkins:
             client.run(sudo + ('setenforce', '0'))
-        yield
-        if self._on_jenkins:
-            client.run(sudo + ('setenforce', '1'))
+        try:
+            yield
+        finally:
+            if self._on_jenkins:
+                client.run(sudo + ('setenforce', '1'))
 
     @staticmethod
     def _start_sysv(client, sudo, services):
