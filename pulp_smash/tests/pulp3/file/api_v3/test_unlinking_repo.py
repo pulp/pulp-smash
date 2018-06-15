@@ -4,7 +4,7 @@
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, config, selectors
 from pulp_smash.constants import FILE_FEED_URL
 from pulp_smash.pulp3.constants import (
     FILE_REMOTE_PATH,
@@ -23,7 +23,7 @@ from pulp_smash.pulp3.utils import (
 )
 
 
-class RemotesPublishersTestCase(unittest.TestCase, utils.SmokeTest):
+class RemotesPublishersTestCase(unittest.TestCase):
     """Verify publisher and remote can be used with different repos."""
 
     def test_all(self):

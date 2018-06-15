@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, config, utils
+from pulp_smash import api, config
 from pulp_smash.constants import FILE_FEED_URL
 from pulp_smash.pulp3.constants import (
     FILE_CONTENT_PATH,
@@ -26,7 +26,7 @@ from pulp_smash.pulp3.utils import (
 )
 
 
-class PublishAnyRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
+class PublishAnyRepoVersionTestCase(unittest.TestCase):
     """Test whether a particular repository version can be published.
 
     This test targets the following issues:

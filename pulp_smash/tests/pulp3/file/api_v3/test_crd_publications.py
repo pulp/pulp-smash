@@ -5,7 +5,7 @@ from urllib.parse import urljoin
 
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, config, selectors
 from pulp_smash.constants import FILE_FEED_URL
 from pulp_smash.pulp3.constants import (
     DISTRIBUTION_PATH,
@@ -26,7 +26,7 @@ from pulp_smash.pulp3.utils import (
 )
 
 
-class PublicationsTestCase(unittest.TestCase, utils.SmokeTest):
+class PublicationsTestCase(unittest.TestCase):
     """Perform actions over publications."""
 
     @classmethod

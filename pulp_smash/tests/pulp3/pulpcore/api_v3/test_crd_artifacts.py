@@ -14,7 +14,7 @@ from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  
 from pulp_smash.pulp3.utils import delete_orphans, get_auth
 
 
-class ArtifactTestCase(unittest.TestCase, utils.SmokeTest):
+class ArtifactTestCase(unittest.TestCase):
     """Create an artifact by uploading a file.
 
     This test targets the following issues:
@@ -107,7 +107,7 @@ class ArtifactTestCase(unittest.TestCase, utils.SmokeTest):
                 self._do_upload_invalid_attrs(data)
 
 
-class ArtifactsDeleteFileSystemTestCase(unittest.TestCase, utils.SmokeTest):
+class ArtifactsDeleteFileSystemTestCase(unittest.TestCase):
     """Delete an artifact, it is removed from the filesystem.
 
     This test targets the following issues:

@@ -1,6 +1,5 @@
 # coding=utf-8
 """Unit tests for :mod:`pulp_smash.pulp_smash_cli`."""
-import importlib
 import json
 import os
 import unittest
@@ -329,34 +328,3 @@ class SettingsValidateTestCase(
                 'required property.',
                 result.output,
             )
-
-
-class SmokeTestsTestCase(BasePulpSmashCliTestCase):
-    """Test ``pulp_smash.pulp_smash_cli.smoke_tests`` command."""
-
-    def test_all(self):
-        """Execute the CLI command.
-
-        Assert that each line of output names a test case, and each of those
-        test cases inherits from :class:`pulp_smash.utils.SmokeTest`.
-        """
-        result = self.cli_runner.invoke(pulp_smash_cli.smoke_tests, [])
-        self.assertEqual(result.exit_code, 0)
-        # Each line printed to stdout is a fully qualified test case name, e.g.
-        # `pulp_smash.tests.….TestFoo`.
-        fq_names = result.output.strip().splitlines()
-        self.assertGreater(len(fq_names), 0)
-        for fq_name in fq_names:
-            # By default, deprecation warnings are suppressed. However,
-            # unittest undoes that filtering. In addition, Click's CliRunner
-            # captures both stdout and stderr, and combines them into a single
-            # `output` stream, with no apparent way to separate them. As a
-            # result, the normally invisible warning raised by BaseAPITestCase
-            # makes its way to here and can cause this test to fail.
-            if 'DeprecationWarning' in fq_name:
-                continue
-            with self.subTest(fq_name=fq_name):
-                module_name, _, class_name = fq_name.rpartition('.')
-                module = importlib.import_module(module_name)
-                klass = getattr(module, class_name)
-                self.assertTrue(issubclass(klass, utils.SmokeTest))
