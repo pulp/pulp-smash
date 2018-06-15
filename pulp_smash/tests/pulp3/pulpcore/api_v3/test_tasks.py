@@ -17,7 +17,7 @@ _DYNAMIC_TASKS_ATTRS = ('finished_at',)
 """Task attributes that are dynamically set by Pulp, not set by a user."""
 
 
-class TasksTestCase(unittest.TestCase, utils.SmokeTest):
+class TasksTestCase(unittest.TestCase):
     """Perform different operation over tasks.
 
     This test targets the following issues:

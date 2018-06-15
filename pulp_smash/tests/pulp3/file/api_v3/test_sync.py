@@ -4,7 +4,7 @@ import unittest
 from random import randint
 from urllib.parse import urljoin, urlsplit
 
-from pulp_smash import api, config, utils
+from pulp_smash import api, config
 from pulp_smash.constants import (
     FILE_FEED_COUNT,
     FILE_FEED_URL,
@@ -21,7 +21,7 @@ from pulp_smash.pulp3.utils import (
 )
 
 
-class SyncFileRepoTestCase(unittest.TestCase, utils.SmokeTest):
+class SyncFileRepoTestCase(unittest.TestCase):
     """Sync repositories with the file plugin."""
 
     @classmethod
@@ -105,7 +105,7 @@ class SyncChangeRepoVersionTestCase(unittest.TestCase):
         self.assertEqual(latest_repo_version, number_of_syncs)
 
 
-class MultiResourceLockingTestCase(unittest.TestCase, utils.SmokeTest):
+class MultiResourceLockingTestCase(unittest.TestCase):
     """Verify multi-resourcing locking.
 
     This test targets the following issues:

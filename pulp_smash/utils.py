@@ -16,19 +16,6 @@ from pulp_smash import cli
 _CHECKSUM_CACHE = {}
 
 
-class SmokeTest():  # pylint:disable=too-few-public-methods
-    """A class for identifying smoke tests.
-
-    Classes that inherit from this class are considered smoke tests, and may be
-    returned by Pulp Smash's CLI. (See :mod:`pulp_smash.pulp_smash_cli`.)
-    """
-    # Which test cases should be marked as smoke tests? For Pulp 3, a sane
-    # solution is to include test cases that belong to the Pulp 3 smoke tests
-    # milestone. [1] For Pulp 2, no similar milestone exists.
-    #
-    # [1] https://github.com/PulpQE/pulp-smash/milestone/22
-
-
 def get_sha256_checksum(url):
     """Return the sha256 checksum of the file at the given URL.
 

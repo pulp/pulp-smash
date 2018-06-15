@@ -10,7 +10,7 @@ from pulp_smash.pulp3.utils import gen_distribution, get_auth
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
-class CRUDDistributionsTestCase(unittest.TestCase, utils.SmokeTest):
+class CRUDDistributionsTestCase(unittest.TestCase):
     """CRUD distributions."""
 
     @classmethod

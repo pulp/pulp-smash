@@ -28,7 +28,7 @@ from pulp_smash.pulp3.utils import (
 )
 
 
-class DownloadContentTestCase(unittest.TestCase, utils.SmokeTest):
+class DownloadContentTestCase(unittest.TestCase):
     """Verify whether content served by pulp can be downloaded."""
 
     def test_all(self):

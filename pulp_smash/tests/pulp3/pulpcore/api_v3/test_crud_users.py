@@ -10,7 +10,7 @@ from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  
 from pulp_smash.pulp3.utils import get_auth
 
 
-class UsersCRUDTestCase(unittest.TestCase, utils.SmokeTest):
+class UsersCRUDTestCase(unittest.TestCase):
     """CRUD users."""
 
     @classmethod

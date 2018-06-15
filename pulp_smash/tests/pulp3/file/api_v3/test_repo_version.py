@@ -37,7 +37,7 @@ from pulp_smash.pulp3.utils import (
 )
 
 
-class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
+class AddRemoveContentTestCase(unittest.TestCase):
     """Add and remove content to a repository. Verify side-effects.
 
     A new repository version is automatically created each time content is
@@ -196,7 +196,7 @@ class AddRemoveContentTestCase(unittest.TestCase, utils.SmokeTest):
         return content_summaries[0]
 
 
-class AddRemoveRepoVersionTestCase(unittest.TestCase, utils.SmokeTest):
+class AddRemoveRepoVersionTestCase(unittest.TestCase):
     """Create and delete repository versions.
 
     This test targets the following issues:

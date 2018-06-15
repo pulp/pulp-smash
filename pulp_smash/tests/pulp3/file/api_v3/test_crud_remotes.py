@@ -12,7 +12,7 @@ from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # py
 from pulp_smash.pulp3.utils import gen_remote, gen_repo, get_auth
 
 
-class CRUDRemotesTestCase(unittest.TestCase, utils.SmokeTest):
+class CRUDRemotesTestCase(unittest.TestCase):
     """CRUD remotes."""
 
     @classmethod

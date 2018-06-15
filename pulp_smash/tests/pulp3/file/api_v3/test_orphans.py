@@ -30,7 +30,7 @@ from pulp_smash.pulp3.utils import (
 )
 
 
-class DeleteOrphansTestCase(unittest.TestCase, utils.SmokeTest):
+class DeleteOrphansTestCase(unittest.TestCase):
     """Test whether orphans files can be clean up.
 
     An orphan artifact is an artifact that is not in any content units.
