@@ -43,7 +43,6 @@ lint-pylint:
 	pylint -j $(CPU_COUNT) --reports=n --disable=I \
 		docs/conf.py \
 		pulp_smash \
-		scripts/run_functional_tests.py \
 		setup.py \
 		tests
 
