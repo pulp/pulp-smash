@@ -308,46 +308,58 @@ def pulp_admin_login(cfg):
     ))
 
 
-def require_issue_3159():
+def require_issue_3159(exc):
     """Skip tests if Fedora 27 is under test and `Pulp #3159`_ is open.
+
+    :param exc: A class to instantiate and raise as an exception. Its
+        constructor must accept one string argument.
 
     .. _Pulp #3159: https://pulp.plan.io/issues/3159
     """
     cfg = config.get_config()
     if (not selectors.bug_is_fixed(3159, cfg.pulp_version) and
             utils.os_is_f27(cfg)):
-        raise unittest.SkipTest('https://pulp.plan.io/issues/3159')
+        raise exc('https://pulp.plan.io/issues/3159')
 
 
-def require_issue_3687():
+def require_issue_3687(exc):
     """Skip tests if Fedora 27 is under test and `Pulp #3687`_ is open.
+
+    :param exc: A class to instantiate and raise as an exception. Its
+        constructor must accept one string argument.
 
     .. _Pulp #3687: https://pulp.plan.io/issues/3687
     """
     cfg = config.get_config()
     if (not selectors.bug_is_fixed(3687, cfg.pulp_version) and
             utils.os_is_f27(cfg)):
-        raise unittest.SkipTest('https://pulp.plan.io/issues/3687')
+        raise exc('https://pulp.plan.io/issues/3687')
 
 
-def require_pulp_2():
-    """Skip tests if Pulp 2 isn't under test."""
+def require_pulp_2(exc):
+    """Skip tests if Pulp 2 isn't under test.
+
+    :param exc: A class to instantiate and raise as an exception. Its
+        constructor must accept one string argument.
+    """
     cfg = config.get_config()
     if cfg.pulp_version < Version('2') or cfg.pulp_version >= Version('3'):
-        raise unittest.SkipTest(
+        raise exc(
             'These tests are for Pulp 2, but Pulp {} is under test.'
             .format(cfg.pulp_version)
         )
 
 
-def require_unit_types(required_unit_types):
+def require_unit_types(required_unit_types, exc):
     """Skip tests if one or more unit types aren't supported.
 
     :param required_unit_types: A set of unit types IDs, e.g. ``{'ostree'}``.
+    :param exc: A class to instantiate and raise as an exception. Its
+        constructor must accept one string argument.
     """
     missing_unit_types = required_unit_types - get_unit_types()
     if missing_unit_types:
-        raise unittest.SkipTest(
+        raise exc(
             "The following unit types aren't supported by the Pulp "
             'application under test: {}'.format(missing_unit_types)
         )

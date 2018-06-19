@@ -17,10 +17,10 @@ from pulp_smash.pulp2 import utils as pulp2_utils
 
 def set_up_module():
     """Skip tests if Pulp 2 isn't under test or if Docker isn't installed."""
-    pulp2_utils.require_pulp_2()
-    pulp2_utils.require_issue_3159()
-    pulp2_utils.require_issue_3687()
-    pulp2_utils.require_unit_types({'docker_image'})
+    pulp2_utils.require_pulp_2(SkipTest)
+    pulp2_utils.require_issue_3159(SkipTest)
+    pulp2_utils.require_issue_3687(SkipTest)
+    pulp2_utils.require_unit_types({'docker_image'}, SkipTest)
 
 
 def get_upstream_name(cfg):

@@ -8,9 +8,9 @@ from pulp_smash.pulp2 import utils
 
 def set_up_module():
     """Skip tests if Pulp 2 isn't under test."""
-    utils.require_pulp_2()
-    utils.require_issue_3159()
-    utils.require_issue_3687()
+    utils.require_pulp_2(unittest.SkipTest)
+    utils.require_issue_3159(unittest.SkipTest)
+    utils.require_issue_3687(unittest.SkipTest)
 
 
 def require_selinux():
