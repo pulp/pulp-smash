@@ -1,15 +1,17 @@
 # coding=utf-8
 """Utilities for interacting with OS tree."""
+from unittest import SkipTest
+
 from pulp_smash.pulp2 import utils
 from pulp_smash.utils import uuid4
 
 
 def set_up_module():
     """Skip tests if Pulp 2 isn't under test or if OSTree isn't installed."""
-    utils.require_pulp_2()
-    utils.require_issue_3159()
-    utils.require_issue_3687()
-    utils.require_unit_types({'ostree'})
+    utils.require_pulp_2(SkipTest)
+    utils.require_issue_3159(SkipTest)
+    utils.require_issue_3687(SkipTest)
+    utils.require_unit_types({'ostree'}, SkipTest)
 
 
 def gen_repo(**kwargs):
