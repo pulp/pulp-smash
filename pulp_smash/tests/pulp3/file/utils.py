@@ -50,7 +50,7 @@ def populate_pulp(cfg, url=None):
 def set_up_module():
     """Skip tests Pulp 3 isn't under test or if pulp-file isn't installed."""
     require_pulp_3()
-    require_pulp_plugins({'pulp_file'})
+    require_pulp_plugins({'pulp_file'}, SkipTest)
 
 
 skip_if = partial(selectors.skip_if, exc=SkipTest)  # pylint:disable=invalid-name

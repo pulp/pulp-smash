@@ -55,14 +55,22 @@ def require_pulp_3():
         )
 
 
-def require_pulp_plugins(required_plugins):
-    """Skip tests if one or more plugins are missing.
+def require_pulp_plugins(required_plugins, exc):
+    """Raise an exception if one or more plugins are missing.
+
+    If the same exception should be pased each time this method is called,
+    consider using `functools.partial`_.
 
     :param required_plugins: A set of plugin names, e.g. ``{'pulp-file'}``.
+    :param exc: A class to instantiate and raise as an exception. Its
+        constructor must accept one string argument.
+
+    .. _functools.partial:
+        https://docs.python.org/3/library/functools.html#functools.partial
     """
     missing_plugins = required_plugins - get_plugins()
     if missing_plugins:
-        raise unittest.SkipTest(
+        raise exc(
             'The following plugins are required but not installed: {}'
             .format(missing_plugins)
         )
