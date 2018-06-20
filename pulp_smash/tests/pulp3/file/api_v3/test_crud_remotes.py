@@ -5,11 +5,12 @@ import unittest
 
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, config, utils
 from pulp_smash.constants import FILE_FEED_URL, FILE2_FEED_URL
 from pulp_smash.pulp3.constants import FILE_REMOTE_PATH, REPO_PATH
-from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.pulp3.utils import gen_remote, gen_repo, get_auth
+from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
+from pulp_smash.tests.pulp3.file.utils import skip_if
 
 
 class CRUDRemotesTestCase(unittest.TestCase):
@@ -42,7 +43,7 @@ class CRUDRemotesTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(self.remote[key], val)
 
-    @selectors.skip_if(bool, 'remote', False)
+    @skip_if(bool, 'remote', False)
     def test_02_create_same_name(self):
         """Try to create a second remote with an identical name.
 
@@ -54,7 +55,7 @@ class CRUDRemotesTestCase(unittest.TestCase):
         with self.assertRaises(HTTPError):
             self.client.post(FILE_REMOTE_PATH, body)
 
-    @selectors.skip_if(bool, 'remote', False)
+    @skip_if(bool, 'remote', False)
     def test_02_read_remote(self):
         """Read an remote by its href."""
         remote = self.client.get(self.remote['_href'])
@@ -62,7 +63,7 @@ class CRUDRemotesTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(remote[key], val)
 
-    @selectors.skip_if(bool, 'remote', False)
+    @skip_if(bool, 'remote', False)
     def test_02_read_remotes(self):
         """Read an remote by its name."""
         page = self.client.get(FILE_REMOTE_PATH, params={
@@ -73,7 +74,7 @@ class CRUDRemotesTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(page['results'][0][key], val)
 
-    @selectors.skip_if(bool, 'remote', False)
+    @skip_if(bool, 'remote', False)
     def test_03_partially_update(self):
         """Update an remote using HTTP PATCH."""
         body = _gen_verbose_remote()
@@ -85,7 +86,7 @@ class CRUDRemotesTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(self.remote[key], val)
 
-    @selectors.skip_if(bool, 'remote', False)
+    @skip_if(bool, 'remote', False)
     def test_04_fully_update(self):
         """Update an remote using HTTP PUT."""
         body = _gen_verbose_remote()
@@ -97,7 +98,7 @@ class CRUDRemotesTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(self.remote[key], val)
 
-    @selectors.skip_if(bool, 'remote', False)
+    @skip_if(bool, 'remote', False)
     def test_05_delete(self):
         """Delete an remote."""
         self.client.delete(self.remote['_href'])

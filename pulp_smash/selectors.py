@@ -222,13 +222,13 @@ def require(ver, exc):
     return plain_decorator
 
 
-def skip_if(func, var_name, result):
+def skip_if(func, var_name, result, exc):
     """Optionally skip a test method, based on a condition.
 
     This decorator checks to see if ``func(getattr(self, var_name))`` equals
-    ``result``. If so, a ``unittest.SkipTest`` exception is raised. Otherwise,
+    ``result``. If so, an exception of type ``exc`` is raised. Otherwise,
     nothing happens, and the decorated test method continues as normal. Here's
-    an example:
+    an example of how to use this method:
 
     >>> import unittest
     >>> from pulp_smash.selectors import skip_if
@@ -238,18 +238,32 @@ def skip_if(func, var_name, result):
     ...     def setUpClass(cls):
     ...         cls.my_var = False
     ...
-    ...     @skip_if(bool, 'my_var', False)
+    ...     @skip_if(bool, 'my_var', False, unittest.SkipTest)
     ...     def test_01_skips(self):
     ...         pass
     ...
     ...     def test_02_runs(self):
     ...         type(self).my_var = True
     ...
-    ...     @skip_if(bool, 'my_var', False)
+    ...     @skip_if(bool, 'my_var', False, unittest.SkipTest)
     ...     def test_03_runs(self):
     ...         pass
 
+    If the same exception should be passed each time this method is called,
+    consider using `functools.partial`_:
+
+    >>> from functools import partial
+    >>> from unittest import SkipTest
+    >>> from pulp_smash.selectors import skip_if
+    >>> unittest_skip_if = partial(skip_if, exc=SkipTest)
+
     :param var_name: A valid variable name.
+    :param result: A value to compare to ``func(getattr(self, var_name))``.
+    :param exc: A class to instantiate and raise as an exception. Its
+        constructor must accept one string argument.
+
+    .. _functools.partial:
+        https://docs.python.org/3/library/functools.html#functools.partial
     """
     def plain_decorator(test_method):
         """Decorate function ``test_method``."""
@@ -258,7 +272,7 @@ def skip_if(func, var_name, result):
             """Wrap a (unittest test) method."""
             var_value = getattr(self, var_name)
             if func(var_value) == result:
-                self.skipTest('{}({}) != {}'.format(func, var_value, result))
+                raise exc('{}({}) != {}'.format(func, var_value, result))
             return test_method(self, *args, **kwargs)
         return new_test_method
     return plain_decorator

@@ -1,7 +1,9 @@
 # coding=utf-8
 """Utilities for RPM tests."""
 import os
+from functools import partial
 from io import StringIO
+from unittest import SkipTest
 
 from packaging.version import Version
 
@@ -146,3 +148,11 @@ def gen_yum_config_file(cfg, repositoryid, **kwargs):
             )
         )
     return path
+
+
+skip_if = partial(selectors.skip_if, exc=SkipTest)  # pylint:disable=invalid-name
+"""The ``@skip_if`` decorator, customized for unittest.
+
+:func:`pulp_smash.selectors.skip_if` is test runner agnostic. This function is
+identical, except that ``exc`` has been set to ``unittest.SkipTest``.
+"""

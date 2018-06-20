@@ -6,8 +6,9 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.pulp3.constants import USER_PATH
-from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.pulp3.utils import get_auth
+from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
+from pulp_smash.tests.pulp3.pulpcore.utils import skip_if
 
 
 class UsersCRUDTestCase(unittest.TestCase):
@@ -35,7 +36,7 @@ class UsersCRUDTestCase(unittest.TestCase):
                 else:
                     self.assertEqual(self.user[key], val)
 
-    @selectors.skip_if(bool, 'user', False)
+    @skip_if(bool, 'user', False)
     def test_02_read_user(self):
         """Read a user byt its _href."""
         user = self.client.get(self.user['_href'])
@@ -43,7 +44,7 @@ class UsersCRUDTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(val, self.user[key])
 
-    @selectors.skip_if(bool, 'user', False)
+    @skip_if(bool, 'user', False)
     def test_02_read_username(self):
         """Read a user by its username."""
         if not selectors.bug_is_fixed(3142, self.cfg.pulp_version):
@@ -55,7 +56,7 @@ class UsersCRUDTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(page['results'][0][key], val)
 
-    @selectors.skip_if(bool, 'user', False)
+    @skip_if(bool, 'user', False)
     def test_02_read_users(self):
         """Read all users. Verify that the created user is in the results."""
         users = [
@@ -67,7 +68,7 @@ class UsersCRUDTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(val, self.user[key])
 
-    @selectors.skip_if(bool, 'user', False)
+    @skip_if(bool, 'user', False)
     def test_03_fully_update_user(self):
         """Update a user info using HTTP PUT."""
         attrs = _gen_verbose_user_attrs()
@@ -82,7 +83,7 @@ class UsersCRUDTestCase(unittest.TestCase):
                 else:
                     self.assertEqual(user[key], val)
 
-    @selectors.skip_if(bool, 'user', False)
+    @skip_if(bool, 'user', False)
     def test_03_partially_update_user(self):
         """Update a user info using HTTP PATCH."""
         attrs = _gen_verbose_user_attrs()
@@ -97,7 +98,7 @@ class UsersCRUDTestCase(unittest.TestCase):
                 else:
                     self.assertEqual(user[key], val)
 
-    @selectors.skip_if(bool, 'user', False)
+    @skip_if(bool, 'user', False)
     def test_04_delete_user(self):
         """Delete an user."""
         self.client.delete(self.user['_href'])

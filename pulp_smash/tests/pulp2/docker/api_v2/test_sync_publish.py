@@ -14,7 +14,7 @@ from pulp_smash.tests.pulp2.docker.api_v2.utils import (
     gen_distributor,
     gen_repo,
 )
-from pulp_smash.tests.pulp2.docker.utils import get_upstream_name
+from pulp_smash.tests.pulp2.docker.utils import get_upstream_name, skip_if
 from pulp_smash.tests.pulp2.docker.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 # Variable name derived from HTTP content-type.
@@ -180,7 +180,7 @@ class V1RegistryTestCase(SyncPublishMixin, unittest.TestCase):
             'upstream_name': get_upstream_name(self.cfg),
         })
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_get_crane_repositories(self):
         """Issue an HTTP GET request to ``/crane/repositories``.
 
@@ -192,7 +192,7 @@ class V1RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         self.assertIn(repo_id, repos.keys())
         self.verify_v1_repo(repos[repo_id])
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_get_crane_repositories_v1(self):
         """Issue an HTTP GET request to ``/crane/repositories/v1``.
 
@@ -243,7 +243,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
             'upstream_name': get_upstream_name(self.cfg),
         })
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_get_crane_repositories_v2(self):
         """Issue an HTTP GET request to ``/crane/repositories/v2``.
 
@@ -258,7 +258,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         self.assertIn(repo_id, repos.keys())
         self.assertFalse(repos[repo_id]['protected'])
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_get_manifest_v1(self):
         """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
 
@@ -291,7 +291,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
                 )
                 validate(manifest, MANIFEST_V1)
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_get_manifest_v2(self):
         """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
 
@@ -314,7 +314,7 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         )
         validate(manifest, MANIFEST_V2)
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_get_manifest_list(self):
         """Issue an HTTP GET request to ``/v2/{repo_id}/manifests/latest``.
 
@@ -467,7 +467,7 @@ class NoAmd64LinuxTestCase(SyncPublishMixin, unittest.TestCase):
         # Make Crane read metadata. (Now!)
         cli.GlobalServiceManager(self.cfg).restart(('httpd',))
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_02_get_manifest_list(self):
         """Get a manifest list.
 
@@ -509,7 +509,7 @@ class NoAmd64LinuxTestCase(SyncPublishMixin, unittest.TestCase):
                 manifest_list
             )
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_02_get_manifest_v2(self):
         """Get a v2 manifest. Assert that an HTTP 404 is returned."""
         client = api.Client(self.cfg, api.echo_handler, {'headers': {
@@ -523,7 +523,7 @@ class NoAmd64LinuxTestCase(SyncPublishMixin, unittest.TestCase):
         )
         self.assertEqual(response.status_code, 404, response.content)
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_02_get_manifest_v1(self):
         """Get a v1 manifest. Assert that an HTTP 404 is returned."""
         client = api.Client(self.cfg, api.echo_handler, {'headers': {
