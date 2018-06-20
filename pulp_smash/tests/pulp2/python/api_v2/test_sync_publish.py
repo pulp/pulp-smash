@@ -20,6 +20,7 @@ from pulp_smash.tests.pulp2.python.api_v2.utils import (
     gen_repo,
 )
 from pulp_smash.tests.pulp2.python.utils import set_up_module as setUpModule  # pylint:disable=unused-import
+from pulp_smash.tests.pulp2.python.utils import skip_if
 
 
 class BaseTestCase(unittest.TestCase):
@@ -59,7 +60,7 @@ class BaseTestCase(unittest.TestCase):
         """
         raise NotImplementedError
 
-    @selectors.skip_if(len, 'repos', 0)  # require first repo
+    @skip_if(len, 'repos', 0)  # require first repo
     def test_02_second_repo(self):
         """Create a second Python repository, and sync it from the first.
 

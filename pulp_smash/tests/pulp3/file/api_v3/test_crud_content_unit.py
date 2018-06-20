@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, config, utils
 from pulp_smash.constants import FILE_FEED_URL, FILE_URL
 from pulp_smash.pulp3.constants import (
     ARTIFACTS_PATH,
@@ -15,6 +15,7 @@ from pulp_smash.pulp3.constants import (
     REPO_PATH,
 )
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
+from pulp_smash.tests.pulp3.file.utils import skip_if
 from pulp_smash.pulp3.utils import (
     delete_orphans,
     gen_remote,
@@ -58,7 +59,7 @@ class ContentUnitTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(self.content_unit[key], val)
 
-    @selectors.skip_if(bool, 'content_unit', False)
+    @skip_if(bool, 'content_unit', False)
     def test_02_read_content_unit(self):
         """Read a content unit by its href."""
         content_unit = self.client.get(self.content_unit['_href'])
@@ -66,7 +67,7 @@ class ContentUnitTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(content_unit[key], val)
 
-    @selectors.skip_if(bool, 'content_unit', False)
+    @skip_if(bool, 'content_unit', False)
     def test_02_read_content_units(self):
         """Read a content unit by its relative_path."""
         page = self.client.get(FILE_CONTENT_PATH, params={
@@ -77,7 +78,7 @@ class ContentUnitTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(page['results'][0][key], val)
 
-    @selectors.skip_if(bool, 'content_unit', False)
+    @skip_if(bool, 'content_unit', False)
     def test_03_partially_update(self):
         """Attempt to update a content unit using HTTP PATCH.
 
@@ -87,7 +88,7 @@ class ContentUnitTestCase(unittest.TestCase):
         with self.assertRaises(HTTPError):
             self.client.patch(self.content_unit['_href'], attrs)
 
-    @selectors.skip_if(bool, 'content_unit', False)
+    @skip_if(bool, 'content_unit', False)
     def test_03_fully_update(self):
         """Attempt to update a content unit using HTTP PUT.
 

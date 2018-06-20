@@ -22,6 +22,7 @@ from pulp_smash.pulp2.constants import ORPHANS_PATH, REPOSITORY_PATH
 from pulp_smash.pulp2.utils import sync_repo
 from pulp_smash.tests.pulp2.rpm.api_v2.utils import gen_repo
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
+from pulp_smash.tests.pulp2.rpm.utils import skip_if
 
 
 def _count_orphans(orphans):
@@ -75,7 +76,7 @@ class OrphansTestCase(unittest.TestCase):
         self.assertEqual(actual_count, expected_count, orphans)
         type(self).orphans_available = True
 
-    @selectors.skip_if(bool, 'orphans_available', False)
+    @skip_if(bool, 'orphans_available', False)
     def test_01_get_by_href(self):
         """Get an orphan by its href."""
         client = api.Client(config.get_config())
@@ -87,14 +88,14 @@ class OrphansTestCase(unittest.TestCase):
         with self.subTest(comment='verify href'):
             self.assertEqual(orphan['_href'], response.json()['_href'])
 
-    @selectors.skip_if(bool, 'orphans_available', False)
+    @skip_if(bool, 'orphans_available', False)
     def test_01_get_by_invalid_type(self):
         """Get orphans by content type. Specify a non-existent content type."""
         client = api.Client(config.get_config(), api.echo_handler)
         response = client.get(urljoin(ORPHANS_PATH, 'foo/'))
         self.assertEqual(response.status_code, 404)
 
-    @selectors.skip_if(bool, 'orphans_available', False)
+    @skip_if(bool, 'orphans_available', False)
     def test_02_delete_by_href(self):
         """Delete an orphan by its href."""
         client = api.Client(config.get_config(), api.json_handler)
@@ -104,7 +105,7 @@ class OrphansTestCase(unittest.TestCase):
         orphans_post = client.get(ORPHANS_PATH)
         self.check_one_orphan_deleted(orphans_pre, orphans_post, orphan)
 
-    @selectors.skip_if(bool, 'orphans_available', False)
+    @skip_if(bool, 'orphans_available', False)
     def test_02_delete_by_type_and_id(self):
         """Delete an orphan by its ID and type.
 
@@ -120,7 +121,7 @@ class OrphansTestCase(unittest.TestCase):
         orphans_post = client.get(ORPHANS_PATH)
         self.check_one_orphan_deleted(orphans_pre, orphans_post, orphan)
 
-    @selectors.skip_if(bool, 'orphans_available', False)
+    @skip_if(bool, 'orphans_available', False)
     def test_03_delete_by_content_type(self):
         """Delete orphans by their content type."""
         cfg = config.get_config()

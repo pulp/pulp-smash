@@ -7,6 +7,7 @@ from requests.exceptions import HTTPError
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
+from pulp_smash.tests.pulp3.pulpcore.utils import skip_if
 from pulp_smash.pulp3.utils import gen_repo, get_auth
 
 
@@ -28,7 +29,7 @@ class CRUDRepoTestCase(unittest.TestCase):
         """Create repository."""
         type(self).repo = self.client.post(REPO_PATH, gen_repo())
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_02_create_same_name(self):
         """Try to create a second repository with an identical name.
 
@@ -40,7 +41,7 @@ class CRUDRepoTestCase(unittest.TestCase):
         with self.assertRaises(HTTPError):
             self.client.post(REPO_PATH, body)
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_02_read_repo(self):
         """Read a repository by its href."""
         repo = self.client.get(self.repo['_href'])
@@ -48,7 +49,7 @@ class CRUDRepoTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(repo[key], val)
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_02_read_repos(self):
         """Read the repository by its name."""
         page = self.client.get(REPO_PATH, params={
@@ -59,7 +60,7 @@ class CRUDRepoTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(page['results'][0][key], val)
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_02_read_all_repos(self):
         """Ensure name is displayed when listing repositories."""
         if not selectors.bug_is_fixed(2824, self.cfg.pulp_version):
@@ -67,14 +68,14 @@ class CRUDRepoTestCase(unittest.TestCase):
         for repo in self.client.get(REPO_PATH)['results']:
             self.assertIsNotNone(repo['name'])
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_03_fully_update_name(self):
         """Update a repository's name using HTTP PUT."""
         if not selectors.bug_is_fixed(3101, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/3101')
         self.do_fully_update_attr('name')
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_03_fully_update_desc(self):
         """Update a repository's description using HTTP PUT."""
         self.do_fully_update_attr('description')
@@ -94,14 +95,14 @@ class CRUDRepoTestCase(unittest.TestCase):
         repo = self.client.get(repo['_href'])
         self.assertEqual(string, repo[attr])
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_03_partially_update_name(self):
         """Update a repository's name using HTTP PATCH."""
         if not selectors.bug_is_fixed(3101, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/3101')
         self.do_partially_update_attr('name')
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_03_partially_update_desc(self):
         """Update a repository's description using HTTP PATCH."""
         self.do_partially_update_attr('description')
@@ -119,7 +120,7 @@ class CRUDRepoTestCase(unittest.TestCase):
         repo = self.client.get(self.repo['_href'])
         self.assertEqual(repo[attr], string)
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_04_delete_repo(self):
         """Delete a repository."""
         self.client.delete(self.repo['_href'])

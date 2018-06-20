@@ -8,8 +8,9 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, selectors
 from pulp_smash.pulp3.constants import WORKER_PATH
-from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.pulp3.utils import get_auth
+from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
+from pulp_smash.tests.pulp3.pulpcore.utils import skip_if
 
 _DYNAMIC_WORKER_ATTRS = ('last_heartbeat',)
 """Worker attributes that are dynamically set by Pulp, not set by a user."""
@@ -44,7 +45,7 @@ class WorkersTestCase(unittest.TestCase):
                     self.assertIsNotNone(val)
         self.worker.update(choice(workers))
 
-    @selectors.skip_if(bool, 'worker', False)
+    @skip_if(bool, 'worker', False)
     def test_02_read_worker(self):
         """Read a worker by its _href."""
         worker = self.client.get(self.worker['_href'])
@@ -54,7 +55,7 @@ class WorkersTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(worker[key], val)
 
-    @selectors.skip_if(bool, 'worker', False)
+    @skip_if(bool, 'worker', False)
     def test_02_read_workers(self):
         """Read a worker by its name."""
         page = self.client.get(WORKER_PATH, params={
@@ -67,7 +68,7 @@ class WorkersTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(page['results'][0][key], val)
 
-    @selectors.skip_if(bool, 'worker', False)
+    @skip_if(bool, 'worker', False)
     def test_03_positive_filters(self):
         """Read a worker using a set of query parameters."""
         if not selectors.bug_is_fixed(3586, self.cfg.pulp_version):
@@ -87,7 +88,7 @@ class WorkersTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(page['results'][0][key], val)
 
-    @selectors.skip_if(bool, 'worker', False)
+    @skip_if(bool, 'worker', False)
     def test_04_negative_filters(self):
         """Read a worker with a query that does not match any worker."""
         if not selectors.bug_is_fixed(3586, self.cfg.pulp_version):
@@ -100,7 +101,7 @@ class WorkersTestCase(unittest.TestCase):
         })
         self.assertEqual(len(page['results']), 0)
 
-    @selectors.skip_if(bool, 'worker', False)
+    @skip_if(bool, 'worker', False)
     def test_05_http_method(self):
         """Use an HTTP method different than GET.
 

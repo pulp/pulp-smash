@@ -2,10 +2,12 @@
 """Utilities for Docker tests."""
 import os
 import json
+from functools import partial
+from unittest import SkipTest
 
 from packaging.version import Version
 
-from pulp_smash import cli, utils
+from pulp_smash import cli, selectors, utils
 from pulp_smash.constants import (
     DOCKER_UPSTREAM_NAME,
     DOCKER_UPSTREAM_NAME_NOLIST,
@@ -57,3 +59,11 @@ def write_manifest_list(cfg, manifest_list):
         )
     )
     return file_path, dir_path
+
+
+skip_if = partial(selectors.skip_if, exc=SkipTest)  # pylint:disable=invalid-name
+"""The ``@skip_if`` decorator, customized for unittest.
+
+:func:`pulp_smash.selectors.skip_if` is test runner agnostic. This function is
+identical, except that ``exc`` has been set to ``unittest.SkipTest``.
+"""

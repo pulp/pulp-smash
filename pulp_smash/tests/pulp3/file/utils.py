@@ -1,8 +1,10 @@
 # coding=utf-8
 """Utilities for tests for the file plugin."""
+from functools import partial
+from unittest import SkipTest
 from urllib.parse import urljoin
 
-from pulp_smash import api
+from pulp_smash import api, selectors
 from pulp_smash.constants import FILE_FEED_URL
 from pulp_smash.pulp3.constants import (
     FILE_CONTENT_PATH,
@@ -49,3 +51,11 @@ def set_up_module():
     """Skip tests Pulp 3 isn't under test or if pulp-file isn't installed."""
     require_pulp_3()
     require_pulp_plugins({'pulp_file'})
+
+
+skip_if = partial(selectors.skip_if, exc=SkipTest)  # pylint:disable=invalid-name
+"""The ``@skip_if`` decorator, customized for unittest.
+
+:func:`pulp_smash.selectors.skip_if` is test runner agnostic. This function is
+identical, except that ``exc`` has been set to ``unittest.SkipTest``.
+"""

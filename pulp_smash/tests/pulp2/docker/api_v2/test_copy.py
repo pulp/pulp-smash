@@ -8,7 +8,7 @@ from pulp_smash.constants import DOCKER_V1_FEED_URL, DOCKER_V2_FEED_URL
 from pulp_smash.pulp2.constants import REPOSITORY_PATH
 from pulp_smash.pulp2.utils import sync_repo
 from pulp_smash.tests.pulp2.docker.api_v2.utils import gen_repo
-from pulp_smash.tests.pulp2.docker.utils import get_upstream_name
+from pulp_smash.tests.pulp2.docker.utils import get_upstream_name, skip_if
 from pulp_smash.tests.pulp2.docker.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
 
@@ -46,7 +46,7 @@ class CopyV1ContentTestCase(unittest.TestCase):
             params={'details': True}
         )
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_02_copy_images(self):
         """Copy tags from one repository to another.
 
@@ -100,7 +100,7 @@ class CopyV2ContentTestCase(unittest.TestCase):
             params={'details': True}
         )
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_02_copy_tags(self):
         """Copy tags from one repository to another.
 
@@ -119,7 +119,7 @@ class CopyV2ContentTestCase(unittest.TestCase):
             repo['content_unit_counts'].get('docker_tag', 0),
         )
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_02_copy_manifests(self):
         """Copy manifests from one repository to another.
 
@@ -138,7 +138,7 @@ class CopyV2ContentTestCase(unittest.TestCase):
             repo['content_unit_counts'].get('docker_manifest', 0),
         )
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_02_copy_manifest_lists(self):
         """Copy manifest lists from one repository to another.
 

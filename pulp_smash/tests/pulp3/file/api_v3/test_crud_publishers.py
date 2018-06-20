@@ -4,11 +4,12 @@ import unittest
 
 from requests.exceptions import HTTPError
 
-from pulp_smash import api, config, selectors
+from pulp_smash import api, config
 from pulp_smash.pulp3.constants import FILE_PUBLISHER_PATH, REPO_PATH
+from pulp_smash.pulp3.utils import gen_repo, get_auth
 from pulp_smash.tests.pulp3.file.api_v3.utils import gen_publisher
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
-from pulp_smash.pulp3.utils import gen_repo, get_auth
+from pulp_smash.tests.pulp3.file.utils import skip_if
 
 
 class CRUDPublishersTestCase(unittest.TestCase):
@@ -39,7 +40,7 @@ class CRUDPublishersTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(self.publisher[key], val)
 
-    @selectors.skip_if(bool, 'publisher', False)
+    @skip_if(bool, 'publisher', False)
     def test_02_create_same_name(self):
         """Try to create a second publisher with an identical name.
 
@@ -51,7 +52,7 @@ class CRUDPublishersTestCase(unittest.TestCase):
         with self.assertRaises(HTTPError):
             self.client.post(FILE_PUBLISHER_PATH, body)
 
-    @selectors.skip_if(bool, 'publisher', False)
+    @skip_if(bool, 'publisher', False)
     def test_02_read_publisher(self):
         """Read a publisher by its href."""
         publisher = self.client.get(self.publisher['_href'])
@@ -59,7 +60,7 @@ class CRUDPublishersTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(publisher[key], val)
 
-    @selectors.skip_if(bool, 'publisher', False)
+    @skip_if(bool, 'publisher', False)
     def test_02_read_publishers(self):
         """Read a publisher by its name."""
         page = self.client.get(FILE_PUBLISHER_PATH, params={
@@ -70,7 +71,7 @@ class CRUDPublishersTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(page['results'][0][key], val)
 
-    @selectors.skip_if(bool, 'publisher', False)
+    @skip_if(bool, 'publisher', False)
     def test_03_partially_update(self):
         """Update a publisher using HTTP PATCH."""
         body = gen_publisher()
@@ -80,7 +81,7 @@ class CRUDPublishersTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(self.publisher[key], val)
 
-    @selectors.skip_if(bool, 'publisher', False)
+    @skip_if(bool, 'publisher', False)
     def test_04_fully_update(self):
         """Update a publisher using HTTP PUT."""
         body = gen_publisher()
@@ -90,7 +91,7 @@ class CRUDPublishersTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(self.publisher[key], val)
 
-    @selectors.skip_if(bool, 'publisher', False)
+    @skip_if(bool, 'publisher', False)
     def test_05_delete(self):
         """Delete a publisher."""
         self.client.delete(self.publisher['_href'])

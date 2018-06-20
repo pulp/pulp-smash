@@ -20,7 +20,7 @@ from pulp_smash.pulp3.constants import (
     REPO_PATH,
 )
 from pulp_smash.tests.pulp3.file.api_v3.utils import gen_publisher
-from pulp_smash.tests.pulp3.file.utils import populate_pulp
+from pulp_smash.tests.pulp3.file.utils import populate_pulp, skip_if
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.pulp3.utils import (
     delete_version,
@@ -88,7 +88,7 @@ class AddRemoveContentTestCase(unittest.TestCase):
 
         self.assertIsNone(self.repo['_latest_version_href'])
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_02_sync_content(self):
         """Sync content into the repository.
 
@@ -123,7 +123,7 @@ class AddRemoveContentTestCase(unittest.TestCase):
         content_summary = self.get_content_summary(repo)
         self.assertEqual(content_summary, {'file': FILE_FEED_COUNT})
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_03_remove_content(self):
         """Remove content from the repository.
 
@@ -154,7 +154,7 @@ class AddRemoveContentTestCase(unittest.TestCase):
         content_summary = self.get_content_summary(repo)
         self.assertEqual(content_summary, {'file': FILE_FEED_COUNT - 1})
 
-    @selectors.skip_if(bool, 'repo', False)
+    @skip_if(bool, 'repo', False)
     def test_04_add_content(self):
         """Add content to the repository.
 

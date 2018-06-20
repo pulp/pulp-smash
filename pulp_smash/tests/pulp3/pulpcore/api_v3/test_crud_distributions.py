@@ -8,6 +8,7 @@ from pulp_smash import api, config, selectors, utils
 from pulp_smash.pulp3.constants import DISTRIBUTION_PATH
 from pulp_smash.pulp3.utils import gen_distribution, get_auth
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
+from pulp_smash.tests.pulp3.pulpcore.utils import skip_if
 
 
 class CRUDDistributionsTestCase(unittest.TestCase):
@@ -29,7 +30,7 @@ class CRUDDistributionsTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(self.distribution[key], val)
 
-    @selectors.skip_if(bool, 'distribution', False)
+    @skip_if(bool, 'distribution', False)
     def test_02_create_same_name(self):
         """Try to create a second distribution with an identical name.
 
@@ -41,7 +42,7 @@ class CRUDDistributionsTestCase(unittest.TestCase):
         with self.assertRaises(HTTPError):
             self.client.post(DISTRIBUTION_PATH, body)
 
-    @selectors.skip_if(bool, 'distribution', False)
+    @skip_if(bool, 'distribution', False)
     def test_02_read_distribution(self):
         """Read a distribution by its _href."""
         distribution = self.client.get(self.distribution['_href'])
@@ -49,7 +50,7 @@ class CRUDDistributionsTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(distribution[key], val)
 
-    @selectors.skip_if(bool, 'distribution', False)
+    @skip_if(bool, 'distribution', False)
     def test_02_read_distributions(self):
         """Read a distribution using query parameters."""
         if not selectors.bug_is_fixed(3082, self.cfg.pulp_version):
@@ -64,7 +65,7 @@ class CRUDDistributionsTestCase(unittest.TestCase):
                     with self.subTest(key=key):
                         self.assertEqual(page['results'][0][key], val)
 
-    @selectors.skip_if(bool, 'distribution', False)
+    @skip_if(bool, 'distribution', False)
     def test_03_partially_update(self):
         """Update a distribution using HTTP PATCH."""
         body = gen_distribution()
@@ -74,7 +75,7 @@ class CRUDDistributionsTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(self.distribution[key], val)
 
-    @selectors.skip_if(bool, 'distribution', False)
+    @skip_if(bool, 'distribution', False)
     def test_04_fully_update(self):
         """Update a distribution using HTTP PUT."""
         body = gen_distribution()
@@ -84,7 +85,7 @@ class CRUDDistributionsTestCase(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(self.distribution[key], val)
 
-    @selectors.skip_if(bool, 'distribution', False)
+    @skip_if(bool, 'distribution', False)
     def test_05_delete(self):
         """Delete a distribution."""
         self.client.delete(self.distribution['_href'])

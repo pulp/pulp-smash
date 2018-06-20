@@ -78,6 +78,7 @@ from pulp_smash.tests.pulp2.rpm.utils import (
     check_issue_2620,
     check_issue_3104,
     set_up_module,
+    skip_if,
 )
 
 
@@ -626,7 +627,7 @@ class OpenSuseErrataTestCase(unittest.TestCase):
             get_repodata(cfg, repo['distributors'][0], 'updateinfo')
         )
 
-    @selectors.skip_if(bool, 'updates_element', False)
+    @skip_if(bool, 'updates_element', False)
     def test_02_update_issued_dates(self):
         """Assert 'date' attributes are formatted as seconds since epoch.
 
@@ -637,7 +638,7 @@ class OpenSuseErrataTestCase(unittest.TestCase):
         for element in self.updates_element.findall('update/issued'):
             self.assertIsNotNone(matcher.match(element.get('date')))
 
-    @selectors.skip_if(bool, 'updates_element', False)
+    @skip_if(bool, 'updates_element', False)
     def test_02_restart_suggested(self):
         """Assert ``restart_suggested`` element are present."""
         num_restart_suggested = len(self.updates_element.findall(
@@ -645,7 +646,7 @@ class OpenSuseErrataTestCase(unittest.TestCase):
         ))
         self.assertGreater(num_restart_suggested, 0)
 
-    @selectors.skip_if(bool, 'updates_element', False)
+    @skip_if(bool, 'updates_element', False)
     def test_02_relogin_suggested(self):
         """Assert ``relogin_suggested`` element are present."""
         num_relogin_suggested = len(self.updates_element.findall(
@@ -653,7 +654,7 @@ class OpenSuseErrataTestCase(unittest.TestCase):
         ))
         self.assertGreater(num_relogin_suggested, 0)
 
-    @selectors.skip_if(bool, 'updates_element', False)
+    @skip_if(bool, 'updates_element', False)
     def test_02_updated(self):
         """Assert ``<updated>`` elements are absent.
 
