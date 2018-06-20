@@ -14,6 +14,7 @@ The assumptions explored in this module have the following dependencies::
 .. _repository:
     https://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/index.html
 """
+import unittest
 from urllib.parse import urljoin, urlparse
 
 from packaging.version import Version
@@ -55,7 +56,8 @@ class CreateSuccessTestCase(BaseAPITestCase):
             with self.subTest(body=body):
                 self.assertEqual(response.status_code, 201)
 
-    @selectors.require('2.7')  # https://pulp.plan.io/issues/695
+    # https://pulp.plan.io/issues/695
+    @selectors.require('2.7', unittest.SkipTest)
     def test_location_header(self):
         """Assert the Location header is correctly set in each response.
 

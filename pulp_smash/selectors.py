@@ -170,44 +170,52 @@ def bug_is_fixed(bug_id, pulp_version):
     return False
 
 
-def require(version_string):
+def require(ver, exc):
     """Optionally skip a test method, based on a version string.
 
     This decorator concisely encapsulates a common pattern for skipping tests.
-    It can be used like so:
+    An attribute named ``cfg`` **must** be accessible from the decorator. It
+    can be used like so:
 
-    >>> from pulp_smash.config import get_config
-    >>> from pulp_smash.utils import require
-    >>> from unittest import TestCase
-    >>> class MyTestCase(TestCase):
+    >>> import unittest
+    >>> from packaging.version import Version
+    >>> from pulp_smash import config, selectors
+    >>> class MyTestCase(unittest.TestCase):
     ...
     ...     @classmethod
     ...     def setUpClass(cls):
-    ...         cls.cfg = get_config()
+    ...         cls.cfg = config.get_config()
     ...
-    ...     @require('2.7')  # References `self.cfg`
+    ...     @selectors.require('2.7', unittest.SkipTest)
     ...     def test_foo(self):
-    ...         pass  # Add a test for Pulp 2.7+ here.
+    ...         self.assertGreaterEqual(self.cfg.pulp_version, Version('2.7'))
 
-    Notice that ``cls.cfg`` is assigned to. This is a **requirement**.
+    If the same exception should be pased each time this method is called,
+    consider using `functools.partial`_:
 
-    :param version_string: A PEP 440 compatible version string.
+    >>> from functools import partial
+    >>> from unittest import SkipTest
+    >>> from pulp_smash.selectors import require
+    >>> unittest_require = partial(require, exc=SkipTest)
+
+    :param ver: A PEP 440 compatible version string.
+    :param exc: A class to instantiate and raise as an exception. Its
+        constructor must accept one string argument.
+
+    .. _functools.partial:
+        https://docs.python.org/3/library/functools.html#functools.partial
     """
-    # Running the test suite can take a long time. Let's parse the version
-    # string now instead of waiting until the test is running.
-    min_version = Version(version_string)
-
     def plain_decorator(test_method):
         """Decorate function ``test_method``."""
         @wraps(test_method)
         def new_test_method(self, *args, **kwargs):
             """Wrap a (unittest test) method."""
-            if self.cfg.pulp_version < min_version:
-                self.skipTest(
+            if self.cfg.pulp_version < Version(ver):
+                raise exc(
                     'This test requires Pulp {} or later, but Pulp {} is '
                     'being tested. If this seems wrong, try checking the '
                     '"settings" option in the Pulp Smash configuration file.'
-                    .format(version_string, self.cfg.pulp_version)
+                    .format(ver, self.cfg.pulp_version)
                 )
             return test_method(self, *args, **kwargs)
         return new_test_method
