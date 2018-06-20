@@ -1,7 +1,6 @@
 # coding=utf-8
 """Utility functions for Pulp 3 tests."""
 import random
-import unittest
 import warnings
 from copy import deepcopy
 from urllib.parse import urljoin, urlsplit
@@ -45,11 +44,21 @@ class JWTAuth(AuthBase):  # pylint:disable=too-few-public-methods
         return request
 
 
-def require_pulp_3():
-    """Skip tests if Pulp 3 isn't under test."""
+def require_pulp_3(exc):
+    """Raise an exception if Pulp 3 isn't under test.
+
+    If the same exception should be pased each time this method is called,
+    consider using `functools.partial`_.
+
+    :param exc: A class to instantiate and raise as an exception. Its
+        constructor must accept one string argument.
+
+    .. _functools.partial:
+        https://docs.python.org/3/library/functools.html#functools.partial
+    """
     cfg = config.get_config()
     if cfg.pulp_version < Version('3') or cfg.pulp_version >= Version('4'):
-        raise unittest.SkipTest(
+        raise exc(
             'These tests are for Pulp 3, but Pulp {} is under test.'
             .format(cfg.pulp_version)
         )
