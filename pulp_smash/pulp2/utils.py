@@ -40,6 +40,15 @@ class BaseAPICrudTestCase(unittest.TestCase):
         http://docs.pulpproject.org/en/latest/dev-guide/integration/rest-api/repo/cud.html#delete-a-repository
     """
 
+    def __init__(self, *args, **kwargs):
+        """Raise a deprecation warning."""
+        warnings.warn(
+            'Avoid using BaseAPICrudTestCase. It is coupled to the unittest '
+            'test runner.',
+            DeprecationWarning
+        )
+        super().__init__(*args, **kwargs)
+
     @classmethod
     def setUpClass(cls):
         """Create, update, read and delete a repository."""
