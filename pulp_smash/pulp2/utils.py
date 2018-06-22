@@ -149,10 +149,11 @@ class BaseAPITestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         """Raise a deprecation warning."""
         warnings.warn(
-            'Avoid using BaseAPITestCase. Its design encourages fragile '
-            'clean-up logic, and it slows down tests by unnecessarily '
-            'deleting orphans. Try using the addCleanup instance method '
-            'instead, and only delete orphans as needed.',
+            'Avoid using BaseAPITestCase. It is coupled to the unittest test '
+            'runner. In addition, it slows down tests by unnecessarily '
+            'deleting orphans, and its design encourages fragile clean-up '
+            'logic. If you are using unittest, delete orphans only as needed, '
+            'and consider using the addCleanup instance method.',
             DeprecationWarning
         )
         super().__init__(*args, **kwargs)
