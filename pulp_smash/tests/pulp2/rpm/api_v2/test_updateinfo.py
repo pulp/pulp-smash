@@ -185,7 +185,7 @@ class UpdateInfoTestCase(BaseAPITestCase):
                 cls.cfg, unit, {'unit_type_id': 'rpm'}, repo
             )
             for key, erratum in cls.errata.items():
-                report = upload_import_erratum(cls.cfg, erratum, repo['_href'])
+                report = upload_import_erratum(cls.cfg, erratum, repo)
                 cls.tasks[key] = tuple(api.poll_spawned_tasks(cls.cfg, report))
             publish_repo(cls.cfg, repo)
 

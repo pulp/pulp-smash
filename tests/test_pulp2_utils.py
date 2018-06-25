@@ -142,7 +142,7 @@ class SyncRepoTestCase(unittest.TestCase):
 
 
 class UploadImportErratumTestCase(unittest.TestCase):
-    """Test :func:`pulp_smash.pulp2.utils.upload_import_unit`."""
+    """Test :func:`pulp_smash.pulp2.utils.upload_import_erratum`."""
 
     def test_post(self):
         """Assert the function makes an HTTP POST request."""
@@ -158,7 +158,7 @@ class UploadImportErratumTestCase(unittest.TestCase):
             response = upload_import_erratum(
                 mock.Mock(),  # cfg
                 {'id': 'abc123'},  # erratum
-                'http://example.com',  # repo_href
+                {'_href': 'http://example.com'},  # repo
             )
         self.assertIs(response, client.return_value.post.return_value)
 
