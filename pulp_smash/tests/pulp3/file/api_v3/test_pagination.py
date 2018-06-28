@@ -1,7 +1,7 @@
 # coding=utf-8
 """Tests related to pagination."""
 import unittest
-from random import randint, sample
+from random import sample
 from threading import Lock, Thread
 from urllib.parse import urljoin
 
@@ -10,14 +10,7 @@ from pulp_smash.constants import FILE_MANY_FEED_COUNT, FILE_MANY_FEED_URL
 from pulp_smash.tests.pulp3.file.utils import populate_pulp
 from pulp_smash.pulp3.constants import FILE_CONTENT_PATH, REPO_PATH
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
-from pulp_smash.pulp3.utils import (
-    gen_repo,
-    get_added_content,
-    get_auth,
-    get_content,
-    get_removed_content,
-    get_versions,
-)
+from pulp_smash.pulp3.utils import gen_repo, get_auth, get_versions
 
 
 class PaginationTestCase(unittest.TestCase):
@@ -41,10 +34,13 @@ class PaginationTestCase(unittest.TestCase):
         repos = self.client.get(REPO_PATH)
         self.assertEqual(len(repos), 0, repos)
 
-        # Create shared variables.
-        repo_hrefs = []  # append() and pop() are thread-safe
+        # list.append() and list.pop() are thread-safe. ¶ We create 21 repos,
+        # because with page_size set to 10, this produces 3 pages, where the
+        # three three pages have unique combinations of values for the
+        # "previous" and "next" links.
+        repo_hrefs = []
         repo_hrefs_lock = Lock()
-        number_to_create = randint(100, 101)
+        number_to_create = 21
 
         def create_repos():
             """Repeatedly create repos and append to ``repos_hrefs``."""
@@ -74,7 +70,7 @@ class PaginationTestCase(unittest.TestCase):
                 thread.start()
             for thread in create_threads:
                 thread.join()
-            repos = self.client.get(REPO_PATH)
+            repos = self.client.get(REPO_PATH, params={'page_size': 10})
             self.assertEqual(len(repos), number_to_create, repos)
         finally:
             for thread in delete_threads:
@@ -83,13 +79,14 @@ class PaginationTestCase(unittest.TestCase):
                 thread.join()
 
     def test_content(self):
-        """Test pagination for different endpoints.
-
-        Test pagination for repository versions, added and removed content.
-        """
-        # Add content to Pulp, create a repo, and add content to repo.
+        """Test pagination for repository versions."""
+        # Add content to Pulp, create a repo, and add content to repo. We
+        # sample 21 contents, because with page_size set to 10, this produces 3
+        # pages, where the three three pages have unique combinations of values
+        # for the "previous" and "next" links.
         populate_pulp(self.cfg, urljoin(FILE_MANY_FEED_URL, 'PULP_MANIFEST'))
-        contents = sample(self.client.get(FILE_CONTENT_PATH), FILE_MANY_FEED_COUNT)
+        sample_size = min(FILE_MANY_FEED_COUNT, 21)
+        contents = sample(self.client.get(FILE_CONTENT_PATH), sample_size)
         repo = self.client.post(REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo['_href'])
 
@@ -111,13 +108,7 @@ class PaginationTestCase(unittest.TestCase):
         for thread in threads:
             thread.join()
 
-        # Verify state of system.
+        # Verify pagination works for getting repo versions.
         repo = self.client.get(repo['_href'])
-        repo_versions = get_versions(repo)
-        self.assertEqual(len(repo_versions), FILE_MANY_FEED_COUNT, repo_versions)
-        content = get_content(repo)
-        self.assertEqual(len(content), FILE_MANY_FEED_COUNT, content)
-        added_content = get_added_content(repo)
-        self.assertEqual(len(added_content), 1, added_content)
-        removed_content = get_removed_content(repo)
-        self.assertEqual(len(removed_content), 0, removed_content)
+        repo_versions = get_versions(repo, {'page_size': 10})
+        self.assertEqual(len(repo_versions), sample_size, repo_versions)
