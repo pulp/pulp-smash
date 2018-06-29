@@ -62,6 +62,10 @@ CONTENT_APPLICABILITY_REPORT_SCHEMA = {
             'applicability': {
                 'type': 'object',
                 'properties': {
+                    'erratum': {
+                        'type': 'array',
+                        'items': {'type': 'string'}
+                    },
                     'rpm': {
                         'type': 'array',
                         'items': {'type': 'string'}
@@ -162,12 +166,21 @@ class BasicTestCase(unittest.TestCase):
 
         # Fetch applicability.
         applicability = client.post(CONSUMERS_CONTENT_APPLICABILITY_PATH, {
-            'content_types': ['rpm'],
             'criteria': {'filters': {'id': {'$in': [consumer_id]}}},
         })
         validate(applicability, CONTENT_APPLICABILITY_REPORT_SCHEMA)
+        with self.subTest(comment='verify erratum listed in report'):
+            self.assertEqual(
+                len(applicability[0]['applicability']['erratum']),
+                1,
+                applicability[0]['applicability']['erratum'],
+            )
         with self.subTest(comment='verify RPMs listed in report'):
-            self.assertEqual(len(applicability[0]['applicability']['rpm']), 2)
+            self.assertEqual(
+                len(applicability[0]['applicability']['rpm']),
+                2,
+                applicability[0]['applicability']['rpm'],
+            )
         with self.subTest(comment='verify consumers listed in report'):
             self.assertEqual(applicability[0]['consumers'], [consumer_id])
 
