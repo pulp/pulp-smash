@@ -118,8 +118,8 @@ class RemoveOldRepodataTestCase(unittest.TestCase):
             'remove_old_repodata': False,
             'remove_old_repodata_threshold': 0,
         })
-        self.assertGreater(len(found[0]), 0, found[0])
-        self.assertLess(len(found[0]), len(found[1]), found[0])
+        self.assertGreater(len(found[0]), 0, found)
+        self.assertLess(len(found[0]), len(found[1]), found)
 
     def test_cleanup_now(self):
         """Set ``remove_old_repodata`` to true, and the threshold to 0.
@@ -133,8 +133,8 @@ class RemoveOldRepodataTestCase(unittest.TestCase):
             'generate_sqlite': True,
             'remove_old_repodata_threshold': 0,
         })
-        self.assertGreater(len(found[0]), 0, found[0])
-        self.assertEqual(len(found[0]), len(found[1]), found[0])
+        self.assertGreater(len(found[0]), 0, found)
+        self.assertEqual(len(found[0]), len(found[1]), found)
 
     def test_cleanup_later(self):
         """Set ``remove_old_repodata`` to true, and the threshold to 3600.
@@ -147,8 +147,8 @@ class RemoveOldRepodataTestCase(unittest.TestCase):
             'generate_sqlite': True,
             'remove_old_repodata_threshold': 3600,
         })
-        self.assertGreater(len(found[0]), 0, found[0])
-        self.assertLess(len(found[0]), len(found[1]), found[0])
+        self.assertGreater(len(found[0]), 0, found)
+        self.assertLess(len(found[0]), len(found[1]), found)
 
     def test_cleanup_default(self):
         """Set ``remove_old_repodata`` to true, and the threshold at default.
@@ -156,8 +156,8 @@ class RemoveOldRepodataTestCase(unittest.TestCase):
         Assert there are more metadata files after the second publish.
         """
         found = self.do_test({'generate_sqlite': True})
-        self.assertGreater(len(found[0]), 0, found[0])
-        self.assertLess(len(found[0]), len(found[1]), found[0])
+        self.assertGreater(len(found[0]), 0, found)
+        self.assertLess(len(found[0]), len(found[1]), found)
 
     def do_test(self, distributor_config_update):
         """Implement most of the test logic."""
@@ -181,19 +181,16 @@ class RemoveOldRepodataTestCase(unittest.TestCase):
         cli_client = cli.Client(self.cfg)
         sudo = () if cli.is_root(self.cfg) else ('sudo',)
         find_repodata_cmd = sudo + (
-            'find', os.path.join(
+            'find',
+            os.path.join(
                 '/var/lib/pulp/published/yum/master/yum_distributor/',
                 str(repo['id'])
-            ), '-type', 'd', '-name', 'repodata'
+            ),
+            '-type', 'd', '-name', 'repodata'
         )
         found = []
         for rpm in rpms:
-            upload_import_unit(
-                self.cfg,
-                rpm,
-                {'unit_type_id': 'rpm'},
-                repo,
-            )
+            upload_import_unit(self.cfg, rpm, {'unit_type_id': 'rpm'}, repo)
             publish_repo(self.cfg, repo)
             repodata_path = cli_client.run(find_repodata_cmd).stdout.strip()
             found.append(cli_client.run(sudo + (
