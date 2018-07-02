@@ -514,7 +514,7 @@ class UploadInvalidRPMTestCase(unittest.TestCase):
 
         # Assert that rturned error contains a descriptive message
         self.assertIsNotNone(task['error']['description'])
-        self.assertIn('upload', task['error']['description'])
+        self.assertIn('upload', task['error']['description'].lower())
 
         # Verify that the repository contains no RPMs
         rpm = search_units(cfg, repo, {'type_ids': ('rpm',)})
