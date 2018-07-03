@@ -5,6 +5,8 @@ import random
 import unittest
 from urllib.parse import urljoin
 
+from packaging.version import Version
+
 from pulp_smash import api, cli, config, selectors, utils
 from pulp_smash.constants import (
     RPM2_UNSIGNED_URL,
@@ -125,8 +127,12 @@ class RemoveOldRepodataTestCase(unittest.TestCase):
         """Set ``remove_old_repodata`` to true, and the threshold to 0.
 
         Assert that there are the same number of metadata files after the
-        second publish.
+        second publish. This test targets `Pulp #3816
+        <https://pulp.plan.io/issues/3816>`_.
         """
+        if (self.cfg.pulp_version >= Version('2.17') and
+                not selectors.bug_is_fixed(3816, self.cfg.pulp_version)):
+            self.skipTest('https://pulp.plan.io/issues/3816')
         if not selectors.bug_is_fixed(2788, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2788')
         found = self.do_test({
