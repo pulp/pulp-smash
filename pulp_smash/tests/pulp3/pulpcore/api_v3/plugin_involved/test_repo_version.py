@@ -19,9 +19,6 @@ from pulp_smash.pulp3.constants import (
     FILE_PUBLISHER_PATH,
     REPO_PATH,
 )
-from pulp_smash.tests.pulp3.file.api_v3.utils import gen_publisher
-from pulp_smash.tests.pulp3.file.utils import populate_pulp, skip_if
-from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.pulp3.utils import (
     delete_version,
     gen_remote,
@@ -34,6 +31,11 @@ from pulp_smash.pulp3.utils import (
     get_versions,
     publish,
     sync,
+)
+from pulp_smash.tests.pulp3.file.api_v3.utils import gen_publisher
+from pulp_smash.tests.pulp3.file.utils import populate_pulp, skip_if
+from pulp_smash.tests.pulp3.pulpcore.api_v3.plugin_involved import (  # pylint:disable=unused-import
+    set_up_module as setUpModule
 )
 
 

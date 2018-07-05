@@ -7,10 +7,12 @@ from urllib.parse import urljoin
 
 from pulp_smash import api, config
 from pulp_smash.constants import FILE_MANY_FEED_COUNT, FILE_MANY_FEED_URL
-from pulp_smash.tests.pulp3.file.utils import populate_pulp
 from pulp_smash.pulp3.constants import FILE_CONTENT_PATH, REPO_PATH
-from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.pulp3.utils import gen_repo, get_auth, get_versions
+from pulp_smash.tests.pulp3.file.utils import populate_pulp
+from pulp_smash.tests.pulp3.pulpcore.api_v3.plugin_involved import (  # pylint:disable=unused-import
+    set_up_module as setUpModule
+)
 
 
 class PaginationTestCase(unittest.TestCase):
