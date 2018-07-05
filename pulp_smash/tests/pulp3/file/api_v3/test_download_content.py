@@ -6,7 +6,7 @@ from random import choice
 from urllib.parse import urljoin
 
 from pulp_smash import api, config, selectors, utils
-from pulp_smash.constants import FILE_FEED_URL, FILE_URL
+from pulp_smash.constants import FILE_FEED_URL
 from pulp_smash.pulp3.constants import (
     DISTRIBUTION_PATH,
     FILE_REMOTE_PATH,
@@ -88,13 +88,15 @@ class DownloadContentTestCase(unittest.TestCase):
         # Pick a file, and download it from both Pulp Fixtures…
         unit_path = choice(get_content_unit_paths(repo))
         fixtures_hash = hashlib.sha256(
-            utils.http_get(urljoin(FILE_URL, unit_path))
+            utils.http_get(urljoin(FILE_FEED_URL, unit_path))
         ).hexdigest()
 
         # …and Pulp.
         client.response_handler = api.safe_handler
+
         unit_url = cfg.get_hosts('api')[0].roles['api']['scheme']
         unit_url += '://' + distribution['base_url'] + '/'
         unit_url = urljoin(unit_url, unit_path)
+
         pulp_hash = hashlib.sha256(client.get(unit_url).content).hexdigest()
         self.assertEqual(fixtures_hash, pulp_hash)
