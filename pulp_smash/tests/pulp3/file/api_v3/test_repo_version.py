@@ -115,7 +115,7 @@ class AddRemoveContentTestCase(unittest.TestCase):
         self.assertEqual(len(content), FILE_FEED_COUNT)
 
         added_content = get_added_content(repo)
-        self.assertEqual(len(added_content), 3, added_content)
+        self.assertEqual(len(added_content), FILE_FEED_COUNT, added_content)
 
         removed_content = get_removed_content(repo)
         self.assertEqual(len(removed_content), 0, removed_content)
