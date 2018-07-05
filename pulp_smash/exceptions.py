@@ -60,17 +60,14 @@ class ConfigValidationError(Exception):
         configuration validation is handled.
     """
 
-    def __init__(self, error_messages, *args, **kwargs):
-        """Require that the validation messages list is defined."""
-        super().__init__(error_messages, *args, **kwargs)
-        self.error_messages = error_messages
+    def __init__(self, message, *args, **kwargs):
+        """Require that an error message be provided."""
+        super().__init__(message, *args, **kwargs)
+        self.message = message
 
     def __str__(self):
         """Provide a human-friendly string representation of this exception."""
-        return (
-            'Configuration file is not valid:\n\n'
-            '{}'
-        ).format('\n'.join(self.error_messages))
+        return 'Pulp Smash configuration is invalid: {}'.format(self.message)
 
 
 class ConfigFileSectionNotFoundError(Exception):

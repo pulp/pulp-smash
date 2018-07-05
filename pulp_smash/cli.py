@@ -7,6 +7,7 @@ from abc import ABCMeta, abstractmethod
 from urllib.parse import urlsplit
 
 import plumbum
+from packaging.version import Version
 
 from pulp_smash import exceptions
 
@@ -176,8 +177,10 @@ class Client():  # pylint:disable=too-few-public-methods
         the host on which commands will be executed.
     :param response_handler: A callback function. Defaults to
         :func:`pulp_smash.cli.code_handler`.
-    :param pulp_smash.config.PulpHost pulp_host: A specific host to target,
-        instead of the first host with the ``pulp cli`` role.
+    :param pulp_smash.config.PulpHost pulp_host: A specific host to target.
+        Defaults to the first host with the ``pulp cli`` role when targeting
+        Pulp 2, and the first host with the ``shell`` role when targeting Pulp
+        3. If Pulp 3 gets a CLI, this latter default may change.
 
     .. _Plumbum: http://plumbum.readthedocs.io/en/latest/index.html
     """
@@ -186,7 +189,10 @@ class Client():  # pylint:disable=too-few-public-methods
         """Initialize this object with needed instance attributes."""
         # How do we make requests?
         if not pulp_host:
-            pulp_host = cfg.get_hosts('pulp cli')[0]
+            if cfg.pulp_version < Version('3'):
+                pulp_host = cfg.get_hosts('pulp cli')[0]
+            else:
+                pulp_host = cfg.get_hosts('shell')[0]
         self.pulp_host = pulp_host
         hostname = pulp_host.hostname
         transport = pulp_host.roles.get('shell', {}).get('transport')
@@ -510,7 +516,7 @@ class ServiceManager(BaseServiceManager):
 
     >>> from pulp_smash import cli, config
     >>> cfg = config.get_config()
-    >>> pulp_host = cfg.get_get_services(('api',))[0]
+    >>> pulp_host = cfg.get_services(('api',))[0]
     >>> svc_mgr = cli.ServiceManager(cfg, pulp_host)
     >>> completed_process_list = svc_mgr.stop(['httpd'])
     >>> completed_process_list = svc_mgr.start(['httpd'])

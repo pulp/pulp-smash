@@ -89,7 +89,8 @@ you declare properties of the individual hosts that comprise the Pulp
 application.
 
 Each host must fulfill the "shell" role. In addition, the hosts must
-collectively fulfill the :obj:`pulp_smash.config.REQUIRED_ROLES`.
+collectively fulfill either :obj:`pulp_smash.config.P2_REQUIRED_ROLES` or
+:obj:`pulp_smash.config.P3_REQUIRED_ROLES`.
 
 Not all roles requires additional information. Currently, only the ``amqp
 broker``, ``api`` and ``shell`` roles do. The ``amqp broker`` object must have a
