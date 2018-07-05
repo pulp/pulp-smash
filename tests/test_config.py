@@ -153,14 +153,8 @@ class ValidateConfigTestCase(unittest.TestCase):
         config_dict = json.loads(PULP_SMASH_CONFIG)
         config_dict['pulp']['auth'] = []
         config_dict['hosts'][0]['hostname'] = ''
-        with self.assertRaises(exceptions.ConfigValidationError) as err:
+        with self.assertRaises(exceptions.ConfigValidationError):
             config.validate_config(config_dict)
-        self.assertEqual(sorted(err.exception.error_messages), sorted([
-            'Failed to validate config[\'pulp\'][\'auth\'] because [] is too '
-            'short.',
-            'Failed to validate config[\'hosts\'][0][\'hostname\'] because '
-            '\'\' is not a \'hostname\'.',
-        ]))
 
     def test_config_missing_roles(self):
         """Missing required roles in config raises an exception."""
@@ -171,8 +165,9 @@ class ValidateConfigTestCase(unittest.TestCase):
         with self.assertRaises(exceptions.ConfigValidationError) as err:
             config.validate_config(config_dict)
         self.assertEqual(
-            err.exception.error_messages,
-            ['The following roles are missing: api, pulp workers']
+            err.exception.message,
+            'The following roles are not fulfilled by any hosts: api, pulp '
+            'workers',
         )
 
 
@@ -282,7 +277,10 @@ class HelperMethodsTestCase(unittest.TestCase):
 
     def test_get_services(self):
         """``get_services`` returns proper result."""
-        roles = {role: {} for role in config.ROLES}
+        # If set, the "amqp broker" role must have a "service" attribute.
+        roles = {role: {} for role in config.P2_ROLES}
+        del roles['amqp broker']
+
         expected_roles = {
             'httpd',
             'mongod',
@@ -296,14 +294,16 @@ class HelperMethodsTestCase(unittest.TestCase):
                 self.cfg.get_services(roles),
                 expected_roles
             )
+
+        roles['amqp broker'] = {'service': 'qpidd'}
         with self.subTest('qpidd amqp broker service'):
-            roles['amqp broker']['service'] = 'qpidd'
             self.assertEqual(
                 self.cfg.get_services(roles),
                 expected_roles.union({'qpidd'})
             )
+
+        roles['amqp broker'] = {'service': 'rabbitmq'}
         with self.subTest('rabbitmq amqp broker service'):
-            roles['amqp broker']['service'] = 'rabbitmq'
             self.assertEqual(
                 self.cfg.get_services(roles),
                 expected_roles.union({'rabbitmq'})

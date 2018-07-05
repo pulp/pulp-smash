@@ -102,7 +102,7 @@ class ClientTestCase(unittest.TestCase):
         cfg = _get_pulp_smash_config(hosts=[
             config.PulpHost(
                 hostname=socket.getfqdn(),
-                roles={'pulp cli': {}},
+                roles={'shell': {}},
             )
         ])
         self.assertIsInstance(cli.Client(cfg).machine, LocalMachine)
@@ -133,11 +133,11 @@ class ClientTestCase(unittest.TestCase):
         cfg = _get_pulp_smash_config(hosts=[
             config.PulpHost(
                 hostname=utils.uuid4(),
-                roles={'pulp cli': {}},
+                roles={'shell': {}},
             ),
             config.PulpHost(
                 hostname=utils.uuid4(),
-                roles={'pulp cli': {}},
+                roles={'shell': {}},
             )
         ])
         with mock.patch('pulp_smash.cli.plumbum') as plumbum:

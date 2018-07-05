@@ -40,11 +40,6 @@ class MissingSettingsFileMixin():
                     [self.settings_subcommand],
                 )
             self.assertNotEqual(result.exit_code, 0, result.output)
-            self.assertIn(
-                'there is no settings file. Use `pulp-smash settings create` '
-                'to create one.',
-                result.output,
-            )
 
 
 class SettingsCreateTestCase(BasePulpSmashCliTestCase):
@@ -56,8 +51,8 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
         self.expected_config_dict = {
             'pulp': {
                 'auth': ['admin', 'admin'],
-                'version': '2.13',
                 'selinux enabled': True,
+                'version': '2.13',
             },
             'hosts': [{
                 'hostname': 'pulp.example.com',
@@ -65,6 +60,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
                     'amqp broker': {'service': 'qpidd'},
                     'api': {
                         'scheme': 'https',
+                        'service': 'httpd',
                         'verify': True,
                     },
                     'mongod': {},
@@ -103,12 +99,6 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
                     input=create_input,
                 )
             self.assertEqual(result.exit_code, 0, result.output)
-            self.assertIn(
-                'Creating the settings file at settings.json...\nSettings '
-                'file created, run `pulp-smash settings show` to show its '
-                'contents.\n',
-                result.output,
-            )
             self.assertTrue(os.path.isfile('settings.json'))
             with open('settings.json') as handler:
                 return handler.read()
@@ -116,86 +106,94 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
     def test_create_with_defaults(self):
         """Create settings file with default values values."""
         create_input = (
-            '\n'  # admin username
-            '\n'  # admin password
             '2.13\n'  # pulp version
-            '\n'  # pulp_selinux_enabled
+            '\n'  # pulp admin username
+            '\n'  # pulp admin password
+            '\n'  # pulp selinux enabled
             'pulp.example.com\n'  # host hostname
-            '\n'  # published via HTTPS
-            '\n'  # verify HTTPS
-            '\n'  # API port
-            '\n'  # using qpidd
+            '\n'  # host amqp broker
+            '\n'  # host api scheme
+            '\n'  # host api ssl verification
+            '\n'  # host api ssl cert path
+            '\n'  # host api port
+            '\n'  # host api web server
             '\n'  # running on Pulp host
         )
-        generated_settings = self._test_common_logic(create_input)
-        self.assertEqual(
-            json.loads(generated_settings), self.expected_config_dict)
+        generated_settings = json.loads(self._test_common_logic(create_input))
+        self.assertEqual(generated_settings, self.expected_config_dict)
 
     def test_settings_already_exists(self):
         """Create settings file by overriding existing one."""
         create_input = (
-            'y\n'  # settings exists, continue
-            '\n'  # admin username
-            '\n'  # admin password
+            'y\n'  # overwrite existing settings file?
             '2.13\n'  # pulp version
-            '\n'  # pulp_selinux_enabled
+            '\n'  # pulp admin username
+            '\n'  # pulp admin password
+            '\n'  # pulp selinux enabled
             'pulp.example.com\n'  # host hostname
-            '\n'  # published via HTTPS
-            '\n'  # verify HTTPS
-            '\n'  # API port
-            '\n'  # using qpidd
+            '\n'  # host amqp broker
+            '\n'  # host api scheme
+            '\n'  # host api ssl verification
+            '\n'  # host api ssl cert path
+            '\n'  # host api port
+            '\n'  # host api web server
             '\n'  # running on Pulp host
         )
-        generated_settings = self._test_common_logic(
-            create_input, 'settings.json')
-        self.assertEqual(
-            json.loads(generated_settings), self.expected_config_dict)
+        generated_settings = json.loads(
+            self._test_common_logic(create_input, 'settings.json')
+        )
+        self.assertEqual(generated_settings, self.expected_config_dict)
 
     def test_create_defaults_and_verify(self):
         """Create settings file with defaults and custom SSL certificate."""
         create_input = (
-            '\n'  # admin username
-            '\n'  # admin password
             '2.13\n'  # pulp version
-            '\n'  # pulp_selinux_enabled
+            '\n'  # pulp admin username
+            '\n'  # pulp admin password
+            '\n'  # pulp selinux enabled
             'pulp.example.com\n'  # host hostname
-            '\n'  # published via HTTPS
-            'y\n'  # verify HTTPS
-            '/path/to/ssl/certificate\n'  # SSL certificate path
-            '\n'  # API port
-            '\n'  # using qpidd
+            '\n'  # host amqp broker
+            '\n'  # host api scheme
+            '\n'  # host api ssl verification
+            '/path/to/cert\n'  # host api ssl cert path
+            '\n'  # host api port
+            '\n'  # host api web server
             '\n'  # running on Pulp host
         )
-        generated_settings = self._test_common_logic(create_input)
+        generated_settings = json.loads(self._test_common_logic(create_input))
         self.expected_config_dict['hosts'][0]['roles']['api']['verify'] = (
-            '/path/to/ssl/certificate'
+            '/path/to/cert'
         )
-        self.assertEqual(
-            json.loads(generated_settings), self.expected_config_dict)
+        self.assertEqual(generated_settings, self.expected_config_dict)
 
     def test_create_other_values(self):
         """Create settings file with custom values."""
         create_input = (
-            'username\n'  # admin username
-            'password\n'  # admin password
             '2.13\n'  # pulp version
-            'n\n'  # pulp_selinux_enabled
+            'username\n'  # pulp admin username
+            'password\n'  # pulp admin password
+            'n\n'  # pulp selinux enabled
             'pulp.example.com\n'  # host hostname
-            'n\n'  # published via HTTPS
-            '\n'  # API port
-            'n\n'  # using qpidd
+            'rabbitmq\n'  # host amqp broker
+            'http\n'  # host api scheme
+            'n\n'  # host api ssl verification
+            '1234\n'  # host api port
+            'nginx\n'  # host api web server
             'y\n'  # running on Pulp host
         )
-        generated_settings = self._test_common_logic(create_input)
+        generated_settings = json.loads(self._test_common_logic(create_input))
+
         self.expected_config_dict['pulp']['auth'] = ['username', 'password']
         self.expected_config_dict['pulp']['selinux enabled'] = False
         host_roles = self.expected_config_dict['hosts'][0]['roles']
         host_roles['amqp broker']['service'] = 'rabbitmq'
+        host_roles['api']['port'] = 1234
         host_roles['api']['scheme'] = 'http'
+        host_roles['api']['service'] = 'nginx'
         host_roles['api']['verify'] = False
         host_roles['shell']['transport'] = 'local'
-        self.assertEqual(
-            json.loads(generated_settings), self.expected_config_dict)
+
+        self.assertEqual(generated_settings, self.expected_config_dict)
 
 
 class SettingsPathTestCase(BasePulpSmashCliTestCase, MissingSettingsFileMixin):
@@ -319,12 +317,3 @@ class SettingsValidateTestCase(
                     ['validate'],
                 )
             self.assertNotEqual(result.exit_code, 0)
-            self.assertIn(
-                'Invalid settings file: settings.json',
-                result.output,
-            )
-            self.assertIn(
-                "Failed to validate config['pulp'] because 'auth' is a "
-                'required property.',
-                result.output,
-            )
