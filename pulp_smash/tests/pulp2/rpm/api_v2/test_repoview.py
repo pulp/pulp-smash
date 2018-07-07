@@ -39,6 +39,8 @@ class RepoviewTestCase(unittest.TestCase):
         cfg = config.get_config()
         if cfg.pulp_version < Version('2.9'):
             self.skipTest('https://pulp.plan.io/issues/189')
+        if utils.fips_is_supported(cfg) and utils.fips_is_enabled(cfg):
+            self.skipTest('https://pulp.plan.io/issues/3775')
 
         # Create a repo, and add content
         client = api.Client(cfg)

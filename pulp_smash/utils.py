@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 import requests
 
-from pulp_smash import cli
+from pulp_smash import cli, exceptions
 
 # A mapping between URLs and SHA 256 checksums. Used by get_sha256_checksum().
 _CHECKSUM_CACHE = {}
@@ -84,6 +84,41 @@ def os_is_f27(cfg, pulp_host=None):
         '/etc/redhat-release',
     ))
     return response.returncode == 0
+
+
+def fips_is_supported(cfg, pulp_host=None):
+    """Return ``True`` if the server supports Fips, or ``False`` otherwise.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the system
+        being targeted
+    :param pulp_host: A :class : `pulp_smash.config.PulpHost` to target,
+        instead of the default chosen by :class: pulp_smash.cli.Client`.
+    :return: True of False
+    """
+    try:
+        cli.Client(cfg, pulp_host=pulp_host).run((
+            'sysctl',
+            'crypto.fips_enabled'
+        ))
+    except exceptions.CalledProcessError:
+        return False
+    return True
+
+
+def fips_is_enabled(cfg, pulp_host=None):
+    """Return ``True`` if the Fips is enabled in server, or ``False`` otherwise.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the system
+        being targeted
+    :param pulp_host: A :class : `pulp_smash.config.PulpHost` to target,
+        instead of the default chosen by :class: pulp_smash.cli.Client`.
+    :return: True of False
+    """
+    return cli.Client(cfg, pulp_host=pulp_host).run((
+        'sysctl',
+        '--values',
+        'crypto.fips_enabled'
+    )).stdout.strip() == '1'
 
 
 def uuid4():
