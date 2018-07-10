@@ -4,12 +4,13 @@ import copy
 import json
 import unittest
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, config, selectors
 from pulp_smash.constants import DOCKER_V2_FEED_URL
 from pulp_smash.pulp2.utils import pulp_admin_login, upload_import_unit
 from pulp_smash.tests.pulp2.docker.api_v2.utils import SyncPublishMixin
 from pulp_smash.tests.pulp2.docker.utils import (
     get_upstream_name,
+    os_is_f26,
     set_up_module,
 )
 
@@ -28,7 +29,7 @@ class UploadManifestListV2TestCase(SyncPublishMixin, unittest.TestCase):
         """Create class-wide variables."""
         super().setUpClass()
         cls.cfg = config.get_config()
-        if (utils.os_is_f26(cls.cfg) and
+        if (os_is_f26(cls.cfg) and
                 not selectors.bug_is_fixed(3036, cls.cfg.pulp_version)):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3036')
         for issue_id in (2287, 2384, 2993):

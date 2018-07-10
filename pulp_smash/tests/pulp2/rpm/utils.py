@@ -7,7 +7,7 @@ from unittest import SkipTest
 
 from packaging.version import Version
 
-from pulp_smash import cli, selectors
+from pulp_smash import cli, selectors, utils
 from pulp_smash.pulp2 import utils as pulp2_utils
 
 
@@ -102,6 +102,18 @@ def check_issue_3104(cfg):
     """
     return (cfg.pulp_version >= Version('2.15') and
             not selectors.bug_is_fixed(3104, cfg.pulp_version))
+
+
+def os_is_f26(cfg, pulp_host=None):
+    """Tell whether the given Pulp host's OS is F26."""
+    return (utils.get_os_release_id(cfg, pulp_host) == 'fedora' and
+            utils.get_os_release_version_id(cfg, pulp_host) == '26')
+
+
+def os_is_f27(cfg, pulp_host=None):
+    """Tell whether the given Pulp host's OS is F27."""
+    return (utils.get_os_release_id(cfg, pulp_host) == 'fedora' and
+            utils.get_os_release_version_id(cfg, pulp_host) == '27')
 
 
 def os_is_rhel6(cfg):

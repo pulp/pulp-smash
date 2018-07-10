@@ -75,7 +75,11 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     get_dists_by_type_id,
     set_pulp_manage_rsync,
 )
-from pulp_smash.tests.pulp2.rpm.utils import check_issue_2844, set_up_module
+from pulp_smash.tests.pulp2.rpm.utils import (
+    check_issue_2844,
+    os_is_f27,
+    set_up_module,
+)
 
 
 def _split_path(path):
@@ -103,8 +107,7 @@ def setUpModule():  # pylint:disable=invalid-name
     cfg = config.get_config()
     if not selectors.bug_is_fixed(1759, cfg.pulp_version):
         raise unittest.SkipTest('https://pulp.plan.io/issues/1759')
-    if (not selectors.bug_is_fixed(3313, cfg.pulp_version) and
-            utils.os_is_f27(cfg)):
+    if not selectors.bug_is_fixed(3313, cfg.pulp_version) and os_is_f27(cfg):
         raise unittest.SkipTest('https://pulp.plan.io/issues/3313')
     if cfg.pulp_selinux_enabled:
         set_pulp_manage_rsync(cfg, True)

@@ -61,6 +61,12 @@ def write_manifest_list(cfg, manifest_list):
     return file_path, dir_path
 
 
+def os_is_f26(cfg, pulp_host=None):
+    """Tell whether the given Pulp host's OS is F26."""
+    return (utils.get_os_release_id(cfg, pulp_host) == 'fedora' and
+            utils.get_os_release_version_id(cfg, pulp_host) == '26')
+
+
 skip_if = partial(selectors.skip_if, exc=SkipTest)  # pylint:disable=invalid-name
 """The ``@skip_if`` decorator, customized for unittest.
 

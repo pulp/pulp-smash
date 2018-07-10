@@ -16,6 +16,42 @@ from pulp_smash import cli, exceptions
 _CHECKSUM_CACHE = {}
 
 
+def get_os_release_id(cfg, pulp_host=None):
+    """Get ``ID`` from ``/etc/os-release``.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the system
+        being targeted.
+    :param pulp_host: A :class:`pulp_smash.config.PulpHost` to target,
+        instead of the default chosen by :class:`pulp_smash.cli.Client`.
+    :returns: A string such as "rhel," "fedora," or "arch." (These values come
+        from Red Hat Enterprise Linux, Fedora, and Arch Linux respectively.)
+    """
+    return cli.Client(cfg, pulp_host=pulp_host).run((
+        'bash',
+        '-c',
+        '(source /etc/os-release && echo "$ID")',
+    )).stdout.strip()
+
+
+def get_os_release_version_id(cfg, pulp_host=None):
+    """Get ``VERSION_ID`` from ``/etc/os-release``.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the system
+        being targeted.
+    :param pulp_host: A :class:`pulp_smash.config.PulpHost` to target,
+        instead of the default chosen by :class:`pulp_smash.cli.Client`.
+    :returns: A string such as "7.5" or "27". (These values come from RHEL 7.5
+        and Fedora 27, respectively.) Make sure to convert this string to an
+        actual version object if doing version number comparisons.
+        ``packaging.version.Version`` can be used for this purpose.
+    """
+    return cli.Client(cfg, pulp_host=pulp_host).run((
+        'bash',
+        '-c',
+        '(source /etc/os-release && echo "$VERSION_ID")',
+    )).stdout.strip()
+
+
 def get_sha256_checksum(url):
     """Return the sha256 checksum of the file at the given URL.
 
@@ -48,42 +84,6 @@ def http_get(url, **kwargs):
     response = requests.get(url, **kwargs)
     response.raise_for_status()
     return response.content
-
-
-def os_is_f26(cfg, pulp_host=None):
-    """Return ``True`` if the server runs Fedora 26, or ``False`` otherwise.
-
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the system
-        being targeted.
-    :param pulp_host: A :class:`pulp_smash.config.PulpHost` to target,
-        instead of the default chosen by :class:`pulp_smash.cli.Client`.
-    :returns: True or false.
-    """
-    response = cli.Client(cfg, cli.echo_handler, pulp_host).run((
-        'grep',
-        '-i',
-        'fedora release 26',
-        '/etc/redhat-release',
-    ))
-    return response.returncode == 0
-
-
-def os_is_f27(cfg, pulp_host=None):
-    """Return ``True`` if the server runs Fedora 27, or ``False`` otherwise.
-
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the system
-        being targeted.
-    :param pulp_host: A :class:`pulp_smash.config.PulpHost` to target,
-        instead of the default chosen by :class:`pulp_smash.cli.Client`.
-    :returns: True or false.
-    """
-    response = cli.Client(cfg, cli.echo_handler, pulp_host).run((
-        'grep',
-        '-i',
-        'fedora release 27',
-        '/etc/redhat-release',
-    ))
-    return response.returncode == 0
 
 
 def fips_is_supported(cfg, pulp_host=None):

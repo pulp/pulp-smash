@@ -328,7 +328,7 @@ def require_issue_3159(exc):
     """
     cfg = config.get_config()
     if (not selectors.bug_is_fixed(3159, cfg.pulp_version) and
-            utils.os_is_f27(cfg)):
+            _os_is_f27(cfg)):
         raise exc('https://pulp.plan.io/issues/3159')
 
 
@@ -342,7 +342,7 @@ def require_issue_3687(exc):
     """
     cfg = config.get_config()
     if (not selectors.bug_is_fixed(3687, cfg.pulp_version) and
-            utils.os_is_f27(cfg)):
+            _os_is_f27(cfg)):
         raise exc('https://pulp.plan.io/issues/3687')
 
 
@@ -570,3 +570,9 @@ def upload_import_unit(cfg, unit, import_params, repo):
     call_report = client.post(path, body)
     client.delete(malloc['_href'])
     return call_report
+
+
+def _os_is_f27(cfg, pulp_host=None):
+    """Tell whether the given Pulp host's OS is F27."""
+    return (utils.get_os_release_id(cfg, pulp_host) == 'fedora' and
+            utils.get_os_release_version_id(cfg, pulp_host) == '27')

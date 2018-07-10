@@ -31,7 +31,7 @@ situations.
 """
 import unittest
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, config, selectors
 from pulp_smash.constants import (
     RPM,
     RPM_ALT_LAYOUT_FEED_URL,
@@ -48,6 +48,7 @@ from pulp_smash.tests.pulp2.rpm.utils import (
     check_issue_2354,
     check_issue_2798,
     check_issue_3104,
+    os_is_f26,
 )
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 
@@ -82,7 +83,7 @@ class ReuseContentTestCase(unittest.TestCase):
             self.skipTest('https://pulp.plan.io/issues/2798')
         if check_issue_2354(cfg):
             self.skipTest('https://pulp.plan.io/issues/2354')
-        if (utils.os_is_f26(cfg) and
+        if (os_is_f26(cfg) and
                 not selectors.bug_is_fixed(3036, cfg.pulp_version)):
             # Here, the calls to get_unit() cause pulp_streamer.service to die
             # without logging out anything. In Pulp #3036, certain actions

@@ -29,6 +29,7 @@ from pulp_smash.tests.pulp2.rpm.utils import (
     check_issue_2387,
     check_issue_2798,
     check_issue_3104,
+    os_is_f26,
     os_is_rhel6,
     set_up_module,
 )
@@ -40,8 +41,7 @@ def setUpModule():  # pylint:disable=invalid-name
     cfg = config.get_config()
     if cfg.pulp_version < Version('2.8'):
         raise unittest.SkipTest('This module requires Pulp 2.8 or greater.')
-    if (utils.os_is_f26(cfg) and
-            not selectors.bug_is_fixed(3036, cfg.pulp_version)):
+    if os_is_f26(cfg) and not selectors.bug_is_fixed(3036, cfg.pulp_version):
         raise unittest.SkipTest('https://pulp.plan.io/issues/3036')
     if check_issue_2798(cfg):
         raise unittest.SkipTest('https://pulp.plan.io/issues/2798')

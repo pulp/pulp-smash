@@ -16,6 +16,7 @@ from pulp_smash.pulp2.utils import (
     publish_repo,
     upload_import_unit,
 )
+from pulp_smash.tests.pulp2.puppet.utils import os_is_f27
 from pulp_smash.tests.pulp2.puppet.api_v2.utils import (
     gen_install_distributor,
     gen_repo,
@@ -37,7 +38,7 @@ class InstallDistributorTestCase(BaseAPITestCase):
         4. Check if the puppet_install_distributor config was properly used
         """
         if (not selectors.bug_is_fixed(3314, self.cfg.pulp_version) and
-                utils.os_is_f27(self.cfg)):
+                os_is_f27(self.cfg)):
             self.skipTest('https://pulp.plan.io/issues/3314')
         cli_client = cli.Client(self.cfg)
         sudo = () if cli.is_root(self.cfg) else ('sudo',)

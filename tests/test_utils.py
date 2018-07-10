@@ -58,19 +58,23 @@ class GetSha256ChecksumTestCase(unittest.TestCase):
         self.assertEqual(checksums[0], checksums[2])
 
 
-class OsIsF26TestCase(unittest.TestCase):
-    """Test :func:`pulp_smash.utils.os_is_f26`."""
+class GetOsReleaseTestCase(unittest.TestCase):
+    """Test the ``get_os_release_*`` functions.
 
-    def test_returncode_zero(self):
-        """Assert true is returned if the CLI command returns zero."""
-        with mock.patch.object(cli, 'Client') as client:
-            client.return_value.run.return_value.returncode = 0
-            response = utils.os_is_f26(mock.Mock())
-        self.assertTrue(response)
+    These tests are very simple: they just make sure that the string returned
+    by the used :class:`pulp_smash.cli.Client` object is stripped and returned.
+    """
 
-    def test_returncode_nonzero(self):
-        """Assert false is returned if the CLI command returns non-zero."""
+    def test_get_os_release_id(self):
+        """Test :func:`pulp_smash.utils.get_os_release_id`."""
         with mock.patch.object(cli, 'Client') as client:
-            client.return_value.run.return_value.returncode = 1
-            response = utils.os_is_f26(mock.Mock())
-        self.assertFalse(response)
+            client.return_value.run.return_value.stdout = ' fedora '
+            response = utils.get_os_release_id(mock.Mock())
+        self.assertEqual(response, 'fedora')
+
+    def test_get_os_release_version_id(self):
+        """Test :func:`pulp_smash.utils.get_os_release_version_id`."""
+        with mock.patch.object(cli, 'Client') as client:
+            client.return_value.run.return_value.stdout = ' 27 '
+            response = utils.get_os_release_version_id(mock.Mock())
+        self.assertEqual(response, '27')

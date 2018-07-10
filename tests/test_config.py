@@ -417,9 +417,8 @@ def pulp_smash_config_load(config_str):
         from the configuration file.
     """
     with mock.patch.object(
-        builtins,
-        'open',
-        mock.mock_open(read_data=config_str),
-    ):
+            builtins,
+            'open',
+            mock.mock_open(read_data=config_str)):
         with mock.patch.object(config.PulpSmashConfig, 'get_load_path'):
             return config.PulpSmashConfig.load()

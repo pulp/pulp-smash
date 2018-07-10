@@ -19,6 +19,7 @@ from pulp_smash.tests.pulp2.rpm.api_v2.utils import (
     set_pulp_manage_rsync,
 )
 from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule  # pylint:disable=unused-import
+from pulp_smash.tests.pulp2.rpm.utils import os_is_f27
 
 
 class ServeHttpsFalseTestCase(TemporaryUserMixin, unittest.TestCase):
@@ -56,7 +57,7 @@ class ServeHttpsFalseTestCase(TemporaryUserMixin, unittest.TestCase):
         if not selectors.bug_is_fixed(2657, self.cfg.pulp_version):
             self.skipTest('https://pulp.plan.io/issues/2657')
         if (not selectors.bug_is_fixed(3313, self.cfg.pulp_version) and
-                utils.os_is_f27(self.cfg)):
+                os_is_f27(self.cfg)):
             self.skipTest('https://pulp.plan.io/issues/3313')
 
         # Create a user with which to rsync files
