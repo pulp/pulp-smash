@@ -21,7 +21,6 @@ from pulp_smash.pulp3.utils import (
     delete_version,
     gen_remote,
     gen_repo,
-    get_auth,
     get_content,
     get_versions,
     sync,
@@ -49,7 +48,6 @@ class DeleteOrphansTestCase(unittest.TestCase):
         """Create class-wide variables."""
         cls.cfg = config.get_config()
         cls.api_client = api.Client(cls.cfg, api.json_handler)
-        cls.api_client.request_kwargs['auth'] = get_auth()
         cls.cli_client = cli.Client(cls.cfg)
         cls.sudo = () if cli.is_root(cls.cfg) else ('sudo',)
 

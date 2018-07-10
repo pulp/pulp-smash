@@ -20,7 +20,6 @@ from pulp_smash.pulp3.utils import (
     delete_orphans,
     gen_remote,
     gen_repo,
-    get_auth,
     get_content,
     sync,
 )
@@ -42,7 +41,6 @@ class ContentUnitTestCase(unittest.TestCase):
         delete_orphans(cls.cfg)
         cls.content_unit = {}
         cls.client = api.Client(cls.cfg, api.json_handler)
-        cls.client.request_kwargs['auth'] = get_auth()
         files = {'file': utils.http_get(FILE_URL)}
         cls.artifact = cls.client.post(ARTIFACTS_PATH, files=files)
 
@@ -130,7 +128,6 @@ class DeleteContentUnitRepoVersionTestCase(unittest.TestCase):
         """
         cfg = config.get_config()
         client = api.Client(cfg, api.json_handler)
-        client.request_kwargs['auth'] = get_auth()
         body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])

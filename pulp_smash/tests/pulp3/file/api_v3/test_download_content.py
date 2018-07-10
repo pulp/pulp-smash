@@ -22,7 +22,6 @@ from pulp_smash.pulp3.utils import (
     gen_distribution,
     gen_remote,
     gen_repo,
-    get_auth,
     publish,
     sync,
 )
@@ -62,7 +61,6 @@ class DownloadContentTestCase(unittest.TestCase):
             self.skipTest('https://pulp.plan.io/issues/3502')
 
         client = api.Client(cfg, api.json_handler)
-        client.request_kwargs['auth'] = get_auth()
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
         body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))

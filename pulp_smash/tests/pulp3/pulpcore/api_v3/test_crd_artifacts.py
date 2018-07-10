@@ -11,7 +11,7 @@ from pulp_smash.constants import FILE_URL
 from pulp_smash.exceptions import CalledProcessError
 from pulp_smash.pulp3.constants import ARTIFACTS_PATH
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
-from pulp_smash.pulp3.utils import delete_orphans, get_auth
+from pulp_smash.pulp3.utils import delete_orphans
 
 
 class ArtifactTestCase(unittest.TestCase):
@@ -29,7 +29,6 @@ class ArtifactTestCase(unittest.TestCase):
         cfg = config.get_config()
         delete_orphans(cfg)
         cls.client = api.Client(cfg, api.json_handler)
-        cls.client.request_kwargs['auth'] = get_auth()
         cls.file = {'file': utils.http_get(FILE_URL)}
         cls.file_sha256 = hashlib.sha256(cls.file['file']).hexdigest()
         cls.file_size = len(cls.file['file'])
@@ -126,7 +125,6 @@ class ArtifactsDeleteFileSystemTestCase(unittest.TestCase):
         """
         cfg = config.get_config()
         api_client = api.Client(cfg, api.json_handler)
-        api_client.request_kwargs['auth'] = get_auth()
         cli_client = cli.Client(cfg)
 
         # create

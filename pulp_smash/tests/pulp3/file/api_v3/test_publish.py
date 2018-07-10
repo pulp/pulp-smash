@@ -19,7 +19,6 @@ from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # py
 from pulp_smash.pulp3.utils import (
     gen_remote,
     gen_repo,
-    get_auth,
     get_versions,
     publish,
     sync,
@@ -51,7 +50,6 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
         """
         cfg = config.get_config()
         client = api.Client(cfg, api.json_handler)
-        client.request_kwargs['auth'] = get_auth()
         body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])

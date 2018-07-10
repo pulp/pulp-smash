@@ -21,7 +21,6 @@ from pulp_smash.pulp3.utils import (
     gen_remote,
     gen_repo,
     get_added_content,
-    get_auth,
     get_versions,
     publish,
     sync,
@@ -47,7 +46,6 @@ class AutoDistributionTestCase(unittest.TestCase):
         cls.cfg = config.get_config()
         delete_orphans(cls.cfg)
         cls.client = api.Client(cls.cfg, api.json_handler)
-        cls.client.request_kwargs['auth'] = get_auth()
         populate_pulp(cls.cfg)
         cls.contents = cls.client.get(FILE_CONTENT_PATH)['results'][:2]
 
@@ -145,7 +143,6 @@ class SetupAutoDistributionTestCase(unittest.TestCase):
         """Create test-wide variables."""
         self.cfg = config.get_config()
         self.client = api.Client(self.cfg, api.json_handler)
-        self.client.request_kwargs['auth'] = get_auth()
 
     def test_all(self):
         """Verify the set up of parameters related to auto distribution.

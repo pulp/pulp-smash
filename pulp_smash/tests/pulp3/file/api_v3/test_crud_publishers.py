@@ -6,7 +6,7 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, config
 from pulp_smash.pulp3.constants import FILE_PUBLISHER_PATH, REPO_PATH
-from pulp_smash.pulp3.utils import gen_repo, get_auth
+from pulp_smash.pulp3.utils import gen_repo
 from pulp_smash.tests.pulp3.file.api_v3.utils import gen_publisher
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.file.utils import skip_if
@@ -23,7 +23,6 @@ class CRUDPublishersTestCase(unittest.TestCase):
         """
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
-        cls.client.request_kwargs['auth'] = get_auth()
         cls.publisher = {}
         cls.repo = cls.client.post(REPO_PATH, gen_repo())
 

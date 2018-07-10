@@ -15,7 +15,6 @@ from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # py
 from pulp_smash.pulp3.utils import (
     gen_remote,
     gen_repo,
-    get_auth,
     get_content,
     sync,
 )
@@ -46,7 +45,6 @@ class SyncFileRepoTestCase(unittest.TestCase):
         6. Assert that repository version is different from the previous one.
         """
         client = api.Client(self.cfg, api.json_handler)
-        client.request_kwargs['auth'] = get_auth()
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
         body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
@@ -88,7 +86,6 @@ class SyncChangeRepoVersionTestCase(unittest.TestCase):
         """
         cfg = config.get_config()
         client = api.Client(cfg, api.json_handler)
-        client.request_kwargs['auth'] = get_auth()
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
         body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
@@ -129,7 +126,6 @@ class MultiResourceLockingTestCase(unittest.TestCase):
         """
         cfg = config.get_config()
         client = api.Client(cfg, api.json_handler)
-        client.request_kwargs['auth'] = get_auth()
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
         body = gen_remote(urljoin(FILE_LARGE_FEED_URL, 'PULP_MANIFEST'))
