@@ -10,7 +10,7 @@ from pulp_smash.pulp3.constants import (
     REPO_PATH,
     TASKS_PATH,
 )
-from pulp_smash.pulp3.utils import gen_repo, get_auth
+from pulp_smash.pulp3.utils import gen_repo
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.pulpcore.utils import skip_if
 
@@ -32,7 +32,6 @@ class TasksTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Create class-wide variables."""
         cls.client = api.Client(config.get_config(), api.json_handler)
-        cls.client.request_kwargs['auth'] = get_auth()
         cls.task = {}
 
     def test_01_create_task(self):

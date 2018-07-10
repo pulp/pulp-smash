@@ -21,7 +21,6 @@ from pulp_smash.pulp3.utils import (
     gen_distribution,
     gen_remote,
     gen_repo,
-    get_auth,
     publish,
     sync,
 )
@@ -35,7 +34,6 @@ class PublicationsTestCase(unittest.TestCase):
         """Create class-wide variables."""
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.page_handler)
-        cls.client.request_kwargs['auth'] = get_auth()
         cls.remote = {}
         cls.publication = {}
         cls.publisher = {}

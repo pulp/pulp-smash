@@ -25,7 +25,6 @@ from pulp_smash.pulp3.utils import (
     gen_repo,
     get_added_content,
     get_artifact_paths,
-    get_auth,
     get_content,
     get_removed_content,
     get_versions,
@@ -65,7 +64,6 @@ class AddRemoveContentTestCase(unittest.TestCase):
         if not selectors.bug_is_fixed(3502, cls.cfg.pulp_version):
             raise unittest.SkipTest('https://pulp.plan.io/issues/3502')
         cls.client = api.Client(cls.cfg, api.json_handler)
-        cls.client.request_kwargs['auth'] = get_auth()
         cls.remote = {}
         cls.repo = {}
         cls.content = {}
@@ -218,7 +216,6 @@ class AddRemoveRepoVersionTestCase(unittest.TestCase):
         """Add content to Pulp."""
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
-        cls.client.request_kwargs['auth'] = get_auth()
         populate_pulp(cls.cfg, urljoin(FILE_LARGE_FEED_URL, 'PULP_MANIFEST'))
         # We need at least three content units. Choosing a relatively low
         # number is useful, to limit how many repo versions are created, and
@@ -317,7 +314,6 @@ class ContentImmutableRepoVersionTestCase(unittest.TestCase):
         """
         cfg = config.get_config()
         client = api.Client(cfg, api.json_handler)
-        client.request_kwargs['auth'] = get_auth()
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
         body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
@@ -351,7 +347,6 @@ class FilterRepoVersionTestCase(unittest.TestCase):
         """
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
-        cls.client.request_kwargs['auth'] = get_auth()
         populate_pulp(cls.cfg)
         cls.contents = cls.client.get(FILE_CONTENT_PATH)['results']
 

@@ -6,7 +6,7 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.pulp3.constants import DISTRIBUTION_PATH
-from pulp_smash.pulp3.utils import gen_distribution, get_auth
+from pulp_smash.pulp3.utils import gen_distribution
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.pulpcore.utils import skip_if
 
@@ -19,7 +19,6 @@ class CRUDDistributionsTestCase(unittest.TestCase):
         """Create class wide-variables."""
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
-        cls.client.request_kwargs['auth'] = get_auth()
         cls.distribution = {}
 
     def test_01_create_distribution(self):
@@ -109,7 +108,6 @@ class DistributionBasePathTestCase(unittest.TestCase):
         """Create class-wide variables."""
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
-        cls.client.request_kwargs['auth'] = get_auth()
         body = gen_distribution()
         body['base_path'] = body['base_path'].replace('-', '/')
         cls.distribution = cls.client.post(DISTRIBUTION_PATH, body)

@@ -8,7 +8,7 @@ from requests.exceptions import HTTPError
 from pulp_smash import api, config, utils
 from pulp_smash.constants import FILE_FEED_URL, FILE2_FEED_URL
 from pulp_smash.pulp3.constants import FILE_REMOTE_PATH, REPO_PATH
-from pulp_smash.pulp3.utils import gen_remote, gen_repo, get_auth
+from pulp_smash.pulp3.utils import gen_remote, gen_repo
 from pulp_smash.tests.pulp3.file.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.file.utils import skip_if
 
@@ -24,7 +24,6 @@ class CRUDRemotesTestCase(unittest.TestCase):
         """
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
-        cls.client.request_kwargs['auth'] = get_auth()
         cls.remote = {}
         cls.repo = cls.client.post(REPO_PATH, gen_repo())
 
@@ -136,9 +135,7 @@ class CreateRemoteNoURLTestCase(unittest.TestCase):
         * `Pulp #3395 <https://pulp.plan.io/issues/3395>`_
         * `Pulp Smash #984 <https://github.com/PulpQE/pulp-smash/issues/984>`_
         """
-        client = api.Client(config.get_config())
-        client.request_kwargs['auth'] = get_auth()
         body = gen_remote(utils.uuid4())
         del body['url']
         with self.assertRaises(HTTPError):
-            client.post(FILE_REMOTE_PATH, body)
+            api.Client(config.get_config()).post(FILE_REMOTE_PATH, body)

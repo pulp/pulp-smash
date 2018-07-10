@@ -6,7 +6,6 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.pulp3.constants import USER_PATH
-from pulp_smash.pulp3.utils import get_auth
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.pulpcore.utils import skip_if
 
@@ -23,7 +22,6 @@ class UsersCRUDTestCase(unittest.TestCase):
     def setUp(self):
         """Create an API client."""
         self.client = api.Client(self.cfg, api.json_handler)
-        self.client.request_kwargs['auth'] = get_auth()
 
     def test_01_create_user(self):
         """Create a user."""

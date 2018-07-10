@@ -14,7 +14,6 @@ from pulp_smash.pulp3.constants import (
 from pulp_smash.pulp3.utils import (
     gen_remote,
     gen_repo,
-    get_auth,
     get_content,
     publish,
     sync,
@@ -56,7 +55,6 @@ class RemotesPublishersTestCase(unittest.TestCase):
 
         # Create an remote and publisher.
         client = api.Client(cfg, api.json_handler)
-        client.request_kwargs['auth'] = get_auth()
         body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])

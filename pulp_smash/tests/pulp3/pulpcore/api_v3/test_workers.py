@@ -8,7 +8,6 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, selectors
 from pulp_smash.pulp3.constants import WORKER_PATH
-from pulp_smash.pulp3.utils import get_auth
 from pulp_smash.tests.pulp3.pulpcore.utils import set_up_module as setUpModule  # pylint:disable=unused-import
 from pulp_smash.tests.pulp3.pulpcore.utils import skip_if
 
@@ -30,7 +29,6 @@ class WorkersTestCase(unittest.TestCase):
         """Create an API Client."""
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
-        cls.client.request_kwargs['auth'] = get_auth()
         cls.worker = {}
 
     def test_01_read_all_workers(self):
