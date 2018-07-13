@@ -388,8 +388,8 @@ class FilterRepoVersionTestCase(unittest.TestCase):
                 {'created__gte': criteria, 'created__lte': criteria},
                 {'created__range': ','.join((criteria, criteria))}):
             with self.subTest(params=params):
-                versions = get_versions(self.repo, params)
-                self.assertEqual(len(versions), 0, versions)
+                with self.assertRaises(HTTPError):
+                    get_versions(self.repo, params)
 
     def test_filter_valid_date(self):
         """Filter repository version by a valid date."""
@@ -407,6 +407,18 @@ class FilterRepoVersionTestCase(unittest.TestCase):
                 results = get_versions(self.repo, params)
                 self.assertEqual(len(results), num_results, results)
 
+    def test_filter_nonexistent_version(self):
+        """Filter repository version by a nonexistent version number."""
+        criteria = -1
+        for params in (
+                {'number': criteria},
+                {'number__gt': criteria, 'number__lt': criteria},
+                {'number__gte': criteria, 'number__lte': criteria},
+                {'number__range': ','.join((str(criteria), str(criteria)))}):
+            with self.subTest(params=params):
+                versions = get_versions(self.repo, params)
+                self.assertEqual(len(versions), 0, versions)
+
     def test_filter_invalid_version(self):
         """Filter repository version by an invalid version number."""
         criteria = utils.uuid4()
@@ -416,8 +428,8 @@ class FilterRepoVersionTestCase(unittest.TestCase):
                 {'number__gte': criteria, 'number__lte': criteria},
                 {'number__range': ','.join((criteria, criteria))}):
             with self.subTest(params=params):
-                versions = get_versions(self.repo, params)
-                self.assertEqual(len(versions), 0, versions)
+                with self.assertRaises(HTTPError):
+                    get_versions(self.repo, params)
 
     def test_filter_valid_version(self):
         """Filter repository version by a valid version number."""

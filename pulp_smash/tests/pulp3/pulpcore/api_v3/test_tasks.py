@@ -67,10 +67,10 @@ class TasksTestCase(unittest.TestCase):
 
     def test_02_read_invalid_date(self):
         """Read a task by an invalid date."""
-        page = self.filter_tasks({
-            'finished_at': utils.uuid4(),
-            'started_at': utils.uuid4()})
-        self.assertEqual(len(page['results']), 0, page['results'])
+        with self.assertRaises(HTTPError):
+            self.filter_tasks({
+                'finished_at': utils.uuid4(),
+                'started_at': utils.uuid4()})
 
     @skip_if(bool, 'task', False)
     def test_02_read_valid_date(self):
