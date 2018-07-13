@@ -3,7 +3,7 @@
 import unittest
 from unittest import mock
 
-from pulp_smash import cli, utils
+from pulp_smash import cli, utils, exceptions
 
 
 class UUID4TestCase(unittest.TestCase):
@@ -78,3 +78,41 @@ class GetOsReleaseTestCase(unittest.TestCase):
             client.return_value.run.return_value.stdout = ' 27 '
             response = utils.get_os_release_version_id(mock.Mock())
         self.assertEqual(response, '27')
+
+
+class FipsIsSupportedtestCase(unittest.TestCase):
+    """Test :func: `pulp_smash.utils.fips_is_supported`."""
+
+    def test_return_true(self):
+        """Assert true is returned if the crypto.fips_enabled is supported by sysctl."""
+        with mock.patch.object(cli, 'Client') as client:
+            client.return_value.run.return_value = 'some string value'
+            response = utils.fips_is_supported(mock.Mock())
+        self.assertTrue(response)
+
+    def test_return_false(self):
+        """Assert false is returned if Called process Error Exception is thrown."""
+        with mock.patch.object(cli, 'Client') as client:
+            client.side_effect = exceptions.CalledProcessError()
+            response = utils.fips_is_supported(mock.Mock())
+        self.assertFalse(response)
+
+
+class FipsIsEnabledTestCase(unittest.TestCase):
+    """Test :func: `pulp_smash.utils.fips_is_enabled`."""
+
+    def test_return_true(self):
+        """Assert true is returned if the crypto.fips_enabled is enabled in sysctl."""
+        with mock.patch.object(cli, 'Client') as client:
+            client.return_value.run.return_value.stdout = '1\n'
+            response = utils.fips_is_enabled(mock.Mock())
+        self.assertTrue(response)
+
+    def test_return_false(self):
+        """Assert False is returned if the crypto.fips_enabled is not enabled in sysctl."""
+        for stdout in ('-1\n', '0\n', '2\n', '10\n'):
+            with self.subTest(stdout=stdout):
+                with mock.patch.object(cli, 'Client') as client:
+                    client.return_value.run.return_value.stdout = stdout
+                    response = utils.fips_is_enabled(mock.Mock())
+                self.assertFalse(response)
