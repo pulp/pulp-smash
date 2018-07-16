@@ -152,6 +152,7 @@ developers, not a gospel.
     api/pulp_smash.tests.pulp3.pulpcore.api_v3.plugin_involved.test_pagination
     api/pulp_smash.tests.pulp3.pulpcore.api_v3.plugin_involved.test_repo_version
     api/pulp_smash.tests.pulp3.pulpcore.api_v3.plugin_involved.test_unlinking_repo
+    api/pulp_smash.tests.pulp3.pulpcore.api_v3.plugin_involved.utils
     api/pulp_smash.tests.pulp3.pulpcore.api_v3.test_api_docs
     api/pulp_smash.tests.pulp3.pulpcore.api_v3.test_auth
     api/pulp_smash.tests.pulp3.pulpcore.api_v3.test_crd_artifacts

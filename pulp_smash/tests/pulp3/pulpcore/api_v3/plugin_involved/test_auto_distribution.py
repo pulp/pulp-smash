@@ -26,11 +26,12 @@ from pulp_smash.pulp3.utils import (
     publish,
     sync,
 )
-
-from pulp_smash.tests.pulp3.file.api_v3.utils import gen_publisher
-from pulp_smash.tests.pulp3.file.utils import populate_pulp
 from pulp_smash.tests.pulp3.pulpcore.api_v3.plugin_involved import (  # pylint:disable=unused-import
     set_up_module as setUpModule
+)
+from pulp_smash.tests.pulp3.pulpcore.api_v3.plugin_involved.utils import (
+    gen_publisher,
+    populate_pulp,
 )
 
 
