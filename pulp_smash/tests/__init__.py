@@ -6,36 +6,8 @@ against live Pulp systems. These tests may target all of the different
 interfaces exposed by Pulp, including its API and CLI. These tests are entirely
 different from the unit tests in :mod:`tests`, which test Pulp Smash itself.
 
-The tests are organized into a hierarchy in the following form:
-``major_pulp_version.plugin.interface``. For example, Pulp 2 tests for the RPM
-plugin's API interface are in :mod:`pulp_smash.tests.pulp2.ostree.api_v2`.
-
-There are several factors that determine whether or not a given test should
-run. These factors include:
-
-* Which version of Pulp is under test? For example, version 2.13.2, 2.14.1, 3,
-  and so on.
-* Given that a certain version of Pulp is under test, which bugs affect that
-  Pulp installation? For example, does `<https://pulp.plan.io/issues/2144>`_
-  affect the Pulp installation under test?
-* Which plugins are installed? For example, docker, ostree, puppet, and so on.
-
-These are all common reasons that a given test might be skipped. From a user's
-perspective, this is all automatic. They need only install Pulp Smash,
-configure it, and point a test runner at :mod:`pulp_smash.tests`.
-
-From a Pulp Smash developer's perspective, some work needs to be done to make
-this happen. There are two especially common ways to make this happen. First,
-bug-specific skipping logic can be implemented with the methods in
-:mod:`pulp_smash.selectors`, especially
-:func:`pulp_smash.selectors.bug_is_fixed`. Second, a `setUpModule`_ function
-must be present in **every** ``test*`` module. In the simplest case, this can
-be done with pre-defined functions. For example,
-:mod:`pulp_smash.tests.pulp2.rpm.api_v2.test_broker` might do the following:
-
-.. code-block:: python
-
-    from pulp_smash.tests.pulp2.rpm.utils import set_up_module as setUpModule
+These tests are currently being moved out of Pulp Smash. The tools used by the
+tests will remain.
 
 -----
 

@@ -11,7 +11,7 @@ Why does Pulp Smash exist? What are its goals, and what does it *not* do?
 Why Pulp Smash?
 ---------------
 
-Pulp Smash exists to make testing Pulp easy.
+Pulp Smash exists to make automated functional testing of Pulp easier.
 
 Scope and Limitations
 ---------------------
@@ -41,12 +41,12 @@ Destructiveness
 ~~~~~~~~~~~~~~~
 
 *Pulp Smash is highly destructive!* You should not use Pulp Smash for testing if
-you care about the state of the target system. Pulp Smash will do the following
-to a system under test, and possibly more:
+you care about the state of the target system. Pulp Smash makes it easy to do
+the following and more:
 
-* It will drop databases.
-* It will forcefully delete files from the filesystem.
-* It will stop and start system services.
+* Drop databases.
+* Forcefully delete files from the filesystem.
+* Stop and start system services.
 
 Pulp Smash treats the system(s) under test as cattle, not pets. [3]_
 
@@ -59,32 +59,17 @@ request on GitHub, but patches are welcome no matter how they arrive.
 Learning Pulp Smash
 ~~~~~~~~~~~~~~~~~~~
 
-Not sure where to start? Consider reading an existing test module, creating a
-development environment, and tackling an open issue.
-
-The :doc:`/introductory-module` is a great candidate for study.
-
-:doc:`/installation` provides a recipe for creating a virtualenv-based
-development environment. To verify the sanity of your development environment,
-``cd`` into the Pulp Smash source code directory and execute ``make all``.
-
-The `Pulp Smash issues`_ list includes test cases that should be automated and
-added to the test suite.
+Not sure where to start? Consider reading some existing tests in `Pulp 2
+Tests`_.
 
 Code Standards
 ~~~~~~~~~~~~~~
 
 Please adhere to the following guidelines:
 
-* Pull requests must pass the `Travis CI`_ continuous integration tests. These
-  tests are automatically run whenever a pull request is submitted. If you want
-  to locally verify your changes before submitting a pull request, execute
+* Pull requests must pass the `Travis CI`_ continuous integration tests. You can
+  locally verify your changes before submitting a pull request by executing
   ``make all``.
-* Test failures must not be introduced. Consider running all new and modified
-  tests and copy-pasting the output from the test run as a comment in the GitHub
-  pull request. The simplest way to run the test suite is with ``python3 -m
-  unittest pulp_smash.tests``. See the unittest `Command-Line Interface`_ and
-  ``python3 -m pulp_smash`` for more information.
 * Each commit in a pull request must be atomic and address a single issue. Try
   asking yourself: "can I revert this commit?" Knowing how to `rewrite history`_
   may help. In addition, please take the time to write a `good
@@ -99,12 +84,9 @@ Please adhere to the following guidelines:
   reason. As another example, do not add a test that makes dozens of concurrent
   requests to a public service such as docker hub.
 
-These next guidelines **are not** mandatory, but will match the formatting adopted
-in the existing code base.
-
-* Docstrings should not end with a blank line.
-* Lines should be hard wrapped at 79 characters.
-* Comments should typically be preceded by a blank line.
+In addition, code should adhere as closely as reasonably possible to the
+existing style in the code base. A consistent style makes it possible to focus
+on the substance of code, rather than its form.
 
 Review Process
 ~~~~~~~~~~~~~~
@@ -154,12 +136,11 @@ Issue Type: Test Case
     This label indicates that an issue is asking for a test case to be
     automated. (Issues with this label are a special type of plan.)
 
+Pulp Version: 2
+    This label indicates that an issue is specific to Pulp 2.
+
 Pulp Version: 3
-    This label serves to differentiate issues, that otherwise should belong
-    to one of the above issue types, as being related to creation of automated
-    tests or utilities for for Pulp 3. This label is meant to aid
-    pulp-smash developers in filtering issues by major version, as Pulp 3
-    introduces many breaking changes.
+    This label indicates that an issue is specific to Pulp 3.
 
 .. [1] Portable software cannot make assumptions about its environment. It
     cannot reference ``/etc/pki/tls/certs/ca-bundle.crt``  or call ``yum``.
@@ -173,11 +154,9 @@ Pulp Version: 3
 .. [3] The "pets vs cattle" analogy is widely attributed to Bill Baker of
     Microsoft.
 
-.. _Command-Line Interface: https://docs.python.org/3/library/unittest.html#command-line-interface
 .. _GNU Make: https://www.gnu.org/software/make/
 .. _OpenSSH: http://www.openssh.com/
-.. _Pulp QE Member: https://github.com/orgs/PulpQE/people
-.. _Pulp Smash issues: https://github.com/PulpQE/pulp-smash/issues
+.. _Pulp 2 Tests: https://github.com/PulpQE/pulp-2-tests
 .. _Travis CI: https://travis-ci.org/PulpQE/pulp-smash
 .. _XDG Base Directory Specification: http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
 .. _freenode: https://freenode.net/
