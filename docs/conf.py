@@ -3,7 +3,6 @@
 
 The full set of configuration options is listed on the Sphinx website:
 http://sphinx-doc.org/config.html
-
 """
 import os
 import sys
@@ -27,16 +26,15 @@ with open(os.path.join(ROOT_DIR, 'VERSION')) as handle:
     Version(VERSION)
 
 
-# pylint:disable=invalid-name
 # Project Information ---------------------------------------------------------
-
+# pylint:disable=invalid-name
+author = 'Pulp QE'
+copyright = '2015, Pulp QE'  # pylint:disable=redefined-builtin
 project = 'Pulp Smash'
-copyright = '2015, Jeremy Audet'  # pylint:disable=redefined-builtin
 version = release = VERSION
 
 
 # General Configuration -------------------------------------------------------
-
 extensions = ['sphinx.ext.autodoc']
 source_suffix = '.rst'
 master_doc = 'index'
@@ -46,29 +44,28 @@ autodoc_default_flags = ['members']
 
 
 # Format-Specific Options -----------------------------------------------------
-
 htmlhelp_basename = 'PulpSmashdoc'
 latex_documents = [(
     master_doc,
     project + '.tex',
     project + ' Documentation',
-    'Jeremy Audet',
+    author,
     'manual'
 )]
 man_pages = [(
     master_doc,
-    project.lower(),
+    'pulp-smash',
     project + ' Documentation',
-    ['Jeremy Audet'],
+    ['Pulp QE'],
     1  # man pages section
 )]
 texinfo_documents = [(
     master_doc,
-    project,
+    'PulpSmash',
     project + ' Documentation',
-    'Jeremy Audet',
-    project,
-    ('Pulp Smash is a GPL-licensed Python library that facilitates easy '
-     'testing of Pulp.'),
+    author,
+    'PulpSmash',
+    ('Pulp Smash is a Python library that facilitates functional testing of '
+     'Pulp.'),
     'Miscellaneous'
 )]

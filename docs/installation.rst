@@ -3,48 +3,30 @@ Installation
 
 Location: :doc:`/index` → :doc:`/installation`
 
-Installing Pulp Smash into a virtual environment [1]_ is recommended. To create
-and activate a virtual environment:
+There are several different ways to install Python packages, and Pulp Smash
+supports some of the most common methods. For example, a developer might want to
+install Pulp Smash in editable mode into a virtualenv:
 
 .. code-block:: sh
 
-    python3 -m venv env
+    python3 -m venv ~/.venvs/pulp-smash
     source env/bin/activate  # run `deactivate` to exit environment
-
-Pulp Smash can be installed from PyPI or from source. To install from `PyPI`_:
-
-.. code-block:: sh
-
-    pip install pulp-smash  # prepend `python -m` on Python 3.3
-
-To install Pulp Smash from source (`GitHub`_):
-
-.. code-block:: sh
-
-    git clone https://github.com/PulpQE/pulp-smash.git
-    cd pulp-smash
-    pip install .
-
-Pulp Smash can also be installed from source in "develop mode," where changes to
-source code are reflected in the working environment. The ``--editable`` flag
-does this. Also, development dependencies can be installed by requiring the
-extra "dev" group.
-
-.. code-block:: sh
-
+    pip install --upgrade pip
     git clone https://github.com/PulpQE/pulp-smash.git
     cd pulp-smash
     pip install --editable .[dev]
+    make all  # verify sanity
 
 For an explanation of key concepts and more installation strategies, see
-`Installing Python Modules`_.
+`Installing Python Modules`_. For an explanation of virtualenvs, see `Virtual
+Environments and Packages`_.
 
-.. [1] See `Virtual Environments and Packages`_ for an explanation of virtual
-    environments. ``python3 -m venv`` and ``virtualenv`` are similar, but the
-    former ships with Python as of Python 3.3, whereas the latter is a third
-    party tool.
+In addition to the dependencies listed in ``setup.py``, install OpenSSH if
+testing is to be performed against a remote host. [1]_
 
-.. _GitHub: https://github.com/PulpQE/pulp-smash
+.. [1] This hard dependency is a bug. It would be better to require _an_ SSH
+    implementation, whether provided by OpenSSH, Paramiko, Dropbear, or
+    something else.
+
 .. _Installing Python Modules: https://docs.python.org/3/installing/
-.. _PyPI: https://pypi.python.org/pypi/pulp-smash
 .. _Virtual Environments and Packages: https://docs.python.org/3/tutorial/venv.html

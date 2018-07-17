@@ -4,9 +4,9 @@ API Documentation
 Location: :doc:`/index` → :doc:`/api`
 
 This is the Pulp Smash API documentation. It is mostly auto generated from the
-source code. Beware that Pulp Smash is very new. Its API is **not stable**. This
-section of the documentation should be treated as a handy reference for
-developers, not a gospel.
+source code. Beware that Pulp Smash in a state of flux, and its API is **not
+stable**. This section of the documentation should be treated as a handy
+reference for developers, not a gospel.
 
 .. toctree::
 
@@ -25,112 +25,6 @@ developers, not a gospel.
     api/pulp_smash.pulp_smash_cli
     api/pulp_smash.selectors
     api/pulp_smash.tests
-    api/pulp_smash.tests.pulp2
-    api/pulp_smash.tests.pulp2.docker
-    api/pulp_smash.tests.pulp2.docker.api_v2
-    api/pulp_smash.tests.pulp2.docker.api_v2.test_copy
-    api/pulp_smash.tests.pulp2.docker.api_v2.test_crud
-    api/pulp_smash.tests.pulp2.docker.api_v2.test_duplicate_uploads
-    api/pulp_smash.tests.pulp2.docker.api_v2.test_sync
-    api/pulp_smash.tests.pulp2.docker.api_v2.test_sync_publish
-    api/pulp_smash.tests.pulp2.docker.api_v2.test_tags
-    api/pulp_smash.tests.pulp2.docker.api_v2.test_upload
-    api/pulp_smash.tests.pulp2.docker.api_v2.utils
-    api/pulp_smash.tests.pulp2.docker.cli
-    api/pulp_smash.tests.pulp2.docker.cli.test_crud
-    api/pulp_smash.tests.pulp2.docker.cli.test_sync_publish
-    api/pulp_smash.tests.pulp2.docker.cli.utils
-    api/pulp_smash.tests.pulp2.docker.utils
-    api/pulp_smash.tests.pulp2.ostree
-    api/pulp_smash.tests.pulp2.ostree.api_v2
-    api/pulp_smash.tests.pulp2.ostree.api_v2.test_copy
-    api/pulp_smash.tests.pulp2.ostree.api_v2.test_crud
-    api/pulp_smash.tests.pulp2.ostree.api_v2.test_publish
-    api/pulp_smash.tests.pulp2.ostree.api_v2.test_sync
-    api/pulp_smash.tests.pulp2.ostree.utils
-    api/pulp_smash.tests.pulp2.platform
-    api/pulp_smash.tests.pulp2.platform.api_v2
-    api/pulp_smash.tests.pulp2.platform.api_v2.test_consumer
-    api/pulp_smash.tests.pulp2.platform.api_v2.test_content_applicability
-    api/pulp_smash.tests.pulp2.platform.api_v2.test_login
-    api/pulp_smash.tests.pulp2.platform.api_v2.test_repository
-    api/pulp_smash.tests.pulp2.platform.api_v2.test_search
-    api/pulp_smash.tests.pulp2.platform.api_v2.test_user
-    api/pulp_smash.tests.pulp2.platform.cli
-    api/pulp_smash.tests.pulp2.platform.cli.test_pulp_manage_db
-    api/pulp_smash.tests.pulp2.platform.cli.test_selinux
-    api/pulp_smash.tests.pulp2.platform.utils
-    api/pulp_smash.tests.pulp2.puppet
-    api/pulp_smash.tests.pulp2.puppet.api_v2
-    api/pulp_smash.tests.pulp2.puppet.api_v2.test_crud
-    api/pulp_smash.tests.pulp2.puppet.api_v2.test_duplicate_uploads
-    api/pulp_smash.tests.pulp2.puppet.api_v2.test_install_distributor
-    api/pulp_smash.tests.pulp2.puppet.api_v2.test_sync_publish
-    api/pulp_smash.tests.pulp2.puppet.api_v2.utils
-    api/pulp_smash.tests.pulp2.puppet.cli
-    api/pulp_smash.tests.pulp2.puppet.cli.test_sync
-    api/pulp_smash.tests.pulp2.puppet.utils
-    api/pulp_smash.tests.pulp2.python
-    api/pulp_smash.tests.pulp2.python.api_v2
-    api/pulp_smash.tests.pulp2.python.api_v2.test_crud
-    api/pulp_smash.tests.pulp2.python.api_v2.test_duplicate_uploads
-    api/pulp_smash.tests.pulp2.python.api_v2.test_sync_publish
-    api/pulp_smash.tests.pulp2.python.api_v2.utils
-    api/pulp_smash.tests.pulp2.python.utils
-    api/pulp_smash.tests.pulp2.rpm
-    api/pulp_smash.tests.pulp2.rpm.api_v2
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_broker
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_character_encoding
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_comps_xml
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_content_applicability
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_content_sources
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_copy
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_crud
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_download_policies
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_duplicate_uploads
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_errata
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_export
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_force_full
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_iso_crud
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_iso_sync_publish
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_mirrorlist
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_no_op_publish
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_orphan_remove
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_package_paths
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_remove_unit
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_repomd
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_repository_layout
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_repoview
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_republish
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_retain_old_count
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_rsync_distributor
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_schedule_publish
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_schedule_sync
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_search
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_service_resiliency
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_signatures_checked_for_copies
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_signatures_checked_for_syncs
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_signatures_checked_for_uploads
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_signatures_saved_for_packages
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_sync_publish
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_tasks
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_unassociate
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_unavailable_checksum
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_updateinfo
-    api/pulp_smash.tests.pulp2.rpm.api_v2.test_upload_publish
-    api/pulp_smash.tests.pulp2.rpm.api_v2.utils
-    api/pulp_smash.tests.pulp2.rpm.cli
-    api/pulp_smash.tests.pulp2.rpm.cli.test_character_encoding
-    api/pulp_smash.tests.pulp2.rpm.cli.test_copy_units
-    api/pulp_smash.tests.pulp2.rpm.cli.test_environments
-    api/pulp_smash.tests.pulp2.rpm.cli.test_langpacks
-    api/pulp_smash.tests.pulp2.rpm.cli.test_process_recycling
-    api/pulp_smash.tests.pulp2.rpm.cli.test_retain_old_count
-    api/pulp_smash.tests.pulp2.rpm.cli.test_search
-    api/pulp_smash.tests.pulp2.rpm.cli.test_sync
-    api/pulp_smash.tests.pulp2.rpm.cli.test_upload
-    api/pulp_smash.tests.pulp2.rpm.cli.utils
-    api/pulp_smash.tests.pulp2.rpm.utils
     api/pulp_smash.tests.pulp3
     api/pulp_smash.tests.pulp3.constants
     api/pulp_smash.tests.pulp3.file
