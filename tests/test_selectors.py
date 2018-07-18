@@ -106,3 +106,33 @@ class BugIsFixedTestCase(unittest.TestCase):
             get_bug.side_effect = requests.exceptions.ConnectionError
             with self.assertWarns(RuntimeWarning):
                 selectors.bug_is_fixed(None, ver)
+
+
+class SkipIfConditionTestCase(unittest.TestCase):
+    """Test :meth: `pulp_smash.selectors.skip_if`."""
+
+    class DummyTestClass:
+        """A Dummy Test Class."""
+
+        def __init__(self):
+            """Set ``self.element`` for use by ``@skip_if``."""
+            self.element = 'test'
+
+        @selectors.skip_if(bool, 'element', True, unittest.SkipTest)
+        def test_should_skip(self):
+            """``skip_if`` should skip this method."""
+            pass
+
+        @selectors.skip_if(bool, 'element', False, unittest.SkipTest)
+        def test_should_run(self):
+            """``skip_if`` should not skip this method."""
+            pass
+
+    def test_skip_true(self):
+        """Make ``@skip_if`` raise an exception."""
+        with self.assertRaises(unittest.SkipTest):
+            self.DummyTestClass().test_should_skip()
+
+    def test_skip_false(self):
+        """Make ``@skip_if`` continue without raising an exception."""
+        self.assertIsNone(self.DummyTestClass().test_should_run())
