@@ -93,7 +93,8 @@ class FipsIsSupportedtestCase(unittest.TestCase):
     def test_return_false(self):
         """Assert false is returned if Called process Error Exception is thrown."""
         with mock.patch.object(cli, 'Client') as client:
-            client.side_effect = exceptions.CalledProcessError()
+            client.side_effect = exceptions.CalledProcessError(
+                ('arg', 'arg'), 1, 'stdout', 'stderr')
             response = utils.fips_is_supported(mock.Mock())
         self.assertFalse(response)
 

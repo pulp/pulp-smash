@@ -36,13 +36,21 @@ class CalledProcessError(Exception):
     See :meth:`pulp_smash.cli.CompletedProcess` for more information.
     """
 
+    def __init__(self, args_, returncode, stdout, stderr, *args, **kwargs):
+        """Require that information about the error be provided."""
+        super().__init__(args_, returncode, stdout, stderr, *args, **kwargs)
+        self.args_ = args_
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
     def __str__(self):
         """Provide a human-friendly string representation of this exception."""
         return (
             'Command {} returned non-zero exit status {}.\n\n'
             'stdout: {}\n\n'
             'stderr: {}'
-        ).format(*self.args)
+        ).format(self.args_, self.returncode, self.stdout, self.stderr)
 
 
 class ConfigFileNotFoundError(Exception):
