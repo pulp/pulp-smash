@@ -6,7 +6,6 @@ http://sphinx-doc.org/config.html
 
 """
 import os
-import re
 import sys
 from packaging.version import Version
 
@@ -23,16 +22,9 @@ sys.path.insert(0, ROOT_DIR)
 # PEP 440. An InvalidVersion exception is raised if the version is
 # non-conformant, so the act of generating documentation serves as a unit test
 # for the contents of the `VERSION` file.
-#
-# We use the raw version string when generating documentation for the sake of
-# human friendliness: the meaning of '2016.02.18' is presumably more intuitive
-# than the meaning of '2016.2.18'. The regex enforcing this format allows
-# additional segments. This is done to allow multiple releases in a single day.
-# For example, 2016.02.18.3 is the fourth release in a given day.
 with open(os.path.join(ROOT_DIR, 'VERSION')) as handle:
     VERSION = handle.read().strip()
     Version(VERSION)
-    assert re.match(r'\d{4,4}(\.\d\d){2,2}', VERSION) is not None
 
 
 # pylint:disable=invalid-name

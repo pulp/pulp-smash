@@ -24,7 +24,7 @@ help:
 all: test-coverage lint docs-clean docs-html dist-clean dist
 
 dist:
-	./setup.py --quiet sdist bdist_wheel --universal
+	./setup.py --quiet sdist bdist_wheel --universal test
 
 dist-clean:
 	rm -rf build dist pulp_smash.egg-info

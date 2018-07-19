@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# coding=utf-8
+#
+# Release a new version of Pulp Smash.
 #
 # Test Pulp Smash for sanity. If all is well, generate a new commit, tag it,
 # and print instructions for further steps to take.
@@ -8,28 +11,72 @@
 #
 set -euo pipefail
 
-# Make sure local fork is updated
-git fetch -p --all
-git checkout master
-git merge --ff-only upstream/master
+# See: http://mywiki.wooledge.org/BashFAQ/028
+readonly script_name='release.sh'
 
-NEW_VERSION="$(date +%Y.%m.%d)"
-OLD_VERSION="$(git tag --list | tail -n 1)"
+# Print usage instructions to stdout.
+show_help() {
+fmt <<EOF
+Usage: $script_name [options] <new-version>
 
-if [ "${NEW_VERSION}" = "${OLD_VERSION}" ]; then
-    echo "Nothing to release"
-    exit 0
+Release a new version of Pulp Smash. More specifically, write <new-version> to
+the VERSION file, build new packages, test them for sanity, generate a new
+tagged commit, and print instructions for next steps.
+
+Options:
+    --help
+        Show this message.
+    --repo-path
+        The path to the root of the Pulp Smash repository. Defaults to '.'.
+EOF
+}
+
+# Transform $@. $temp is needed. If omitted, non-zero exit codes are ignored.
+temp=$(getopt \
+    --options '' \
+    --longoptions help,repo-path: \
+    --name "$script_name" \
+    -- "$@")
+eval set -- "$temp"
+unset temp
+
+# Read arguments. (getopt inserts -- even when no arguments are passed.)
+if [ "${#@}" -eq 1 ]; then
+    show_help
+    exit 1
+fi
+while true; do
+    case "$1" in
+        --help) show_help; shift; exit 0;;
+        --repo-path) cd "$2"; shift 2;;
+        --) shift; break;;
+        *) echo "Internal error! Encountered unexpected argument: $1"; exit 1;;
+    esac
+done
+new_version="$1"; shift
+
+# Most Pulp Smash tags are lightweight, un-annotated tags. This script now makes
+# annotated tags. Once an annotated release has been made, consider switching
+# from `git tag` to `git describe`.
+old_version="$(git tag --list | tail -n 1)"
+if [ "${new_version}" = "${old_version}" ]; then
+    echo Nothing to release!
+    exit 1
 fi
 
-# Bump version number
-echo "${NEW_VERSION}" > VERSION
-
-# Generate package(s)
+# Generate new packages.
+echo "${new_version}" > VERSION
 make dist-clean dist
 
-# Sanity check Pulp Smash packages on Python 3
+# Create a venv, and schedule it for deletion.
+cleanup() { if [ -n "${venv:-}" ]; then rm -rf "${venv}"; fi }
+trap cleanup EXIT  # bash pseudo signal
+trap 'cleanup ; trap - SIGINT ; kill -s SIGINT $$' SIGINT
+trap 'cleanup ; trap - SIGTERM ; kill -s SIGTERM $$' SIGTERM
 venv="$(mktemp --directory)"
 python3 -m venv "${venv}"
+
+# Sanity check the new packages.
 set +u
 source "${venv}/bin/activate"
 set -u
@@ -41,16 +88,14 @@ done
 set +u
 deactivate
 set -u
-rm -rf "${venv}"
 
-# Get the changes from last release and commit
+# Create a new commit and annotated tag.
 git add VERSION
-git commit -m "Release version ${NEW_VERSION}" \
-    -m "Shortlog of commits since last release:" \
-    -m "$(git shortlog ${OLD_VERSION}.. | sed 's/^./    &/')"
-
-# Tag with the new version
-git tag "${NEW_VERSION}"
+git commit \
+    --message "Release version ${new_version}" \
+    --message "Shortlog of commits since last release:" \
+    --message "$(git shortlog "${old_version}.." | sed 's/^./    &/')"
+git tag --annotate --message "Pulp Smash ${new_version}" "${new_version}"
 
 fmt <<EOF
 
