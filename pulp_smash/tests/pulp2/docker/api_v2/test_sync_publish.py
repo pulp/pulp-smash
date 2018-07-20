@@ -353,6 +353,34 @@ class V2RegistryTestCase(SyncPublishMixin, unittest.TestCase):
         self.assertEqual(response.headers['content-type'], content_type)
         validate(response.json(), MANIFEST_LIST_V2)
 
+    @skip_if(bool, 'repo', False)
+    def test_docker_pull_c2(self):
+        """Emulate docker pull to verify crane is working as expected.
+
+        This test emulates docker pull command that hits the pulp crane
+        repositories. First the details about manifests in the repo are collected
+        by hitting the manifests url. Then the blobs shasum that are returned as
+        a part of the previous request are iterated and are hit seperately.
+
+        The actual docker pull, gets all these blobs and stitches them together
+        to form the docker image.
+
+        This testcase is tested in reference to `Pulp #3638`_.
+
+        .. _Pulp #3638: https://pulp.plan.io/issues/3638
+        """
+        client = self.make_crane_client(self.cfg)
+        response = client.get('/v2/{}/manifests/latest'.format(self.repo['id']))
+        client = api.Client(self.cfg)
+        client.request_kwargs['url'] = self.adjust_url(
+            client.request_kwargs['url']
+        )
+        self.assertTrue('fsLayers' in response, 'The blob data doesn\'t exist')
+        for blob in response['fsLayers']:
+            with self.subTest(blob=blob):
+                response = client.get('/v2/{}/blobs/{}'.format(self.repo['id'], blob['blobSum']))
+                self.assertEqual(response.status_code, 200, response.content)
+
 
 class NonNamespacedImageTestCase(SyncPublishMixin, unittest.TestCase):
     """Work with an image whose name has no namespace."""
