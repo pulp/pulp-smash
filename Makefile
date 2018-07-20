@@ -9,6 +9,7 @@ help:
 	@echo "  dist-clean     to remove generated Python packages"
 	@echo "  docs-html      to generate HTML documentation"
 	@echo "  docs-clean     to remove documentation"
+	@echo "  docs-api       to (re)generate .rst files for the API"
 	@echo "  lint           to run all linters"
 	@echo "  lint-flake8    to run the flake8 linter"
 	@echo "  lint-pylint    to run the pylint linter"
@@ -29,11 +30,17 @@ dist:
 dist-clean:
 	rm -rf build dist pulp_smash.egg-info
 
-docs-html:
+docs-html: docs-api
 	@cd docs; $(MAKE) html
 
 docs-clean:
 	@cd docs; $(MAKE) clean
+
+docs-api:
+	rm -rf docs/api/*
+	scripts/gen_api_docs.sh
+
+lint: lint-flake8 lint-pylint
 
 # E501 and F401 are ignored because Pylint performs similar checks.
 lint-flake8:
@@ -46,8 +53,6 @@ lint-pylint:
 		setup.py \
 		tests
 
-lint: lint-flake8 lint-pylint
-
 publish: dist
 	twine upload dist/*
 
@@ -57,5 +62,5 @@ test:
 test-coverage:
 	coverage run --include 'pulp_smash/*' --omit 'pulp_smash/tests/*' $(TEST_OPTIONS)
 
-.PHONY: help all docs-html docs-clean lint-flake8 lint-pylint lint test \
-    test-coverage dist-clean publish
+.PHONY: help all docs-html docs-clean docs-api lint lint-flake8 lint-pylint \
+    test test-coverage dist-clean publish
