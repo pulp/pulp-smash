@@ -50,14 +50,14 @@ latex_documents = [(
     project + '.tex',
     project + ' Documentation',
     author,
-    'manual'
+    'manual',
 )]
 man_pages = [(
     master_doc,
     'pulp-smash',
     project + ' Documentation',
-    ['Pulp QE'],
-    1  # man pages section
+    [author],
+    1,  # man pages section
 )]
 texinfo_documents = [(
     master_doc,
