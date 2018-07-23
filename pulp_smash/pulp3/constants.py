@@ -18,12 +18,6 @@ CONTENT_PATH = urljoin(BASE_PATH, 'content/')
 
 DISTRIBUTION_PATH = urljoin(BASE_PATH, 'distributions/')
 
-FILE_CONTENT_PATH = urljoin(CONTENT_PATH, 'file/files/')
-
-FILE_REMOTE_PATH = urljoin(BASE_REMOTE_PATH, 'file/')
-
-FILE_PUBLISHER_PATH = urljoin(BASE_PUBLISHER_PATH, 'file/')
-
 JWT_PATH = urljoin(BASE_PATH, 'jwt/')
 
 ORPHANS_PATH = urljoin(BASE_PATH, 'orphans/')
