@@ -4,6 +4,13 @@ python:
     - 3.4
     - 3.5
     - 3.6
+
+matrix:
+  include:
+  - python: 3.7
+    dist: xenial # Python 3.7 is only available on xenial because of deps
+    sudo: required # if this isn't specified it'll use a trusty image :(
+
 install:
     - ./setup.py test; git clean -dfx
     # Old versions of pip can't handle extras_require in setup.py.
