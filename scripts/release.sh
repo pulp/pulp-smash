@@ -55,10 +55,9 @@ while true; do
 done
 new_version="$1"; shift
 
-# Most Pulp Smash tags are lightweight, un-annotated tags. This script now makes
-# annotated tags. Once an annotated release has been made, consider switching
-# from `git tag` to `git describe`.
-old_version="$(git tag --list | tail -n 1)"
+old_version="$(git describe)"  # e.g. 1!0.0.1-4-g5525f17
+old_version="${old_version%-*}"  # Drop commit hash
+old_version="${old_version%-*}"  # Drop number of commits
 if [ "${new_version}" = "${old_version}" ]; then
     echo Nothing to release!
     exit 1
