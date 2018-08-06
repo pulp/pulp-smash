@@ -24,6 +24,7 @@ _TESTABLE_BUGS = frozenset((
     'MODIFIED',  # bug fix has been accepted by dev
     'ON_QA',  # bug fix is being reviewed by qe
     'VERIFIED',  # bug fix has been accepted by qe
+    'CLOSED - COMPLETE',
     'CLOSED - CURRENTRELEASE',
     'CLOSED - DUPLICATE',
     'CLOSED - NOTABUG',
