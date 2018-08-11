@@ -22,7 +22,7 @@ def require_pulp_3(exc):
         https://docs.python.org/3/library/functools.html#functools.partial
     """
     cfg = config.get_config()
-    if cfg.pulp_version < Version('3') or cfg.pulp_version >= Version('4'):
+    if not Version('3') <= cfg.pulp_version < Version('4'):
         raise exc(
             'These tests are for Pulp 3, but Pulp {} is under test.'
             .format(cfg.pulp_version)
@@ -53,10 +53,6 @@ def require_pulp_plugins(required_plugins, exc):
 def get_plugins(cfg=None):
     """Return the set of plugins installed on the Pulp application.
 
-    Pulp's API endpoint for reporting plugins and their versions doesn't work
-    correctly at this time. Some hacks are implemented to discover which
-    plugins are installed. As a result, not all plugins are returned.
-
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
         application under test.
     :returns: A set of plugin names, e.g. ``{'pulpcore', 'pulp_file'}``.
@@ -64,9 +60,8 @@ def get_plugins(cfg=None):
     if not cfg:
         cfg = config.get_config()
     client = api.Client(cfg, api.json_handler)
-    return {
-        version['component'] for version in client.get(STATUS_PATH)['versions']
-    }
+    status = client.get(STATUS_PATH)
+    return {version['component'] for version in status['versions']}
 
 
 def sync(cfg, remote, repo):
@@ -80,7 +75,8 @@ def sync(cfg, remote, repo):
     :returns: The server's response. Call ``.json()`` on the response to get
         a call report.
     """
-    return api.Client(cfg, api.json_handler).post(
+    client = api.Client(cfg, api.json_handler)
+    return client.post(
         urljoin(remote['_href'], 'sync/'), {'repository': repo['_href']}
     )
 
@@ -128,9 +124,8 @@ def get_content(repo, version_href=None):
     """
     if version_href is None:
         version_href = repo['_latest_version_href']
-    return (api
-            .Client(config.get_config(), api.page_handler)
-            .get(urljoin(version_href, 'content/')))
+    client = api.Client(config.get_config(), api.page_handler)
+    return client.get(urljoin(version_href, 'content/'))
 
 
 def get_added_content(repo, version_href=None):
@@ -144,9 +139,8 @@ def get_added_content(repo, version_href=None):
     """
     if version_href is None:
         version_href = repo['_latest_version_href']
-    return (api
-            .Client(config.get_config(), api.page_handler)
-            .get(urljoin(version_href, 'added_content/')))
+    client = api.Client(config.get_config(), api.page_handler)
+    return client.get(urljoin(version_href, 'added_content/'))
 
 
 def get_removed_content(repo, version_href=None):
@@ -160,9 +154,8 @@ def get_removed_content(repo, version_href=None):
     """
     if version_href is None:
         version_href = repo['_latest_version_href']
-    return (api
-            .Client(config.get_config(), api.page_handler)
-            .get(urljoin(version_href, 'removed_content/')))
+    client = api.Client(config.get_config(), api.page_handler)
+    return client.get(urljoin(version_href, 'removed_content/'))
 
 
 def delete_orphans(cfg=None):
@@ -188,10 +181,8 @@ def get_versions(repo, params=None):
         filter which versions are returned.
     :returns: A sorted list of dicts of information about repository versions.
     """
-    versions = (
-        api
-        .Client(config.get_config(), api.page_handler)
-        .get(repo['_versions_href'], params=params))
+    client = api.Client(config.get_config(), api.page_handler)
+    versions = client.get(repo['_versions_href'], params=params)
     versions.sort(
         key=lambda version: int(urlsplit(version['_href']).path.split('/')[-2])
     )
@@ -228,14 +219,14 @@ def delete_version(repo, version_href=None):
 
 
 def gen_distribution(**kwargs):
-    """Return a semi-random dict for use in creating a distribution."""
+    """Return a semi-random dict for use in creating a Distribution."""
     data = {'base_path': utils.uuid4(), 'name': utils.uuid4()}
     data.update(kwargs)
     return data
 
 
 def gen_remote(url, **kwargs):
-    """Return a semi-random dict for use in creating an remote.
+    """Return a semi-random dict for use in creating a Remote.
 
     :param url: The URL of an external content source.
     """
@@ -245,7 +236,7 @@ def gen_remote(url, **kwargs):
 
 
 def gen_repo(**kwargs):
-    """Return a semi-random dict for use in creating a repository."""
+    """Return a semi-random dict for use in creating a Repository."""
     data = {'name': utils.uuid4(), 'notes': {}}
     data.update(kwargs)
     return data

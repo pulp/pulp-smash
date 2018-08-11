@@ -1,2 +1,2 @@
 # coding=utf-8
-"""Tools for Pulp 2 tests."""
+"""Tools for Pulp 3 tests."""
