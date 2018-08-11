@@ -234,6 +234,13 @@ def gen_distribution(**kwargs):
     return data
 
 
+def gen_publisher(**kwargs):
+    """Return a semi-random dict for use in creating an Publisher."""
+    data = {'name': utils.uuid4()}
+    data.update(kwargs)
+    return data
+
+
 def gen_remote(url, **kwargs):
     """Return a semi-random dict for use in creating an remote.
 
