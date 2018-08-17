@@ -28,3 +28,4 @@ Documentation contents:
     configuration
     about
     api
+    changelog
