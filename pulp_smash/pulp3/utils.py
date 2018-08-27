@@ -158,6 +158,24 @@ def get_removed_content(repo, version_href=None):
     return client.get(urljoin(version_href, 'removed_content/'))
 
 
+def get_content_summary(repo, version_href=None):
+    """Read the "content summary" of a given repository version.
+
+    Repository versions have a "content_summary" which lists the content types
+    and the number of units of that type present in the repo version.
+
+    :param repo: A dict of information about the repository.
+    :param version_href: The repository version to read. If none, read the
+        latest repository version.
+    :returns: The "content_summary" of the repo version.
+    """
+    if version_href is None:
+        version_href = repo['_latest_version_href']
+
+    client = api.Client(config.get_config(), api.page_handler)
+    return client.get(version_href)['content_summary']
+
+
 def delete_orphans(cfg=None):
     """Clean all content units present in pulp.
 
