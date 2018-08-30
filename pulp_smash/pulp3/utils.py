@@ -122,8 +122,12 @@ def get_content(repo, version_href=None):
     :returns: A list of information about the content units present in a given
         repository version.
     """
+    version_href = version_href or repo['_latest_version_href']
+
     if version_href is None:
-        version_href = repo['_latest_version_href']
+        # Repository has no latest version, and therefore no content.
+        return []
+
     client = api.Client(config.get_config(), api.page_handler)
     return client.get(urljoin(version_href, 'content/'))
 
@@ -137,8 +141,12 @@ def get_added_content(repo, version_href=None):
     :returns: A list of information about the content added since the previous
         repository version.
     """
+    version_href = version_href or repo['_latest_version_href']
+
     if version_href is None:
-        version_href = repo['_latest_version_href']
+        # Repository has no latest version, and therefore no content.
+        return []
+
     client = api.Client(config.get_config(), api.page_handler)
     return client.get(urljoin(version_href, 'added_content/'))
 
@@ -152,8 +160,12 @@ def get_removed_content(repo, version_href=None):
     :returns: A list of information about the content removed since the
         previous repository version.
     """
+    version_href = version_href or repo['_latest_version_href']
+
     if version_href is None:
-        version_href = repo['_latest_version_href']
+        # Repository has no latest version, and therefore no content.
+        return []
+
     client = api.Client(config.get_config(), api.page_handler)
     return client.get(urljoin(version_href, 'removed_content/'))
 
@@ -169,8 +181,11 @@ def get_content_summary(repo, version_href=None):
         latest repository version.
     :returns: The "content_summary" of the repo version.
     """
+    version_href = version_href or repo['_latest_version_href']
+
     if version_href is None:
-        version_href = repo['_latest_version_href']
+        # Repository has no latest version, and therefore no content.
+        return {}
 
     client = api.Client(config.get_config(), api.page_handler)
     return client.get(version_href)['content_summary']
@@ -226,8 +241,12 @@ def delete_version(repo, version_href=None):
         deleted.
     :returns: A tuple. The tasks spawned by Pulp.
     """
+    version_href = version_href or repo['_latest_version_href']
+
     if version_href is None:
-        version_href = repo['_latest_version_href']
+        # Repository has no latest version.
+        raise ValueError('No version exists to be deleted.')
+
     cfg = config.get_config()
     client = api.Client(cfg, api.json_handler)
     call_report = client.delete(version_href)
