@@ -167,6 +167,58 @@ class ClientTestCase(unittest.TestCase):
             plumbum.machines.SshMachine.assert_called_once_with(
                 cfg.hosts[1].hostname)
 
+    def test_run(self):
+        """Test run commands."""
+        cfg = _get_pulp_smash_config(hosts=[
+            config.PulpHost(
+                hostname=socket.getfqdn(),
+                roles={'shell': {}},
+            )
+        ])
+        client = cli.Client(cfg)
+        with mock.patch.object(client, 'machine') as machine:
+
+            machine.__getitem__.return_value = machine
+            machine.run.return_value = (0, 'ok', None)
+
+            result = client.run(('ls', '-la'))
+
+            # Internal call is: `machine[args[0]].run(args[1:], **kwargs)`
+            # So assert `machine['ls']` is called
+            machine.__getitem__.assert_called_once_with('ls')
+            # then `.run(('-la',), **kwargs)`
+            machine.run.assert_called_once_with(('-la',), retcode=None)
+
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.stdout, 'ok')
+            self.assertIsNone(result.stderr)
+
+    def test_run_as_sudo(self):
+        """Test run commands as sudo."""
+        cfg = _get_pulp_smash_config(hosts=[
+            config.PulpHost(
+                hostname=socket.getfqdn(),
+                roles={'shell': {}},
+            )
+        ])
+        client = cli.Client(cfg)
+        with mock.patch.object(client, 'machine') as machine:
+
+            machine.__getitem__.return_value = machine
+            machine.run.return_value = (0, 'ok', None)
+
+            result = client.run(('ls', '-la'), sudo=True)
+
+            # Internal call is: `machine[args[0]].run(args[1:], **kwargs)`
+            # So assert `machine['sudo']` is called
+            machine.__getitem__.assert_called_once_with('sudo')
+            # then `.run(('ls', '-la'), **kwargs)`
+            machine.run.assert_called_once_with(('ls', '-la'), retcode=None)
+
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.stdout, 'ok')
+            self.assertIsNone(result.stderr)
+
 
 class IsRootTestCase(unittest.TestCase):
     """Tests for :class:`pulp_smash.cli.is_root`."""

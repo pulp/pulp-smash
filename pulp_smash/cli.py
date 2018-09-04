@@ -213,13 +213,19 @@ class Client():  # pylint:disable=too-few-public-methods
         else:
             self.response_handler = response_handler
 
-    def run(self, args, **kwargs):
+        self.cfg = cfg
+
+    def run(self, args, sudo=False, **kwargs):
         """Run a command and ``return self.response_handler(result)``.
 
         This method is a thin wrapper around Plumbum's `BaseCommand.run`_
         method, which is itself a thin wrapper around the standard library's
         `subprocess.Popen`_ class. See their documentation for detailed usage
         instructions. See :class:`pulp_smash.cli.Client` for a usage example.
+
+        :param args: Any arguments to be passed to the process (a tuple).
+        :param sudo: If the command should run as superuser (a boolean).
+        :param kwargs: Extra named arguments passed to plumbumBaseCommand.run.
 
         .. _BaseCommand.run:
            http://plumbum.readthedocs.io/en/latest/api/commands.html#plumbum.commands.base.BaseCommand.run
@@ -229,6 +235,9 @@ class Client():  # pylint:disable=too-few-public-methods
         # Let self.response_handler check return codes. See:
         # https://plumbum.readthedocs.io/en/latest/api/commands.html#plumbum.commands.base.BaseCommand.run
         kwargs.setdefault('retcode')
+
+        if sudo and args[0] != 'sudo' and not is_root(self.cfg):
+            args = ('sudo',) + tuple(args)
 
         code, stdout, stderr = self.machine[args[0]].run(args[1:], **kwargs)
         completed_process = CompletedProcess(args, code, stdout, stderr)
