@@ -1,12 +1,15 @@
 """Unit tests for pulp_smash.pulp3.utils."""
 
 import unittest
+from unittest import mock
 
+from pulp_smash import api
 from pulp_smash.pulp3.utils import (
     gen_distribution,
     gen_publisher,
     gen_remote,
     gen_repo,
+    sync,
 )
 
 
@@ -48,3 +51,14 @@ class GenTestCase(unittest.TestCase):
         repo = gen_repo(name='foorepo')
         self.assertIn('notes', repo)
         self.assertEqual('foorepo', repo['name'])
+
+    def test_sync(self):  # pylint:disable=no-self-use
+        """Test HTTP POST request for sync."""
+        remote_href = '/pulp/api/v3/remotes/file/9/'
+        repo_href = '/pulp/api/v3/repositories/11/'
+        with mock.patch.object(api, 'Client') as client:
+            remote = {'_href': remote_href}
+            repo = {'_href': repo_href}
+            sync(None, remote, repo, mirror=True)
+        data = {'repository': repo_href, 'mirror': True}
+        client.return_value.post.assert_called_once_with(remote_href + 'sync/', data)
