@@ -64,7 +64,7 @@ def get_plugins(cfg=None):
     return {version['component'] for version in status['versions']}
 
 
-def sync(cfg, remote, repo):
+def sync(cfg, remote, repo, **kwargs):
     """Sync a repository.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
@@ -72,13 +72,14 @@ def sync(cfg, remote, repo):
     :param remote: A dict of information about the remote of the repository
         to be synced.
     :param repo: A dict of information about the repository.
+    :param kwargs: Keyword arguments to be merged in to the request data.
     :returns: The server's response. Call ``.json()`` on the response to get
         a call report.
     """
     client = api.Client(cfg, api.json_handler)
-    return client.post(
-        urljoin(remote['_href'], 'sync/'), {'repository': repo['_href']}
-    )
+    data = {'repository': repo['_href']}
+    data.update(kwargs)
+    return client.post(urljoin(remote['_href'], 'sync/'), data)
 
 
 def publish(cfg, publisher, repo, version_href=None):
