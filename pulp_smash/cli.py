@@ -129,7 +129,7 @@ class CompletedProcess():
             )
 
 
-class Client():  # pylint:disable=too-few-public-methods
+class Client:  # pylint:disable=too-few-public-methods
     """A convenience object for working with a CLI.
 
     This class provides the ability to execute shell commands on either the
@@ -214,6 +214,21 @@ class Client():  # pylint:disable=too-few-public-methods
             self.response_handler = response_handler
 
         self.cfg = cfg
+        self._is_root_cache = None
+
+    @property
+    def is_superuser(self):
+        """Check if the current client is root.
+
+        If the current client is in root mode it stores the status as a cache
+        to avoid it to be called again.
+
+        This property is named `is_supersuser` to avoid conflict with existing
+        `is_root` function.
+        """
+        if self._is_root_cache is None:
+            self._is_root_cache = is_root(self.cfg)
+        return self._is_root_cache
 
     def run(self, args, sudo=False, **kwargs):
         """Run a command and ``return self.response_handler(result)``.
@@ -236,7 +251,7 @@ class Client():  # pylint:disable=too-few-public-methods
         # https://plumbum.readthedocs.io/en/latest/api/commands.html#plumbum.commands.base.BaseCommand.run
         kwargs.setdefault('retcode')
 
-        if sudo and args[0] != 'sudo' and not is_root(self.cfg):
+        if sudo and args[0] != 'sudo' and not self.is_superuser:
             args = ('sudo',) + tuple(args)
 
         code, stdout, stderr = self.machine[args[0]].run(args[1:], **kwargs)
@@ -298,58 +313,51 @@ class BaseServiceManager(metaclass=ABCMeta):
         )
 
     @contextlib.contextmanager
-    def _disable_selinux(self, client, sudo=False):
+    def _disable_selinux(self, client):
         """Context manager to temporary disable SELinux."""
-        sudo = ('sudo',) if sudo else ()
         if self._on_jenkins:
-            client.run(sudo + ('setenforce', '0'))
+            client.run(('setenforce', '0'), sudo=True)
         try:
             yield
         finally:
             if self._on_jenkins:
-                client.run(sudo + ('setenforce', '1'))
+                client.run(('setenforce', '1'), sudo=True)
 
     @staticmethod
-    def _start_sysv(client, sudo, services):
-        sudo = ('sudo',) if sudo else ()
+    def _start_sysv(client, services):
         return tuple((
-            client.run(sudo + ('service', service, 'start'))
+            client.run(('service', service, 'start'), sudo=True)
             for service in services
         ))
 
     @staticmethod
-    def _start_systemd(client, sudo, services):
-        sudo = ('sudo',) if sudo else ()
-        cmd = sudo + ('systemctl', 'start') + tuple(services)
-        return (client.run(cmd),)
+    def _start_systemd(client, services):
+        cmd = ('systemctl', 'start') + tuple(services)
+        return (client.run(cmd, sudo=True),)
 
     @staticmethod
-    def _stop_sysv(client, sudo, services):
-        sudo = ('sudo',) if sudo else ()
+    def _stop_sysv(client, services):
         return tuple((
-            client.run(sudo + ('service', service, 'stop'))
+            client.run(('service', service, 'stop'), sudo=True)
             for service in services
         ))
 
     @staticmethod
-    def _stop_systemd(client, sudo, services):
-        sudo = ('sudo',) if sudo else ()
-        cmd = sudo + ('systemctl', 'stop') + tuple(services)
-        return (client.run(cmd),)
+    def _stop_systemd(client, services):
+        cmd = ('systemctl', 'stop') + tuple(services)
+        return (client.run(cmd, sudo=True),)
 
     @staticmethod
-    def _restart_sysv(client, sudo, services):
-        sudo = ('sudo',) if sudo else ()
+    def _restart_sysv(client, services):
         return tuple((
-            client.run(sudo + ('service', service, 'restart'))
+            client.run(('service', service, 'restart'), sudo=True)
             for service in services
         ))
 
     @staticmethod
-    def _restart_systemd(client, sudo, services):
-        sudo = ('sudo',) if sudo else ()
-        cmd = sudo + ('systemctl', 'restart') + tuple(services)
-        return (client.run(cmd),)
+    def _restart_systemd(client, services):
+        cmd = ('systemctl', 'restart') + tuple(services)
+        return (client.run(cmd, sudo=True),)
 
     @abstractmethod
     def start(self, services):
@@ -414,19 +422,14 @@ class GlobalServiceManager(BaseServiceManager):
         """Initialize a GlobalServiceManager object."""
         super().__init__()
         self._cfg = cfg
-        self._is_root_cache = {}
+        self._client_cache = {}
 
-    def _check_root(self, pulp_host):
-        """Tell if we are root on the target host.
-
-        Use the cache if the information is already available.
-        """
-        try:
-            return self._is_root_cache[pulp_host.hostname]
-        except KeyError:
-            pass
-        self._is_root_cache[pulp_host.hostname] = is_root(self._cfg, pulp_host)
-        return self._is_root_cache[pulp_host.hostname]
+    def get_client(self, pulp_host, **kwargs):
+        """Get an already instantiated client from cache."""
+        return self._client_cache.setdefault(
+            pulp_host.hostname,
+            Client(self._cfg, pulp_host=pulp_host, **kwargs)
+        )
 
     def start(self, services):
         """Start the services on every host that has the services.
@@ -441,16 +444,15 @@ class GlobalServiceManager(BaseServiceManager):
             intersection = services.intersection(
                 self._cfg.get_services(host.roles))
             if intersection:
-                client = Client(self._cfg, pulp_host=host)
+                client = self.get_client(pulp_host=host)
                 svc_mgr = self._get_service_manager(self._cfg, host)
-                sudo = not self._check_root(host)
                 if svc_mgr == 'sysv':
-                    with self._disable_selinux(client, sudo):
+                    with self._disable_selinux(client):
                         result[host.hostname] = self._start_sysv(
-                            client, sudo, services)
+                            client, services)
                 elif svc_mgr == 'systemd':
                     result[host.hostname] = self._start_systemd(
-                        client, sudo, services)
+                        client, services)
                 else:
                     raise NotImplementedError(
                         'Service manager "{}" not supported on "{}"'.format(
@@ -471,16 +473,15 @@ class GlobalServiceManager(BaseServiceManager):
             intersection = services.intersection(
                 self._cfg.get_services(host.roles))
             if intersection:
-                client = Client(self._cfg, pulp_host=host)
+                client = self.get_client(pulp_host=host)
                 svc_mgr = self._get_service_manager(self._cfg, host)
-                sudo = not self._check_root(host)
                 if svc_mgr == 'sysv':
-                    with self._disable_selinux(client, sudo):
+                    with self._disable_selinux(client):
                         result[host.hostname] = self._stop_sysv(
-                            client, sudo, services)
+                            client, services)
                 elif svc_mgr == 'systemd':
                     result[host.hostname] = self._stop_systemd(
-                        client, sudo, services)
+                        client, services)
                 else:
                     raise NotImplementedError(
                         'Service manager not supported: {}'.format(svc_mgr)
@@ -500,16 +501,15 @@ class GlobalServiceManager(BaseServiceManager):
             intersection = services.intersection(
                 self._cfg.get_services(host.roles))
             if intersection:
-                client = Client(self._cfg, pulp_host=host)
+                client = self.get_client(pulp_host=host)
                 svc_mgr = self._get_service_manager(self._cfg, host)
-                sudo = not self._check_root(host)
                 if svc_mgr == 'sysv':
-                    with self._disable_selinux(client, sudo):
+                    with self._disable_selinux(client):
                         result[host.hostname] = self._restart_sysv(
-                            client, sudo, services)
+                            client, services)
                 elif svc_mgr == 'systemd':
                     result[host.hostname] = self._restart_systemd(
-                        client, sudo, services)
+                        client, services)
                 else:
                     raise NotImplementedError(
                         'Service manager not supported: {}'.format(svc_mgr)
@@ -558,7 +558,6 @@ class ServiceManager(BaseServiceManager):
         """Initialize a new object."""
         super().__init__()
         self._client = Client(cfg, pulp_host=pulp_host)
-        self._sudo = not is_root(cfg, pulp_host)
         self._svc_mgr = self._get_service_manager(cfg, pulp_host)
 
     def start(self, services):
@@ -569,10 +568,10 @@ class ServiceManager(BaseServiceManager):
             objects.
         """
         if self._svc_mgr == 'sysv':
-            with self._disable_selinux(self._client, self._sudo):
-                return self._start_sysv(self._client, self._sudo, services)
+            with self._disable_selinux(self._client):
+                return self._start_sysv(self._client, services)
         elif self._svc_mgr == 'systemd':
-            return self._start_systemd(self._client, self._sudo, services)
+            return self._start_systemd(self._client, services)
         else:
             raise NotImplementedError(
                 'Service manager not supported: {}'.format(self._svc_mgr)
@@ -586,10 +585,10 @@ class ServiceManager(BaseServiceManager):
             objects.
         """
         if self._svc_mgr == 'sysv':
-            with self._disable_selinux(self._client, self._sudo):
-                return self._stop_sysv(self._client, self._sudo, services)
+            with self._disable_selinux(self._client):
+                return self._stop_sysv(self._client, services)
         elif self._svc_mgr == 'systemd':
-            return self._stop_systemd(self._client, self._sudo, services)
+            return self._stop_systemd(self._client, services)
         else:
             raise NotImplementedError(
                 'Service manager not supported: {}'.format(self._svc_mgr)
@@ -603,17 +602,17 @@ class ServiceManager(BaseServiceManager):
             objects.
         """
         if self._svc_mgr == 'sysv':
-            with self._disable_selinux(self._client, self._sudo):
-                return self._restart_sysv(self._client, self._sudo, services)
+            with self._disable_selinux(self._client):
+                return self._restart_sysv(self._client, services)
         elif self._svc_mgr == 'systemd':
-            return self._restart_systemd(self._client, self._sudo, services)
+            return self._restart_systemd(self._client, services)
         else:
             raise NotImplementedError(
                 'Service manager not supported: {}'.format(self._svc_mgr)
             )
 
 
-class PackageManager():
+class PackageManager:
     """A package manager on a host.
 
     Each instance of this class represents the package manager on a host. An
@@ -647,7 +646,6 @@ class PackageManager():
     def __init__(self, cfg):
         """Initialize a new object."""
         self._client = Client(cfg)
-        self._sudo = () if is_root(cfg) else ('sudo',)
         self._pkg_mgr = self._get_package_manager(cfg)
 
     @staticmethod
@@ -669,7 +667,7 @@ class PackageManager():
             (('which', 'yum'), 'yum'),
         )
         for cmd, pkg_mgr in commands_managers:
-            if client.run(cmd).returncode == 0:
+            if client.run(cmd, sudo=True).returncode == 0:
                 _PACKAGE_MANAGERS[hostname] = pkg_mgr
                 return pkg_mgr
         raise exceptions.NoKnownPackageManagerError(
@@ -683,39 +681,21 @@ class PackageManager():
 
         :rtype: pulp_smash.cli.CompletedProcess
         """
-        if self._pkg_mgr == 'dnf':
-            cmd = self._sudo + ('dnf', '-y', 'install') + tuple(args)
-        elif self._pkg_mgr == 'yum':
-            cmd = self._sudo + ('yum', '-y', 'install') + tuple(args)
-        else:
-            cmd = None
-        assert cmd is not None
-        return self._client.run(cmd)
+        cmd = (self._pkg_mgr, '-y', 'install') + tuple(args)
+        return self._client.run(cmd, sudo=True)
 
     def uninstall(self, *args):
         """Uninstall the named packages.
 
         :rtype: pulp_smash.cli.CompletedProcess
         """
-        if self._pkg_mgr == 'dnf':
-            cmd = self._sudo + ('dnf', '-y', 'remove') + tuple(args)
-        elif self._pkg_mgr == 'yum':
-            cmd = self._sudo + ('yum', '-y', 'remove') + tuple(args)
-        else:
-            cmd = None
-        assert cmd is not None
-        return self._client.run(cmd)
+        cmd = (self._pkg_mgr, '-y', 'remove') + tuple(args)
+        return self._client.run(cmd, sudo=True)
 
     def upgrade(self, *args):
         """Upgrade the named packages.
 
         :rtype: pulp_smash.cli.CompletedProcess
         """
-        if self._pkg_mgr == 'dnf':
-            cmd = self._sudo + ('dnf', '-y', 'upgrade') + tuple(args)
-        elif self._pkg_mgr == 'yum':
-            cmd = self._sudo + ('yum', '-y', 'update') + tuple(args)
-        else:
-            cmd = None
-        assert cmd is not None
-        return self._client.run(cmd)
+        cmd = (self._pkg_mgr, '-y', 'update') + tuple(args)
+        return self._client.run(cmd, sudo=True)

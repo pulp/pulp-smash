@@ -397,15 +397,13 @@ def reset_pulp(cfg):
     client = cli.Client(cfg, pulp_host=cfg.get_hosts('mongod')[0])
     client.run('mongo pulp_database --eval db.dropDatabase()'.split())
 
-    for index, host in enumerate(cfg.get_hosts('api')):
-        prefix = '' if cli.is_root(cfg, pulp_host=host) else 'sudo '
+    for index, _ in enumerate(cfg.get_hosts('api')):
         if index == 0:
             client.run((
-                prefix + 'runuser --shell /bin/sh apache --command '
-                'pulp-manage-db'
-            ).split())
-        client.run((prefix + 'rm -rf /var/lib/pulp/content').split())
-        client.run((prefix + 'rm -rf /var/lib/pulp/published').split())
+                'runuser --shell /bin/sh apache --command pulp-manage-db'
+            ).split(), sudo=True)
+        client.run(('rm -rf /var/lib/pulp/content').split(), sudo=True)
+        client.run(('rm -rf /var/lib/pulp/published').split(), sudo=True)
 
     svc_mgr.start(PULP_SERVICES)
 
@@ -422,17 +420,16 @@ def reset_squid(cfg):
     svc_mgr.stop(('squid',))
 
     # Remove and re-initialize the cache directory.
-    sudo = () if cli.is_root(cfg) else ('sudo',)
     client = cli.Client(cfg)
-    client.run(sudo + ('rm', '-rf', '/var/spool/squid'))
-    client.run(sudo + (
+    client.run(('rm', '-rf', '/var/spool/squid'), sudo=True)
+    client.run((
         'mkdir', '--context=system_u:object_r:squid_cache_t:s0', '--mode=750',
-        '/var/spool/squid'))
-    client.run(sudo + ('chown', 'squid:squid', '/var/spool/squid'))
+        '/var/spool/squid'), sudo=True)
+    client.run(('chown', 'squid:squid', '/var/spool/squid'), sudo=True)
     if squid_version < Version('4'):
-        client.run(sudo + ('squid', '-z'))
+        client.run(('squid', '-z'), sudo=True)
     else:
-        client.run(sudo + ('squid', '-z', '--foreground'))
+        client.run(('squid', '-z', '--foreground'), sudo=True)
 
     svc_mgr.start(('squid',))
 
