@@ -10,6 +10,7 @@ help:
 	@echo "  docs-html      to generate HTML documentation"
 	@echo "  docs-clean     to remove documentation"
 	@echo "  docs-api       to (re)generate .rst files for the API"
+	@echo "  install-dev    to install in editable mode with development dependencies"
 	@echo "  lint           to run all linters"
 	@echo "  lint-flake8    to run the flake8 linter"
 	@echo "  lint-pylint    to run the pylint linter"
@@ -22,7 +23,7 @@ help:
 # is compiled, and Sphinx does not needlessly recompile.) More broadly, we
 # order dependencies by execution time and (anecdotal) likelihood of finding
 # issues. ¶ `test-coverage` is a functional superset of `test`. Why keep both?
-all: test-coverage lint docs-clean docs-html dist-clean dist
+all: test-coverage lint docs-clean docs-html dist-clean dist install-dev
 
 dist:
 	./setup.py --quiet sdist bdist_wheel --universal test
@@ -39,6 +40,9 @@ docs-clean:
 docs-api:
 	rm -rf docs/api/*
 	scripts/gen_api_docs.sh
+
+install-dev:
+	pip install -q -e .[dev]
 
 lint: lint-flake8 lint-pylint
 
@@ -63,4 +67,4 @@ test-coverage:
 	coverage run --include 'pulp_smash/*' --omit 'pulp_smash/tests/*' $(TEST_OPTIONS)
 
 .PHONY: help all docs-html docs-clean docs-api lint lint-flake8 lint-pylint \
-    test test-coverage dist-clean publish
+    test test-coverage dist-clean publish install-dev
