@@ -23,7 +23,7 @@ help:
 # is compiled, and Sphinx does not needlessly recompile.) More broadly, we
 # order dependencies by execution time and (anecdotal) likelihood of finding
 # issues. ¶ `test-coverage` is a functional superset of `test`. Why keep both?
-all: test-coverage lint docs-clean docs-html dist-clean dist install-dev
+all: test-coverage lint docs-clean docs-html dist-clean dist
 
 dist:
 	./setup.py --quiet sdist bdist_wheel --universal test
