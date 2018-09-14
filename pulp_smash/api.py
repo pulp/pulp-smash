@@ -502,7 +502,7 @@ def poll_spawned_tasks(cfg, call_report, pulp_host=None):
     if cfg.pulp_version < Version('3'):
         hrefs = (task['_href'] for task in call_report['spawned_tasks'])
     else:
-        hrefs = [call_report['_href']]
+        hrefs = [call_report['task']]
     for href in hrefs:
         for final_task_state in poll_task(cfg, href, pulp_host):
             yield final_task_state
