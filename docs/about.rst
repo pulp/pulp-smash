@@ -136,11 +136,15 @@ Issue Type: Test Case
     This label indicates that an issue is asking for a test case to be
     automated. (Issues with this label are a special type of plan.)
 
+Creating issues
+~~~~~~~~~~~~~~~
+
 Pulp Version: 2
-    This label indicates that an issue is specific to Pulp 2.
+    Issues related to Pulp 2 should be created on `Pulp 2 Tests`_.
 
 Pulp Version: 3
-    This label indicates that an issue is specific to Pulp 3.
+    Issues related to Pulp3 should be created on `pulp.plan.io`_. Choose the tags
+    *Pulp 3* and *Functional test*.
 
 .. [1] Portable software cannot make assumptions about its environment. It
     cannot reference ``/etc/pki/tls/certs/ca-bundle.crt``  or call ``yum``.
@@ -164,3 +168,4 @@ Pulp Version: 3
 .. _labels: https://github.com/PulpQE/pulp-smash/labels
 .. _pull request reviews: https://help.github.com/articles/about-pull-request-reviews/
 .. _rewrite history: https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History
+.. _pulp.plan.io: https://pulp.plan.io/
