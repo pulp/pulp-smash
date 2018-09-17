@@ -67,6 +67,8 @@ Code Standards
 
 Please adhere to the following guidelines:
 
+* Code should be compliant with `PEP-8`_. It is recommended to check for
+  compliance by running ``make lint``.
 * Pull requests must pass the `Travis CI`_ continuous integration tests. You can
   locally verify your changes before submitting a pull request by executing
   ``make all``.
@@ -143,7 +145,7 @@ Pulp Version: 2
     Issues related to Pulp 2 should be created on `Pulp 2 Tests`_.
 
 Pulp Version: 3
-    Issues related to Pulp3 should be created on `pulp.plan.io`_. Choose the tags
+    Issues related to Pulp 3 should be created on `pulp.plan.io`_. Choose the tags
     *Pulp 3* and *Functional test*.
 
 .. [1] Portable software cannot make assumptions about its environment. It
@@ -169,3 +171,4 @@ Pulp Version: 3
 .. _pull request reviews: https://help.github.com/articles/about-pull-request-reviews/
 .. _rewrite history: https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History
 .. _pulp.plan.io: https://pulp.plan.io/
+.. _PEP-8: https://www.python.org/dev/peps/pep-0008
