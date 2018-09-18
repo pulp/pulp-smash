@@ -639,27 +639,34 @@ class PackageManager:
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the target
         host.
-    :raises pulp_smash.exceptions.NoKnownPackageManagerError: If unable to find
-        any package manager on the target host.
     """
 
     def __init__(self, cfg):
         """Initialize a new object."""
+        self._cfg = cfg
         self._client = Client(cfg)
-        self._pkg_mgr = self._get_package_manager(cfg)
+        self._name = None
+
+    @property
+    def name(self):
+        """Return the name of the Package Manager."""
+        if not self._name:
+            self._name = self._get_package_manager(self._cfg)
+        return self._name
 
     @staticmethod
     def _get_package_manager(cfg):
         """Talk to the target host and determine the package manager.
 
         Return "dnf" or "yum" if the package manager appears to be one of
-        those. Raise an exception otherwise.
+        those.
+
+        :raises pulp_smash.exceptions.NoKnownPackageManagerError: If unable to
+        find any valid package manager on the target host.
         """
         hostname = urlsplit(cfg.get_base_url()).hostname
-        try:
+        with contextlib.suppress(KeyError):
             return _PACKAGE_MANAGERS[hostname]
-        except KeyError:
-            pass
 
         client = Client(cfg, echo_handler)
         commands_managers = (
@@ -681,7 +688,7 @@ class PackageManager:
 
         :rtype: pulp_smash.cli.CompletedProcess
         """
-        cmd = (self._pkg_mgr, '-y', 'install') + tuple(args)
+        cmd = (self.name, '-y', 'install') + tuple(args)
         return self._client.run(cmd, sudo=True)
 
     def uninstall(self, *args):
@@ -689,7 +696,7 @@ class PackageManager:
 
         :rtype: pulp_smash.cli.CompletedProcess
         """
-        cmd = (self._pkg_mgr, '-y', 'remove') + tuple(args)
+        cmd = (self.name, '-y', 'remove') + tuple(args)
         return self._client.run(cmd, sudo=True)
 
     def upgrade(self, *args):
@@ -697,5 +704,22 @@ class PackageManager:
 
         :rtype: pulp_smash.cli.CompletedProcess
         """
-        cmd = (self._pkg_mgr, '-y', 'update') + tuple(args)
+        cmd = (self.name, '-y', 'update') + tuple(args)
         return self._client.run(cmd, sudo=True)
+
+    def _dnf_apply_erratum(self, erratum):
+        """Apply erratum using dnf."""
+        lines = self._client.run((
+            'dnf', '--quiet', 'updateinfo', 'list', erratum
+        ), sudo=True).stdout.strip().splitlines()
+        upgrade_targets = tuple((line.split()[2] for line in lines))
+        return self.upgrade(upgrade_targets)
+
+    def _yum_apply_erratum(self, erratum):
+        """Apply erratum using yum."""
+        upgrade_targets = ('--advisory', erratum)
+        return self.upgrade(upgrade_targets)
+
+    def apply_erratum(self, erratum):
+        """Dispatch to proper _{self.name}_apply_erratum."""
+        return getattr(self, '_{0}_apply_erratum'.format(self.name))(erratum)
