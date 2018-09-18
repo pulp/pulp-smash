@@ -7,6 +7,7 @@ from unittest import mock
 from plumbum.machines.local import LocalMachine
 
 from pulp_smash import cli, config, exceptions, utils
+from pulp_smash.exceptions import NoKnownPackageManagerError
 
 
 class EchoHandlerTestCase(unittest.TestCase):
@@ -234,6 +235,112 @@ class IsRootTestCase(unittest.TestCase):
         with mock.patch.object(cli, 'Client') as client:
             client.return_value.run.return_value.stdout = ' 1 '
             self.assertFalse(cli.is_root(mock.MagicMock()))
+
+
+class PackageManagerTestCase(unittest.TestCase):
+    """Tests for :class:`pulp_smash.cli.PackageManager`."""
+
+    # pylint:disable=no-member
+    # pylint:disable=protected-access
+    # pylint:disable=cell-var-from-loop
+
+    @classmethod
+    def setUpClass(cls):
+        """Set common cfg for all tests."""
+        cls.cfg = _get_pulp_smash_config(hosts=[
+            config.PulpHost(
+                hostname=socket.getfqdn(),
+                roles={'shell': {}, 'api': {'scheme': 'https'}},
+            )
+        ])
+
+    def test_raise_no_known_package_manager(self, ):
+        """Test if invalid package manager throws exception."""
+        with mock.patch.object(cli, 'Client') as client:
+            client.return_value.run.return_value.returncode = 1
+            # `fpm` is a Fake Package Manager
+            client.return_value.run.return_value.stdout = 'fpm'
+            pkr_mgr = cli.PackageManager(self.cfg)
+            with self.assertRaises(NoKnownPackageManagerError):
+                self.assertIn(pkr_mgr.name, ('yum', 'dnf'))
+
+    def test_package_manager_name(self):
+        """Test the property `name` returns the proper Package Manager."""
+        for name in ('yum', 'dnf'):
+            pkr_mgr = cli.PackageManager(self.cfg)
+            with mock.patch.object(
+                    pkr_mgr, '_get_package_manager', lambda *_, **__: name
+            ):
+                with self.subTest(name=name):
+                    # asserts .name property gets the proper value
+                    self.assertEqual(pkr_mgr.name, name)
+
+    def test_install(self):
+        """Test client is called with installation command."""
+        with mock.patch.object(cli, 'Client') as client:
+            client.return_value.run.return_value.returncode = 0
+            client.return_value.run.return_value.stdout = 'installed'
+            pkr_mgr = cli.PackageManager(self.cfg)
+            with mock.patch.object(
+                    pkr_mgr, '_get_package_manager', lambda *_, **__: 'dnf'
+            ):
+                response = pkr_mgr.install('fake-package-42')
+                self.assertEqual(response.stdout, 'installed')
+                pkr_mgr._client.run.assert_called_once_with(
+                    ('dnf', '-y', 'install', 'fake-package-42'), sudo=True
+                )
+
+    def test_uninstall(self):
+        """Test client is called with uninstallation command."""
+        with mock.patch.object(cli, 'Client') as client:
+            client.return_value.run.return_value.returncode = 0
+            client.return_value.run.return_value.stdout = 'uninstalled'
+            pkr_mgr = cli.PackageManager(self.cfg)
+            with mock.patch.object(
+                    pkr_mgr, '_get_package_manager', lambda *_, **__: 'dnf'
+            ):
+                response = pkr_mgr.uninstall('fake-package-42')
+                self.assertEqual(response.stdout, 'uninstalled')
+                pkr_mgr._client.run.assert_called_once_with(
+                    ('dnf', '-y', 'remove', 'fake-package-42'), sudo=True
+                )
+
+    def test_upgrade(self):
+        """Test client is called with upgrade command."""
+        with mock.patch.object(cli, 'Client') as client:
+            client.return_value.run.return_value.returncode = 0
+            client.return_value.run.return_value.stdout = 'updated'
+            pkr_mgr = cli.PackageManager(self.cfg)
+            with mock.patch.object(
+                    pkr_mgr, '_get_package_manager', lambda *_, **__: 'dnf'
+            ):
+                response = pkr_mgr.upgrade('fake-package-42')
+                self.assertEqual(response.stdout, 'updated')
+                pkr_mgr._client.run.assert_called_once_with(
+                    ('dnf', '-y', 'update', 'fake-package-42'), sudo=True
+                )
+
+    def test_apply_erratum(self):
+        """Test apply erratum is called for supported package managers."""
+        with mock.patch.object(cli, 'Client') as client:
+            client.return_value.run.return_value.returncode = 0
+            for name in ('yum', 'dnf'):
+                pkr_mgr = cli.PackageManager(self.cfg)
+                with mock.patch.object(
+                        pkr_mgr, '_get_package_manager', lambda *_, **__: name
+                ), mock.patch.object(
+                    pkr_mgr, '_client'
+                ), mock.patch.object(
+                    pkr_mgr, '_dnf_apply_erratum'
+                ), mock.patch.object(
+                    pkr_mgr, '_yum_apply_erratum'
+                ):
+                    pkr_mgr.apply_erratum('1234:4567')
+                    method = getattr(
+                        pkr_mgr,
+                        '_{0}_apply_erratum'.format(pkr_mgr.name)
+                    )
+                    method.assert_called_once_with('1234:4567')
 
 
 def _get_pulp_smash_config(hosts):
