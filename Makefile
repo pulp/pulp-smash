@@ -47,8 +47,9 @@ install-dev:
 lint: lint-flake8 lint-pylint
 
 # E501 and F401 are ignored because Pylint performs similar checks.
+# W504 ignored since it requires line breaks after binary operators.
 lint-flake8:
-	flake8 . --ignore E501,F401 --exclude docs/_build
+	flake8 . --ignore E501,F401,W504 --exclude docs/_build
 
 lint-pylint:
 	pylint -j $(CPU_COUNT) --reports=n --disable=I \
