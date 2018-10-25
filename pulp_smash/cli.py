@@ -359,6 +359,22 @@ class BaseServiceManager(metaclass=ABCMeta):
         cmd = ('systemctl', 'restart') + tuple(services)
         return (client.run(cmd, sudo=True),)
 
+    @staticmethod
+    def _is_active_sysv(client, services):
+        with contextlib.suppress(exceptions.CalledProcessError):
+            return tuple((
+                client.run(('service', service, 'status'), sudo=True)
+                for service in services
+            ))
+        return False
+
+    @staticmethod
+    def _is_active_systemd(client, services):
+        with contextlib.suppress(exceptions.CalledProcessError):
+            cmd = ('systemctl', 'is-active') + tuple(services)
+            return (client.run(cmd, sudo=True),)
+        return False
+
     @abstractmethod
     def start(self, services):
         """Start the given services.
@@ -380,6 +396,15 @@ class BaseServiceManager(metaclass=ABCMeta):
         """Restart the given services.
 
         :param services: A list or tuple of services to be restarted.
+        """
+        pass
+
+    @abstractmethod
+    def is_active(self, services):
+        """Check whether given services are active.
+
+        :param services: A list or tuple of services to check.
+        :return: boolean
         """
         pass
 
@@ -516,6 +541,33 @@ class GlobalServiceManager(BaseServiceManager):
                     )
         return result
 
+    def is_active(self, services):
+        """Check whether given services are active.
+
+        :param services: A list or tuple of services to check.
+        :return: boolean
+        """
+        services = set(services)
+        result = {}
+        for host in self._cfg.hosts:
+            intersection = services.intersection(
+                self._cfg.get_services(host.roles))
+            if intersection:
+                client = self.get_client(pulp_host=host)
+                svc_mgr = self._get_service_manager(self._cfg, host)
+                if svc_mgr == 'sysv':
+                    with self._disable_selinux(client):
+                        result[host.hostname] = self._is_active_sysv(
+                            client, services)
+                elif svc_mgr == 'systemd':
+                    result[host.hostname] = self._is_active_systemd(
+                        client, services)
+                else:
+                    raise NotImplementedError(
+                        'Service manager not supported: {}'.format(svc_mgr)
+                    )
+        return result
+
 
 class ServiceManager(BaseServiceManager):
     """A service manager on a host.
@@ -606,6 +658,22 @@ class ServiceManager(BaseServiceManager):
                 return self._restart_sysv(self._client, services)
         elif self._svc_mgr == 'systemd':
             return self._restart_systemd(self._client, services)
+        else:
+            raise NotImplementedError(
+                'Service manager not supported: {}'.format(self._svc_mgr)
+            )
+
+    def is_active(self, services):
+        """Check whether given services are active.
+
+        :param services: A list or tuple of services to check.
+        :return: boolean
+        """
+        if self._svc_mgr == 'sysv':
+            with self._disable_selinux(self._client):
+                return self._is_active_sysv(self._client, services)
+        elif self._svc_mgr == 'systemd':
+            return self._is_active_systemd(self._client, services)
         else:
             raise NotImplementedError(
                 'Service manager not supported: {}'.format(self._svc_mgr)
