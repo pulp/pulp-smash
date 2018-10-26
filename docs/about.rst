@@ -138,15 +138,34 @@ Issue Type: Test Case
     This label indicates that an issue is asking for a test case to be
     automated. (Issues with this label are a special type of plan.)
 
+   .. warning::
+      This label was kept here for historical reasons. Test cases for Pulp 2 or
+      Pulp 3 should not be filed on Pulp Smash anymore.
+      See: `creating issues`_
+
+
 Creating issues
 ~~~~~~~~~~~~~~~
 
-Pulp Version: 2
-    Issues related to Pulp 2 should be created on `Pulp 2 Tests`_.
+1 - *Pulp Smash Issues*
 
-Pulp Version: 3
-    Issues related to Pulp 3 should be created on `pulp.plan.io`_. Choose the tags
-    *Pulp 3* and *Functional test*.
+  Issues related to Pulp-Smash itself should be filed on `Pulp Smash issues`_.
+
+2 - *Pulp 2 and Pulp 3 Issues*
+
+   As an effort to simplify where issues were tracked, Pulp 2 and Pulp 3 issues
+   are being tracked on `pulp.plan.io`_ for the sake of simplicity.
+
+   A new tracker type ``Test`` was created. Test cases should be related to the
+   parent issue so they can be worked and groomed separately, if applicable.
+
+   Select the proper fields to distinguish Pulp versions, and so on.
+
+   To illustrate: `test case`_.
+
+   .. warning::
+      On `pulp.plan.io`_ the field `Smash Test` was kept for historical reasons. It
+      should not be used anymore.
 
 .. [1] Portable software cannot make assumptions about its environment. It
     cannot reference ``/etc/pki/tls/certs/ca-bundle.crt``  or call ``yum``.
@@ -172,3 +191,5 @@ Pulp Version: 3
 .. _rewrite history: https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History
 .. _pulp.plan.io: https://pulp.plan.io/
 .. _PEP-8: https://www.python.org/dev/peps/pep-0008
+.. _test case: https://pulp.plan.io/issues/4035
+.. _Pulp Smash issues: https://github.com/PulpQE/pulp-smash/issues
