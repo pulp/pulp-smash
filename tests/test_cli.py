@@ -264,6 +264,26 @@ class PackageManagerTestCase(unittest.TestCase):
             with self.assertRaises(NoKnownPackageManagerError):
                 self.assertIn(pkr_mgr.name, ('yum', 'dnf'))
 
+    def test_raise_if_unsupported(self, ):
+        """Test if proper exception raises on raise_if_unsupported."""
+        with mock.patch.object(cli, 'Client') as client:
+            client.return_value.run.return_value.returncode = 1
+            # `fpm` is a Fake Package Manager
+            client.return_value.run.return_value.stdout = 'fpm'
+
+            # Should not raise error without raise_if_unsupported param
+            cli.PackageManager(self.cfg)
+
+            with self.assertRaises(RuntimeError):
+                cli.PackageManager(self.cfg, (RuntimeError, 'foo'))
+
+            with self.assertRaises(RuntimeError):
+                cli.PackageManager(self.cfg, [RuntimeError])
+
+            with self.assertRaises(RuntimeError):
+                pkr_mgr = cli.PackageManager(self.cfg)
+                pkr_mgr.raise_if_unsupported(RuntimeError)
+
     def test_package_manager_name(self):
         """Test the property `name` returns the proper Package Manager."""
         for name in ('yum', 'dnf'):

@@ -707,13 +707,22 @@ class PackageManager:
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the target
         host.
+    :param tuple raise_if_unsupported: a tuple of Exception and optional
+        string message to force raise_if_unsupported on initialization::
+
+          pm = PackageManager(cfg, (unittest.SkipTest, 'Test requires yum'))
+          # will raise and skip if unsupported package manager
+
+        The optional is calling `pm.raise_if_unsupported` explicitly.
     """
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, raise_if_unsupported=None):
         """Initialize a new object."""
         self._cfg = cfg
         self._client = Client(cfg)
         self._name = None
+        if raise_if_unsupported is not None:
+            self.raise_if_unsupported(*raise_if_unsupported)
 
     @property
     def name(self):
@@ -721,6 +730,22 @@ class PackageManager:
         if not self._name:
             self._name = self._get_package_manager(self._cfg)
         return self._name
+
+    def raise_if_unsupported(self, exc, message='Unsupported package manager'):
+        """Check if the package manager is supported else raise exc.
+
+        Use case::
+
+            pm = PackageManager(cfg)
+            pm.raise_if_unsupported(unittest.SkipTest, 'Test requires yum/dnf')
+            # will raise and skip if not yum or dnf
+            pm.install('foobar')
+
+        """
+        try:
+            self.name
+        except exceptions.NoKnownPackageManagerError:
+            raise exc(message)
 
     @staticmethod
     def _get_package_manager(cfg):
