@@ -22,6 +22,8 @@ DISTRIBUTION_PATH = urljoin(BASE_PATH, 'distributions/')
 
 JWT_PATH = urljoin(BASE_PATH, 'jwt/')
 
+MEDIA_PATH = '/var/lib/pulp'
+
 ORPHANS_PATH = urljoin(BASE_PATH, 'orphans/')
 
 PUBLICATIONS_PATH = urljoin(BASE_PATH, 'publications/')
