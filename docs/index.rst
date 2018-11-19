@@ -26,6 +26,7 @@ Documentation contents:
 
     installation
     configuration
+    usage
     about
     api
     changelog

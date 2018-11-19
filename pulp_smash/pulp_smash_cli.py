@@ -1,6 +1,9 @@
 # coding=utf-8
 """The entry point for Pulp Smash's command line interface."""
 import json
+import multiprocessing
+import os
+import subprocess  # nosec
 import sys
 
 import click
@@ -23,6 +26,38 @@ def _raise_settings_not_found():
 @click.group()
 def pulp_smash():
     """Pulp Smash facilitates functional testing of Pulp."""
+
+
+@pulp_smash.command()
+@click.argument('filepath', default='.')
+@click.option('--pylint', is_flag=True, default=False, help='Enables pylint')
+@click.option('--picked', is_flag=True, default=False,
+              help='Checks only git changed files')
+def lint(filepath, pylint, picked):
+    """Lint input files.
+
+    Usage: `pulp-smash lint /path/to/files/`
+    """
+    if picked:
+        output = subprocess.run(
+            'git diff --name-only | grep ".py$"',
+            stdout=subprocess.PIPE,
+            shell=True
+        )
+        filepath = output.stdout.decode('utf-8').replace('\n', ' ')
+        if output.returncode != 0:
+            click.echo('No changed files to pick.')
+            return
+    click.echo('Checking files {0}'.format(filepath))
+    errors = os.system('flake8 {0} --ignore F401,W504'.format(filepath))
+    if pylint:
+        errors += os.system(
+            'pylint -j {0} --reports=n --disable=I {1}'.format(
+                multiprocessing.cpu_count(), filepath
+            )
+        )
+    if errors:
+        sys.exit(1)
 
 
 @pulp_smash.group()
