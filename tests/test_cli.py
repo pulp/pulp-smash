@@ -80,7 +80,7 @@ class CompletedProcessTestCase(unittest.TestCase):
     def test_can_eval(self):
         """Assert ``__repr__()`` can be parsed by ``eval()``."""
         string = repr(cli.CompletedProcess(**self.kwargs))
-        from pulp_smash.cli import CompletedProcess  # pylint:disable=unused-variable
+        from pulp_smash.cli import CompletedProcess  # pylint:disable=unused-import
         # pylint:disable=eval-used
         self.assertEqual(string, repr(eval(string)))
 

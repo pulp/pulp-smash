@@ -52,7 +52,7 @@ lint-flake8:
 	flake8 . --ignore E501,F401,W504 --exclude docs/_build
 
 lint-pylint:
-	pylint -j $(CPU_COUNT) --reports=n --disable=I \
+	pylint -j $(CPU_COUNT) --reports=n --disable=I,unnecessary-pass \
 		docs/conf.py \
 		pulp_smash \
 		setup.py \
