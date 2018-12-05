@@ -282,6 +282,6 @@ def gen_remote(url, **kwargs):
 
 def gen_repo(**kwargs):
     """Return a semi-random dict for use in creating a Repository."""
-    data = {'name': utils.uuid4(), 'notes': {}}
+    data = {'name': utils.uuid4()}
     data.update(kwargs)
     return data

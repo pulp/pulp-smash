@@ -45,11 +45,9 @@ class GenTestCase(unittest.TestCase):
 
     def test_gen_repo(self):
         """Tests the generation of a repository dict."""
-        self.assertIn('notes', gen_repo())
         self.assertIn('name', gen_repo())
 
         repo = gen_repo(name='foorepo')
-        self.assertIn('notes', repo)
         self.assertEqual('foorepo', repo['name'])
 
     def test_sync(self):  # pylint:disable=no-self-use
