@@ -1,5 +1,6 @@
 # coding=utf-8
 """Utility functions for Pulp 3 tests."""
+from collections import defaultdict
 import warnings
 from urllib.parse import urljoin, urlsplit
 
@@ -114,142 +115,76 @@ def publish(cfg, publisher, repo, version_href=None):
     return client.get(tasks[-1]['created_resources'][0])
 
 
-def get_content(repo, version_href=None):
-    """Read the content units of a given repository.
+def _build_content_fetcher(content_field):
+    """Build closure for fetching content from a repository.
 
-    :param repo: A dict of information about the repository.
-    :param version_href: The repository version to read. If none, read the
-        latest repository version.
-    :returns: A list of information about the content units present in a given
-        repository version.
+    :param content_field: The name of a field on a RepositoryVersion, which
+        contains a dict of content types and the URL at which to view content.
+    :returns: A closure which returns content from the specified field.
     """
-    version_href = version_href or repo['_latest_version_href']
+    def inner(repo, version_href=None):
+        """Read the content units of a given repository.
 
-    if version_href is None:
-        # Repository has no latest version, and therefore no content.
-        return {}
+        :param repo: A dict of information about the repository.
+        :param version_href: The repository version to read. If none, read the
+            latest repository version.
+        :returns: A list of information about the content units present in a given
+            repository version.
+        """
+        version_href = version_href or repo['_latest_version_href']
 
-    client = api.Client(config.get_config(), api.page_handler)
-    repo_version = client.get(version_href)
+        if version_href is None:
+            # Repository has no latest version, and therefore no content.
+            return defaultdict(list)
 
-    content = {}
-    for content_type, content_url in repo_version['content_hrefs'].items():
-        typed_content = client.get(content_url)
-        content[content_type] = typed_content
-    return content
+        client = api.Client(config.get_config(), api.page_handler)
+        repo_version = client.get(version_href)
+
+        content = defaultdict(list)
+        for content_type, content_url in repo_version[content_field].items():
+            typed_content = client.get(content_url)
+            content[content_type] = typed_content
+        return content
+    return inner
 
 
-def get_added_content(repo, version_href=None):
-    """Read the added content of a given repository version.
+get_content = _build_content_fetcher('content_hrefs')  # pylint:disable=invalid-name
+get_added_content = _build_content_fetcher('content_added_hrefs')  # pylint:disable=invalid-name
+get_removed_content = _build_content_fetcher('content_removed_hrefs')  # pylint:disable=invalid-name
 
-    :param repo: A dict of information about a repository.
-    :param version_href: The repository version to read. If none, read the
-        latest repository version.
-    :returns: A list of information about the content added since the previous
-        repository version.
+
+def _build_summary_fetcher(summary_field):
+    """Build closure for fetching content summaries from a repository.
+
+    :param content_field: The name of a field on a RepositoryVersion, which
+        contains a dict of content types and their counts.
+    :returns: A closure which returns content from the specified field.
     """
-    version_href = version_href or repo['_latest_version_href']
+    def inner(repo, version_href=None):
+        """Read the "content summary" of a given repository version.
 
-    if version_href is None:
-        # Repository has no latest version, and therefore no content.
-        return {}
+        Repository versions have a "content_summary" which lists the content
+        types and the number of units of that type present in the repo version.
 
-    client = api.Client(config.get_config(), api.page_handler)
-    repo_version = client.get(version_href)
+        :param repo: A dict of information about the repository.
+        :param version_href: The repository version to read. If none, read the
+            latest repository version.
+        :returns: The "content_summary" of the repo version.
+        """
+        version_href = version_href or repo['_latest_version_href']
 
-    content = {}
-    for content_type, content_url in repo_version['content_added_hrefs'].items():
-        typed_content = client.get(content_url)
-        content[content_type] = typed_content
-    return content
+        if version_href is None:
+            # Repository has no latest version, and therefore no content.
+            return defaultdict(lambda x: 0)
 
-
-def get_removed_content(repo, version_href=None):
-    """Read the removed content of a given repository version.
-
-    :param repo: A dict of information about the repository.
-    :param version_href: The repository version to read. If none, read the
-        latest repository version.
-    :returns: A list of information about the content removed since the
-        previous repository version.
-    """
-    version_href = version_href or repo['_latest_version_href']
-
-    if version_href is None:
-        # Repository has no latest version, and therefore no content.
-        return {}
-
-    client = api.Client(config.get_config(), api.page_handler)
-    repo_version = client.get(version_href)
-
-    content = {}
-    for content_type, content_url in repo_version['content_removed_hrefs'].items():
-        typed_content = client.get(content_url)
-        content[content_type] = typed_content
-    return content
+        client = api.Client(config.get_config(), api.page_handler)
+        return client.get(version_href)[summary_field]
+    return inner
 
 
-def get_content_summary(repo, version_href=None):
-    """Read the "content summary" of a given repository version.
-
-    Repository versions have a "content_summary" which lists the content types
-    and the number of units of that type present in the repo version.
-
-    :param repo: A dict of information about the repository.
-    :param version_href: The repository version to read. If none, read the
-        latest repository version.
-    :returns: The "content_summary" of the repo version.
-    """
-    version_href = version_href or repo['_latest_version_href']
-
-    if version_href is None:
-        # Repository has no latest version, and therefore no content.
-        return {}
-
-    client = api.Client(config.get_config(), api.page_handler)
-    return client.get(version_href)['content_summary']
-
-
-def get_content_added_summary(repo, version_href=None):
-    """Read the "content summary" of a given repository version.
-
-    Repository versions have a "content_summary" which lists the content types
-    and the number of units of that type present in the repo version.
-
-    :param repo: A dict of information about the repository.
-    :param version_href: The repository version to read. If none, read the
-        latest repository version.
-    :returns: The "content_summary" of the repo version.
-    """
-    version_href = version_href or repo['_latest_version_href']
-
-    if version_href is None:
-        # Repository has no latest version, and therefore no content.
-        return {}
-
-    client = api.Client(config.get_config(), api.page_handler)
-    return client.get(version_href)['content_added_summary']
-
-
-def get_content_removed_summary(repo, version_href=None):
-    """Read the "content summary" of a given repository version.
-
-    Repository versions have a "content_summary" which lists the content types
-    and the number of units of that type present in the repo version.
-
-    :param repo: A dict of information about the repository.
-    :param version_href: The repository version to read. If none, read the
-        latest repository version.
-    :returns: The "content_summary" of the repo version.
-    """
-    version_href = version_href or repo['_latest_version_href']
-
-    if version_href is None:
-        # Repository has no latest version, and therefore no content.
-        return {}
-
-    client = api.Client(config.get_config(), api.page_handler)
-    return client.get(version_href)['content_removed_summary']
+get_content_summary = _build_summary_fetcher('content_summary')  # pylint:disable=invalid-name
+get_added_content_summary = _build_summary_fetcher('content_added_summary')  # pylint:disable=invalid-name
+get_removed_content_summary = _build_summary_fetcher('content_removed_summary')  # pylint:disable=invalid-name
 
 
 def delete_orphans(cfg=None):
