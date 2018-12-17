@@ -175,7 +175,7 @@ def _build_summary_fetcher(summary_field):
 
         if version_href is None:
             # Repository has no latest version, and therefore no content.
-            return defaultdict(lambda x: 0)
+            return {}
 
         client = api.Client(config.get_config(), api.page_handler)
         return client.get(version_href)[summary_field]
