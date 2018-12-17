@@ -20,7 +20,7 @@ CONTENT_PATH = urljoin(BASE_PATH, 'content/')
 
 DISTRIBUTION_PATH = urljoin(BASE_PATH, 'distributions/')
 
-DOWNLOAD_POLICIES = ['immediate', 'on_demand', 'streamed']
+DOWNLOAD_POLICIES = ('immediate', 'on_demand', 'streamed',)
 
 JWT_PATH = urljoin(BASE_PATH, 'jwt/')
 
