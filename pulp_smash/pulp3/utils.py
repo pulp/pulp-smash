@@ -127,16 +127,10 @@ def get_content(repo, version_href=None):
 
     if version_href is None:
         # Repository has no latest version, and therefore no content.
-        return {}
+        return []
 
     client = api.Client(config.get_config(), api.page_handler)
-    repo_version = client.get(version_href)
-
-    content = {}
-    for content_type, content_url in repo_version['content_hrefs'].items():
-        typed_content = client.get(content_url)
-        content[content_type] = typed_content
-    return content
+    return client.get(urljoin(version_href, 'content/'))
 
 
 def get_added_content(repo, version_href=None):
@@ -152,16 +146,10 @@ def get_added_content(repo, version_href=None):
 
     if version_href is None:
         # Repository has no latest version, and therefore no content.
-        return {}
+        return []
 
     client = api.Client(config.get_config(), api.page_handler)
-    repo_version = client.get(version_href)
-
-    content = {}
-    for content_type, content_url in repo_version['content_added_hrefs'].items():
-        typed_content = client.get(content_url)
-        content[content_type] = typed_content
-    return content
+    return client.get(urljoin(version_href, 'added_content/'))
 
 
 def get_removed_content(repo, version_href=None):
@@ -177,16 +165,10 @@ def get_removed_content(repo, version_href=None):
 
     if version_href is None:
         # Repository has no latest version, and therefore no content.
-        return {}
+        return []
 
     client = api.Client(config.get_config(), api.page_handler)
-    repo_version = client.get(version_href)
-
-    content = {}
-    for content_type, content_url in repo_version['content_removed_hrefs'].items():
-        typed_content = client.get(content_url)
-        content[content_type] = typed_content
-    return content
+    return client.get(urljoin(version_href, 'removed_content/'))
 
 
 def get_content_summary(repo, version_href=None):
@@ -208,48 +190,6 @@ def get_content_summary(repo, version_href=None):
 
     client = api.Client(config.get_config(), api.page_handler)
     return client.get(version_href)['content_summary']
-
-
-def get_content_added_summary(repo, version_href=None):
-    """Read the "content summary" of a given repository version.
-
-    Repository versions have a "content_summary" which lists the content types
-    and the number of units of that type present in the repo version.
-
-    :param repo: A dict of information about the repository.
-    :param version_href: The repository version to read. If none, read the
-        latest repository version.
-    :returns: The "content_summary" of the repo version.
-    """
-    version_href = version_href or repo['_latest_version_href']
-
-    if version_href is None:
-        # Repository has no latest version, and therefore no content.
-        return {}
-
-    client = api.Client(config.get_config(), api.page_handler)
-    return client.get(version_href)['content_added_summary']
-
-
-def get_content_removed_summary(repo, version_href=None):
-    """Read the "content summary" of a given repository version.
-
-    Repository versions have a "content_summary" which lists the content types
-    and the number of units of that type present in the repo version.
-
-    :param repo: A dict of information about the repository.
-    :param version_href: The repository version to read. If none, read the
-        latest repository version.
-    :returns: The "content_summary" of the repo version.
-    """
-    version_href = version_href or repo['_latest_version_href']
-
-    if version_href is None:
-        # Repository has no latest version, and therefore no content.
-        return {}
-
-    client = api.Client(config.get_config(), api.page_handler)
-    return client.get(version_href)['content_removed_summary']
 
 
 def delete_orphans(cfg=None):
@@ -291,18 +231,7 @@ def get_artifact_paths(repo, version_href=None):
     :returns: A set with the paths of units present in a given repository.
     """
     # content['artifact'] consists of a file path and name.
-    artifact_paths = set()
-    for typed_content in get_content(repo, version_href).values():
-        for content in typed_content:
-            # some content types with 1-to-1 artifact-content relationship
-            # override 'artifacts', but some plugins will still have multiple
-            # artifacts for their content.
-            if content.get('artifact'):
-                artifact_paths.add(content['artifact'])
-            else:
-                for artifact in content.get('artifacts'):
-                    artifact_paths.add(artifact)
-    return artifact_paths
+    return {content['artifact'] for content in get_content(repo, version_href)}
 
 
 def delete_version(repo, version_href=None):
