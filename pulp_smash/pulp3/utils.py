@@ -235,7 +235,7 @@ def get_artifact_paths(repo, version_href=None):
             if content.get('artifact'):
                 artifact_paths.add(content['artifact'])
             else:
-                for artifact in content.get('artifacts'):
+                for artifact in content.get('_artifacts'):
                     artifact_paths.add(artifact)
     return artifact_paths
 
