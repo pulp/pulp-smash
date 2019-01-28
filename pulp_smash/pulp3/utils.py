@@ -232,8 +232,8 @@ def get_artifact_paths(repo, version_href=None):
             # some content types with 1-to-1 artifact-content relationship
             # override 'artifacts', but some plugins will still have multiple
             # artifacts for their content.
-            if content.get('artifact'):
-                artifact_paths.add(content['artifact'])
+            if content.get('_artifact'):
+                artifact_paths.add(content['_artifact'])
             else:
                 for artifact in content.get('_artifacts'):
                     artifact_paths.add(artifact)
