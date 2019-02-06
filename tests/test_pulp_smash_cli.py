@@ -45,6 +45,8 @@ class MissingSettingsFileMixin():
 class SettingsCreateTestCase(BasePulpSmashCliTestCase):
     """Test ``pulp_smash.pulp_smash_cli.settings_create`` command."""
 
+    maxDiff = None
+
     def setUp(self):
         """Generate a default expected config dict."""
         super().setUp()
@@ -70,6 +72,33 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
                     'pulp workers': {},
                     'shell': {'transport': 'ssh'},
                     'squid': {},
+                }
+            }]
+        }
+        self.expected_config_dict_3 = {
+            'pulp': {
+                'auth': ['admin', 'admin'],
+                'selinux enabled': True,
+                'version': '3.0',
+            },
+            'hosts': [{
+                'hostname': 'pulp3.example.com',
+                'roles': {
+                    'api': {
+                        'scheme': 'https',
+                        'service': 'nginx',
+                        'verify': True,
+                    },
+                    'content': {
+                        'scheme': 'https',
+                        'service': 'pulp_content_app',
+                        'verify': True,
+                        'port': 8080
+                    },
+                    'pulp resource manager': {},
+                    'pulp workers': {},
+                    'shell': {'transport': 'ssh'},
+                    'redis': {}
                 }
             }]
         }
@@ -194,6 +223,62 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
         host_roles['shell']['transport'] = 'local'
 
         self.assertEqual(generated_settings, self.expected_config_dict)
+
+    def test_create_defaults_and_verify_pulp3(self):
+        """Create settings file with defaults and custom SSL certificate."""
+        create_input = (
+            '3.0\n'  # version
+            '\n'  # user
+            '\n'  # password
+            '\n'  # selinux enabled?
+            'pulp3.example.com\n'  # hostname
+            '\n'  # api scheme
+            '\n'  # api verify?
+            '/path/to/cert/\n'
+            '\n'  # api port
+            '\n'  # api service
+            '\n'  # api on same host
+            '\n'  # shell ssh user
+            'n\n'  # content on same host
+            '\n'  # content scheme
+            '\n'  # content verify
+            '/path/to/cert/\n'  # content cert
+            '\n'  # content port
+            '\n'  # service name
+        )
+        generated_settings = json.loads(self._test_common_logic(create_input))
+        roles = self.expected_config_dict_3['hosts'][0]['roles']
+        roles['api']['verify'] = roles['content']['verify'] = '/path/to/cert/'
+        self.assertEqual(generated_settings, self.expected_config_dict_3)
+
+    def test_create_other_value_pulp3(self):
+        """Create settings file with custom values."""
+        create_input = (
+            '3.0\n'  # version
+            'username\n'  # user
+            'password\n'  # password
+            'n\n'  # selinux enabled
+            'pulp3.example.com\n'  # api hostname
+            'http\n'  # api scheme
+            'n\n'  # verify api SSL?
+            '1234\n'  # api port
+            'httpd\n'  # api service
+            'y\n'  # api on same host
+            'y\n'  # content on same host
+        )
+        generated_settings = json.loads(self._test_common_logic(create_input))
+
+        self.expected_config_dict_3['pulp']['auth'] = ['username', 'password']
+        self.expected_config_dict_3['pulp']['selinux enabled'] = False
+        roles = self.expected_config_dict_3['hosts'][0]['roles']
+        roles['api']['port'] = 1234
+        roles['api']['scheme'] = 'http'
+        roles['api']['service'] = 'httpd'
+        roles['api']['verify'] = False
+        roles['shell']['transport'] = 'local'
+        del roles['content']
+
+        self.assertEqual(generated_settings, self.expected_config_dict_3)
 
 
 class SettingsPathTestCase(BasePulpSmashCliTestCase, MissingSettingsFileMixin):

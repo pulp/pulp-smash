@@ -365,7 +365,7 @@ class ReprTestCase(unittest.TestCase):
 
     def test_can_eval(self):
         """Assert that the result can be parsed by ``eval``."""
-        from pulp_smash.config import PulpSmashConfig, PulpHost  # pylint:disable=unused-import
+        from pulp_smash.config import PulpSmashConfig, PulpHost  # pylint:disable=unused-import,unused-variable
         # pylint:disable=eval-used
         cfg = eval(self.result)
         with self.subTest('check pulp_version'):

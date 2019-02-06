@@ -138,18 +138,22 @@ def _get_v2_host_properties(pulp_version):
 def _get_v3_host_properties(pulp_version):
     """Get information about a Pulp 3 host."""
     hostname = _get_hostname()
-    api_role = _get_api_role(pulp_version)
-    shell_role = _get_shell_role(hostname)
-    return {
+    properties = {
         'hostname': hostname,
         'roles': {
-            'api': api_role,
+            'api': _get_api_role(pulp_version),
             'pulp resource manager': {},
             'pulp workers': {},
             'redis': {},
-            'shell': shell_role,
+            'shell': _get_shell_role(hostname),
         }
     }
+
+    if not click.confirm(
+            'Will the content be served on same API server and port?', True):
+        properties['roles']['content'] = _get_content_role()
+
+    return properties
 
 
 def _get_hostname():
@@ -209,6 +213,44 @@ def _get_api_role(pulp_version):
     )
 
     return api_role
+
+
+def _get_content_role():
+    """Get information for the "content" role."""
+    content_role = {}
+
+    # Get "scheme"
+    content_role['scheme'] = click.prompt(
+        'What scheme should be used when communicating with Content host?',
+        default='https',
+        type=click.Choice(('https', 'http')),
+    )
+
+    # Get "verify"
+    if (content_role['scheme'] == 'https' and
+            click.confirm('Verify HTTPS?', default=True)):
+        certificate_path = click.prompt(
+            'SSL certificate path',
+            default='',
+            type=click.Path(),
+        )
+        content_role['verify'] = certificate_path if certificate_path else True
+    else:
+        content_role['verify'] = False
+
+    port = click.prompt(
+        'Content Host port number', default=8080, type=click.INT
+    )
+    if port:
+        content_role['port'] = port
+
+    # Get "service"
+    content_role['service'] = click.prompt(
+        'What service backs the Content Host?',
+        default='pulp_content_app',
+    )
+
+    return content_role
 
 
 def _get_shell_role(hostname):
