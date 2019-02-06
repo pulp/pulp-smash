@@ -54,6 +54,14 @@ def _get_pulp_3_api_role():
     return api_role
 
 
+def _get_pulp_3_content_role():
+    """Return a schema definition for the Pulp 3 "content" role."""
+    content_role = _get_pulp_3_api_role()
+    content_role['required'].remove('service')
+    content_role['properties']['service'] = {'type': 'string'}
+    return content_role
+
+
 # `get_config` uses this as a cache. It is intentionally a global. This design
 # lets us do interesting things like flush the cache at run time or completely
 # avoid a config file by fetching values from the UI.
@@ -90,6 +98,14 @@ P3_REQUIRED_ROLES = {
     'shell',
 }
 """The set of roles that must be present in a functional Pulp 3 application."""
+
+P3_OPTIONAL_ROLES = {
+    'content',
+}
+"""Additional roles that can be present in a Pulp 3 application."""
+
+P3_ROLES = P3_REQUIRED_ROLES.union(P3_OPTIONAL_ROLES)
+"""The set of all roles that can be present in a Pulp 3 application."""
 
 JSON_CONFIG_SCHEMA = {
     'title': 'Pulp Smash configuration file',
@@ -186,6 +202,9 @@ JSON_CONFIG_SCHEMA = {
                     'type': 'object',
                     'properties': {
                         'api': {'$ref': '#/definitions/pulp 3 api role'},
+                        'content': {
+                            '$ref': '#/definitions/pulp 3 content role'
+                        },
                         'pulp resource manager': {
                             '$ref': '#/definitions/pulp resource manager role'
                         },
@@ -210,6 +229,7 @@ JSON_CONFIG_SCHEMA = {
         },
         'pulp 2 api role': _get_pulp_2_api_role(),
         'pulp 3 api role': _get_pulp_3_api_role(),
+        'pulp 3 content role': _get_pulp_3_content_role(),
         'mongod role': {'type': 'object'},
         'pulp celerybeat role': {'type': 'object'},
         'pulp cli role': {'type': 'object'},
@@ -404,11 +424,13 @@ class PulpSmashConfig():
         :param role: The role to filter the available hosts, see
             `pulp_smash.config.P2_ROLES` for more information.
         """
-        if role not in P2_ROLES:
+        roles = P2_ROLES if self.pulp_version < Version('3') else P3_ROLES
+        if role not in roles:
             raise ValueError(
                 'The given role, {}, is not recognized. Valid roles are: {}'
-                .format(role, P2_ROLES)
+                .format(role, roles)
             )
+
         return [host for host in self.hosts if role in host.roles]
 
     @staticmethod
@@ -451,22 +473,37 @@ class PulpSmashConfig():
                 continue
         return services
 
-    def get_base_url(self, pulp_host=None):
+    def get_base_url(self, pulp_host=None, role='api'):
         """Generate the base URL for a given ``pulp_host``.
 
         :param pulp_smash.config.PulpHost pulp_host: One of the hosts that
             comprises a Pulp application. Defaults to the first host with the
-            ``api`` role.
+            given role.
+        :param role: The host role. Defaults to ``api``.
         """
-        if pulp_host is None:
-            pulp_host = self.get_hosts('api')[0]
-        scheme = pulp_host.roles['api']['scheme']
+        pulp_host = pulp_host or self.get_hosts(role)[0]
+        scheme = pulp_host.roles[role]['scheme']
         netloc = pulp_host.hostname
         try:
-            netloc += ':' + str(pulp_host.roles['api']['port'])
+            netloc += ':' + str(pulp_host.roles[role]['port'])
         except KeyError:
             pass
         return urlunsplit((scheme, netloc, '', '', ''))
+
+    def get_content_host(self):
+        """Return content host if defined else returns api host."""
+        try:
+            return self.get_hosts('content')[0]
+        except IndexError:
+            return self.get_hosts('api')[0]
+
+    def get_content_host_base_url(self):
+        """Return content host url if defined else returns api base url."""
+        pulp_host = self.get_content_host()
+        return self.get_base_url(
+            pulp_host=pulp_host,
+            role='content' in pulp_host.roles and 'content' or 'api'
+        )
 
     def get_requests_kwargs(self, pulp_host=None):
         """Get kwargs for use by the Requests functions.
