@@ -90,11 +90,13 @@ set -u
 
 # Create a new commit and annotated tag.
 git add VERSION
+commit_message="$(git shortlog "${old_version}.." | sed 's/^./    &/')"
 git commit \
     --message "Release version ${new_version}" \
     --message "Shortlog of commits since last release:" \
-    --message "$(git shortlog "${old_version}.." | sed 's/^./    &/')"
-git tag --annotate --message "Pulp Smash ${new_version}" "${new_version}"
+    --message "${commit_message}"
+git tag --annotate "${new_version}" --message "Pulp Smash ${new_version}" \
+    --message "${commit_message}"
 
 fmt <<EOF
 
