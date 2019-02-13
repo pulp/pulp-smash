@@ -1,6 +1,7 @@
 # coding=utf-8
 """Utility functions for Pulp 3 tests."""
 from collections import defaultdict
+from functools import reduce
 import warnings
 from urllib.parse import urljoin, urlsplit
 
@@ -81,6 +82,23 @@ def sync(cfg, remote, repo, **kwargs):
     data = {'repository': repo['_href']}
     data.update(kwargs)
     return client.post(urljoin(remote['_href'], 'sync/'), data)
+
+
+def download_content_unit(cfg, distribution, unit_path):
+    """Download the content unit from distribution base path.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        host.
+    :param distribution: A dict of information about the distribution.
+    :param unit_path: A string path to the unit to be downloaded.
+    """
+    client = api.Client(cfg, api.safe_handler)
+    unit_url = reduce(urljoin, (
+        cfg.get_content_host_base_url(),
+        '//' + distribution['base_url'] + '/',
+        unit_path
+    ))
+    return client.get(unit_url).content
 
 
 def publish(cfg, publisher, repo, version_href=None):
