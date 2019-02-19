@@ -7,8 +7,12 @@ handling of href paths and HTTP 202 status codes. This module provides a
 customizable client that makes it easier to work with the API in a safe and
 concise manner.
 """
+import asyncio
+import concurrent.futures
 import warnings
+from functools import partialmethod
 from time import sleep
+
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -415,40 +419,6 @@ class Client():
         if request_kwargs:
             self.request_kwargs.update(request_kwargs)
 
-    def delete(self, url, **kwargs):
-        """Send an HTTP DELETE request."""
-        return self.request('DELETE', url, **kwargs)
-
-    def get(self, url, **kwargs):
-        """Send an HTTP GET request."""
-        return self.request('GET', url, **kwargs)
-
-    def head(self, url, **kwargs):
-        """Send an HTTP HEAD request."""
-        return self.request('HEAD', url, **kwargs)
-
-    def options(self, url, **kwargs):
-        """Send an HTTP OPTIONS request."""
-        return self.request('OPTIONS', url, **kwargs)
-
-    def patch(self, url, json=_SENTINEL, **kwargs):
-        """Send an HTTP PATCH request."""
-        if json is _SENTINEL:
-            return self.request('PATCH', url, **kwargs)
-        return self.request('PATCH', url, json=json, **kwargs)
-
-    def post(self, url, json=_SENTINEL, **kwargs):
-        """Send an HTTP POST request."""
-        if json is _SENTINEL:
-            return self.request('POST', url, **kwargs)
-        return self.request('POST', url, json=json, **kwargs)
-
-    def put(self, url, json=_SENTINEL, **kwargs):
-        """Send an HTTP PUT request."""
-        if json is _SENTINEL:
-            return self.request('PUT', url, **kwargs)
-        return self.request('PUT', url, json=json, **kwargs)
-
     def request(self, method, url, **kwargs):
         """Send an HTTP request.
 
@@ -480,6 +450,83 @@ class Client():
             self,
             requests.request(method, **request_kwargs),
         )
+
+    def _dispatch_request(self, method, url, json=_SENTINEL,
+                          extra_args=None, **kwargs):
+        """Redirect the request to the proper request method."""
+        if extra_args:
+            kwargs.update(extra_args)
+        if json is _SENTINEL:
+            return self.request(method, url, **kwargs)
+        return self.request(method, url, json=json, **kwargs)
+
+    delete = partialmethod(_dispatch_request, 'DELETE')
+    get = partialmethod(_dispatch_request, 'GET')
+    head = partialmethod(_dispatch_request, 'HEAD')
+    options = partialmethod(_dispatch_request, 'OPTIONS')
+    patch = partialmethod(_dispatch_request, 'PATCH')
+    post = partialmethod(_dispatch_request, 'POST')
+    put = partialmethod(_dispatch_request, 'PUT')
+
+    async def _perform_async_requests(self, method, future_args):
+        """Perform async requests on asyncio Executor.
+
+        :param method: The HTTP method ex: GET, POST, DELETE
+        :param future_args: A list of args to be passed to requests
+            ex: [{'url': 'http://foo', 'json': {}, ...}, ...]
+        """
+        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+
+            loop = asyncio.get_event_loop()
+            futures = [
+                loop.run_in_executor(
+                    executor,
+                    self._dispatch_request,
+                    *(
+                        method,
+                        args.pop('url'),
+                        args.pop('json', _SENTINEL),
+                        args
+                    )
+                )
+                for args in future_args
+            ]
+            return await asyncio.gather(*futures)
+
+    def _dispatch_async_request(self, method, args_list, **kwargs):
+        """Perform async requests using asyncIO.
+
+        :param method: The HTTP method ex: GET, POST, DELETE
+        :param args_list: A list of args to be passed to requests
+            ex: [{'url': 'http://foo', 'json': {}, ...},...]
+        :param kwargs: Common kwargs to be passed to all requests.
+        """
+        future_args = []
+        for arg in args_list:
+
+            if 'url' not in arg:
+                raise RuntimeError('url must be defined for each request')
+
+            request_kwargs = self.request_kwargs.copy()
+            request_kwargs['url'] = urljoin(
+                request_kwargs['url'], arg.pop('url')
+            )
+            request_kwargs.update(arg)
+            request_kwargs.update(kwargs)
+            future_args.append(request_kwargs)
+
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(
+            self._perform_async_requests(method, future_args)
+        )
+
+    async_delete = partialmethod(_dispatch_async_request, 'DELETE')
+    async_get = partialmethod(_dispatch_async_request, 'GET')
+    async_head = partialmethod(_dispatch_async_request, 'HEAD')
+    async_options = partialmethod(_dispatch_async_request, 'OPTIONS')
+    async_patch = partialmethod(_dispatch_async_request, 'PATCH')
+    async_post = partialmethod(_dispatch_async_request, 'POST')
+    async_put = partialmethod(_dispatch_async_request, 'PUT')
 
 
 def poll_spawned_tasks(cfg, call_report, pulp_host=None):
