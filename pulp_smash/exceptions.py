@@ -47,9 +47,9 @@ class CalledProcessError(Exception):
     def __str__(self):
         """Provide a human-friendly string representation of this exception."""
         return (
-            'Command {} returned non-zero exit status {}.\n\n'
-            'stdout: {}\n\n'
-            'stderr: {}'
+            "Command {} returned non-zero exit status {}.\n\n"
+            "stdout: {}\n\n"
+            "stderr: {}"
         ).format(self.args_, self.returncode, self.stdout, self.stderr)
 
 
@@ -75,7 +75,7 @@ class ConfigValidationError(Exception):
 
     def __str__(self):
         """Provide a human-friendly string representation of this exception."""
-        return 'Pulp Smash configuration is invalid: {}'.format(self.message)
+        return "Pulp Smash configuration is invalid: {}".format(self.message)
 
 
 class ConfigFileSectionNotFoundError(Exception):

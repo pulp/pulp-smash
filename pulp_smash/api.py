@@ -17,28 +17,29 @@ from packaging.version import Version
 from pulp_smash import exceptions
 
 _SENTINEL = object()
-_TASK_END_STATES = ('canceled', 'error', 'finished', 'skipped', 'timed out')
-_P3_TASK_END_STATES = ('canceled', 'completed', 'failed', 'skipped')
+_TASK_END_STATES = ("canceled", "error", "finished", "skipped", "timed out")
+_P3_TASK_END_STATES = ("canceled", "completed", "failed", "skipped")
 
 
 def _check_http_202_content_type(response):
     """Issue a warning if the content-type is not application/json."""
-    if not (response.headers.get('Content-Type', '')
-            .startswith('application/json')):
+    if not (
+        response.headers.get("Content-Type", "").startswith("application/json")
+    ):
         _warn_http_202_content_type(response)
 
 
 def _warn_http_202_content_type(response):
     """Issue a warning about the response status code."""
-    if 'Content-Type' in response.headers:
-        content_type = '"{}"'.format(response.headers['Content-Type'])
+    if "Content-Type" in response.headers:
+        content_type = '"{}"'.format(response.headers["Content-Type"])
     else:
-        content_type = 'not present'
+        content_type = "not present"
     message = (
-        'All HTTP 202 responses returned by Pulp should have a content-type '
+        "All HTTP 202 responses returned by Pulp should have a content-type "
         'of "application/json" and include a JSON call report. However, the '
-        'Content-Type is {}. Here is the HTTP method, URL and headers from '
-        'the request that generated this anomalous response: {} {} {}'
+        "Content-Type is {}. Here is the HTTP method, URL and headers from "
+        "the request that generated this anomalous response: {} {} {}"
     )
     message = message.format(
         content_type,
@@ -54,10 +55,11 @@ def _check_call_report(call_report):
 
     If the field is non-null, raise a ``CallReportError``.
     """
-    if call_report['error'] is not None:
+    if call_report["error"] is not None:
         raise exceptions.CallReportError(
-            'A call report contains an error. Full call report: {}'
-            .format(call_report)
+            "A call report contains an error. Full call report: {}".format(
+                call_report
+            )
         )
 
 
@@ -70,8 +72,8 @@ def _check_tasks(tasks, task_errors):
     for task in tasks:
         for field in task_errors:
             if task[field] is not None:
-                msg = 'Task report {} contains a {}: {}\nFull task report: {}'
-                msg = msg.format(task['_href'], field, task[field], task)
+                msg = "Task report {} contains a {}: {}\nFull task report: {}"
+                msg = msg.format(task["_href"], field, task[field], task)
                 raise exceptions.TaskReportError(msg, task)
 
 
@@ -81,20 +83,20 @@ def _handle_202(cfg, response, pulp_host):
         _check_http_202_content_type(response)
         call_report = response.json()
         tasks = tuple(poll_spawned_tasks(cfg, call_report, pulp_host))
-        if cfg.pulp_version < Version('3'):
+        if cfg.pulp_version < Version("3"):
             _check_call_report(call_report)
-            _check_tasks(tasks, ('error', 'exception', 'traceback'))
+            _check_tasks(tasks, ("error", "exception", "traceback"))
         else:
-            _check_tasks(tasks, ('error',))
+            _check_tasks(tasks, ("error",))
 
 
 def _walk_pages(cfg, page, pulp_host):
     """Walk through pages, yielding the "results" in each page."""
     client = Client(cfg, json_handler, pulp_host=pulp_host)
     while True:
-        yield page['results']
-        if page['next']:
-            page = client.get(page['next'])
+        yield page["results"]
+        if page["next"]:
+            page = client.get(page["next"])
         else:
             break
 
@@ -132,7 +134,9 @@ def safe_handler(client, response):
         an error.
     """
     response.raise_for_status()
-    _handle_202(client._cfg, response, client.pulp_host)  # pylint:disable=protected-access
+    _handle_202(
+        client._cfg, response, client.pulp_host
+    )  # pylint:disable=protected-access
     return response
 
 
@@ -145,7 +149,9 @@ def json_handler(client, response):
     response.raise_for_status()
     if response.status_code == 204:
         return response
-    _handle_202(client._cfg, response, client.pulp_host)  # pylint:disable=protected-access
+    _handle_202(
+        client._cfg, response, client.pulp_host
+    )  # pylint:disable=protected-access
     return response.json()
 
 
@@ -167,19 +173,21 @@ def page_handler(client, response):
     .. _status code: https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
     """
     # pylint:disable=protected-access
-    if (client._cfg.pulp_version < Version('3') or
-            client._cfg.pulp_version >= Version('4')):
+    if client._cfg.pulp_version < Version(
+        "3"
+    ) or client._cfg.pulp_version >= Version("4"):
         raise ValueError(
-            'This method is designed to handle responses returned by Pulp 3. '
-            'However, the targeted Pulp application is declared as being '
-            'version {}. Please use a different response handler.'
-            .format(client._cfg.pulp_version)
+            "This method is designed to handle responses returned by Pulp 3. "
+            "However, the targeted Pulp application is declared as being "
+            "version {}. Please use a different response handler.".format(
+                client._cfg.pulp_version
+            )
         )
 
     maybe_page = json_handler(client, response)
     if not isinstance(maybe_page, dict):
         return maybe_page  # HTTP 204 No Content
-    if 'results' not in maybe_page:
+    if "results" not in maybe_page:
         return maybe_page  # Content isn't a page.
 
     collected_results = []
@@ -188,7 +196,7 @@ def page_handler(client, response):
     return collected_results
 
 
-class Client():
+class Client:
     """A convenience object for working with an API.
 
     This class is a wrapper around the ``requests.api`` module provided by
@@ -391,11 +399,7 @@ class Client():
     """
 
     def __init__(
-            self,
-            cfg,
-            response_handler=None,
-            request_kwargs=None,
-            pulp_host=None,
+        self, cfg, response_handler=None, request_kwargs=None, pulp_host=None
     ):
         """Initialize this object with needed instance attributes."""
         self._cfg = cfg
@@ -408,46 +412,46 @@ class Client():
         if pulp_host:
             self.pulp_host = pulp_host
         else:
-            self.pulp_host = self._cfg.get_hosts('api')[0]
+            self.pulp_host = self._cfg.get_hosts("api")[0]
 
         self.request_kwargs = self._cfg.get_requests_kwargs(self.pulp_host)
-        self.request_kwargs['url'] = self._cfg.get_base_url(self.pulp_host)
+        self.request_kwargs["url"] = self._cfg.get_base_url(self.pulp_host)
         if request_kwargs:
             self.request_kwargs.update(request_kwargs)
 
     def delete(self, url, **kwargs):
         """Send an HTTP DELETE request."""
-        return self.request('DELETE', url, **kwargs)
+        return self.request("DELETE", url, **kwargs)
 
     def get(self, url, **kwargs):
         """Send an HTTP GET request."""
-        return self.request('GET', url, **kwargs)
+        return self.request("GET", url, **kwargs)
 
     def head(self, url, **kwargs):
         """Send an HTTP HEAD request."""
-        return self.request('HEAD', url, **kwargs)
+        return self.request("HEAD", url, **kwargs)
 
     def options(self, url, **kwargs):
         """Send an HTTP OPTIONS request."""
-        return self.request('OPTIONS', url, **kwargs)
+        return self.request("OPTIONS", url, **kwargs)
 
     def patch(self, url, json=_SENTINEL, **kwargs):
         """Send an HTTP PATCH request."""
         if json is _SENTINEL:
-            return self.request('PATCH', url, **kwargs)
-        return self.request('PATCH', url, json=json, **kwargs)
+            return self.request("PATCH", url, **kwargs)
+        return self.request("PATCH", url, json=json, **kwargs)
 
     def post(self, url, json=_SENTINEL, **kwargs):
         """Send an HTTP POST request."""
         if json is _SENTINEL:
-            return self.request('POST', url, **kwargs)
-        return self.request('POST', url, json=json, **kwargs)
+            return self.request("POST", url, **kwargs)
+        return self.request("POST", url, json=json, **kwargs)
 
     def put(self, url, json=_SENTINEL, **kwargs):
         """Send an HTTP PUT request."""
         if json is _SENTINEL:
-            return self.request('PUT', url, **kwargs)
-        return self.request('PUT', url, json=json, **kwargs)
+            return self.request("PUT", url, **kwargs)
+        return self.request("PUT", url, json=json, **kwargs)
 
     def request(self, method, url, **kwargs):
         """Send an HTTP request.
@@ -463,22 +467,22 @@ class Client():
         #
         intended_host = self.pulp_host.hostname
         request_kwargs = self.request_kwargs.copy()
-        request_kwargs['url'] = urljoin(request_kwargs['url'], url)
+        request_kwargs["url"] = urljoin(request_kwargs["url"], url)
         request_kwargs.update(kwargs)
-        actual_host = urlparse(request_kwargs['url']).hostname
+        actual_host = urlparse(request_kwargs["url"]).hostname
         if intended_host != actual_host:
             warnings.warn(
-                'This client should be used to communicate with {0}, but a '
-                'request is being made to {1}. The request will be made, but '
-                'beware that information intended for {0} (such as '
+                "This client should be used to communicate with {0}, but a "
+                "request is being made to {1}. The request will be made, but "
+                "beware that information intended for {0} (such as "
                 "authentication tokens) may now be sent to {1}. Here's the "
-                'full list of options being sent with this request: {2}'
-                .format(intended_host, actual_host, request_kwargs),
-                RuntimeWarning
+                "full list of options being sent with this request: {2}".format(
+                    intended_host, actual_host, request_kwargs
+                ),
+                RuntimeWarning,
             )
         return self.response_handler(
-            self,
-            requests.request(method, **request_kwargs),
+            self, requests.request(method, **request_kwargs)
         )
 
 
@@ -499,10 +503,10 @@ def poll_spawned_tasks(cfg, call_report, pulp_host=None):
     .. _call report:
         http://docs.pulpproject.org/en/latest/dev-guide/conventions/sync-v-async.html#call-report
     """
-    if cfg.pulp_version < Version('3'):
-        hrefs = (task['_href'] for task in call_report['spawned_tasks'])
+    if cfg.pulp_version < Version("3"):
+        hrefs = (task["_href"] for task in call_report["spawned_tasks"])
     else:
-        hrefs = [call_report['task']]
+        hrefs = [call_report["task"]]
     for href in hrefs:
         for final_task_state in poll_task(cfg, href, pulp_host):
             yield final_task_state
@@ -531,21 +535,23 @@ def poll_task(cfg, href, pulp_host=None):
     json_client = Client(cfg, json_handler, pulp_host=pulp_host)
     while True:
         task = json_client.get(href)
-        if cfg.pulp_version < Version('3'):
+        if cfg.pulp_version < Version("3"):
             task_end_states = _TASK_END_STATES
         else:
             task_end_states = _P3_TASK_END_STATES
-        if task['state'] in task_end_states:
+        if task["state"] in task_end_states:
             # This task has completed. Yield its final state, then recursively
             # iterate through children and yield their final states.
             yield task
-            for spawned_task in task['spawned_tasks']:
-                for descendant_tsk in poll_task(cfg, spawned_task['_href'], pulp_host):
+            for spawned_task in task["spawned_tasks"]:
+                for descendant_tsk in poll_task(
+                    cfg, spawned_task["_href"], pulp_host
+                ):
                     yield descendant_tsk
             break
         poll_counter += 1
         if poll_counter > poll_limit:
             raise exceptions.TaskTimedOutError(
-                'Task {} is ongoing after {} polls.'.format(href, poll_limit)
+                "Task {} is ongoing after {} polls.".format(href, poll_limit)
             )
         sleep(2)

@@ -15,22 +15,26 @@ from pulp_smash import exceptions
 # according to an ideal workflow. As of this writing, these is no canonical
 # public source for this information. But see:
 # http://docs.pulpproject.org/en/latest/dev-guide/contributing/bugs.html#fixing
-_UNTESTABLE_BUGS = frozenset((
-    'NEW',  # bug just entered into tracker
-    'ASSIGNED',  # bug has been assigned to an engineer
-    'POST',  # bug fix is being reviewed by dev ("posted for review")
-))
-_TESTABLE_BUGS = frozenset((
-    'MODIFIED',  # bug fix has been accepted by dev
-    'ON_QA',  # bug fix is being reviewed by qe
-    'VERIFIED',  # bug fix has been accepted by qe
-    'CLOSED - COMPLETE',
-    'CLOSED - CURRENTRELEASE',
-    'CLOSED - DUPLICATE',
-    'CLOSED - NOTABUG',
-    'CLOSED - WONTFIX',
-    'CLOSED - WORKSFORME',
-))
+_UNTESTABLE_BUGS = frozenset(
+    (
+        "NEW",  # bug just entered into tracker
+        "ASSIGNED",  # bug has been assigned to an engineer
+        "POST",  # bug fix is being reviewed by dev ("posted for review")
+    )
+)
+_TESTABLE_BUGS = frozenset(
+    (
+        "MODIFIED",  # bug fix has been accepted by dev
+        "ON_QA",  # bug fix is being reviewed by qe
+        "VERIFIED",  # bug fix has been accepted by qe
+        "CLOSED - COMPLETE",
+        "CLOSED - CURRENTRELEASE",
+        "CLOSED - DUPLICATE",
+        "CLOSED - NOTABUG",
+        "CLOSED - WONTFIX",
+        "CLOSED - WORKSFORME",
+    )
+)
 
 # A mapping between bug IDs and bug statuses. Used by `_get_bug`.
 #
@@ -46,7 +50,7 @@ _BUG_STATUS_CACHE = {}
 #
 # The 'status' attribute is a string, such as 'NEW' or 'ASSIGNED'. The
 # 'target_platform_release' attribute is a Version() object.
-_Bug = namedtuple('_Bug', ('status', 'target_platform_release'))
+_Bug = namedtuple("_Bug", ("status", "target_platform_release"))
 
 
 def _get_tpr(bug_json):
@@ -59,14 +63,15 @@ def _get_tpr(bug_json):
         Release" field is found in ``bug_json``.
     """
     custom_field_id = 4
-    custom_fields = bug_json['issue']['custom_fields']
+    custom_fields = bug_json["issue"]["custom_fields"]
     for custom_field in custom_fields:
-        if custom_field['id'] == custom_field_id:
-            return custom_field['value']
+        if custom_field["id"] == custom_field_id:
+            return custom_field["value"]
     raise exceptions.BugTPRMissingError(
         'Bug {} has no custom field with ID {} ("Target Platform Release"). '
-        'Custom fields: {}'
-        .format(bug_json['issue']['id'], custom_field_id, custom_fields)
+        "Custom fields: {}".format(
+            bug_json["issue"]["id"], custom_field_id, custom_fields
+        )
     )
 
 
@@ -89,8 +94,8 @@ def _convert_tpr(version_string):
     :raises: ``packaging.version.InvalidVersion`` if ``version_string`` is
         invalid and not "".
     """
-    if version_string == '':
-        return Version('0')
+    if version_string == "":
+        return Version("0")
     return Version(version_string)
 
 
@@ -109,8 +114,9 @@ def _get_bug(bug_id):
     #
     if not isinstance(bug_id, int):
         raise TypeError(
-            'Bug IDs should be integers. The given ID, {} is a {}.'
-            .format(bug_id, type(bug_id))
+            "Bug IDs should be integers. The given ID, {} is a {}.".format(
+                bug_id, type(bug_id)
+            )
         )
 
     # Let's return the bug from the cache if possible. ¶ We shouldn't need to
@@ -124,13 +130,12 @@ def _get_bug(bug_id):
 
     # The bug is not cached. Let's fetch, cache and return it.
     response = requests.get(
-        'https://pulp.plan.io/issues/{}.json'.format(bug_id)
+        "https://pulp.plan.io/issues/{}.json".format(bug_id)
     )
     response.raise_for_status()
     bug_json = response.json()
     _BUG_STATUS_CACHE[bug_id] = _Bug(
-        bug_json['issue']['status']['name'],
-        _convert_tpr(_get_tpr(bug_json)),
+        bug_json["issue"]["status"]["name"], _convert_tpr(_get_tpr(bug_json))
     )
     return _BUG_STATUS_CACHE[bug_id]
 
@@ -150,8 +155,8 @@ def bug_is_fixed(bug_id, pulp_version):
         bug = _get_bug(bug_id)
     except requests.exceptions.ConnectionError as err:
         message = (
-            'Cannot contact the bug tracker. Pulp Smash will assume that the '
-            'bug referenced is testable. Error: {}'.format(err)
+            "Cannot contact the bug tracker. Pulp Smash will assume that the "
+            "bug referenced is testable. Error: {}".format(err)
         )
         warnings.warn(message, RuntimeWarning)
         return True
@@ -159,14 +164,17 @@ def bug_is_fixed(bug_id, pulp_version):
     # bug.target_platform_release has already been verified by Version().
     if bug.status not in _TESTABLE_BUGS | _UNTESTABLE_BUGS:
         raise exceptions.BugStatusUnknownError(
-            'Bug {} has a status of {}. Pulp Smash only knows how to handle '
-            'the following statuses: {}'
-            .format(bug_id, bug.status, _TESTABLE_BUGS | _UNTESTABLE_BUGS)
+            "Bug {} has a status of {}. Pulp Smash only knows how to handle "
+            "the following statuses: {}".format(
+                bug_id, bug.status, _TESTABLE_BUGS | _UNTESTABLE_BUGS
+            )
         )
 
     # Finally, we have good data!
-    if (bug.status in _TESTABLE_BUGS and
-            bug.target_platform_release <= pulp_version):
+    if (
+        bug.status in _TESTABLE_BUGS
+        and bug.target_platform_release <= pulp_version
+    ):
         return True
     return False
 
@@ -206,20 +214,25 @@ def require(ver, exc):
     .. _functools.partial:
         https://docs.python.org/3/library/functools.html#functools.partial
     """
+
     def plain_decorator(test_method):
         """Decorate function ``test_method``."""
+
         @wraps(test_method)
         def new_test_method(self, *args, **kwargs):
             """Wrap a (unittest test) method."""
             if self.cfg.pulp_version < Version(ver):
                 raise exc(
-                    'This test requires Pulp {} or later, but Pulp {} is '
-                    'being tested. If this seems wrong, try checking the '
-                    '"settings" option in the Pulp Smash configuration file.'
-                    .format(ver, self.cfg.pulp_version)
+                    "This test requires Pulp {} or later, but Pulp {} is "
+                    "being tested. If this seems wrong, try checking the "
+                    '"settings" option in the Pulp Smash configuration file.'.format(
+                        ver, self.cfg.pulp_version
+                    )
                 )
             return test_method(self, *args, **kwargs)
+
         return new_test_method
+
     return plain_decorator
 
 
@@ -266,14 +279,18 @@ def skip_if(func, var_name, result, exc):
     .. _functools.partial:
         https://docs.python.org/3/library/functools.html#functools.partial
     """
+
     def plain_decorator(test_method):
         """Decorate function ``test_method``."""
+
         @wraps(test_method)
         def new_test_method(self, *args, **kwargs):
             """Wrap a (unittest test) method."""
             var_value = getattr(self, var_name)
             if func(var_value) == result:
-                raise exc('{}({}) != {}'.format(func, var_value, result))
+                raise exc("{}({}) != {}".format(func, var_value, result))
             return test_method(self, *args, **kwargs)
+
         return new_test_method
+
     return plain_decorator

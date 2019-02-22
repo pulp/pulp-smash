@@ -24,41 +24,29 @@ from pulp_smash import exceptions
 def _get_pulp_2_api_role():
     """Return a schema definition for the Pulp 2 "api" role."""
     return {
-        'required': ['scheme'],
-        'type': 'object',
-        'properties': {
-            'port': {
-                'type': 'integer',
-                'minimum': 0,
-                'maximum': 65535,
-            },
-            'scheme': {
-                'enum': ['http', 'https'],
-                'type': 'string',
-            },
-            'service': {
-                'enum': ['httpd', 'nginx'],
-                'type': 'string',
-            },
-            'verify': {
-                'type': ['boolean', 'string'],
-            },
-        }
+        "required": ["scheme"],
+        "type": "object",
+        "properties": {
+            "port": {"type": "integer", "minimum": 0, "maximum": 65535},
+            "scheme": {"enum": ["http", "https"], "type": "string"},
+            "service": {"enum": ["httpd", "nginx"], "type": "string"},
+            "verify": {"type": ["boolean", "string"]},
+        },
     }
 
 
 def _get_pulp_3_api_role():
     """Return a schema definition for the Pulp 3 "api" role."""
     api_role = _get_pulp_2_api_role()
-    api_role['required'].append('service')
+    api_role["required"].append("service")
     return api_role
 
 
 def _get_pulp_3_content_role():
     """Return a schema definition for the Pulp 3 "content" role."""
     content_role = _get_pulp_3_api_role()
-    content_role['required'].remove('service')
-    content_role['properties']['service'] = {'type': 'string'}
+    content_role["required"].remove("service")
+    content_role["properties"]["service"] = {"type": "string"}
     return content_role
 
 
@@ -68,185 +56,168 @@ def _get_pulp_3_content_role():
 _CONFIG = None
 
 P2_REQUIRED_ROLES = {
-    'amqp broker',
-    'api',
-    'mongod',
-    'pulp celerybeat',
-    'pulp resource manager',
-    'pulp workers',
-    'shell',
+    "amqp broker",
+    "api",
+    "mongod",
+    "pulp celerybeat",
+    "pulp resource manager",
+    "pulp workers",
+    "shell",
 }
 """The set of roles that must be present in a functional Pulp 2 application."""
 
-P2_OPTIONAL_ROLES = {
-    'pulp cli',
-    'squid',
-}
+P2_OPTIONAL_ROLES = {"pulp cli", "squid"}
 """Additional roles that can be present in a Pulp 2 application."""
 
 P2_ROLES = P2_REQUIRED_ROLES.union(P2_OPTIONAL_ROLES)
 """The set of all roles that can be present in a Pulp 2 application."""
 
-P2_AMQP_SERVICES = {'qpidd', 'rabbitmq'}
+P2_AMQP_SERVICES = {"qpidd", "rabbitmq"}
 """The set of services that can fulfill the ``amqp broker`` role."""
 
 P3_REQUIRED_ROLES = {
-    'api',
-    'pulp resource manager',
-    'pulp workers',
-    'redis',
-    'shell',
+    "api",
+    "pulp resource manager",
+    "pulp workers",
+    "redis",
+    "shell",
 }
 """The set of roles that must be present in a functional Pulp 3 application."""
 
-P3_OPTIONAL_ROLES = {
-    'content',
-}
+P3_OPTIONAL_ROLES = {"content"}
 """Additional roles that can be present in a Pulp 3 application."""
 
 P3_ROLES = P3_REQUIRED_ROLES.union(P3_OPTIONAL_ROLES)
 """The set of all roles that can be present in a Pulp 3 application."""
 
 JSON_CONFIG_SCHEMA = {
-    'title': 'Pulp Smash configuration file',
-    'anyOf': [
+    "title": "Pulp Smash configuration file",
+    "anyOf": [
         {
-            'additionalProperties': False,
-            'required': ['pulp', 'hosts'],
-            'type': 'object',
-            'properties': {
-                'hosts': {
-                    'type': 'array',
-                    'minItems': 1,
-                    'items': {'$ref': '#/definitions/pulp 2 host'},
+            "additionalProperties": False,
+            "required": ["pulp", "hosts"],
+            "type": "object",
+            "properties": {
+                "hosts": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {"$ref": "#/definitions/pulp 2 host"},
                 },
-                'pulp': {'$ref': '#/definitions/pulp'}
-            }
+                "pulp": {"$ref": "#/definitions/pulp"},
+            },
         },
         {
-            'additionalProperties': False,
-            'required': ['pulp', 'hosts'],
-            'type': 'object',
-            'properties': {
-                'hosts': {
-                    'type': 'array',
-                    'minItems': 1,
-                    'items': {'$ref': '#/definitions/pulp 3 host'},
+            "additionalProperties": False,
+            "required": ["pulp", "hosts"],
+            "type": "object",
+            "properties": {
+                "hosts": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {"$ref": "#/definitions/pulp 3 host"},
                 },
-                'pulp': {'$ref': '#/definitions/pulp'}
-            }
-        }
+                "pulp": {"$ref": "#/definitions/pulp"},
+            },
+        },
     ],
-    'definitions': {
-        'pulp': {
-            'additionalProperties': False,
-            'required': ['auth', 'version'],
-            'type': 'object',
-            'properties': {
-                'auth': {'type': 'array', 'maxItems': 2, 'minItems': 2},
-                'version': {'type': 'string'},
-                'selinux enabled': {'type': 'boolean'},
-            }
+    "definitions": {
+        "pulp": {
+            "additionalProperties": False,
+            "required": ["auth", "version"],
+            "type": "object",
+            "properties": {
+                "auth": {"type": "array", "maxItems": 2, "minItems": 2},
+                "version": {"type": "string"},
+                "selinux enabled": {"type": "boolean"},
+            },
         },
-        'pulp 2 host': {
-            'additionalProperties': False,
-            'required': ['hostname', 'roles'],
-            'type': 'object',
-            'properties': {
-                'hostname': {
-                    'type': 'string',
-                    'format': 'hostname',
-                },
-                'roles': {
-                    'additionalProperties': False,
+        "pulp 2 host": {
+            "additionalProperties": False,
+            "required": ["hostname", "roles"],
+            "type": "object",
+            "properties": {
+                "hostname": {"type": "string", "format": "hostname"},
+                "roles": {
+                    "additionalProperties": False,
                     # We do *not* want to use P2_REQUIRED_ROLES here. See
                     # validate_config().
-                    'required': ['shell'],
-                    'type': 'object',
-                    'properties': {
-                        'amqp broker': {
-                            '$ref': '#/definitions/amqp broker role'
+                    "required": ["shell"],
+                    "type": "object",
+                    "properties": {
+                        "amqp broker": {
+                            "$ref": "#/definitions/amqp broker role"
                         },
-                        'api': {'$ref': '#/definitions/pulp 2 api role'},
-                        'mongod': {'$ref': '#/definitions/mongod role'},
-                        'pulp celerybeat': {
-                            '$ref': '#/definitions/pulp celerybeat role'
+                        "api": {"$ref": "#/definitions/pulp 2 api role"},
+                        "mongod": {"$ref": "#/definitions/mongod role"},
+                        "pulp celerybeat": {
+                            "$ref": "#/definitions/pulp celerybeat role"
                         },
-                        'pulp cli': {'$ref': '#/definitions/pulp cli role'},
-                        'pulp resource manager': {
-                            '$ref': '#/definitions/pulp resource manager role'
+                        "pulp cli": {"$ref": "#/definitions/pulp cli role"},
+                        "pulp resource manager": {
+                            "$ref": "#/definitions/pulp resource manager role"
                         },
-                        'pulp workers': {
-                            '$ref': '#/definitions/pulp workers role'
+                        "pulp workers": {
+                            "$ref": "#/definitions/pulp workers role"
                         },
-                        'shell': {'$ref': '#/definitions/shell role'},
-                        'squid': {'$ref': '#/definitions/squid role'},
-                    }
-                }
-            }
-        },
-        'pulp 3 host': {
-            'additionalProperties': False,
-            'required': ['hostname', 'roles'],
-            'type': 'object',
-            'properties': {
-                'hostname': {
-                    'type': 'string',
-                    'format': 'hostname',
+                        "shell": {"$ref": "#/definitions/shell role"},
+                        "squid": {"$ref": "#/definitions/squid role"},
+                    },
                 },
-                'roles': {
-                    'additionalProperties': False,
+            },
+        },
+        "pulp 3 host": {
+            "additionalProperties": False,
+            "required": ["hostname", "roles"],
+            "type": "object",
+            "properties": {
+                "hostname": {"type": "string", "format": "hostname"},
+                "roles": {
+                    "additionalProperties": False,
                     # We do *not* want to use P3_REQUIRED_ROLES here. See
                     # validate_config().
-                    'required': ['shell'],
-                    'type': 'object',
-                    'properties': {
-                        'api': {'$ref': '#/definitions/pulp 3 api role'},
-                        'content': {
-                            '$ref': '#/definitions/pulp 3 content role'
+                    "required": ["shell"],
+                    "type": "object",
+                    "properties": {
+                        "api": {"$ref": "#/definitions/pulp 3 api role"},
+                        "content": {
+                            "$ref": "#/definitions/pulp 3 content role"
                         },
-                        'pulp resource manager': {
-                            '$ref': '#/definitions/pulp resource manager role'
+                        "pulp resource manager": {
+                            "$ref": "#/definitions/pulp resource manager role"
                         },
-                        'pulp workers': {
-                            '$ref': '#/definitions/pulp workers role'
+                        "pulp workers": {
+                            "$ref": "#/definitions/pulp workers role"
                         },
-                        'redis': {'$ref': '#/definitions/redis role'},
-                        'shell': {'$ref': '#/definitions/shell role'},
-                    }
-                }
-            }
-        },
-        'amqp broker role': {
-            'required': ['service'],
-            'type': 'object',
-            'properties': {
-                'service': {
-                    'enum': list(P2_AMQP_SERVICES),
-                    'type': 'string',
+                        "redis": {"$ref": "#/definitions/redis role"},
+                        "shell": {"$ref": "#/definitions/shell role"},
+                    },
                 },
-            }
+            },
         },
-        'pulp 2 api role': _get_pulp_2_api_role(),
-        'pulp 3 api role': _get_pulp_3_api_role(),
-        'pulp 3 content role': _get_pulp_3_content_role(),
-        'mongod role': {'type': 'object'},
-        'pulp celerybeat role': {'type': 'object'},
-        'pulp cli role': {'type': 'object'},
-        'pulp resource manager role': {'type': 'object'},
-        'pulp workers role': {'type': 'object'},
-        'redis role': {'type': 'object'},
-        'shell role': {
-            'type': 'object',
-            'properties': {
-                'transport': {
-                    'enum': ['local', 'ssh'],
-                    'type': 'string',
-                }
-            }
+        "amqp broker role": {
+            "required": ["service"],
+            "type": "object",
+            "properties": {
+                "service": {"enum": list(P2_AMQP_SERVICES), "type": "string"}
+            },
         },
-        'squid role': {'type': 'object'},
-    }
+        "pulp 2 api role": _get_pulp_2_api_role(),
+        "pulp 3 api role": _get_pulp_3_api_role(),
+        "pulp 3 content role": _get_pulp_3_content_role(),
+        "mongod role": {"type": "object"},
+        "pulp celerybeat role": {"type": "object"},
+        "pulp cli role": {"type": "object"},
+        "pulp resource manager role": {"type": "object"},
+        "pulp workers role": {"type": "object"},
+        "redis role": {"type": "object"},
+        "shell role": {
+            "type": "object",
+            "properties": {
+                "transport": {"enum": ["local", "ssh"], "type": "string"}
+            },
+        },
+        "squid role": {"type": "object"},
+    },
 }
 """The schema for Pulp Smash's configuration file."""
 
@@ -254,8 +225,9 @@ JSON_CONFIG_SCHEMA = {
 def _public_attrs(obj):
     """Return a copy of the public elements in ``vars(obj)``."""
     return {
-        key: val for key, val in vars(obj).copy().items()
-        if not key.startswith('_')
+        key: val
+        for key, val in vars(obj).copy().items()
+        if not key.startswith("_")
     }
 
 
@@ -294,24 +266,25 @@ def validate_config(config_dict):
     # must be fulfilled by the roles in a Pulp deployment *in aggregate*. The
     # latter is done here.
     config_roles = set()
-    for host in config_dict['hosts']:
-        config_roles.update(set(host['roles'].keys()))
-    if Version(config_dict['pulp']['version']) < Version('3'):
+    for host in config_dict["hosts"]:
+        config_roles.update(set(host["roles"].keys()))
+    if Version(config_dict["pulp"]["version"]) < Version("3"):
         required_roles = P2_REQUIRED_ROLES
     else:
         required_roles = P3_REQUIRED_ROLES
     if not required_roles.issubset(config_roles):
         raise exceptions.ConfigValidationError(
-            'The following roles are not fulfilled by any hosts: {}'
-            .format(', '.join(sorted(required_roles - config_roles)))
+            "The following roles are not fulfilled by any hosts: {}".format(
+                ", ".join(sorted(required_roles - config_roles))
+            )
         )
 
 
 # Representation of a host and its roles."""
-PulpHost = collections.namedtuple('PulpHost', 'hostname roles')
+PulpHost = collections.namedtuple("PulpHost", "hostname roles")
 
 
-class PulpSmashConfig():
+class PulpSmashConfig:
     """Information about a Pulp application.
 
     This object stores information about Pulp application and its constituent
@@ -402,7 +375,8 @@ class PulpSmashConfig():
     """
 
     def __init__(
-            self, pulp_auth, pulp_version, pulp_selinux_enabled, *, hosts):
+        self, pulp_auth, pulp_version, pulp_selinux_enabled, *, hosts
+    ):
         """Initialize this object with needed instance attributes."""
         self.pulp_auth = pulp_auth
         self.pulp_version = Version(pulp_version)
@@ -412,11 +386,11 @@ class PulpSmashConfig():
     def __repr__(self):
         """Create string representation of the object."""
         attrs = _public_attrs(self)
-        attrs['pulp_version'] = str(attrs['pulp_version'])
-        str_kwargs = ', '.join(
-            '{}={}'.format(key, repr(value)) for key, value in attrs.items()
+        attrs["pulp_version"] = str(attrs["pulp_version"])
+        str_kwargs = ", ".join(
+            "{}={}".format(key, repr(value)) for key, value in attrs.items()
         )
-        return '{}({})'.format(type(self).__name__, str_kwargs)
+        return "{}({})".format(type(self).__name__, str_kwargs)
 
     def get_hosts(self, role):
         """Return a list of hosts fulfilling the given role.
@@ -424,11 +398,12 @@ class PulpSmashConfig():
         :param role: The role to filter the available hosts, see
             `pulp_smash.config.P2_ROLES` for more information.
         """
-        roles = P2_ROLES if self.pulp_version < Version('3') else P3_ROLES
+        roles = P2_ROLES if self.pulp_version < Version("3") else P3_ROLES
         if role not in roles:
             raise ValueError(
-                'The given role, {}, is not recognized. Valid roles are: {}'
-                .format(role, roles)
+                "The given role, {}, is not recognized. Valid roles are: {}".format(
+                    role, roles
+                )
             )
 
         return [host for host in self.hosts if role in host.roles]
@@ -454,18 +429,19 @@ class PulpSmashConfig():
         """
         services = set()
         for role in roles:
-            if role == 'amqp broker':
-                services.add(roles[role]['service'])
-            elif role == 'api':
+            if role == "amqp broker":
+                services.add(roles[role]["service"])
+            elif role == "api":
                 # The "api" role only requires a "service" key for Pulp 3
                 # hosts. For Pulp 2 hosts, the "service" key is optional.
-                services.add(roles[role].get('service', 'httpd'))
+                services.add(roles[role].get("service", "httpd"))
             elif role in (
-                    'pulp celerybeat',
-                    'pulp resource manager',
-                    'pulp workers'):
-                services.add(role.replace(' ', '_'))
-            elif role in ('mongod', 'redis', 'squid'):
+                "pulp celerybeat",
+                "pulp resource manager",
+                "pulp workers",
+            ):
+                services.add(role.replace(" ", "_"))
+            elif role in ("mongod", "redis", "squid"):
                 services.add(role)
             else:
                 # Some roles, such as "pulp cli" and "shell", don't have any
@@ -473,7 +449,7 @@ class PulpSmashConfig():
                 continue
         return services
 
-    def get_base_url(self, pulp_host=None, role='api'):
+    def get_base_url(self, pulp_host=None, role="api"):
         """Generate the base URL for a given ``pulp_host``.
 
         :param pulp_smash.config.PulpHost pulp_host: One of the hosts that
@@ -482,27 +458,27 @@ class PulpSmashConfig():
         :param role: The host role. Defaults to ``api``.
         """
         pulp_host = pulp_host or self.get_hosts(role)[0]
-        scheme = pulp_host.roles[role]['scheme']
+        scheme = pulp_host.roles[role]["scheme"]
         netloc = pulp_host.hostname
         try:
-            netloc += ':' + str(pulp_host.roles[role]['port'])
+            netloc += ":" + str(pulp_host.roles[role]["port"])
         except KeyError:
             pass
-        return urlunsplit((scheme, netloc, '', '', ''))
+        return urlunsplit((scheme, netloc, "", "", ""))
 
     def get_content_host(self):
         """Return content host if defined else returns api host."""
         try:
-            return self.get_hosts('content')[0]
+            return self.get_hosts("content")[0]
         except IndexError:
-            return self.get_hosts('api')[0]
+            return self.get_hosts("api")[0]
 
     def get_content_host_base_url(self):
         """Return content host url if defined else returns api base url."""
         pulp_host = self.get_content_host()
         return self.get_base_url(
             pulp_host=pulp_host,
-            role='content' in pulp_host.roles and 'content' or 'api'
+            role="content" in pulp_host.roles and "content" or "api",
         )
 
     def get_requests_kwargs(self, pulp_host=None):
@@ -531,10 +507,10 @@ class PulpSmashConfig():
         ``cfg`` gains or loses attributes.
         """
         if not pulp_host:
-            pulp_host = self.get_hosts('api')[0]
-        kwargs = deepcopy(pulp_host.roles['api'])
-        kwargs['auth'] = tuple(self.pulp_auth)
-        for key in ('port', 'scheme', 'service'):
+            pulp_host = self.get_hosts("api")[0]
+        kwargs = deepcopy(pulp_host.roles["api"])
+        kwargs["auth"] = tuple(self.pulp_auth)
+        for key in ("port", "scheme", "service"):
             kwargs.pop(key, None)
         return kwargs
 
@@ -554,28 +530,25 @@ class PulpSmashConfig():
             loaded_config = json.load(handle)
 
         # Make arguments.
-        pulp = loaded_config.get('pulp', {})
-        pulp_auth = pulp.get('auth', ['admin', 'admin'])
-        pulp_version = pulp.get('version', '1!0')
-        pulp_selinux_enabled = pulp.get('selinux enabled', True)
-        if 'systems' in loaded_config:
+        pulp = loaded_config.get("pulp", {})
+        pulp_auth = pulp.get("auth", ["admin", "admin"])
+        pulp_version = pulp.get("version", "1!0")
+        pulp_selinux_enabled = pulp.get("selinux enabled", True)
+        if "systems" in loaded_config:
             warnings.warn(
                 (
-                    'The Pulp Smash configuration file should use a key named '
+                    "The Pulp Smash configuration file should use a key named "
                     '"hosts," not "systems." Please update accordingly, and '
-                    'validate the changes with `pulp-smash settings validate`.'
+                    "validate the changes with `pulp-smash settings validate`."
                 ),
-                DeprecationWarning
+                DeprecationWarning,
             )
-            loaded_config['hosts'] = loaded_config.pop('systems')
-        hosts = [PulpHost(**host) for host in loaded_config.get('hosts', [])]
+            loaded_config["hosts"] = loaded_config.pop("systems")
+        hosts = [PulpHost(**host) for host in loaded_config.get("hosts", [])]
 
         # Make object.
         return PulpSmashConfig(
-            pulp_auth,
-            pulp_version,
-            pulp_selinux_enabled,
-            hosts=hosts,
+            pulp_auth, pulp_version, pulp_selinux_enabled, hosts=hosts
         )
 
     @classmethod
@@ -604,12 +577,14 @@ class PulpSmashConfig():
                 return path
 
         raise exceptions.ConfigFileNotFoundError(
-            'Pulp Smash is unable to find a configuration file. The '
-            'following (XDG compliant) paths have been searched: '
-            ', '.join((
-                os.path.join(xdg_config_dir, xdg_subdir, config_file)
-                for xdg_config_dir in BaseDirectory.xdg_config_dirs
-            ))
+            "Pulp Smash is unable to find a configuration file. The "
+            "following (XDG compliant) paths have been searched: "
+            ", ".join(
+                (
+                    os.path.join(xdg_config_dir, xdg_subdir, config_file)
+                    for xdg_config_dir in BaseDirectory.xdg_config_dirs
+                )
+            )
         )
 
     @classmethod
@@ -632,7 +607,7 @@ class PulpSmashConfig():
         `XDG base directory specification
         <https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_.
         """
-        return 'pulp_smash'
+        return "pulp_smash"
 
     @staticmethod
     def _get_config_file():
@@ -641,4 +616,4 @@ class PulpSmashConfig():
         Defaults to ``settings.json``, but may be overridden by an environment
         variable named ``PULP_SMASH_CONFIG_FILE``.
         """
-        return os.environ.get('PULP_SMASH_CONFIG_FILE', 'settings.json')
+        return os.environ.get("PULP_SMASH_CONFIG_FILE", "settings.json")

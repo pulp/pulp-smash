@@ -42,14 +42,15 @@ docs-api:
 	scripts/gen_api_docs.sh
 
 install-dev:
+	pip install -q --upgrade pip
 	pip install -q -e .[dev]
 
-lint: lint-flake8 lint-pylint
+lint: pre-commit
 
 # E501 and F401 are ignored because Pylint performs similar checks.
 # W504 ignored since it requires line breaks after binary operators.
 lint-flake8:
-	flake8 . --ignore E501,F401,W504 --exclude docs/_build
+	flake8 . --ignore E501,F401,W504,Q000 --exclude docs/_build
 
 lint-pylint:
 	pylint -j $(CPU_COUNT) --reports=n --disable=I,unnecessary-pass \
@@ -58,8 +59,17 @@ lint-pylint:
 		setup.py \
 		tests
 
+pre-commit:
+	@echo "Linting Python files."
+	pre-commit run -a
+	@echo "Finished."
+
 publish: dist
 	twine upload dist/*
+
+setup-git: install-pre-commit
+	pre-commit install
+	git config branch.autosetuprebase always
 
 test:
 	python3 $(TEST_OPTIONS)
