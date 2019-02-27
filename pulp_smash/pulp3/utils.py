@@ -159,16 +159,16 @@ def _build_content_fetcher(content_field):
         repo_version = client.get(version_href)
 
         content = defaultdict(list)
-        for content_type, content_url in repo_version[content_field].items():
-            typed_content = client.get(content_url)
+        for content_type, content_dict in repo_version['content_summary'][content_field].items():
+            typed_content = client.get(content_dict['href'])
             content[content_type] = typed_content
         return content
     return inner
 
 
-get_content = _build_content_fetcher('content_hrefs')  # pylint:disable=invalid-name
-get_added_content = _build_content_fetcher('content_added_hrefs')  # pylint:disable=invalid-name
-get_removed_content = _build_content_fetcher('content_removed_hrefs')  # pylint:disable=invalid-name
+get_content = _build_content_fetcher('present')  # pylint:disable=invalid-name
+get_added_content = _build_content_fetcher('added')  # pylint:disable=invalid-name
+get_removed_content = _build_content_fetcher('removed')  # pylint:disable=invalid-name
 
 
 def _build_summary_fetcher(summary_field):
@@ -196,13 +196,17 @@ def _build_summary_fetcher(summary_field):
             return {}
 
         client = api.Client(config.get_config(), api.page_handler)
-        return client.get(version_href)[summary_field]
+        to_return = client.get(version_href)['content_summary'][summary_field]
+        for key in to_return:
+            # provide the old interface pre-changes from https://github.com/pulp/pulpcore/pull/2
+            to_return[key] = to_return[key]['count']
+        return to_return
     return inner
 
 
-get_content_summary = _build_summary_fetcher('content_summary')  # pylint:disable=invalid-name
-get_added_content_summary = _build_summary_fetcher('content_added_summary')  # pylint:disable=invalid-name
-get_removed_content_summary = _build_summary_fetcher('content_removed_summary')  # pylint:disable=invalid-name
+get_content_summary = _build_summary_fetcher('present')  # pylint:disable=invalid-name
+get_added_content_summary = _build_summary_fetcher('added')  # pylint:disable=invalid-name
+get_removed_content_summary = _build_summary_fetcher('removed')  # pylint:disable=invalid-name
 
 
 def delete_orphans(cfg=None):
