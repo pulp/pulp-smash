@@ -100,6 +100,13 @@ class NoKnownPackageManagerError(Exception):
     """
 
 
+class NoRegistryClientError(Exception):
+    """We cannot determine the registry client used by a system.
+
+    A "registry client" is a tool such as ``podman`` or ``docker``.
+    """
+
+
 class NoKnownServiceManagerError(Exception):
     """We cannot determine the service manager used by a system.
 
