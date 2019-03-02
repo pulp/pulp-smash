@@ -1,10 +1,13 @@
 # coding=utf-8
 """A client for working with Pulp hosts via their CLI."""
+import collections
 import contextlib
+import json
 import os
 import socket
 from abc import ABCMeta, abstractmethod
-from urllib.parse import urlsplit
+from functools import partialmethod
+from urllib.parse import urlsplit, urlunsplit
 
 import plumbum
 from packaging.version import Version
@@ -227,7 +230,7 @@ class Client:  # pylint:disable=too-few-public-methods
         `is_root` function.
         """
         if self._is_root_cache is None:
-            self._is_root_cache = is_root(self.cfg)
+            self._is_root_cache = is_root(self.cfg, self.pulp_host)
         return self._is_root_cache
 
     def run(self, args, sudo=False, **kwargs):
@@ -429,7 +432,7 @@ class GlobalServiceManager(BaseServiceManager):
     When asked to perform an action, this object may talk to each target host
     and determines whether it is running as root. If not root, all commands are
     prefixed with "sudo". Please ensure that Pulp Smash can either execute
-    commands as root or can successfully execute ``sudo``. You may need to edit
+    commands as root or can successfully execute "sudo". You may need to edit
     your ``~/.ssh/config`` file.
 
     For conceptual information on why both a
@@ -591,7 +594,7 @@ class ServiceManager(BaseServiceManager):
     Upon instantiation, this object talks to the target host and determines
     whether it is running as root. If not root, all commands are prefixed with
     "sudo". Please ensure that Pulp Smash can either execute commands as root
-    or can successfully execute ``sudo``. You may need to edit your
+    or can successfully execute "sudo". You may need to edit your
     ``~/.ssh/config`` file.
 
     For conceptual information on why both a
@@ -607,7 +610,7 @@ class ServiceManager(BaseServiceManager):
     """
 
     def __init__(self, cfg, pulp_host):
-        """Initialize a new object."""
+        """Initialize a new ServiceManager object."""
         super().__init__()
         self._client = Client(cfg, pulp_host=pulp_host)
         self._svc_mgr = self._get_service_manager(cfg, pulp_host)
@@ -702,7 +705,7 @@ class PackageManager:
     Upon instantiation, this object talks to the target host and determines
     whether it is running as root. If not root, all commands are prefixed with
     "sudo". Please ensure that Pulp Smash can either execute commands as root
-    or can successfully execute ``sudo``. You may need to edit your
+    or can successfully execute "sudo". You may need to edit your
     ``~/.ssh/config`` file.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the target
@@ -717,7 +720,7 @@ class PackageManager:
     """
 
     def __init__(self, cfg, raise_if_unsupported=None):
-        """Initialize a new object."""
+        """Initialize a new PackageManager object."""
         self._cfg = cfg
         self._client = Client(cfg)
         self._name = None
@@ -816,3 +819,150 @@ class PackageManager:
     def apply_erratum(self, erratum):
         """Dispatch to proper _{self.name}_apply_erratum."""
         return getattr(self, '_{0}_apply_erratum'.format(self.name))(erratum)
+
+
+class RegistryClient:
+    """A container registry client on test runner machine.
+
+    Each instance of this class represents the registry client on a host. An
+    example may help to clarify this idea:
+
+    >>> from pulp_smash import cli, config
+    >>> registry = cli.RegistryClient(config.get_config())
+    >>> image = registry.pull('image_name')
+
+    In the example above, the ``registry`` object represents the client
+    on the host where pulp-smash is running the test cases.
+
+    Upon instantiation, a :class:`RegistryClient` object talks to its target
+    host and uses simple heuristics to determine which registry client is used.
+
+    Upon instantiation, this object determines whether it is running as root.
+    If not root, all commands are prefixed with "sudo".
+    Please ensure that Pulp Smash can either execute commands as root
+    or can successfully execute "sudo" on the localhost.
+
+    .. note:: When running against a non-https registry the client config
+        `insecure-registries` must be enabled.
+
+    For docker it is located in `/etc/docker/daemon.json` and content is::
+
+        {"insecure-registries": ["pulp_host:8080"]}
+
+    For podman it is located in `/etc/containers/registries.conf` with::
+
+        [registries.insecure]
+        registries = ['pulp_host:8080']
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the target
+        host.
+    :param tuple raise_if_unsupported: a tuple of Exception and optional
+        string message to force raise_if_unsupported on initialization::
+
+          rc = RegistryClient(cfg, (unittest.SkipTest, 'Test requires podman'))
+          # will raise and skip if unsupported package manager
+
+        The optional is calling `rc.raise_if_unsupported` explicitly.
+    :param pulp_host: The host where the Registry Client will run, by default
+        it is set to None and then the same machine where tests are executed
+        will be assumed.
+    """
+
+    def __init__(self, cfg, raise_if_unsupported=None, pulp_host=None):
+        """Initialize a new RegistryClient object."""
+        if pulp_host is None:
+            # to comply with Client API
+            smashrunner = collections.namedtuple('Host', 'hostname roles')
+            smashrunner.hostname = 'localhost'
+            smashrunner.roles = {'shell': {'transport': 'local'}}
+            self._pulp_host = smashrunner
+        else:
+            self._pulp_host = pulp_host
+
+        self._cfg = cfg
+        self._client = Client(cfg, pulp_host=self._pulp_host)
+        self._name = None
+        if raise_if_unsupported is not None:
+            self.raise_if_unsupported(*raise_if_unsupported)
+
+    @property
+    def name(self):
+        """Return the name of the Registry Client."""
+        if not self._name:
+            self._name = self._get_registry_client()
+        return self._name
+
+    def raise_if_unsupported(self, exc, message='Unsupported registry client'):
+        """Check if the registry client is supported else raise exc.
+
+        Use case::
+
+            rc = RegistryClient(cfg)
+            rc.raise_if_unsupported(unittest.SkipTest, 'Test requires podman')
+            # will raise and skip if not podman or docker
+            rc.pull('busybox')
+
+        """
+        try:
+            self.name
+        except exceptions.NoRegistryClientError:
+            raise exc(message)
+
+    def _get_registry_client(self):
+        """Talk to the host and determine the registry client.
+
+        Return "podman" or "docker" if the registry client appears to be one of
+        those.
+
+        :raises pulp_smash.exceptions.NoRegistryClientError: If unable to
+        find any valid registry client on host.
+        """
+        client = Client(self._cfg, echo_handler, pulp_host=self._pulp_host)
+        registry_clients = (
+            (('which', 'podman'), 'podman'),
+            (('which', 'docker'), 'docker'),
+        )
+        for cmd, registry_client in registry_clients:
+            if client.run(cmd).returncode == 0:
+                return registry_client
+        raise exceptions.NoRegistryClientError(
+            'Unable to determine the registry client used by {}. It does not '
+            'appear to be any of {}.'
+            .format(
+                self._pulp_host.hostname,
+                {rc for _, rc in registry_clients}
+            )
+        )
+
+    def _dispatch_command(self, command, *args):
+        """Dispatch a command to the registry client."""
+        # Scheme should not be part of image path, if so, remove it.
+        if args and args[0].startswith(('http://', 'https://')):
+            args = list(args)
+            args[0] = urlunsplit(
+                urlsplit(args[0])._replace(scheme='')
+            ).strip('//')
+
+        cmd = (self.name, command) + tuple(args)
+        result = self._client.run(cmd, sudo=True)
+        try:
+            # most of client responses are JSONable
+            return json.loads(result.stdout)
+        except Exception:  # pylint:disable=broad-except
+            # Python 3.4 has no specific error for json module
+            return result
+
+    pull = partialmethod(_dispatch_command, 'pull')
+    """Pulls image from registry."""
+    login = partialmethod(_dispatch_command, 'login')
+    """Authenticate to a registry."""
+    logout = partialmethod(_dispatch_command, 'logout')
+    """Logs out of a registry."""
+    inspect = partialmethod(_dispatch_command, 'inspect')
+    """Inspect metadata for pulled image."""
+    import_ = partialmethod(_dispatch_command, 'import')
+    """Import a container as a file in to the registry."""
+    images = partialmethod(_dispatch_command, 'images', '--format', 'json')
+    """List all pulled images."""
+    rmi = partialmethod(_dispatch_command, 'rmi')
+    """removes pulled image."""
