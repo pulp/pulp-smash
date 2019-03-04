@@ -24,6 +24,10 @@ DOWNLOAD_POLICIES = ('immediate', 'on_demand', 'streamed',)
 
 JWT_PATH = urljoin(BASE_PATH, 'jwt/')
 
+LAZY_DOWNLOAD_POLICIES = tuple(
+    [item for item in DOWNLOAD_POLICIES if item != 'immediate']
+)
+
 MEDIA_PATH = '/var/lib/pulp'
 
 ORPHANS_PATH = urljoin(BASE_PATH, 'orphans/')
