@@ -251,14 +251,14 @@ def get_artifact_paths(repo, version_href=None):
     artifact_paths = set()
     for typed_content in get_content(repo, version_href).values():
         for content in typed_content:
-            # some content types with 1-to-1 artifact-content relationship
-            # override 'artifacts', but some plugins will still have multiple
-            # artifacts for their content.
+            # Plugins can support zero, one, or many artifacts per content unit
             if content.get('_artifact'):
                 artifact_paths.add(content['_artifact'])
-            else:
-                for artifact in content.get('_artifacts'):
+            elif content.get('_artifacts'):
+                for artifact in content['_artifacts']:
                     artifact_paths.add(artifact)
+            else:
+                continue
     return artifact_paths
 
 
