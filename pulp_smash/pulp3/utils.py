@@ -8,7 +8,11 @@ from urllib.parse import urljoin, urlsplit
 from packaging.version import Version
 
 from pulp_smash import api, config, utils
-from pulp_smash.pulp3.constants import ORPHANS_PATH, STATUS_PATH
+from pulp_smash.pulp3.constants import (
+    DISTRIBUTION_PATH,
+    ORPHANS_PATH,
+    STATUS_PATH,
+)
 
 
 def require_pulp_3(exc):
@@ -119,6 +123,31 @@ def publish(cfg, publisher, repo, version_href=None):
         body = {'repository_version': version_href}
     client = api.Client(cfg, api.json_handler)
     call_report = client.post(urljoin(publisher['_href'], 'publish/'), body)
+    # As of this writing, Pulp 3 only returns one task. If Pulp 3 starts
+    # returning multiple tasks, this may need to be re-written.
+    tasks = tuple(api.poll_spawned_tasks(cfg, call_report))
+    if len(tasks) != 1:
+        message = (
+            'Multiple tasks were spawned in response to API call. This is '
+            'unexpected, and Pulp Smash may handle the response incorrectly. '
+            'Here is the tasks generated: {}'
+        )
+        message = message.format(tasks)
+        warnings.warn(message, RuntimeWarning)
+    return client.get(tasks[-1]['created_resources'][0])
+
+
+def create_distribution(cfg, body):
+    """Create a distribution.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        host.
+    :param body: A dict of information about the distribution to be created.
+    :returns: A distribution. A dict of information about the just created
+        distribution.
+    """
+    client = api.Client(cfg, api.json_handler)
+    call_report = client.post(DISTRIBUTION_PATH, body)
     # As of this writing, Pulp 3 only returns one task. If Pulp 3 starts
     # returning multiple tasks, this may need to be re-written.
     tasks = tuple(api.poll_spawned_tasks(cfg, call_report))
