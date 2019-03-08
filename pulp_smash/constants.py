@@ -1,13 +1,13 @@
 """Values usable by multiple test modules."""
 
 
-PULP_FIXTURES_BASE_URL = 'https://repos.fedorapeople.org/pulp/pulp/fixtures/'
+PULP_FIXTURES_BASE_URL = "https://repos.fedorapeople.org/pulp/pulp/fixtures/"
 """A URL at which generated `pulp fixtures`_ are hosted.
 
 .. _pulp fixtures: https://github.com/PulpQE/pulp-fixtures/
 """
 
-PULP_FIXTURES_KEY_ID = '269d9d98'
+PULP_FIXTURES_KEY_ID = "269d9d98"
 """The 32-bit ID of the public key used to sign various fixture files.
 
 To calculate a new key ID, find the public key used by Pulp Fixtures (it should

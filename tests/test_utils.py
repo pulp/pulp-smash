@@ -19,14 +19,14 @@ class IsRootTestCase(unittest.TestCase):
 
     def test_true(self):
         """Assert the method returns ``True`` when root."""
-        with mock.patch.object(cli, 'Client') as clien:
-            clien.return_value.run.return_value.stdout.strip.return_value = '0'
+        with mock.patch.object(cli, "Client") as clien:
+            clien.return_value.run.return_value.stdout.strip.return_value = "0"
             self.assertTrue(cli.is_root(None))
 
     def test_false(self):
         """Assert the method returns ``False`` when non-root."""
-        with mock.patch.object(cli, 'Client') as clien:
-            clien.return_value.run.return_value.stdout.strip.return_value = '1'
+        with mock.patch.object(cli, "Client") as clien:
+            clien.return_value.run.return_value.stdout.strip.return_value = "1"
             self.assertFalse(cli.is_root(None))
 
 
@@ -44,12 +44,12 @@ class GetSha256ChecksumTestCase(unittest.TestCase):
         * The first and third calls return identical checksums.
         """
         urls_blobs = (
-            ('http://example.com', b'abc'),
-            ('http://example.org', b'123'),
-            ('HTTP://example.com', b'abc'),
+            ("http://example.com", b"abc"),
+            ("http://example.org", b"123"),
+            ("HTTP://example.com", b"abc"),
         )
         checksums = []
-        with mock.patch.object(utils, 'http_get') as http_get:
+        with mock.patch.object(utils, "http_get") as http_get:
             for url, blob in urls_blobs:
                 http_get.return_value = blob
                 checksums.append(utils.get_sha256_checksum(url))
@@ -67,17 +67,17 @@ class GetOsReleaseTestCase(unittest.TestCase):
 
     def test_get_os_release_id(self):
         """Test :func:`pulp_smash.utils.get_os_release_id`."""
-        with mock.patch.object(cli, 'Client') as client:
-            client.return_value.run.return_value.stdout = ' fedora '
+        with mock.patch.object(cli, "Client") as client:
+            client.return_value.run.return_value.stdout = " fedora "
             response = utils.get_os_release_id(mock.Mock())
-        self.assertEqual(response, 'fedora')
+        self.assertEqual(response, "fedora")
 
     def test_get_os_release_version_id(self):
         """Test :func:`pulp_smash.utils.get_os_release_version_id`."""
-        with mock.patch.object(cli, 'Client') as client:
-            client.return_value.run.return_value.stdout = ' 27 '
+        with mock.patch.object(cli, "Client") as client:
+            client.return_value.run.return_value.stdout = " 27 "
             response = utils.get_os_release_version_id(mock.Mock())
-        self.assertEqual(response, '27')
+        self.assertEqual(response, "27")
 
 
 class FipsIsSupportedtestCase(unittest.TestCase):
@@ -85,16 +85,17 @@ class FipsIsSupportedtestCase(unittest.TestCase):
 
     def test_return_true(self):
         """Assert true is returned if the crypto.fips_enabled is supported by sysctl."""
-        with mock.patch.object(cli, 'Client') as client:
-            client.return_value.run.return_value = 'some string value'
+        with mock.patch.object(cli, "Client") as client:
+            client.return_value.run.return_value = "some string value"
             response = utils.fips_is_supported(mock.Mock())
         self.assertTrue(response)
 
     def test_return_false(self):
         """Assert false is returned if Called process Error Exception is thrown."""
-        with mock.patch.object(cli, 'Client') as client:
+        with mock.patch.object(cli, "Client") as client:
             client.side_effect = exceptions.CalledProcessError(
-                ('arg', 'arg'), 1, 'stdout', 'stderr')
+                ("arg", "arg"), 1, "stdout", "stderr"
+            )
             response = utils.fips_is_supported(mock.Mock())
         self.assertFalse(response)
 
@@ -104,16 +105,16 @@ class FipsIsEnabledTestCase(unittest.TestCase):
 
     def test_return_true(self):
         """Assert true is returned if the crypto.fips_enabled is enabled in sysctl."""
-        with mock.patch.object(cli, 'Client') as client:
-            client.return_value.run.return_value.stdout = '1\n'
+        with mock.patch.object(cli, "Client") as client:
+            client.return_value.run.return_value.stdout = "1\n"
             response = utils.fips_is_enabled(mock.Mock())
         self.assertTrue(response)
 
     def test_return_false(self):
         """Assert False is returned if the crypto.fips_enabled is not enabled in sysctl."""
-        for stdout in ('-1\n', '0\n', '2\n', '10\n'):
+        for stdout in ("-1\n", "0\n", "2\n", "10\n"):
             with self.subTest(stdout=stdout):
-                with mock.patch.object(cli, 'Client') as client:
+                with mock.patch.object(cli, "Client") as client:
                     client.return_value.run.return_value.stdout = stdout
                     response = utils.fips_is_enabled(mock.Mock())
                 self.assertFalse(response)

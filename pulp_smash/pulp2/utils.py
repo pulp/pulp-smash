@@ -43,9 +43,9 @@ class BaseAPICrudTestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         """Raise a deprecation warning."""
         warnings.warn(
-            'Avoid using BaseAPICrudTestCase. It is coupled to the unittest '
-            'test runner.',
-            DeprecationWarning
+            "Avoid using BaseAPICrudTestCase. It is coupled to the unittest "
+            "test runner.",
+            DeprecationWarning,
         )
         super().__init__(*args, **kwargs)
 
@@ -53,18 +53,17 @@ class BaseAPICrudTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Create, update, read and delete a repository."""
         if inspect.getmro(cls)[0] == BaseAPICrudTestCase:
-            raise unittest.SkipTest('Abstract base class.')
+            raise unittest.SkipTest("Abstract base class.")
         client = api.Client(config.get_config())
-        cls.bodies = {'create': cls.create_body(), 'update': cls.update_body()}
+        cls.bodies = {"create": cls.create_body(), "update": cls.update_body()}
         cls.responses = {}
-        cls.responses['create'] = client.post(
-            REPOSITORY_PATH,
-            cls.bodies['create'],
+        cls.responses["create"] = client.post(
+            REPOSITORY_PATH, cls.bodies["create"]
         )
-        repo_href = cls.responses['create'].json()['_href']
-        cls.responses['update'] = client.put(repo_href, cls.bodies['update'])
-        cls.responses['read'] = client.get(repo_href, params={'details': True})
-        cls.responses['delete'] = client.delete(repo_href)
+        repo_href = cls.responses["create"].json()["_href"]
+        cls.responses["update"] = client.put(repo_href, cls.bodies["update"])
+        cls.responses["read"] = client.get(repo_href, params={"details": True})
+        cls.responses["delete"] = client.delete(repo_href)
 
     @staticmethod
     def create_body():
@@ -85,10 +84,11 @@ class BaseAPICrudTestCase(unittest.TestCase):
     def test_status_codes(self):
         """Assert each response has a correct status code."""
         for response, code in (
-                ('create', 201),
-                ('update', 200),
-                ('read', 200),
-                ('delete', 202)):
+            ("create", 201),
+            ("update", 200),
+            ("read", 200),
+            ("delete", 202),
+        ):
             with self.subTest((response, code)):
                 self.assertEqual(self.responses[response].status_code, code)
 
@@ -101,42 +101,42 @@ class BaseAPICrudTestCase(unittest.TestCase):
         NOTE: Any attribute whose name starts with ``importer`` or
         ``distributor`` is not verified.
         """
-        received = self.responses['create'].json()
-        for key, value in self.bodies['create'].items():
-            if key.startswith('importer') or key.startswith('distributor'):
+        received = self.responses["create"].json()
+        for key, value in self.bodies["create"].items():
+            if key.startswith("importer") or key.startswith("distributor"):
                 continue
             with self.subTest(key=key, value=value):
                 self.assertEqual(received[key], value)
 
     def test_update(self):
         """Assert the repo update response has the requested changes."""
-        received = self.responses['update'].json()['result']
-        for key, value in self.bodies['update']['delta'].items():
+        received = self.responses["update"].json()["result"]
+        for key, value in self.bodies["update"]["delta"].items():
             with self.subTest(key=key, value=value):
                 self.assertEqual(received[key], value)
 
     def test_read(self):
         """Assert the repo update response has the requested changes."""
-        received = self.responses['read'].json()
-        for key, value in self.bodies['update']['delta'].items():
+        received = self.responses["read"].json()
+        for key, value in self.bodies["update"]["delta"].items():
             with self.subTest(key=key, value=value):
                 self.assertEqual(received[key], value)
 
     def test_number_importers(self):
         """Assert the repository has one importer."""
-        self.assertEqual(len(self.responses['read'].json()['importers']), 1)
+        self.assertEqual(len(self.responses["read"].json()["importers"]), 1)
 
     def test_importer_type_id(self):
         """Validate the repo importer's ``importer_type_id`` attribute."""
-        key = 'importer_type_id'
-        type_sent = self.bodies['create'][key]
-        type_received = self.responses['read'].json()['importers'][0][key]
+        key = "importer_type_id"
+        type_sent = self.bodies["create"][key]
+        type_received = self.responses["read"].json()["importers"][0][key]
         self.assertEqual(type_sent, type_received)
 
     def test_importer_config(self):
         """Validate the ``config`` attribute of each importer."""
-        cfg_sent = self.bodies['create']['importer_config']
-        cfg_received = self.responses['read'].json()['importers'][0]['config']
+        cfg_sent = self.bodies["create"]["importer_config"]
+        cfg_received = self.responses["read"].json()["importers"][0]["config"]
         self.assertEqual(cfg_sent, cfg_received)
 
 
@@ -158,12 +158,12 @@ class BaseAPITestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         """Raise a deprecation warning."""
         warnings.warn(
-            'Avoid using BaseAPITestCase. It is coupled to the unittest test '
-            'runner. In addition, it slows down tests by unnecessarily '
-            'deleting orphans, and its design encourages fragile clean-up '
-            'logic. If you are using unittest, delete orphans only as needed, '
-            'and consider using the addCleanup instance method.',
-            DeprecationWarning
+            "Avoid using BaseAPITestCase. It is coupled to the unittest test "
+            "runner. In addition, it slows down tests by unnecessarily "
+            "deleting orphans, and its design encourages fragile clean-up "
+            "logic. If you are using unittest, delete orphans only as needed, "
+            "and consider using the addCleanup instance method.",
+            DeprecationWarning,
         )
         super().__init__(*args, **kwargs)
 
@@ -193,7 +193,7 @@ class BaseAPITestCase(unittest.TestCase):
 
 
 # It's OK for this method to have just one method. It's a mixin.
-class DuplicateUploadsMixin():  # pylint:disable=too-few-public-methods
+class DuplicateUploadsMixin:  # pylint:disable=too-few-public-methods
     """A mixin that adds tests for the "duplicate upload" test cases.
 
     Consider the following procedure:
@@ -219,12 +219,12 @@ class DuplicateUploadsMixin():  # pylint:disable=too-few-public-methods
     def test_01_first_upload(self):
         """Upload a content unit to a repository."""
         call_report = upload_import_unit(*self.upload_import_unit_args)
-        self.assertIsNone(call_report['result'])
+        self.assertIsNone(call_report["result"])
 
     def test_02_second_upload(self):
         """Upload the same content unit to the same repository."""
         call_report = upload_import_unit(*self.upload_import_unit_args)
-        self.assertIsNone(call_report['result'])
+        self.assertIsNone(call_report["result"])
 
 
 # See design discussion at: https://github.com/PulpQE/pulp-smash/issues/31
@@ -246,15 +246,16 @@ def get_broker(cfg):
     # into a system and executing `which qpidd` and remotely executing `ssh
     # pulp.example.com which qpidd` may return different results.
     client = cli.Client(cfg, cli.echo_handler)
-    executables = ('qpidd', 'rabbitmq')  # ordering indicates preference
+    executables = ("qpidd", "rabbitmq")  # ordering indicates preference
     for executable in executables:
-        command = ('test', '-e', '/usr/sbin/' + executable)
+        command = ("test", "-e", "/usr/sbin/" + executable)
         if client.run(command).returncode == 0:
             return executable
     raise exceptions.NoKnownBrokerError(
-        'Unable to determine the AMQP broker used by {}. It does not appear '
-        'to be any of {}.'
-        .format(urlparse(cfg.get_base_url()).hostname, executables)
+        "Unable to determine the AMQP broker used by {}. It does not appear "
+        "to be any of {}.".format(
+            urlparse(cfg.get_base_url()).hostname, executables
+        )
     )
 
 
@@ -275,7 +276,7 @@ def get_unit_types():
        http://docs.pulpproject.org/plugins/pulp_python/reference/python-type.html
     """
     unit_types = api.Client(config.get_config()).get(PLUGIN_TYPES_PATH).json()
-    return {unit_type['id'] for unit_type in unit_types}
+    return {unit_type["id"] for unit_type in unit_types}
 
 
 def publish_repo(cfg, repo, json=None):
@@ -293,15 +294,14 @@ def publish_repo(cfg, repo, json=None):
         call report.
     """
     if json is None:
-        if 'distributors' not in repo or len(repo['distributors']) != 1:
+        if "distributors" not in repo or len(repo["distributors"]) != 1:
             raise ValueError(
-                'No request body was passed, and the given repository does '
-                'not have exactly one distributor. Repository: {}'.format(repo)
+                "No request body was passed, and the given repository does "
+                "not have exactly one distributor. Repository: {}".format(repo)
             )
-        json = {'id': repo['distributors'][0]['id']}
+        json = {"id": repo["distributors"][0]["id"]}
     return api.Client(cfg).post(
-        urljoin(repo['_href'], 'actions/publish/'),
-        json
+        urljoin(repo["_href"], "actions/publish/"), json
     )
 
 
@@ -313,9 +313,9 @@ def pulp_admin_login(cfg):
     :return: The completed process.
     :rtype: pulp_smash.cli.CompletedProcess
     """
-    return cli.Client(cfg).run((
-        'pulp-admin', 'login', '-u', cfg.pulp_auth[0], '-p', cfg.pulp_auth[1]
-    ))
+    return cli.Client(cfg).run(
+        ("pulp-admin", "login", "-u", cfg.pulp_auth[0], "-p", cfg.pulp_auth[1])
+    )
 
 
 def require_issue_3159(exc):
@@ -327,9 +327,8 @@ def require_issue_3159(exc):
     .. _Pulp #3159: https://pulp.plan.io/issues/3159
     """
     cfg = config.get_config()
-    if (not selectors.bug_is_fixed(3159, cfg.pulp_version) and
-            _os_is_f27(cfg)):
-        raise exc('https://pulp.plan.io/issues/3159')
+    if not selectors.bug_is_fixed(3159, cfg.pulp_version) and _os_is_f27(cfg):
+        raise exc("https://pulp.plan.io/issues/3159")
 
 
 def require_issue_3687(exc):
@@ -341,9 +340,8 @@ def require_issue_3687(exc):
     .. _Pulp #3687: https://pulp.plan.io/issues/3687
     """
     cfg = config.get_config()
-    if (not selectors.bug_is_fixed(3687, cfg.pulp_version) and
-            _os_is_f27(cfg)):
-        raise exc('https://pulp.plan.io/issues/3687')
+    if not selectors.bug_is_fixed(3687, cfg.pulp_version) and _os_is_f27(cfg):
+        raise exc("https://pulp.plan.io/issues/3687")
 
 
 def require_pulp_2(exc):
@@ -353,10 +351,11 @@ def require_pulp_2(exc):
         constructor must accept one string argument.
     """
     cfg = config.get_config()
-    if cfg.pulp_version < Version('2') or cfg.pulp_version >= Version('3'):
+    if cfg.pulp_version < Version("2") or cfg.pulp_version >= Version("3"):
         raise exc(
-            'These tests are for Pulp 2, but Pulp {} is under test.'
-            .format(cfg.pulp_version)
+            "These tests are for Pulp 2, but Pulp {} is under test.".format(
+                cfg.pulp_version
+            )
         )
 
 
@@ -371,7 +370,7 @@ def require_unit_types(required_unit_types, exc):
     if missing_unit_types:
         raise exc(
             "The following unit types aren't supported by the Pulp "
-            'application under test: {}'.format(missing_unit_types)
+            "application under test: {}".format(missing_unit_types)
         )
 
 
@@ -394,16 +393,19 @@ def reset_pulp(cfg):
     # Why not use runuser's `-u` flag? Because RHEL 6 ships an old version of
     # runuser that doesn't support the flag, and RHEL 6 is a supported Pulp
     # platform.
-    client = cli.Client(cfg, pulp_host=cfg.get_hosts('mongod')[0])
-    client.run('mongo pulp_database --eval db.dropDatabase()'.split())
+    client = cli.Client(cfg, pulp_host=cfg.get_hosts("mongod")[0])
+    client.run("mongo pulp_database --eval db.dropDatabase()".split())
 
-    for index, _ in enumerate(cfg.get_hosts('api')):
+    for index, _ in enumerate(cfg.get_hosts("api")):
         if index == 0:
-            client.run((
-                'runuser --shell /bin/sh apache --command pulp-manage-db'
-            ).split(), sudo=True)
-        client.run(('rm -rf /var/lib/pulp/content').split(), sudo=True)
-        client.run(('rm -rf /var/lib/pulp/published').split(), sudo=True)
+            client.run(
+                (
+                    "runuser --shell /bin/sh apache --command pulp-manage-db"
+                ).split(),
+                sudo=True,
+            )
+        client.run(("rm -rf /var/lib/pulp/content").split(), sudo=True)
+        client.run(("rm -rf /var/lib/pulp/published").split(), sudo=True)
 
     svc_mgr.start(PULP_SERVICES)
 
@@ -417,31 +419,37 @@ def reset_squid(cfg):
     """
     squid_version = _get_squid_version(cfg)
     svc_mgr = cli.GlobalServiceManager(cfg)
-    svc_mgr.stop(('squid',))
+    svc_mgr.stop(("squid",))
 
     # Remove and re-initialize the cache directory.
     client = cli.Client(cfg)
-    client.run(('rm', '-rf', '/var/spool/squid'), sudo=True)
-    client.run((
-        'mkdir', '--context=system_u:object_r:squid_cache_t:s0', '--mode=750',
-        '/var/spool/squid'), sudo=True)
-    client.run(('chown', 'squid:squid', '/var/spool/squid'), sudo=True)
-    if squid_version < Version('4'):
-        client.run(('squid', '-z'), sudo=True)
+    client.run(("rm", "-rf", "/var/spool/squid"), sudo=True)
+    client.run(
+        (
+            "mkdir",
+            "--context=system_u:object_r:squid_cache_t:s0",
+            "--mode=750",
+            "/var/spool/squid",
+        ),
+        sudo=True,
+    )
+    client.run(("chown", "squid:squid", "/var/spool/squid"), sudo=True)
+    if squid_version < Version("4"):
+        client.run(("squid", "-z"), sudo=True)
     else:
-        client.run(('squid', '-z', '--foreground'), sudo=True)
+        client.run(("squid", "-z", "--foreground"), sudo=True)
 
-    svc_mgr.start(('squid',))
+    svc_mgr.start(("squid",))
 
 
 def _get_squid_version(cfg):
     """Get Squid's version, as a ``packaging.version.Version`` object."""
     # The --version option was added in Squid 4.
-    resp = cli.Client(cfg).run(('squid', '-v'))
+    resp = cli.Client(cfg).run(("squid", "-v"))
     # The first line of output is 'Squid Cache: Version ...' for at least Squid
     # 3 and 4, and at least Fedora 24, Fedora 25, RHEL 6.8 and RHEL 7.3.
-    phrase = 'squid cache: version '
-    return Version(resp.stdout.splitlines()[0].lower()[len(phrase):].strip())
+    phrase = "squid cache: version "
+    return Version(resp.stdout.splitlines()[0].lower()[len(phrase) :].strip())
 
 
 def search_units(cfg, repo, criteria=None, response_handler=None):
@@ -462,8 +470,7 @@ def search_units(cfg, repo, criteria=None, response_handler=None):
     if response_handler is None:
         response_handler = api.json_handler
     return api.Client(cfg, response_handler).post(
-        urljoin(repo['_href'], 'search/units/'),
-        {'criteria': criteria},
+        urljoin(repo["_href"], "search/units/"), {"criteria": criteria}
     )
 
 
@@ -477,7 +484,7 @@ def sync_repo(cfg, repo):
     :returns: The server's reponse. Call ``.json()`` on the response to get a
         call report.
     """
-    return api.Client(cfg).post(urljoin(repo['_href'], 'actions/sync/'))
+    return api.Client(cfg).post(urljoin(repo["_href"], "actions/sync/"))
 
 
 def upload_import_erratum(cfg, erratum, repo):
@@ -495,15 +502,15 @@ def upload_import_erratum(cfg, erratum, repo):
     client = api.Client(cfg, api.json_handler)
     malloc = client.post(CONTENT_UPLOAD_PATH)
     call_report = client.post(
-        urljoin(repo['_href'], 'actions/import_upload/'),
+        urljoin(repo["_href"], "actions/import_upload/"),
         {
-            'unit_key': {'id': erratum['id']},
-            'unit_metadata': erratum,
-            'unit_type_id': 'erratum',
-            'upload_id': malloc['upload_id'],
-        }
+            "unit_key": {"id": erratum["id"]},
+            "unit_metadata": erratum,
+            "unit_type_id": "erratum",
+            "upload_id": malloc["upload_id"],
+        },
     )
-    client.delete(malloc['_href'])
+    client.delete(malloc["_href"])
     return call_report
 
 
@@ -557,19 +564,21 @@ def upload_import_unit(cfg, unit, import_params, repo):
             chunk = handle.read(chunk_size)
             if not chunk:  # if chunk == b'':
                 break  # we've reached EOF
-            path = urljoin(malloc['_href'], '{}/'.format(offset))
+            path = urljoin(malloc["_href"], "{}/".format(offset))
             client.put(path, data=chunk)
             offset += chunk_size
 
-    path = urljoin(repo['_href'], 'actions/import_upload/')
-    body = {'unit_key': {}, 'upload_id': malloc['upload_id']}
+    path = urljoin(repo["_href"], "actions/import_upload/")
+    body = {"unit_key": {}, "upload_id": malloc["upload_id"]}
     body.update(import_params)
     call_report = client.post(path, body)
-    client.delete(malloc['_href'])
+    client.delete(malloc["_href"])
     return call_report
 
 
 def _os_is_f27(cfg, pulp_host=None):
     """Tell whether the given Pulp host's OS is F27."""
-    return (utils.get_os_release_id(cfg, pulp_host) == 'fedora' and
-            utils.get_os_release_version_id(cfg, pulp_host) == '27')
+    return (
+        utils.get_os_release_id(cfg, pulp_host) == "fedora"
+        and utils.get_os_release_version_id(cfg, pulp_host) == "27"
+    )

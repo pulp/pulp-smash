@@ -26,11 +26,11 @@ def get_os_release_id(cfg, pulp_host=None):
     :returns: A string such as "rhel," "fedora," or "arch." (These values come
         from Red Hat Enterprise Linux, Fedora, and Arch Linux respectively.)
     """
-    return cli.Client(cfg, pulp_host=pulp_host).run((
-        'bash',
-        '-c',
-        '(source /etc/os-release && echo "$ID")',
-    )).stdout.strip()
+    return (
+        cli.Client(cfg, pulp_host=pulp_host)
+        .run(("bash", "-c", '(source /etc/os-release && echo "$ID")'))
+        .stdout.strip()
+    )
 
 
 def get_os_release_version_id(cfg, pulp_host=None):
@@ -45,11 +45,11 @@ def get_os_release_version_id(cfg, pulp_host=None):
         actual version object if doing version number comparisons.
         ``packaging.version.Version`` can be used for this purpose.
     """
-    return cli.Client(cfg, pulp_host=pulp_host).run((
-        'bash',
-        '-c',
-        '(source /etc/os-release && echo "$VERSION_ID")',
-    )).stdout.strip()
+    return (
+        cli.Client(cfg, pulp_host=pulp_host)
+        .run(("bash", "-c", '(source /etc/os-release && echo "$VERSION_ID")'))
+        .stdout.strip()
+    )
 
 
 def get_sha256_checksum(url):
@@ -96,10 +96,9 @@ def fips_is_supported(cfg, pulp_host=None):
     :return: True of False
     """
     try:
-        cli.Client(cfg, pulp_host=pulp_host).run((
-            'sysctl',
-            'crypto.fips_enabled'
-        ))
+        cli.Client(cfg, pulp_host=pulp_host).run(
+            ("sysctl", "crypto.fips_enabled")
+        )
     except exceptions.CalledProcessError:
         return False
     return True
@@ -114,11 +113,12 @@ def fips_is_enabled(cfg, pulp_host=None):
         instead of the default chosen by :class: pulp_smash.cli.Client`.
     :return: True of False
     """
-    return cli.Client(cfg, pulp_host=pulp_host).run((
-        'sysctl',
-        '--values',
-        'crypto.fips_enabled'
-    )).stdout.strip() == '1'
+    return (
+        cli.Client(cfg, pulp_host=pulp_host)
+        .run(("sysctl", "--values", "crypto.fips_enabled"))
+        .stdout.strip()
+        == "1"
+    )
 
 
 def uuid4():

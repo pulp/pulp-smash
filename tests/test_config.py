@@ -94,29 +94,29 @@ def _gen_attrs():
     :returns: A dict. It populates all attributes in a ``PulpSmashConfig``.
     """
     return {
-        'pulp_auth': [utils.uuid4() for _ in range(2)],
-        'pulp_version': '.'.join(
+        "pulp_auth": [utils.uuid4() for _ in range(2)],
+        "pulp_version": ".".join(
             str(random.randint(1, 150)) for _ in range(4)
         ),
-        'pulp_selinux_enabled': True,
-        'hosts': [
+        "pulp_selinux_enabled": True,
+        "hosts": [
             config.PulpHost(
-                hostname='pulp.example.com',
+                hostname="pulp.example.com",
                 roles={
-                    'amqp broker': {'service': 'qpidd'},
-                    'api': {
-                        'port': random.randint(1, 65535),
-                        'scheme': 'https',
-                        'verify': True
+                    "amqp broker": {"service": "qpidd"},
+                    "api": {
+                        "port": random.randint(1, 65535),
+                        "scheme": "https",
+                        "verify": True,
                     },
-                    'mongod': {},
-                    'pulp cli': {},
-                    'pulp celerybeat': {},
-                    'pulp resource manager': {},
-                    'pulp workers': {},
-                    'shell': {'transport': 'local'},
-                    'squid': {}
-                }
+                    "mongod": {},
+                    "pulp cli": {},
+                    "pulp celerybeat": {},
+                    "pulp resource manager": {},
+                    "pulp workers": {},
+                    "shell": {"transport": "local"},
+                    "squid": {},
+                },
             )
         ],
     }
@@ -127,15 +127,15 @@ class GetConfigTestCase(unittest.TestCase):
 
     def test_cache_full(self):
         """No config is loaded from disk if the cache is populated."""
-        with mock.patch.object(config, '_CONFIG'):
-            with mock.patch.object(config.PulpSmashConfig, 'load') as load:
+        with mock.patch.object(config, "_CONFIG"):
+            with mock.patch.object(config.PulpSmashConfig, "load") as load:
                 config.get_config()
         self.assertEqual(load.call_count, 0)
 
     def test_cache_empty(self):
         """A config is loaded from disk if the cache is empty."""
-        with mock.patch.object(config, '_CONFIG', None):
-            with mock.patch.object(config.PulpSmashConfig, 'load') as load:
+        with mock.patch.object(config, "_CONFIG", None):
+            with mock.patch.object(config.PulpSmashConfig, "load") as load:
                 config.get_config()
         self.assertEqual(load.call_count, 1)
 
@@ -146,28 +146,29 @@ class ValidateConfigTestCase(unittest.TestCase):
     def test_valid_config(self):
         """A valid config does not raise an exception."""
         self.assertIsNone(
-            config.validate_config(json.loads(PULP_SMASH_CONFIG)))
+            config.validate_config(json.loads(PULP_SMASH_CONFIG))
+        )
 
     def test_invalid_config(self):
         """An invalid config raises an exception."""
         config_dict = json.loads(PULP_SMASH_CONFIG)
-        config_dict['pulp']['auth'] = []
-        config_dict['hosts'][0]['hostname'] = ''
+        config_dict["pulp"]["auth"] = []
+        config_dict["hosts"][0]["hostname"] = ""
         with self.assertRaises(exceptions.ConfigValidationError):
             config.validate_config(config_dict)
 
     def test_config_missing_roles(self):
         """Missing required roles in config raises an exception."""
         config_dict = json.loads(PULP_SMASH_CONFIG)
-        for host in config_dict['hosts']:
-            host['roles'].pop('api', None)
-            host['roles'].pop('pulp workers', None)
+        for host in config_dict["hosts"]:
+            host["roles"].pop("api", None)
+            host["roles"].pop("pulp workers", None)
         with self.assertRaises(exceptions.ConfigValidationError) as err:
             config.validate_config(config_dict)
         self.assertEqual(
             err.exception.message,
-            'The following roles are not fulfilled by any hosts: api, pulp '
-            'workers',
+            "The following roles are not fulfilled by any hosts: api, pulp "
+            "workers",
         )
 
 
@@ -176,16 +177,20 @@ class PulpSmashConfigFileTestCase(unittest.TestCase):
 
     def test_var_set(self):
         """Set the environment variable."""
-        os_environ = {'PULP_SMASH_CONFIG_FILE': utils.uuid4()}
+        os_environ = {"PULP_SMASH_CONFIG_FILE": utils.uuid4()}
         with mock.patch.dict(os.environ, os_environ, clear=True):
-            config_file = config.PulpSmashConfig._get_config_file()  # pylint:disable=protected-access
-        self.assertEqual(config_file, os_environ['PULP_SMASH_CONFIG_FILE'])
+            config_file = (
+                config.PulpSmashConfig._get_config_file()
+            )  # pylint:disable=protected-access
+        self.assertEqual(config_file, os_environ["PULP_SMASH_CONFIG_FILE"])
 
     def test_var_unset(self):
         """Do not set the environment variable."""
         with mock.patch.dict(os.environ, {}, clear=True):
-            config_file = config.PulpSmashConfig._get_config_file()  # pylint:disable=protected-access
-        self.assertEqual(config_file, 'settings.json')
+            config_file = (
+                config.PulpSmashConfig._get_config_file()
+            )  # pylint:disable=protected-access
+        self.assertEqual(config_file, "settings.json")
 
 
 class LoadTestCase(unittest.TestCase):
@@ -204,50 +209,52 @@ class LoadTestCase(unittest.TestCase):
 
     def do_validate(self, cfg):
         """Validate the attributes of a configuration object."""
-        with self.subTest('check pulp_auth'):
-            self.assertEqual(cfg.pulp_auth, ['username', 'password'])
-        with self.subTest('check pulp_version'):
-            self.assertEqual(cfg.pulp_version, config.Version('2.12.1'))
-        with self.subTest('check pulp_selinux_enabled'):
+        with self.subTest("check pulp_auth"):
+            self.assertEqual(cfg.pulp_auth, ["username", "password"])
+        with self.subTest("check pulp_version"):
+            self.assertEqual(cfg.pulp_version, config.Version("2.12.1"))
+        with self.subTest("check pulp_selinux_enabled"):
             self.assertEqual(cfg.pulp_selinux_enabled, True)
-        with self.subTest('check hosts'):
+        with self.subTest("check hosts"):
             self.assertEqual(
                 sorted(cfg.hosts),
-                sorted([
-                    config.PulpHost(
-                        hostname='first.example.com',
-                        roles={
-                            'amqp broker': {'service': 'qpidd'},
-                            'api': {
-                                'port': 1234,
-                                'scheme': 'https',
-                                'verify': True,
+                sorted(
+                    [
+                        config.PulpHost(
+                            hostname="first.example.com",
+                            roles={
+                                "amqp broker": {"service": "qpidd"},
+                                "api": {
+                                    "port": 1234,
+                                    "scheme": "https",
+                                    "verify": True,
+                                },
+                                "mongod": {},
+                                "pulp cli": {},
+                                "pulp celerybeat": {},
+                                "pulp resource manager": {},
+                                "pulp workers": {},
+                                "shell": {"transport": "local"},
+                                "squid": {},
                             },
-                            'mongod': {},
-                            'pulp cli': {},
-                            'pulp celerybeat': {},
-                            'pulp resource manager': {},
-                            'pulp workers': {},
-                            'shell': {'transport': 'local'},
-                            'squid': {},
-                        }
-                    ),
-                    config.PulpHost(
-                        hostname='second.example.com',
-                        roles={
-                            'api': {
-                                'port': 2345,
-                                'scheme': 'https',
-                                'verify': False,
+                        ),
+                        config.PulpHost(
+                            hostname="second.example.com",
+                            roles={
+                                "api": {
+                                    "port": 2345,
+                                    "scheme": "https",
+                                    "verify": False,
+                                },
+                                "pulp celerybeat": {},
+                                "pulp resource manager": {},
+                                "pulp workers": {},
+                                "shell": {"transport": "ssh"},
+                                "squid": {},
                             },
-                            'pulp celerybeat': {},
-                            'pulp resource manager': {},
-                            'pulp workers': {},
-                            'shell': {'transport': 'ssh'},
-                            'squid': {}
-                        }
-                    ),
-                ])
+                        ),
+                    ]
+                ),
             )
 
 
@@ -260,53 +267,46 @@ class HelperMethodsTestCase(unittest.TestCase):
 
     def test_get_hosts(self):
         """``get_hosts`` returns proper result."""
-        with self.subTest('role with multiple matching hosts'):
-            result = [host.hostname for host in self.cfg.get_hosts('api')]
+        with self.subTest("role with multiple matching hosts"):
+            result = [host.hostname for host in self.cfg.get_hosts("api")]
             self.assertEqual(len(result), 2)
             self.assertEqual(
                 sorted(result),
-                sorted(['first.example.com', 'second.example.com'])
+                sorted(["first.example.com", "second.example.com"]),
             )
-        with self.subTest('role with single match host'):
-            result = [host.hostname for host in self.cfg.get_hosts('mongod')]
+        with self.subTest("role with single match host"):
+            result = [host.hostname for host in self.cfg.get_hosts("mongod")]
             self.assertEqual(len(result), 1)
-            self.assertEqual(
-                sorted(result),
-                sorted(['first.example.com'])
-            )
+            self.assertEqual(sorted(result), sorted(["first.example.com"]))
 
     def test_get_services(self):
         """``get_services`` returns proper result."""
         # If set, the "amqp broker" role must have a "service" attribute.
         roles = {role: {} for role in config.P2_ROLES}
-        del roles['amqp broker']
+        del roles["amqp broker"]
 
         expected_roles = {
-            'httpd',
-            'mongod',
-            'pulp_celerybeat',
-            'pulp_resource_manager',
-            'pulp_workers',
-            'squid',
+            "httpd",
+            "mongod",
+            "pulp_celerybeat",
+            "pulp_resource_manager",
+            "pulp_workers",
+            "squid",
         }
-        with self.subTest('no amqp broker service'):
+        with self.subTest("no amqp broker service"):
+            self.assertEqual(self.cfg.get_services(roles), expected_roles)
+
+        roles["amqp broker"] = {"service": "qpidd"}
+        with self.subTest("qpidd amqp broker service"):
             self.assertEqual(
-                self.cfg.get_services(roles),
-                expected_roles
+                self.cfg.get_services(roles), expected_roles.union({"qpidd"})
             )
 
-        roles['amqp broker'] = {'service': 'qpidd'}
-        with self.subTest('qpidd amqp broker service'):
+        roles["amqp broker"] = {"service": "rabbitmq"}
+        with self.subTest("rabbitmq amqp broker service"):
             self.assertEqual(
                 self.cfg.get_services(roles),
-                expected_roles.union({'qpidd'})
-            )
-
-        roles['amqp broker'] = {'service': 'rabbitmq'}
-        with self.subTest('rabbitmq amqp broker service'):
-            self.assertEqual(
-                self.cfg.get_services(roles),
-                expected_roles.union({'rabbitmq'})
+                expected_roles.union({"rabbitmq"}),
             )
 
 
@@ -324,10 +324,7 @@ class GetRequestsKwargsTestCase(unittest.TestCase):
         """Assert that the method returns correct values."""
         self.assertEqual(
             self.kwargs,
-            {
-                'auth': tuple(self.attrs['pulp_auth']),
-                'verify': True,
-            }
+            {"auth": tuple(self.attrs["pulp_auth"]), "verify": True},
         )
 
     def test_cfg_auth(self):
@@ -337,7 +334,7 @@ class GetRequestsKwargsTestCase(unittest.TestCase):
 
     def test_kwargs_auth(self):
         """Assert that the method converts ``auth`` to a tuple."""
-        self.assertIsInstance(self.kwargs['auth'], tuple)
+        self.assertIsInstance(self.kwargs["auth"], tuple)
 
 
 class ReprTestCase(unittest.TestCase):
@@ -355,24 +352,28 @@ class ReprTestCase(unittest.TestCase):
         # permutations() → (((k1, v1), (k2, v2)), ((k2, v2), (k1, v1)))
         # kwargs_iter = ('k1=v1, k2=v2', 'k2=v2, k1=v1)
         kwargs_iter = (
-            ', '.join(key + '=' + repr(val) for key, val in two_tuples)
+            ", ".join(key + "=" + repr(val) for key, val in two_tuples)
             for two_tuples in itertools.permutations(self.attrs.items())
         )
         targets = tuple(
-            'PulpSmashConfig({})'.format(arglist) for arglist in kwargs_iter
+            "PulpSmashConfig({})".format(arglist) for arglist in kwargs_iter
         )
         self.assertIn(self.result, targets)
 
     def test_can_eval(self):
         """Assert that the result can be parsed by ``eval``."""
-        from pulp_smash.config import PulpSmashConfig, PulpHost  # pylint:disable=unused-import,unused-variable
+        from pulp_smash.config import (
+            PulpSmashConfig,
+            PulpHost,
+        )  # pylint:disable=unused-import,unused-variable
+
         # pylint:disable=eval-used
         cfg = eval(self.result)
-        with self.subTest('check pulp_version'):
+        with self.subTest("check pulp_version"):
             self.assertEqual(cfg.pulp_version, self.cfg.pulp_version)
-        with self.subTest('check pulp_version'):
+        with self.subTest("check pulp_version"):
             self.assertEqual(cfg.pulp_version, self.cfg.pulp_version)
-        with self.subTest('check hosts'):
+        with self.subTest("check hosts"):
             self.assertEqual(cfg.hosts, self.cfg.hosts)
 
 
@@ -381,18 +382,18 @@ class GetConfigFileLoadPathTestCase(unittest.TestCase):
 
     def test_success(self):
         """Assert the method returns a path when a config file is found."""
-        with mock.patch.object(xdg.BaseDirectory, 'load_config_paths') as lcp:
-            lcp.return_value = ('/an/iterable', '/of/xdg', '/config/paths')
-            with mock.patch.object(os.path, 'exists') as exists:
+        with mock.patch.object(xdg.BaseDirectory, "load_config_paths") as lcp:
+            lcp.return_value = ("/an/iterable", "/of/xdg", "/config/paths")
+            with mock.patch.object(os.path, "exists") as exists:
                 exists.return_value = True
                 config.PulpSmashConfig.get_load_path()
         self.assertGreater(exists.call_count, 0)
 
     def test_failures(self):
         """Assert the  method raises an exception when no config is found."""
-        with mock.patch.object(xdg.BaseDirectory, 'load_config_paths') as lcp:
-            lcp.return_value = ('/an/iterable', '/of/xdg', '/config/paths')
-            with mock.patch.object(os.path, 'exists') as exists:
+        with mock.patch.object(xdg.BaseDirectory, "load_config_paths") as lcp:
+            lcp.return_value = ("/an/iterable", "/of/xdg", "/config/paths")
+            with mock.patch.object(os.path, "exists") as exists:
                 exists.return_value = False
                 with self.assertRaises(exceptions.ConfigFileNotFoundError):
                     config.PulpSmashConfig.get_load_path()
@@ -402,11 +403,11 @@ class GetConfigFileLoadPathTestCase(unittest.TestCase):
 def _get_written_json(mock_obj):
     """Return the JSON that has been written to a mock `open` object."""
     # json.dump() calls write() for each individual JSON token.
-    return json.loads(''.join(
-        tuple(call_obj)[1][0]
-        for call_obj
-        in mock_obj().write.mock_calls
-    ))
+    return json.loads(
+        "".join(
+            tuple(call_obj)[1][0] for call_obj in mock_obj().write.mock_calls
+        )
+    )
 
 
 def pulp_smash_config_load(config_str):
@@ -417,8 +418,7 @@ def pulp_smash_config_load(config_str):
         from the configuration file.
     """
     with mock.patch.object(
-            builtins,
-            'open',
-            mock.mock_open(read_data=config_str)):
-        with mock.patch.object(config.PulpSmashConfig, 'get_load_path'):
+        builtins, "open", mock.mock_open(read_data=config_str)
+    ):
+        with mock.patch.object(config.PulpSmashConfig, "get_load_path"):
             return config.PulpSmashConfig.load()
