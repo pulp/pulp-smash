@@ -7,6 +7,7 @@ handling of href paths and HTTP 202 status codes. This module provides a
 customizable client that makes it easier to work with the API in a safe and
 concise manner.
 """
+import copy
 import warnings
 from time import sleep
 from urllib.parse import urljoin, urlparse
@@ -19,6 +20,19 @@ from pulp_smash import exceptions
 _SENTINEL = object()
 _TASK_END_STATES = ('canceled', 'error', 'finished', 'skipped', 'timed out')
 _P3_TASK_END_STATES = ('canceled', 'completed', 'failed', 'skipped')
+
+
+def check_pulp3_restriction(client):
+    """Check if running system is running on Pulp3 otherwise raise error."""
+    # pylint:disable=protected-access
+    if (client._cfg.pulp_version < Version('3') or
+            client._cfg.pulp_version >= Version('4')):
+        raise ValueError(
+            'This method is designed to handle responses returned by Pulp 3. '
+            'However, the targeted Pulp application is declared as being '
+            'version {}. Please use a different response handler.'
+            .format(client._cfg.pulp_version)
+        )
 
 
 def _check_http_202_content_type(response):
@@ -167,15 +181,7 @@ def page_handler(client, response):
     .. _status code: https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
     """
     # pylint:disable=protected-access
-    if (client._cfg.pulp_version < Version('3') or
-            client._cfg.pulp_version >= Version('4')):
-        raise ValueError(
-            'This method is designed to handle responses returned by Pulp 3. '
-            'However, the targeted Pulp application is declared as being '
-            'version {}. Please use a different response handler.'
-            .format(client._cfg.pulp_version)
-        )
-
+    check_pulp3_restriction(client)
     maybe_page = json_handler(client, response)
     if not isinstance(maybe_page, dict):
         return maybe_page  # HTTP 204 No Content
@@ -186,6 +192,71 @@ def page_handler(client, response):
     for result in _walk_pages(client._cfg, maybe_page, client.pulp_host):
         collected_results.extend(result)
     return collected_results
+
+
+def task_handler(client, response):
+    """Wait tasks to complete and collect resources.
+
+    Do the following:
+
+    1. Call :meth:`json_handler` to handle 202 and get call_report.
+    2. Raise error if response is not a task.
+    3. Re-read the task by its _href to get the final state and metadata.
+    4. Return the task's created or updated resource or task final state.
+
+    Usage examples:
+
+    Create a distribution using meth:`json_handler`::
+
+        client = Client(cfg, api.json_handler)
+        spawned_task = client.post(DISTRIBUTION_PATH, body)
+        # json_handler returns the task call report not the created entity
+        spawned_task == {'task': ...}
+        # to have the distribution it is needed to get the task's resources
+
+    Create a distribution using meth:`task_handler`::
+
+        client = Client(cfg, api.task_handler)
+        distribution = client.post(DISTRIBUTION_PATH, body)
+        # task_handler resolves the created entity and returns its data
+        distribution == {'_href': ..., 'base_path': ...}
+
+    Having an existent client it is possible to use the shortcut::
+
+       client.using_handler(api.task_handler).post(DISTRIBUTION_PATH, body)
+
+    """
+    check_pulp3_restriction(client)
+    # JSON handler takes care of pooling tasks until it is done
+    # If task errored then json_handler will raise the error
+    response_dict = json_handler(client, response)
+    if 'task' not in response_dict:
+        raise exceptions.CallReportError(
+            'Response does not contains a task call_report: {}'
+            .format(response_dict)
+        )
+
+    # Get the final state of the done task
+    done_task = client.using_handler(json_handler).get(response_dict['task'])
+
+    if response.request.method == 'POST':
+        # Task might have created new resources
+        created = done_task['created_resources']
+        if len(created) == 1:  # Single resource href
+            return client.using_handler(json_handler).get(created[0])
+        if len(created) > 1:  # Multiple resource hrefs
+            return [
+                client.using_handler(json_handler).get(resource_href)
+                for resource_href in created
+            ]
+
+    if response.request.method in ['PUT', 'PATCH']:
+        # Task might have updated resource so re-read and return it back
+        return client.using_handler(json_handler).get(response.request.url)
+
+    # response.request.method is one of ['DELETE', 'GET', 'HEAD', 'OPTION']
+    # Returns the final state of the done task
+    return done_task
 
 
 class Client():
@@ -414,6 +485,36 @@ class Client():
         self.request_kwargs['url'] = self._cfg.get_base_url(self.pulp_host)
         if request_kwargs:
             self.request_kwargs.update(request_kwargs)
+        self._using_handler_cache = {}
+
+    def using_handler(self, response_handler):
+        """Return a copy this same client changing specific handler dependency.
+
+        This method clones and injects a new handler dependency in to the
+        existing client instance and then returns it.
+
+        This method is offered just as a 'syntax-sugar' for::
+
+          from pulp_smash import api, config
+
+          def function(client):
+              # This function needs to use a different handler
+              other_client = api.Client(config.get_config(), other_handler)
+              other_client.get(url)
+
+        with this method the above can be done in fewer lines::
+
+            def function(client):  # already receives a client here
+                client.using_handler(other_handler).get(url)
+
+        """
+        try:
+            return self._using_handler_cache[response_handler]
+        except KeyError:  # EAFP
+            new = copy.copy(self)
+            new.response_handler = response_handler
+            self._using_handler_cache[response_handler] = new
+            return new
 
     def delete(self, url, **kwargs):
         """Send an HTTP DELETE request."""
