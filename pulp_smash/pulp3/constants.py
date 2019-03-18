@@ -14,7 +14,7 @@ BASE_REMOTE_PATH = urljoin(BASE_PATH, 'remotes/')
 
 BASE_PUBLISHER_PATH = urljoin(BASE_PATH, 'publishers/')
 
-CONTENT_GUARDS_PATH = urljoin(BASE_PATH, 'content-guards/')
+CONTENT_GUARDS_PATH = urljoin(BASE_PATH, 'contentguards/certguard/certguard/')
 
 CONTENT_PATH = urljoin(BASE_PATH, 'content/')
 

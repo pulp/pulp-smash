@@ -4,6 +4,7 @@
 This module may make use of :mod:`pulp_smash.api` and :mod:`pulp_smash.cli`,
 but the reverse should not be done.
 """
+import contextlib
 import hashlib
 import uuid
 from urllib.parse import urlparse
@@ -124,3 +125,26 @@ def fips_is_enabled(cfg, pulp_host=None):
 def uuid4():
     """Return a random UUID4 as a string."""
     return str(uuid.uuid4())
+
+
+@contextlib.contextmanager
+def ensure_teardownclass(testcase):
+    """Ensure the call of tearDownClass on classmethods.
+
+    Unittest will not execute tearDownClass if an error occurs on classmethods
+    this contextmanager will ensure that method is executed in case of error.
+
+    Usage::
+
+        # in a test case class
+        @classmethod
+        def setUpClass(cls):
+            with ensure_teardownclass(cls):
+                # this raises error tearDownClass should be executed after
+                1 / 0
+
+    """
+    with contextlib.ExitStack() as stack:
+        stack.callback(testcase.tearDownClass)
+        yield stack
+        stack.pop_all()

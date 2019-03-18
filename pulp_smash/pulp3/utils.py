@@ -84,13 +84,14 @@ def sync(cfg, remote, repo, **kwargs):
     return client.post(urljoin(remote['_href'], 'sync/'), data)
 
 
-def download_content_unit(cfg, distribution, unit_path):
+def download_content_unit(cfg, distribution, unit_path, **kwargs):
     """Download the content unit from distribution base path.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
         host.
     :param distribution: A dict of information about the distribution.
     :param unit_path: A string path to the unit to be downloaded.
+    :param kwargs: Extra arguments passed to requests.get
     """
     client = api.Client(cfg, api.safe_handler)
     unit_url = reduce(urljoin, (
@@ -98,7 +99,7 @@ def download_content_unit(cfg, distribution, unit_path):
         '//' + distribution['base_url'] + '/',
         unit_path
     ))
-    return client.get(unit_url).content
+    return client.get(unit_url, **kwargs).content
 
 
 def publish(cfg, publisher, repo, version_href=None):

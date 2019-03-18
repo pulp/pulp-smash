@@ -7,6 +7,7 @@ handling of href paths and HTTP 202 status codes. This module provides a
 customizable client that makes it easier to work with the API in a safe and
 concise manner.
 """
+import copy
 import warnings
 from time import sleep
 from urllib.parse import urljoin, urlparse
@@ -186,6 +187,48 @@ def page_handler(client, response):
     for result in _walk_pages(client._cfg, maybe_page, client.pulp_host):
         collected_results.extend(result)
     return collected_results
+
+
+def task_handler(client, response):
+    """Wait tasks to complete and collect resources.
+
+    Do the following:
+
+    1. Call :meth:`json_handler` to handle 202 and get call_report.
+    2. Raise error if response is not a task.
+    3. Re-read the task by its _href to get the final state and metadata.
+    4. Return the task resource (created or updated) or task final state.
+    """
+    # json handler takes care of pooling tasks for 202 response
+    response_dict = json_handler(client, response)
+    # If response has a task at this point it must have finished
+    if 'task' not in response_dict:
+        raise exceptions.CallReportError(
+            'Response does not contains a task call_report: {}'
+            .format(response_dict)
+        )
+
+    # Get the final state of the done task
+    done_task = client.using_handler(json_handler).get(response_dict['task'])
+
+    if response.request.method == 'POST':
+        # Task may have created new resources
+        created = done_task['created_resources']
+        if len(created) == 1:  # single resource href
+            return client.using_handler(json_handler).get(created[0])
+        if len(created) > 1:  # multiple resource hrefs
+            return [
+                client.using_handler(json_handler).get(resource_href)
+                for resource_href in created
+            ]
+
+    if response.request.method in ['PUT', 'PATCH']:
+        # Task may have updated resource re-read and return them back
+        return client.using_handler(json_handler).get(response.request.url)
+
+    # response.request.method must be ['DELETE', 'GET', 'HEAD', 'OPTION']
+    # Returns the final state of the done task
+    return done_task
 
 
 class Client():
@@ -414,6 +457,28 @@ class Client():
         self.request_kwargs['url'] = self._cfg.get_base_url(self.pulp_host)
         if request_kwargs:
             self.request_kwargs.update(request_kwargs)
+        self._using_handler_cache = {}
+
+    def using_handler(self, response_handler):
+        """Return a copy this same client changing specific handler dependency.
+
+        Dependency injection method allowing the reuse of the same Client
+        object changing specific dependency, example::
+
+            client = api.Client(cfg, api.safe_handler)
+            # will get using `safe_handler`
+            client.get(url)
+            # Will get using different injected handler dependency
+            client.using_handler(api.json_handler).get(url)
+
+        """
+        try:
+            return self._using_handler_cache[response_handler]
+        except KeyError:  # EAFP
+            new = copy.copy(self)
+            new.response_handler = response_handler
+            self._using_handler_cache[response_handler] = new
+            return new
 
     def delete(self, url, **kwargs):
         """Send an HTTP DELETE request."""

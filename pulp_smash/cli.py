@@ -2,6 +2,7 @@
 """A client for working with Pulp hosts via their CLI."""
 import collections
 import contextlib
+import copy
 import json
 import os
 import socket
@@ -218,6 +219,28 @@ class Client:  # pylint:disable=too-few-public-methods
 
         self.cfg = cfg
         self._is_root_cache = None
+        self._using_handler_cache = {}
+
+    def using_handler(self, response_handler):
+        """Return a copy this same client changing specific handler dependency.
+
+        Dependency injection method allowing the reuse of the same Client
+        object changing specific dependency, example::
+
+            client = cli.Client(cfg, cli.code_handler)
+            # will run using `code_handler`
+            client.run(cmd)
+            # Will run using different injected handler dependency
+            client.using_handler(cli.echo_handler).run(cmd)
+
+        """
+        try:
+            return self._using_handler_cache[response_handler]
+        except KeyError:  # EAFP
+            new = copy.copy(self)
+            new.response_handler = response_handler
+            self._using_handler_cache[response_handler] = new
+            return new
 
     @property
     def is_superuser(self):
