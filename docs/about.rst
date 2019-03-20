@@ -62,6 +62,22 @@ Learning Pulp Smash
 Not sure where to start? Consider reading some existing tests in `Pulp 2
 Tests`_.
 
+Pulp Smash Interactive Console
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The command ``pulp-smash shell`` opens an interactive Python console with Pulp-Smash
+most common used objects already imported in to the context.
+
+The configuration for the shell is read from 
+``XDG HOME`` usually ``~/.config/pulp_smash/settings.json`` 
+optionally it is possible to set on env ``export PULP_SMASH_CONFIG_FILE=/path/to/settings.json`` 
+or by passing it to the command line as in ``pulp-smash shell --config ~/path/to/settings.json``
+
+.. raw:: html
+
+    <script id="asciicast-235178" src="https://asciinema.org/a/235178.js" async></script>
+    <a href="https://asciinema.org/a/235178">https://asciinema.org/a/235178</a>
+
 Code Standards
 ~~~~~~~~~~~~~~
 
