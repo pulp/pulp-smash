@@ -2,6 +2,7 @@
 """The entry point for Pulp Smash's command line interface."""
 import json
 import sys
+import warnings
 
 import click
 from packaging.version import Version
@@ -362,6 +363,71 @@ def settings_validate(ctx):
         raise click.ClickException(
             '{} is invalid: '.format(path) + err.message
         ) from err
+
+
+@pulp_smash.command()
+@click.option('--ipython/--no-ipython', default=True, help='Disable ipython')
+@click.option(
+    '--config',
+    '_settingspath',
+    default=None,
+    help='Optional path to settings file',
+    type=click.Path(exists=True)
+)
+def shell(ipython, _settingspath):  # pragma: no cover
+    """Run a Python shell with Pulp-Smash context.
+
+    Start an interactive shell with pulp-smash objects available, if `ipython`
+    is installed it will start ipython session, else it will start standard
+    python shell.
+    """
+    # pylint:disable=R0914
+    import code
+    import readline
+    import rlcompleter
+
+    # trick to to make subpackages available
+    from pulp_smash import api, cli, utils, pulp2, pulp3, constants  # pylint:disable=W0641
+    from pulp_smash.pulp2 import constants as pulp2_constants  # pylint:disable=W0641
+    from pulp_smash.pulp3 import constants as pulp3_constants  # pylint:disable=W0641
+    from pulp_smash.pulp2 import utils as pulp2_utils  # pylint:disable=W0641
+    from pulp_smash.pulp3 import utils as pulp3_utils  # pylint:disable=W0641
+    # //
+
+    banner_msg = (
+        'Welcome to Pulp-Smash interactive shell\n'
+        '\tAuto imported: api, cli, config, utils, pulp2, pulp3, constants, '
+        'exceptions\n'
+    )
+    _vars = globals()
+    try:
+        cfg = config.get_config()
+    except exceptions.ConfigFileNotFoundError as exc:
+        warnings.warn(str(exc))
+        cfg = 'Please create your instance of cfg or set the settings location'
+    else:
+        api.client = api.Client(cfg)
+        cli.client = cli.Client(cfg)
+        banner_msg += '\tAvailable objects: api.client, cli.client, cfg\n'
+    finally:
+        _vars.update(locals())
+
+    readline.set_completer(rlcompleter.Completer(_vars).complete)
+    readline.parse_and_bind('tab: complete')
+    try:
+        if ipython is True:
+            from IPython import start_ipython
+            from traitlets.config import Config
+            conf = Config()
+            conf.TerminalInteractiveShell.banner2 = banner_msg
+            start_ipython(argv=[], user_ns=_vars, config=conf)
+        else:
+            raise ImportError
+    except ImportError:
+        if ipython is True:
+            warnings.warn('Cannot load ipython, please `pip install ipython`')
+        _shell = code.InteractiveConsole(_vars)
+        _shell.interact(banner=banner_msg)
 
 
 if __name__ == '__main__':
