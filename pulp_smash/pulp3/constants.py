@@ -2,42 +2,44 @@
 """Constants for Pulp 3 tests."""
 from urllib.parse import urljoin
 
-from pulp_smash.api import _P3_TASK_END_STATES as P3_TASK_END_STATES  # pylint:disable=unused-import
-
-BASE_PATH = '/pulp/api/v3/'
-
-API_DOCS_PATH = urljoin(BASE_PATH, 'docs/')
-
-ARTIFACTS_PATH = urljoin(BASE_PATH, 'artifacts/')
-
-BASE_REMOTE_PATH = urljoin(BASE_PATH, 'remotes/')
-
-BASE_PUBLISHER_PATH = urljoin(BASE_PATH, 'publishers/')
-
-CONTENT_GUARDS_PATH = urljoin(BASE_PATH, 'contentguards/certguard/certguard/')
-
-CONTENT_PATH = urljoin(BASE_PATH, 'content/')
-
-DISTRIBUTION_PATH = urljoin(BASE_PATH, 'distributions/')
-
-DOWNLOAD_POLICIES = ('immediate', 'on_demand', 'streamed',)
-
-JWT_PATH = urljoin(BASE_PATH, 'jwt/')
-
-LAZY_DOWNLOAD_POLICIES = tuple(
-    [item for item in DOWNLOAD_POLICIES if item != 'immediate']
+from pulp_smash.api import (  # noqa: F401
+    _P3_TASK_END_STATES as P3_TASK_END_STATES,
 )
 
-MEDIA_PATH = '/var/lib/pulp'
+BASE_PATH = "/pulp/api/v3/"
 
-ORPHANS_PATH = urljoin(BASE_PATH, 'orphans/')
+API_DOCS_PATH = urljoin(BASE_PATH, "docs/")
 
-PUBLICATIONS_PATH = urljoin(BASE_PATH, 'publications/')
+ARTIFACTS_PATH = urljoin(BASE_PATH, "artifacts/")
 
-REPO_PATH = urljoin(BASE_PATH, 'repositories/')
+BASE_REMOTE_PATH = urljoin(BASE_PATH, "remotes/")
 
-STATUS_PATH = urljoin(BASE_PATH, 'status/')
+BASE_PUBLISHER_PATH = urljoin(BASE_PATH, "publishers/")
 
-TASKS_PATH = urljoin(BASE_PATH, 'tasks/')
+CONTENT_GUARDS_PATH = urljoin(BASE_PATH, "contentguards/certguard/certguard/")
 
-WORKER_PATH = urljoin(BASE_PATH, 'workers/')
+CONTENT_PATH = urljoin(BASE_PATH, "content/")
+
+DISTRIBUTION_PATH = urljoin(BASE_PATH, "distributions/")
+
+DOWNLOAD_POLICIES = ("immediate", "on_demand", "streamed")
+
+JWT_PATH = urljoin(BASE_PATH, "jwt/")
+
+LAZY_DOWNLOAD_POLICIES = tuple(
+    [item for item in DOWNLOAD_POLICIES if item != "immediate"]
+)
+
+MEDIA_PATH = "/var/lib/pulp"
+
+ORPHANS_PATH = urljoin(BASE_PATH, "orphans/")
+
+PUBLICATIONS_PATH = urljoin(BASE_PATH, "publications/")
+
+REPO_PATH = urljoin(BASE_PATH, "repositories/")
+
+STATUS_PATH = urljoin(BASE_PATH, "status/")
+
+TASKS_PATH = urljoin(BASE_PATH, "tasks/")
+
+WORKER_PATH = urljoin(BASE_PATH, "workers/")
