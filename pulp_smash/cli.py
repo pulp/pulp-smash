@@ -36,10 +36,8 @@ def is_root(cfg, pulp_host=None):
     :returns: Either ``True`` or ``False``.
     """
     return (
-        Client(cfg, pulp_host=pulp_host)
-        .run(('id', '-u'))
-        .stdout
-        .strip()) == '0'
+        Client(cfg, pulp_host=pulp_host).run(("id", "-u")).stdout.strip()
+    ) == "0"
 
 
 def echo_handler(completed_proc):
@@ -57,7 +55,7 @@ def code_handler(completed_proc):
     return completed_proc
 
 
-class CompletedProcess():
+class CompletedProcess:
     # pylint:disable=too-few-public-methods
     """A process that has finished running.
 
@@ -88,13 +86,15 @@ class CompletedProcess():
 
     def __repr__(self):
         """Provide an ``eval``-compatible string representation."""
-        str_kwargs = ', '.join([
-            'args={!r}'.format(self.args),
-            'returncode={!r}'.format(self.returncode),
-            'stdout={!r}'.format(self.stdout),
-            'stderr={!r}'.format(self.stderr),
-        ])
-        return '{}({})'.format(type(self).__name__, str_kwargs)
+        str_kwargs = ", ".join(
+            [
+                "args={!r}".format(self.args),
+                "returncode={!r}".format(self.returncode),
+                "stdout={!r}".format(self.stdout),
+                "stderr={!r}".format(self.stderr),
+            ]
+        )
+        return "{}({})".format(type(self).__name__, str_kwargs)
 
     def check_returncode(self):
         """Raise an exception if ``returncode`` is non-zero.
@@ -125,10 +125,7 @@ class CompletedProcess():
         """
         if self.returncode != 0:
             raise exceptions.CalledProcessError(
-                self.args,
-                self.returncode,
-                self.stdout,
-                self.stderr,
+                self.args, self.returncode, self.stdout, self.stderr
             )
 
 
@@ -192,23 +189,21 @@ class Client:  # pylint:disable=too-few-public-methods
         """Initialize this object with needed instance attributes."""
         # How do we make requests?
         if not pulp_host:
-            if cfg.pulp_version < Version('3'):
-                pulp_host = cfg.get_hosts('pulp cli')[0]
+            if cfg.pulp_version < Version("3"):
+                pulp_host = cfg.get_hosts("pulp cli")[0]
             else:
-                pulp_host = cfg.get_hosts('shell')[0]
+                pulp_host = cfg.get_hosts("shell")[0]
         self.pulp_host = pulp_host
         hostname = pulp_host.hostname
-        transport = pulp_host.roles.get('shell', {}).get('transport')
+        transport = pulp_host.roles.get("shell", {}).get("transport")
         if transport is None:
-            transport = 'local' if hostname == socket.getfqdn() else 'ssh'
-        if transport == 'local':
+            transport = "local" if hostname == socket.getfqdn() else "ssh"
+        if transport == "local":
             self.machine = plumbum.machines.local
         else:  # transport == 'ssh'
             # The SshMachine is a wrapper around the host's "ssh" binary.
             # Thus, it uses ~/.ssh/config, ~/.ssh/known_hosts, etc.
-            self.machine = (
-                plumbum.machines.SshMachine(hostname)
-            )
+            self.machine = plumbum.machines.SshMachine(hostname)
 
         # How do we handle responses?
         if response_handler is None:
@@ -252,10 +247,10 @@ class Client:  # pylint:disable=too-few-public-methods
         """
         # Let self.response_handler check return codes. See:
         # https://plumbum.readthedocs.io/en/latest/api/commands.html#plumbum.commands.base.BaseCommand.run
-        kwargs.setdefault('retcode')
+        kwargs.setdefault("retcode")
 
-        if sudo and args[0] != 'sudo' and not self.is_superuser:
-            args = ('sudo',) + tuple(args)
+        if sudo and args[0] != "sudo" and not self.is_superuser:
+            args = ("sudo",) + tuple(args)
 
         code, stdout, stderr = self.machine[args[0]].run(args[1:], **kwargs)
         completed_process = CompletedProcess(args, code, stdout, stderr)
@@ -282,7 +277,7 @@ class BaseServiceManager(metaclass=ABCMeta):
 
     def __init__(self):
         """Initialize variables expected by the helper methods."""
-        self._on_jenkins = 'JENKINS_HOME' in os.environ
+        self._on_jenkins = "JENKINS_HOME" in os.environ
 
     @staticmethod
     def _get_service_manager(cfg, pulp_host):
@@ -298,20 +293,19 @@ class BaseServiceManager(metaclass=ABCMeta):
 
         client = Client(cfg, echo_handler, pulp_host=pulp_host)
         commands_managers = (
-            ('which systemctl', 'systemd'),
-            ('which service', 'sysv'),
-            ('test -x /sbin/service', 'sysv'),
+            ("which systemctl", "systemd"),
+            ("which service", "sysv"),
+            ("test -x /sbin/service", "sysv"),
         )
         for command, service_manager in commands_managers:
             if client.run(command.split()).returncode == 0:
                 _SERVICE_MANAGERS[pulp_host.hostname] = service_manager
                 return service_manager
         raise exceptions.NoKnownServiceManagerError(
-            'Unable to determine the service manager used by {}. It does not '
-            'appear to be any of {}.'
-            .format(
+            "Unable to determine the service manager used by {}. It does not "
+            "appear to be any of {}.".format(
                 pulp_host.hostname,
-                {manager for _, manager in commands_managers}
+                {manager for _, manager in commands_managers},
             )
         )
 
@@ -319,62 +313,70 @@ class BaseServiceManager(metaclass=ABCMeta):
     def _disable_selinux(self, client):
         """Context manager to temporary disable SELinux."""
         if self._on_jenkins:
-            client.run(('setenforce', '0'), sudo=True)
+            client.run(("setenforce", "0"), sudo=True)
         try:
             yield
         finally:
             if self._on_jenkins:
-                client.run(('setenforce', '1'), sudo=True)
+                client.run(("setenforce", "1"), sudo=True)
 
     @staticmethod
     def _start_sysv(client, services):
-        return tuple((
-            client.run(('service', service, 'start'), sudo=True)
-            for service in services
-        ))
+        return tuple(
+            (
+                client.run(("service", service, "start"), sudo=True)
+                for service in services
+            )
+        )
 
     @staticmethod
     def _start_systemd(client, services):
-        cmd = ('systemctl', 'start') + tuple(services)
+        cmd = ("systemctl", "start") + tuple(services)
         return (client.run(cmd, sudo=True),)
 
     @staticmethod
     def _stop_sysv(client, services):
-        return tuple((
-            client.run(('service', service, 'stop'), sudo=True)
-            for service in services
-        ))
+        return tuple(
+            (
+                client.run(("service", service, "stop"), sudo=True)
+                for service in services
+            )
+        )
 
     @staticmethod
     def _stop_systemd(client, services):
-        cmd = ('systemctl', 'stop') + tuple(services)
+        cmd = ("systemctl", "stop") + tuple(services)
         return (client.run(cmd, sudo=True),)
 
     @staticmethod
     def _restart_sysv(client, services):
-        return tuple((
-            client.run(('service', service, 'restart'), sudo=True)
-            for service in services
-        ))
+        return tuple(
+            (
+                client.run(("service", service, "restart"), sudo=True)
+                for service in services
+            )
+        )
 
     @staticmethod
     def _restart_systemd(client, services):
-        cmd = ('systemctl', 'restart') + tuple(services)
+        cmd = ("systemctl", "restart") + tuple(services)
         return (client.run(cmd, sudo=True),)
 
     @staticmethod
     def _is_active_sysv(client, services):
         with contextlib.suppress(exceptions.CalledProcessError):
-            return tuple((
-                client.run(('service', service, 'status'), sudo=True)
-                for service in services
-            ))
+            return tuple(
+                (
+                    client.run(("service", service, "status"), sudo=True)
+                    for service in services
+                )
+            )
         return False
 
     @staticmethod
     def _is_active_systemd(client, services):
         with contextlib.suppress(exceptions.CalledProcessError):
-            cmd = ('systemctl', 'is-active') + tuple(services)
+            cmd = ("systemctl", "is-active") + tuple(services)
             return (client.run(cmd, sudo=True),)
         return False
 
@@ -456,7 +458,7 @@ class GlobalServiceManager(BaseServiceManager):
         """Get an already instantiated client from cache."""
         return self._client_cache.setdefault(
             pulp_host.hostname,
-            Client(self._cfg, pulp_host=pulp_host, **kwargs)
+            Client(self._cfg, pulp_host=pulp_host, **kwargs),
         )
 
     def start(self, services):
@@ -470,21 +472,25 @@ class GlobalServiceManager(BaseServiceManager):
         result = {}
         for host in self._cfg.hosts:
             intersection = services.intersection(
-                self._cfg.get_services(host.roles))
+                self._cfg.get_services(host.roles)
+            )
             if intersection:
                 client = self.get_client(pulp_host=host)
                 svc_mgr = self._get_service_manager(self._cfg, host)
-                if svc_mgr == 'sysv':
+                if svc_mgr == "sysv":
                     with self._disable_selinux(client):
                         result[host.hostname] = self._start_sysv(
-                            client, services)
-                elif svc_mgr == 'systemd':
+                            client, services
+                        )
+                elif svc_mgr == "systemd":
                     result[host.hostname] = self._start_systemd(
-                        client, services)
+                        client, services
+                    )
                 else:
                     raise NotImplementedError(
                         'Service manager "{}" not supported on "{}"'.format(
-                            svc_mgr, host.hostname)
+                            svc_mgr, host.hostname
+                        )
                     )
         return result
 
@@ -499,20 +505,23 @@ class GlobalServiceManager(BaseServiceManager):
         result = {}
         for host in self._cfg.hosts:
             intersection = services.intersection(
-                self._cfg.get_services(host.roles))
+                self._cfg.get_services(host.roles)
+            )
             if intersection:
                 client = self.get_client(pulp_host=host)
                 svc_mgr = self._get_service_manager(self._cfg, host)
-                if svc_mgr == 'sysv':
+                if svc_mgr == "sysv":
                     with self._disable_selinux(client):
                         result[host.hostname] = self._stop_sysv(
-                            client, services)
-                elif svc_mgr == 'systemd':
+                            client, services
+                        )
+                elif svc_mgr == "systemd":
                     result[host.hostname] = self._stop_systemd(
-                        client, services)
+                        client, services
+                    )
                 else:
                     raise NotImplementedError(
-                        'Service manager not supported: {}'.format(svc_mgr)
+                        "Service manager not supported: {}".format(svc_mgr)
                     )
         return result
 
@@ -527,20 +536,23 @@ class GlobalServiceManager(BaseServiceManager):
         result = {}
         for host in self._cfg.hosts:
             intersection = services.intersection(
-                self._cfg.get_services(host.roles))
+                self._cfg.get_services(host.roles)
+            )
             if intersection:
                 client = self.get_client(pulp_host=host)
                 svc_mgr = self._get_service_manager(self._cfg, host)
-                if svc_mgr == 'sysv':
+                if svc_mgr == "sysv":
                     with self._disable_selinux(client):
                         result[host.hostname] = self._restart_sysv(
-                            client, services)
-                elif svc_mgr == 'systemd':
+                            client, services
+                        )
+                elif svc_mgr == "systemd":
                     result[host.hostname] = self._restart_systemd(
-                        client, services)
+                        client, services
+                    )
                 else:
                     raise NotImplementedError(
-                        'Service manager not supported: {}'.format(svc_mgr)
+                        "Service manager not supported: {}".format(svc_mgr)
                     )
         return result
 
@@ -554,20 +566,23 @@ class GlobalServiceManager(BaseServiceManager):
         result = {}
         for host in self._cfg.hosts:
             intersection = services.intersection(
-                self._cfg.get_services(host.roles))
+                self._cfg.get_services(host.roles)
+            )
             if intersection:
                 client = self.get_client(pulp_host=host)
                 svc_mgr = self._get_service_manager(self._cfg, host)
-                if svc_mgr == 'sysv':
+                if svc_mgr == "sysv":
                     with self._disable_selinux(client):
                         result[host.hostname] = self._is_active_sysv(
-                            client, services)
-                elif svc_mgr == 'systemd':
+                            client, services
+                        )
+                elif svc_mgr == "systemd":
                     result[host.hostname] = self._is_active_systemd(
-                        client, services)
+                        client, services
+                    )
                 else:
                     raise NotImplementedError(
-                        'Service manager not supported: {}'.format(svc_mgr)
+                        "Service manager not supported: {}".format(svc_mgr)
                     )
         return result
 
@@ -622,14 +637,14 @@ class ServiceManager(BaseServiceManager):
         :return: An iterable of :class:`pulp_smash.cli.CompletedProcess`
             objects.
         """
-        if self._svc_mgr == 'sysv':
+        if self._svc_mgr == "sysv":
             with self._disable_selinux(self._client):
                 return self._start_sysv(self._client, services)
-        elif self._svc_mgr == 'systemd':
+        elif self._svc_mgr == "systemd":
             return self._start_systemd(self._client, services)
         else:
             raise NotImplementedError(
-                'Service manager not supported: {}'.format(self._svc_mgr)
+                "Service manager not supported: {}".format(self._svc_mgr)
             )
 
     def stop(self, services):
@@ -639,14 +654,14 @@ class ServiceManager(BaseServiceManager):
         :return: An iterable of :class:`pulp_smash.cli.CompletedProcess`
             objects.
         """
-        if self._svc_mgr == 'sysv':
+        if self._svc_mgr == "sysv":
             with self._disable_selinux(self._client):
                 return self._stop_sysv(self._client, services)
-        elif self._svc_mgr == 'systemd':
+        elif self._svc_mgr == "systemd":
             return self._stop_systemd(self._client, services)
         else:
             raise NotImplementedError(
-                'Service manager not supported: {}'.format(self._svc_mgr)
+                "Service manager not supported: {}".format(self._svc_mgr)
             )
 
     def restart(self, services):
@@ -656,14 +671,14 @@ class ServiceManager(BaseServiceManager):
         :return: An iterable of :class:`pulp_smash.cli.CompletedProcess`
             objects.
         """
-        if self._svc_mgr == 'sysv':
+        if self._svc_mgr == "sysv":
             with self._disable_selinux(self._client):
                 return self._restart_sysv(self._client, services)
-        elif self._svc_mgr == 'systemd':
+        elif self._svc_mgr == "systemd":
             return self._restart_systemd(self._client, services)
         else:
             raise NotImplementedError(
-                'Service manager not supported: {}'.format(self._svc_mgr)
+                "Service manager not supported: {}".format(self._svc_mgr)
             )
 
     def is_active(self, services):
@@ -672,14 +687,14 @@ class ServiceManager(BaseServiceManager):
         :param services: A list or tuple of services to check.
         :return: boolean
         """
-        if self._svc_mgr == 'sysv':
+        if self._svc_mgr == "sysv":
             with self._disable_selinux(self._client):
                 return self._is_active_sysv(self._client, services)
-        elif self._svc_mgr == 'systemd':
+        elif self._svc_mgr == "systemd":
             return self._is_active_systemd(self._client, services)
         else:
             raise NotImplementedError(
-                'Service manager not supported: {}'.format(self._svc_mgr)
+                "Service manager not supported: {}".format(self._svc_mgr)
             )
 
 
@@ -734,7 +749,7 @@ class PackageManager:
             self._name = self._get_package_manager(self._cfg)
         return self._name
 
-    def raise_if_unsupported(self, exc, message='Unsupported package manager'):
+    def raise_if_unsupported(self, exc, message="Unsupported package manager"):
         """Check if the package manager is supported else raise exc.
 
         Use case::
@@ -766,17 +781,18 @@ class PackageManager:
 
         client = Client(cfg, echo_handler)
         commands_managers = (
-            (('which', 'dnf'), 'dnf'),
-            (('which', 'yum'), 'yum'),
+            (("which", "dnf"), "dnf"),
+            (("which", "yum"), "yum"),
         )
         for cmd, pkg_mgr in commands_managers:
             if client.run(cmd, sudo=True).returncode == 0:
                 _PACKAGE_MANAGERS[hostname] = pkg_mgr
                 return pkg_mgr
         raise exceptions.NoKnownPackageManagerError(
-            'Unable to determine the package manager used by {}. It does not '
-            'appear to be any of {}.'
-            .format(hostname, {pkg_mgr for _, pkg_mgr in commands_managers})
+            "Unable to determine the package manager used by {}. It does not "
+            "appear to be any of {}.".format(
+                hostname, {pkg_mgr for _, pkg_mgr in commands_managers}
+            )
         )
 
     def install(self, *args):
@@ -784,7 +800,7 @@ class PackageManager:
 
         :rtype: pulp_smash.cli.CompletedProcess
         """
-        cmd = (self.name, '-y', 'install') + tuple(args)
+        cmd = (self.name, "-y", "install") + tuple(args)
         return self._client.run(cmd, sudo=True)
 
     def uninstall(self, *args):
@@ -792,7 +808,7 @@ class PackageManager:
 
         :rtype: pulp_smash.cli.CompletedProcess
         """
-        cmd = (self.name, '-y', 'remove') + tuple(args)
+        cmd = (self.name, "-y", "remove") + tuple(args)
         return self._client.run(cmd, sudo=True)
 
     def upgrade(self, *args):
@@ -800,25 +816,29 @@ class PackageManager:
 
         :rtype: pulp_smash.cli.CompletedProcess
         """
-        cmd = (self.name, '-y', 'update') + tuple(args)
+        cmd = (self.name, "-y", "update") + tuple(args)
         return self._client.run(cmd, sudo=True)
 
     def _dnf_apply_erratum(self, erratum):
         """Apply erratum using dnf."""
-        lines = self._client.run((
-            'dnf', '--quiet', 'updateinfo', 'list', erratum
-        ), sudo=True).stdout.strip().splitlines()
+        lines = (
+            self._client.run(
+                ("dnf", "--quiet", "updateinfo", "list", erratum), sudo=True
+            )
+            .stdout.strip()
+            .splitlines()
+        )
         upgrade_targets = tuple((line.split()[2] for line in lines))
         return self.upgrade(upgrade_targets)
 
     def _yum_apply_erratum(self, erratum):
         """Apply erratum using yum."""
-        upgrade_targets = ('--advisory', erratum)
+        upgrade_targets = ("--advisory", erratum)
         return self.upgrade(upgrade_targets)
 
     def apply_erratum(self, erratum):
         """Dispatch to proper _{self.name}_apply_erratum."""
-        return getattr(self, '_{0}_apply_erratum'.format(self.name))(erratum)
+        return getattr(self, "_{0}_apply_erratum".format(self.name))(erratum)
 
 
 class RegistryClient:
@@ -872,9 +892,9 @@ class RegistryClient:
         """Initialize a new RegistryClient object."""
         if pulp_host is None:
             # to comply with Client API
-            smashrunner = collections.namedtuple('Host', 'hostname roles')
-            smashrunner.hostname = 'localhost'
-            smashrunner.roles = {'shell': {'transport': 'local'}}
+            smashrunner = collections.namedtuple("Host", "hostname roles")
+            smashrunner.hostname = "localhost"
+            smashrunner.roles = {"shell": {"transport": "local"}}
             self._pulp_host = smashrunner
         else:
             self._pulp_host = pulp_host
@@ -892,7 +912,7 @@ class RegistryClient:
             self._name = self._get_registry_client()
         return self._name
 
-    def raise_if_unsupported(self, exc, message='Unsupported registry client'):
+    def raise_if_unsupported(self, exc, message="Unsupported registry client"):
         """Check if the registry client is supported else raise exc.
 
         Use case::
@@ -919,29 +939,27 @@ class RegistryClient:
         """
         client = Client(self._cfg, echo_handler, pulp_host=self._pulp_host)
         registry_clients = (
-            (('which', 'podman'), 'podman'),
-            (('which', 'docker'), 'docker'),
+            (("which", "podman"), "podman"),
+            (("which", "docker"), "docker"),
         )
         for cmd, registry_client in registry_clients:
             if client.run(cmd).returncode == 0:
                 return registry_client
         raise exceptions.NoRegistryClientError(
-            'Unable to determine the registry client used by {}. It does not '
-            'appear to be any of {}.'
-            .format(
-                self._pulp_host.hostname,
-                {rc for _, rc in registry_clients}
+            "Unable to determine the registry client used by {}. It does not "
+            "appear to be any of {}.".format(
+                self._pulp_host.hostname, {rc for _, rc in registry_clients}
             )
         )
 
     def _dispatch_command(self, command, *args):
         """Dispatch a command to the registry client."""
         # Scheme should not be part of image path, if so, remove it.
-        if args and args[0].startswith(('http://', 'https://')):
+        if args and args[0].startswith(("http://", "https://")):
             args = list(args)
-            args[0] = urlunsplit(
-                urlsplit(args[0])._replace(scheme='')
-            ).strip('//')
+            args[0] = urlunsplit(urlsplit(args[0])._replace(scheme="")).strip(
+                "//"
+            )
 
         cmd = (self.name, command) + tuple(args)
         result = self._client.run(cmd, sudo=True)
@@ -952,17 +970,17 @@ class RegistryClient:
             # Python 3.4 has no specific error for json module
             return result
 
-    pull = partialmethod(_dispatch_command, 'pull')
+    pull = partialmethod(_dispatch_command, "pull")
     """Pulls image from registry."""
-    login = partialmethod(_dispatch_command, 'login')
+    login = partialmethod(_dispatch_command, "login")
     """Authenticate to a registry."""
-    logout = partialmethod(_dispatch_command, 'logout')
+    logout = partialmethod(_dispatch_command, "logout")
     """Logs out of a registry."""
-    inspect = partialmethod(_dispatch_command, 'inspect')
+    inspect = partialmethod(_dispatch_command, "inspect")
     """Inspect metadata for pulled image."""
-    import_ = partialmethod(_dispatch_command, 'import')
+    import_ = partialmethod(_dispatch_command, "import")
     """Import a container as a file in to the registry."""
-    images = partialmethod(_dispatch_command, 'images', '--format', 'json')
+    images = partialmethod(_dispatch_command, "images", "--format", "json")
     """List all pulled images."""
-    rmi = partialmethod(_dispatch_command, 'rmi')
+    rmi = partialmethod(_dispatch_command, "rmi")
     """removes pulled image."""

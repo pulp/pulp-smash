@@ -83,8 +83,8 @@ Code Standards
 
 Please adhere to the following guidelines:
 
-* Code should be compliant with `PEP-8`_. It is recommended to check for
-  compliance by running ``make lint``.
+* Code should be compliant with `PEP-8`_.
+* Code should follow the `Black`_ code style with a line length of 79 characters.
 * Pull requests must pass the `Travis CI`_ continuous integration tests. You can
   locally verify your changes before submitting a pull request by executing
   ``make all``.
@@ -195,17 +195,18 @@ Creating issues
 .. [3] The "pets vs cattle" analogy is widely attributed to Bill Baker of
     Microsoft.
 
+.. _Black: https://github.com/ambv/black
 .. _GNU Make: https://www.gnu.org/software/make/
 .. _OpenSSH: http://www.openssh.com/
+.. _PEP-8: https://www.python.org/dev/peps/pep-0008
 .. _Pulp 2 Tests: https://github.com/PulpQE/pulp-2-tests
+.. _Pulp Smash issues: https://github.com/PulpQE/pulp-smash/issues
 .. _Travis CI: https://travis-ci.org/PulpQE/pulp-smash
 .. _XDG Base Directory Specification: http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
 .. _freenode: https://freenode.net/
 .. _good commit messages: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
 .. _labels: https://github.com/PulpQE/pulp-smash/labels
 .. _pull request reviews: https://help.github.com/articles/about-pull-request-reviews/
-.. _rewrite history: https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History
 .. _pulp.plan.io: https://pulp.plan.io/
-.. _PEP-8: https://www.python.org/dev/peps/pep-0008
+.. _rewrite history: https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History
 .. _test case: https://pulp.plan.io/issues/4035
-.. _Pulp Smash issues: https://github.com/PulpQE/pulp-smash/issues

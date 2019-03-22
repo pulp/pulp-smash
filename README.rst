@@ -4,6 +4,9 @@ Pulp Smash
 .. image:: https://coveralls.io/repos/github/PulpQE/pulp-smash/badge.svg?branch=master
     :target: https://coveralls.io/github/PulpQE/pulp-smash?branch=master
 
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/ambv/black
+
 Pulp Smash is a toolkit for testing `Pulp`.
 
 Pulp Smash has a presence on the following websites:

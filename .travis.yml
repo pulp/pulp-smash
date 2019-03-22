@@ -1,7 +1,6 @@
 sudo: false
 language: python
 python:
-- 3.4
 - 3.5
 - 3.6
 # Python 3.7+ is only available on Xenial, due to dependency requirements. For
@@ -16,6 +15,8 @@ install:
 # Old versions of pip can't handle extras_require in setup.py.
 - pip install --upgrade pip
 - pip install .[dev]
-script: make all
+script:
+  - make all
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.7' ]]; then pre-commit run -a -v; fi
 cache: pip
 after_success: coveralls

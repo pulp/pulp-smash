@@ -24,10 +24,11 @@ def require_pulp_3(exc):
         https://docs.python.org/3/library/functools.html#functools.partial
     """
     cfg = config.get_config()
-    if not Version('3') <= cfg.pulp_version < Version('4'):
+    if not Version("3") <= cfg.pulp_version < Version("4"):
         raise exc(
-            'These tests are for Pulp 3, but Pulp {} is under test.'
-            .format(cfg.pulp_version)
+            "These tests are for Pulp 3, but Pulp {} is under test.".format(
+                cfg.pulp_version
+            )
         )
 
 
@@ -47,8 +48,9 @@ def require_pulp_plugins(required_plugins, exc):
     missing_plugins = required_plugins - get_plugins()
     if missing_plugins:
         raise exc(
-            'The following plugins are required but not installed: {}'
-            .format(missing_plugins)
+            "The following plugins are required but not installed: {}".format(
+                missing_plugins
+            )
         )
 
 
@@ -63,7 +65,7 @@ def get_plugins(cfg=None):
         cfg = config.get_config()
     client = api.Client(cfg, api.json_handler)
     status = client.get(STATUS_PATH)
-    return {version['component'] for version in status['versions']}
+    return {version["component"] for version in status["versions"]}
 
 
 def sync(cfg, remote, repo, **kwargs):
@@ -79,9 +81,9 @@ def sync(cfg, remote, repo, **kwargs):
         a call report.
     """
     client = api.Client(cfg, api.json_handler)
-    data = {'repository': repo['_href']}
+    data = {"repository": repo["_href"]}
     data.update(kwargs)
-    return client.post(urljoin(remote['_href'], 'sync/'), data)
+    return client.post(urljoin(remote["_href"], "sync/"), data)
 
 
 def download_content_unit(cfg, distribution, unit_path, **kwargs):
@@ -94,11 +96,14 @@ def download_content_unit(cfg, distribution, unit_path, **kwargs):
     :param kwargs: Extra arguments passed to requests.get.
     """
     client = api.Client(cfg, api.safe_handler)
-    unit_url = reduce(urljoin, (
-        cfg.get_content_host_base_url(),
-        '//' + distribution['base_url'] + '/',
-        unit_path
-    ))
+    unit_url = reduce(
+        urljoin,
+        (
+            cfg.get_content_host_base_url(),
+            "//" + distribution["base_url"] + "/",
+            unit_path,
+        ),
+    )
     return client.get(unit_url, **kwargs).content
 
 
@@ -115,23 +120,23 @@ def publish(cfg, publisher, repo, version_href=None):
         publication.
     """
     if version_href is None:
-        body = {'repository': repo['_href']}
+        body = {"repository": repo["_href"]}
     else:
-        body = {'repository_version': version_href}
+        body = {"repository_version": version_href}
     client = api.Client(cfg, api.json_handler)
-    call_report = client.post(urljoin(publisher['_href'], 'publish/'), body)
+    call_report = client.post(urljoin(publisher["_href"], "publish/"), body)
     # As of this writing, Pulp 3 only returns one task. If Pulp 3 starts
     # returning multiple tasks, this may need to be re-written.
     tasks = tuple(api.poll_spawned_tasks(cfg, call_report))
     if len(tasks) != 1:
         message = (
-            'Multiple tasks were spawned in response to API call. This is '
-            'unexpected, and Pulp Smash may handle the response incorrectly. '
-            'Here is the tasks generated: {}'
+            "Multiple tasks were spawned in response to API call. This is "
+            "unexpected, and Pulp Smash may handle the response incorrectly. "
+            "Here is the tasks generated: {}"
         )
         message = message.format(tasks)
         warnings.warn(message, RuntimeWarning)
-    return client.get(tasks[-1]['created_resources'][0])
+    return client.get(tasks[-1]["created_resources"][0])
 
 
 def _build_content_fetcher(content_field):
@@ -141,16 +146,17 @@ def _build_content_fetcher(content_field):
         contains a dict of content types and the URL at which to view content.
     :returns: A closure which returns content from the specified field.
     """
+
     def inner(repo, version_href=None):
         """Read the content units of a given repository.
 
         :param repo: A dict of information about the repository.
         :param version_href: The repository version to read. If none, read the
             latest repository version.
-        :returns: A list of information about the content units present in a given
-            repository version.
+        :returns: A list of information about the content units present in a
+            given repository version.
         """
-        version_href = version_href or repo['_latest_version_href']
+        version_href = version_href or repo["_latest_version_href"]
 
         if version_href is None:
             # Repository has no latest version, and therefore no content.
@@ -160,16 +166,23 @@ def _build_content_fetcher(content_field):
         repo_version = client.get(version_href)
 
         content = defaultdict(list)
-        for content_type, content_dict in repo_version['content_summary'][content_field].items():
-            typed_content = client.get(content_dict['href'])
+        for content_type, content_dict in repo_version["content_summary"][
+            content_field
+        ].items():
+            typed_content = client.get(content_dict["href"])
             content[content_type] = typed_content
         return content
+
     return inner
 
 
-get_content = _build_content_fetcher('present')  # pylint:disable=invalid-name
-get_added_content = _build_content_fetcher('added')  # pylint:disable=invalid-name
-get_removed_content = _build_content_fetcher('removed')  # pylint:disable=invalid-name
+get_content = _build_content_fetcher("present")  # pylint:disable=invalid-name
+get_added_content = _build_content_fetcher(
+    "added"
+)  # pylint:disable=invalid-name
+get_removed_content = _build_content_fetcher(
+    "removed"
+)  # pylint:disable=invalid-name
 
 
 def _build_summary_fetcher(summary_field):
@@ -179,6 +192,7 @@ def _build_summary_fetcher(summary_field):
         contains a dict of content types and their counts.
     :returns: A closure which returns content from the specified field.
     """
+
     def inner(repo, version_href=None):
         """Read the "content summary" of a given repository version.
 
@@ -190,24 +204,32 @@ def _build_summary_fetcher(summary_field):
             latest repository version.
         :returns: The "content_summary" of the repo version.
         """
-        version_href = version_href or repo['_latest_version_href']
+        version_href = version_href or repo["_latest_version_href"]
 
         if version_href is None:
             # Repository has no latest version, and therefore no content.
             return {}
 
         client = api.Client(config.get_config(), api.page_handler)
-        to_return = client.get(version_href)['content_summary'][summary_field]
+        to_return = client.get(version_href)["content_summary"][summary_field]
         for key in to_return:
-            # provide the old interface pre-changes from https://github.com/pulp/pulpcore/pull/2
-            to_return[key] = to_return[key]['count']
+            # provide the old interface pre-changes from
+            # https://github.com/pulp/pulpcore/pull/2
+            to_return[key] = to_return[key]["count"]
         return to_return
+
     return inner
 
 
-get_content_summary = _build_summary_fetcher('present')  # pylint:disable=invalid-name
-get_added_content_summary = _build_summary_fetcher('added')  # pylint:disable=invalid-name
-get_removed_content_summary = _build_summary_fetcher('removed')  # pylint:disable=invalid-name
+get_content_summary = _build_summary_fetcher(
+    "present"
+)  # pylint:disable=invalid-name
+get_added_content_summary = _build_summary_fetcher(
+    "added"
+)  # pylint:disable=invalid-name
+get_removed_content_summary = _build_summary_fetcher(
+    "removed"
+)  # pylint:disable=invalid-name
 
 
 def delete_orphans(cfg=None):
@@ -234,9 +256,9 @@ def get_versions(repo, params=None):
     :returns: A sorted list of dicts of information about repository versions.
     """
     client = api.Client(config.get_config(), api.page_handler)
-    versions = client.get(repo['_versions_href'], params=params)
+    versions = client.get(repo["_versions_href"], params=params)
     versions.sort(
-        key=lambda version: int(urlsplit(version['_href']).path.split('/')[-2])
+        key=lambda version: int(urlsplit(version["_href"]).path.split("/")[-2])
     )
     return versions
 
@@ -253,10 +275,10 @@ def get_artifact_paths(repo, version_href=None):
     for typed_content in get_content(repo, version_href).values():
         for content in typed_content:
             # Plugins can support zero, one, or many artifacts per content unit
-            if content.get('_artifact'):
-                artifact_paths.add(content['_artifact'])
-            elif content.get('_artifacts'):
-                for artifact in content['_artifacts']:
+            if content.get("_artifact"):
+                artifact_paths.add(content["_artifact"])
+            elif content.get("_artifacts"):
+                for artifact in content["_artifacts"]:
                     artifact_paths.add(artifact)
             else:
                 continue
@@ -271,11 +293,11 @@ def delete_version(repo, version_href=None):
         deleted.
     :returns: A tuple. The tasks spawned by Pulp.
     """
-    version_href = version_href or repo['_latest_version_href']
+    version_href = version_href or repo["_latest_version_href"]
 
     if version_href is None:
         # Repository has no latest version.
-        raise ValueError('No version exists to be deleted.')
+        raise ValueError("No version exists to be deleted.")
 
     cfg = config.get_config()
     client = api.Client(cfg, api.json_handler)
@@ -287,14 +309,14 @@ def delete_version(repo, version_href=None):
 
 def gen_distribution(**kwargs):
     """Return a semi-random dict for use in creating a Distribution."""
-    data = {'base_path': utils.uuid4(), 'name': utils.uuid4()}
+    data = {"base_path": utils.uuid4(), "name": utils.uuid4()}
     data.update(kwargs)
     return data
 
 
 def gen_publisher(**kwargs):
     """Return a semi-random dict for use in creating an Publisher."""
-    data = {'name': utils.uuid4()}
+    data = {"name": utils.uuid4()}
     data.update(kwargs)
     return data
 
@@ -304,13 +326,13 @@ def gen_remote(url, **kwargs):
 
     :param url: The URL of an external content source.
     """
-    data = {'name': utils.uuid4(), 'url': url}
+    data = {"name": utils.uuid4(), "url": url}
     data.update(kwargs)
     return data
 
 
 def gen_repo(**kwargs):
     """Return a semi-random dict for use in creating a Repository."""
-    data = {'name': utils.uuid4()}
+    data = {"name": utils.uuid4()}
     data.update(kwargs)
     return data
