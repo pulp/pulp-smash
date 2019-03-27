@@ -193,26 +193,30 @@ class Client:  # pylint:disable=too-few-public-methods
                 pulp_host = cfg.get_hosts("pulp cli")[0]
             else:
                 pulp_host = cfg.get_hosts("shell")[0]
+
         self.pulp_host = pulp_host
-        hostname = pulp_host.hostname
-        transport = pulp_host.roles.get("shell", {}).get("transport")
-        if transport is None:
-            transport = "local" if hostname == socket.getfqdn() else "ssh"
-        if transport == "local":
-            self.machine = plumbum.machines.local
-        else:  # transport == 'ssh'
-            # The SshMachine is a wrapper around the host's "ssh" binary.
-            # Thus, it uses ~/.ssh/config, ~/.ssh/known_hosts, etc.
-            self.machine = plumbum.machines.SshMachine(hostname)
-
-        # How do we handle responses?
-        if response_handler is None:
-            self.response_handler = code_handler
-        else:
-            self.response_handler = response_handler
-
+        self.response_handler = response_handler or code_handler
         self.cfg = cfg
+
         self._is_root_cache = None
+        self._machine = None
+
+    @property
+    def machine(self):
+        """Initialize the plumbum machine lazily."""
+        if self._machine is None:
+            hostname = self.pulp_host.hostname
+            transport = self.pulp_host.roles.get("shell", {}).get("transport")
+            if transport is None:
+                transport = "local" if hostname == socket.getfqdn() else "ssh"
+
+            if transport == "local":
+                self._machine = plumbum.machines.local
+            else:  # transport == 'ssh'
+                # The SshMachine is a wrapper around the host's "ssh" binary.
+                # Thus, it uses ~/.ssh/config, ~/.ssh/known_hosts, etc.
+                self._machine = plumbum.machines.SshMachine(hostname)
+        return self._machine
 
     @property
     def is_superuser(self):
