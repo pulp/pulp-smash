@@ -12,11 +12,11 @@ API_DOCS_PATH = urljoin(BASE_PATH, "docs/")
 
 ARTIFACTS_PATH = urljoin(BASE_PATH, "artifacts/")
 
-BASE_REMOTE_PATH = urljoin(BASE_PATH, "remotes/")
+BASE_CONTENT_GUARDS_PATH = urljoin(BASE_PATH, "contentguards/")
 
 BASE_PUBLISHER_PATH = urljoin(BASE_PATH, "publishers/")
 
-CONTENT_GUARDS_PATH = urljoin(BASE_PATH, "contentguards/certguard/certguard/")
+BASE_REMOTE_PATH = urljoin(BASE_PATH, "remotes/")
 
 CONTENT_PATH = urljoin(BASE_PATH, "content/")
 
