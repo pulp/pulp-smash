@@ -139,6 +139,27 @@ def publish(cfg, publisher, repo, version_href=None):
     return client.get(tasks[-1]["created_resources"][0])
 
 
+def publication(cfg, path, repo, version_href=None, **kwargs):
+    """Create a publication.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        host.
+    :param repo: A dict of information about the repository.
+    :param version_href: The repository version to be published.
+    :returns: A publication. A dict of information about the just created
+        publication.
+    """
+
+    if version_href is None:
+        data = {"repository": repo["_href"]}
+    else:
+        data = {"repository_version": version_href}
+    client = api.Client(cfg, api.json_handler)
+    call_report = client.post(path, data)
+    tasks = tuple(api.poll_spawned_tasks(cfg, call_report))
+    return client.get(tasks[-1]["created_resources"][0])
+
+
 def _build_content_fetcher(content_field):
     """Build closure for fetching content from a repository.
 
