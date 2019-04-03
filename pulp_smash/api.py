@@ -265,6 +265,38 @@ def task_handler(client, response):
     return done_task
 
 
+def smart_handler(client, response):
+    """Decides which handler to call based on response content.
+
+    Do the following:
+
+    1. Pass response through safe_handler to handle 202 and raise_for_status.
+    2. Return the response if it is not Pulp 3.
+    3. Return the response if it is not application/json type.
+    4. Pass response through task_handler if is JSON 202 with 'task'.
+    5. Pass response through page_handler if is JSON but not 202 with 'task'.
+    """
+    # safe_handler Will raise_for_Status, handle 202 and pool tasks
+    response = safe_handler(client, response)
+
+    try:
+        check_pulp3_restriction(client)
+    except ValueError:
+        # If pulp is not 3+ return the result of safe_handler by default
+        return response
+
+    if response.headers.get("Content-Type") != "application/json":
+        # Not a valid JSON, return pure response
+        return response
+
+    # We got JSON is that a task call report?
+    if response.status_code == 202 and "task" in response.json():
+        return task_handler(client, response)
+
+    # Its JSON, it is not a Task, default to page_handler
+    return page_handler(client, response)
+
+
 class Client:
     """A convenience object for working with an API.
 
@@ -317,6 +349,7 @@ class Client:
     * :func:`pulp_smash.api.json_handler`
     * :func:`pulp_smash.api.page_handler`
     * :func:`pulp_smash.api.task_handler`
+    * :func:`pulp_smash.api.smart_handler`
 
     As mentioned, this class has configurable request and response handling
     mechanisms. We've covered response handling mechanisms — let's move on to
@@ -372,7 +405,7 @@ class Client:
     :param response_handler: A callback function, invoked after each request is
         made. Must accept two arguments: a
         :class:`pulp_smash.config.PulpSmashConfig` object, and a
-        ``requests.Response`` object. Defaults to :func:`safe_handler`.
+        ``requests.Response`` object. Defaults to :func:`smart_handler`.
     :param request_kwargs: A dict of parameters to send with each request. This
         dict is merged into the default dict of parameters that's sent with
         each request.
@@ -474,17 +507,8 @@ class Client:
     ):
         """Initialize this object with needed instance attributes."""
         self._cfg = cfg
-
-        if response_handler:
-            self.response_handler = response_handler
-        else:
-            self.response_handler = safe_handler
-
-        if pulp_host:
-            self.pulp_host = pulp_host
-        else:
-            self.pulp_host = self._cfg.get_hosts("api")[0]
-
+        self.response_handler = response_handler or smart_handler
+        self.pulp_host = pulp_host or self._cfg.get_hosts("api")[0]
         self.request_kwargs = self._cfg.get_requests_kwargs(self.pulp_host)
         self.request_kwargs["url"] = self._cfg.get_base_url(self.pulp_host)
         if request_kwargs:

@@ -4,11 +4,62 @@ import unittest
 from unittest import mock
 
 from packaging.version import Version
+from requests import Response
 
 from pulp_smash import api, config
 
 
 _HANDLER_ARGS = ("client", "response")
+
+
+@mock.patch.object(api, "safe_handler", lambda *_: _[1])
+@mock.patch.object(api, "task_handler", lambda *_: _[1])
+@mock.patch.object(api, "page_handler", lambda *_: _[1])
+class SmartHandlerTestCase(unittest.TestCase):
+    """Tests for :func:`pulp_smash.api.smart_handler`."""
+
+    @property
+    def client(self):
+        """Return a lazy client defaults to Pulp 3, creates on every call."""
+        return api.Client(_get_pulp_smash_config(pulp_version="3.0"))
+
+    def test_return_bare_response_when_pulp_2(self, *_):
+        """Assert the passed-in ``response`` is returned if pulp is 2."""
+        response = Response()
+        client = api.Client(_get_pulp_smash_config(pulp_version="2.19"))
+        self.assertIs(response, api.smart_handler(client, response))
+
+    def test_return_bare_response_when_not_json(self, *_):
+        """Assert the passed-in ``response`` is returned."""
+        response = Response()
+        response.headers["Content-Type"] = "text/html"
+        self.assertIs(response, api.smart_handler(self.client, response))
+
+    def test_task_handler_is_called_for_tasks(self, *_):
+        """Assert task handler is called when 202 with task is response."""
+        response = Response()
+        response.status_code = 202
+        response._content = b'{"task": "1234"}'
+        response.headers["Content-Type"] = "application/json"
+        with mock.patch.object(
+            api, "task_handler", lambda *_: "task_handler_called"
+        ):
+            self.assertEqual(
+                api.smart_handler(self.client, response), "task_handler_called"
+            )
+
+    def test_page_handler_is_called_for_json(self, *_):
+        """Assert page handler is called when json without a task."""
+        response = Response()
+        response.status_code = 201
+        response._content = b'{"foo": "1234"}'
+        response.headers["Content-Type"] = "application/json"
+        with mock.patch.object(
+            api, "page_handler", lambda *_: "page_handler_called"
+        ):
+            self.assertEqual(
+                api.smart_handler(self.client, response), "page_handler_called"
+            )
 
 
 class EchoHandlerTestCase(unittest.TestCase):
@@ -215,18 +266,18 @@ class ClientTestCase2(unittest.TestCase):
                 self.assertIs(request.call_args[1]["json"], json)
 
 
-def _get_pulp_smash_config():
+def _get_pulp_smash_config(**kwargs):
     """Return a config object with made-up attributes.
 
     :rtype: pulp_smash.config.PulpSmashConfig
     """
-    return config.PulpSmashConfig(
-        pulp_auth=["admin", "admin"],
-        pulp_version="1!0",
-        pulp_selinux_enabled=True,
-        hosts=[
-            config.PulpHost(
-                hostname="example.com", roles={"api": {"scheme": "http"}}
-            )
-        ],
-    )
+    kwargs.setdefault("pulp_auth", ["admin", "admin"])
+    kwargs.setdefault("pulp_version", "1!0")
+    kwargs.setdefault("pulp_selinux_enabled", True)
+    hosts = [
+        config.PulpHost(
+            hostname="example.com", roles={"api": {"scheme": "http"}}
+        )
+    ]
+    kwargs.setdefault("hosts", hosts)
+    return config.PulpSmashConfig(**kwargs)
