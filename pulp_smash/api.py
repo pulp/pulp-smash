@@ -24,7 +24,6 @@ _P3_TASK_END_STATES = ("canceled", "completed", "failed", "skipped")
 
 def check_pulp3_restriction(client):
     """Check if running system is running on Pulp3 otherwise raise error."""
-    # pylint:disable=protected-access
     if client._cfg.pulp_version < Version(
         "3"
     ) or client._cfg.pulp_version >= Version("4"):
@@ -117,12 +116,12 @@ def _walk_pages(cfg, page, pulp_host):
             break
 
 
-def echo_handler(client, response):  # pylint:disable=unused-argument
+def echo_handler(client, response):
     """Immediately return ``response``."""
     return response
 
 
-def code_handler(client, response):  # pylint:disable=unused-argument
+def code_handler(client, response):
     """Check the response status code, and return the response.
 
     Unlike :meth:`safe_handler`, this method doesn't wait for asynchronous
@@ -150,9 +149,7 @@ def safe_handler(client, response):
         an error.
     """
     response.raise_for_status()
-    _handle_202(
-        client._cfg, response, client.pulp_host
-    )  # pylint:disable=protected-access
+    _handle_202(client._cfg, response, client.pulp_host)
     return response
 
 
@@ -165,9 +162,7 @@ def json_handler(client, response):
     response.raise_for_status()
     if response.status_code == 204:
         return response
-    _handle_202(
-        client._cfg, response, client.pulp_host
-    )  # pylint:disable=protected-access
+    _handle_202(client._cfg, response, client.pulp_host)
     return response.json()
 
 
@@ -188,7 +183,6 @@ def page_handler(client, response):
 
     .. _status code: https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
     """
-    # pylint:disable=protected-access
     check_pulp3_restriction(client)
     maybe_page = json_handler(client, response)
     if not isinstance(maybe_page, dict):
@@ -211,6 +205,9 @@ def task_handler(client, response):
     2. Raise error if response is not a task.
     3. Re-read the task by its _href to get the final state and metadata.
     4. Return the task's created or updated resource or task final state.
+
+    :raises: ``ValueError`` if the target Pulp application under test is older
+        than version 3 or at least version 4.
 
     Usage examples:
 
@@ -319,6 +316,7 @@ class Client:
     * :func:`pulp_smash.api.safe_handler`
     * :func:`pulp_smash.api.json_handler`
     * :func:`pulp_smash.api.page_handler`
+    * :func:`pulp_smash.api.task_handler`
 
     As mentioned, this class has configurable request and response handling
     mechanisms. We've covered response handling mechanisms — let's move on to
