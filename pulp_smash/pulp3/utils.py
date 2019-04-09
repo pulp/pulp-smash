@@ -244,7 +244,7 @@ def delete_orphans(cfg=None):
     """
     if cfg is None:
         cfg = config.get_config()
-    api.Client(cfg, api.safe_handler).delete(ORPHANS_PATH)
+    api.Client(cfg, api.task_handler).delete(ORPHANS_PATH)
 
 
 def get_versions(repo, params=None):
