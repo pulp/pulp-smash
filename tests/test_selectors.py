@@ -79,14 +79,33 @@ class GetBugTestCase(unittest.TestCase):
 class BugIsFixedTestCase(unittest.TestCase):
     """Test :meth:`pulp_smash.selectors.bug_is_fixed`."""
 
-    def test_testable_status(self):
+    def test_pulp3_testable_status(self):
         """Assert the method correctly handles "testable" bug statuses."""
-        ver = Version("0")
+        ver = Version("3.0")
         for bug_status in selectors._TESTABLE_BUGS:
             bug = selectors._Bug(bug_status, ver)
             with mock.patch.object(selectors, "_get_bug", return_value=bug):
                 with self.subTest(bug_status=bug_status):
                     self.assertTrue(selectors.bug_is_fixed(None, ver))
+
+    def test_pulp2_testable_status(self):
+        """Assert the method correctly handles "testable" bug statuses."""
+        ver = Version("2.0")
+        for bug_status in selectors._TESTABLE_BUGS:
+            if bug_status != "CLOSED - WONTFIX":
+                bug = selectors._Bug(bug_status, ver)
+                with mock.patch.object(
+                    selectors, "_get_bug", return_value=bug
+                ):
+                    with self.subTest(bug_status=bug_status):
+                        self.assertTrue(selectors.bug_is_fixed(None, ver))
+            else:
+                bug = selectors._Bug(bug_status, ver)
+                with mock.patch.object(
+                    selectors, "_get_bug", return_value=bug
+                ):
+                    with self.subTest(bug_status=bug_status):
+                        self.assertFalse(selectors.bug_is_fixed(None, ver))
 
     def test_untestable_status(self):
         """Assert the method correctly handles "untestable" bug statuses."""
