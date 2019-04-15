@@ -161,6 +161,17 @@ def bug_is_fixed(bug_id, pulp_version):
         warnings.warn(message, RuntimeWarning)
         return True
 
+    if isinstance(pulp_version, str):
+        pulp_version = Version(pulp_version)
+
+    if not isinstance(pulp_version, Version):
+        raise TypeError(
+            "Pulp version should be an instance of Version. The given"
+            " Pulp version, {} is a {}.".format(
+                pulp_version, type(pulp_version)
+            )
+        )
+
     # bug.target_platform_release has already been verified by Version().
     if bug.status not in _TESTABLE_BUGS | _UNTESTABLE_BUGS:
         raise exceptions.BugStatusUnknownError(
