@@ -171,12 +171,35 @@ def bug_is_fixed(bug_id, pulp_version):
         )
 
     # Finally, we have good data!
-    if (
-        bug.status in _TESTABLE_BUGS
-        and bug.target_platform_release <= pulp_version
-    ):
-        return True
-    return False
+    if pulp_version >= Version("3.0"):
+        # If the pulp version under test is newer than 3.0 then, function will
+        # return True even when the status of the issue is "CLOSED - WONTFIX".
+        if (
+            bug.status in _TESTABLE_BUGS
+            and bug.target_platform_release <= pulp_version
+        ):
+            return True
+        return False
+
+    if pulp_version < Version("3.0"):
+        # If the pulp version under test is older than 3.0 and the issue
+        # status is "CLOSED - WONTFIX". A warning will be raised, and function
+        # will return False.
+        if (
+            bug.status != "CLOSED - WONTFIX"
+            and bug.status in _TESTABLE_BUGS
+            and bug.target_platform_release <= pulp_version
+        ):
+            return True
+        if bug.status == "CLOSED - WONTFIX":
+            message = (
+                "Pulp 2 issue {} has a status of {}. This test was skipped"
+                " based on the issue status. Many Pulp 2 issues were closed"
+                " as WONTFIX. Keeping the test in the code basis for future"
+                " reference.".format(bug_id, bug.status)
+            )
+            warnings.warn(message, RuntimeWarning)
+        return False
 
 
 def require(ver, exc):
