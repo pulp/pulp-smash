@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 import requests
 
 from pulp_smash import cli, exceptions
+from pulp_smash.log import logger
 
 # A mapping between URLs and SHA 256 checksums. Used by get_sha256_checksum().
 _CHECKSUM_CACHE = {}
@@ -84,6 +85,7 @@ def http_get(url, **kwargs):
     """
     response = requests.get(url, **kwargs)
     response.raise_for_status()
+    logger.debug("GET Request to %s finished with %s", url, response)
     return response.content
 
 
@@ -100,7 +102,8 @@ def fips_is_supported(cfg, pulp_host=None):
         cli.Client(cfg, pulp_host=pulp_host).run(
             ("sysctl", "crypto.fips_enabled")
         )
-    except exceptions.CalledProcessError:
+    except exceptions.CalledProcessError as e:
+        logger.exception(e)
         return False
     return True
 

@@ -140,6 +140,40 @@ sub-key, e.g. ``"shell": {"transport": "..."}``:
     without typing a password. Make sure to configure SSH so just running ``ssh
     "$hostname"`` will access the host. See sshd_config(5).
 
+
+Logs
+----
+
+Pulp Smash logs out information for important methods and functions,
+by default the log output is enabled only for ``ERROR`` level.
+
+To enable the logging of ``DEBUG`` information set the
+``PULP_SMASH_LOG_LEVEL`` environment variable to value ``DEBUG``.
+
+
+Example
+
+.. code-block:: console
+
+    $ export PULP_SMASH_LOG_LEVEL=DEBUG
+    $ pulp_smash shell
+    >>> response = api.Client(cfg).get('/pulp/api/v3/status/')
+    2019-04-23. DEBUG [api.py:530 - __init__] New <api.Client(...)>
+    2019-04-23. DEBUG [api.py:638 - request] Making a GET request with {'verify': False, 'auth': ('admin', 'admin'), 'url': 'http://FQDN:80/pulp/api/v3/status/'}
+    2019-04-23. DEBUG [api.py:156 - safe_handler] reponse status: 200
+    2019-04-23. DEBUG [api.py:309 - smart_handler] Response is a JSON
+    2019-04-23. DEBUG [api.py:168 - json_handler] reponse status: 200
+    2019-04-23. DEBUG [api.py:642 - request] Finished GET request with {'versions': [...], 'online_workers': [...], 'missing_workers': [], 'database_connection': {'connected': True}, 'redis_connection': {'connected': True}}
+
+That variable holds the string name of Python's ``logging`` levels.
+
+- NOTSET
+- INFO
+- DEBUG
+- ERROR
+- CRITICAL
+- WARNING
+
 .. _Pulp installation:
     http://docs.pulpproject.org/user-guide/installation/index.html
 .. _XDG Base Directory Specification:
