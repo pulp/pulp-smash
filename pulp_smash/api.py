@@ -16,6 +16,7 @@ import requests
 from packaging.version import Version
 
 from pulp_smash import exceptions
+from pulp_smash.log import logger
 
 _SENTINEL = object()
 _TASK_END_STATES = ("canceled", "error", "finished", "skipped", "timed out")
@@ -98,6 +99,7 @@ def _handle_202(cfg, response, pulp_host):
         _check_http_202_content_type(response)
         call_report = response.json()
         tasks = tuple(poll_spawned_tasks(cfg, call_report, pulp_host))
+        logger.debug("Task call report: %s", call_report)
         if cfg.pulp_version < Version("3"):
             _check_call_report(call_report)
             _check_tasks(tasks, ("error", "exception", "traceback"))
@@ -118,6 +120,7 @@ def _walk_pages(cfg, page, pulp_host):
 
 def echo_handler(client, response):
     """Immediately return ``response``."""
+    logger.debug("response status: %s", response.status_code)
     return response
 
 
@@ -131,6 +134,7 @@ def code_handler(client, response):
         in the 4XX or 5XX range.
     """
     response.raise_for_status()
+    logger.debug("response status: %s", response.status_code)
     return response
 
 
@@ -149,6 +153,7 @@ def safe_handler(client, response):
         an error.
     """
     response.raise_for_status()
+    logger.debug("response status: %s", response.status_code)
     _handle_202(client._cfg, response, client.pulp_host)
     return response
 
@@ -160,6 +165,7 @@ def json_handler(client, response):
     response body as JSON and return the result.
     """
     response.raise_for_status()
+    logger.debug("response status: %s", response.status_code)
     if response.status_code == 204:
         return response
     _handle_202(client._cfg, response, client.pulp_host)
@@ -193,6 +199,7 @@ def page_handler(client, response):
     collected_results = []
     for result in _walk_pages(client._cfg, maybe_page, client.pulp_host):
         collected_results.extend(result)
+    logger.debug("paginated %s result pages", len(collected_results))
     return collected_results
 
 
@@ -248,6 +255,7 @@ def task_handler(client, response):
     if response.request.method == "POST":
         # Task might have created new resources
         created = done_task["created_resources"]
+        logger.debug("Task created resources: %s", created)
         if len(created) == 1:  # Single resource href
             return client.using_handler(json_handler).get(created[0])
         if len(created) > 1:  # Multiple resource hrefs
@@ -258,10 +266,12 @@ def task_handler(client, response):
 
     if response.request.method in ["PUT", "PATCH"]:
         # Task might have updated resource so re-read and return it back
+        logger.debug("Task updated resource: %s", response.request.url)
         return client.using_handler(json_handler).get(response.request.url)
 
     # response.request.method is one of ['DELETE', 'GET', 'HEAD', 'OPTION']
     # Returns the final state of the done task
+    logger.debug("Task finished: %s", done_task)
     return done_task
 
 
@@ -287,13 +297,16 @@ def smart_handler(client, response):
 
     if response.headers.get("Content-Type") != "application/json":
         # Not a valid JSON, return pure response
+        logger.debug("Response is not JSON")
         return response
 
     # We got JSON is that a task call report?
     if response.status_code == 202 and "task" in response.json():
+        logger.debug("Response is a task")
         return task_handler(client, response)
 
     # Its JSON, it is not a Task, default to page_handler
+    logger.debug("Response is a JSON")
     return page_handler(client, response)
 
 
@@ -514,6 +527,16 @@ class Client:
         if request_kwargs:
             self.request_kwargs.update(request_kwargs)
         self._using_handler_cache = {}
+        logger.debug("New %s", self)
+
+    def __str__(self):
+        """Client str representation."""
+        client_spec = {
+            "response_handler": self.response_handler,
+            "host": self.pulp_host,
+            "cfg": repr(self._cfg),
+        }
+        return "<api.Client(%s)>" % client_spec
 
     def using_handler(self, response_handler):
         """Return a copy this same client changing specific handler dependency.
@@ -536,12 +559,18 @@ class Client:
                 client.using_handler(other_handler).get(url)
 
         """
+        logger.debug(
+            "Switching %s to %s", self.response_handler, response_handler
+        )
         try:
-            return self._using_handler_cache[response_handler]
+            existing_client = self._using_handler_cache[response_handler]
+            logger.debug("Reusing Existing Client: %s", existing_client)
+            return existing_client
         except KeyError:  # EAFP
             new = copy.copy(self)
             new.response_handler = response_handler
             self._using_handler_cache[response_handler] = new
+            logger.debug("Creating a new copy of Client %s", new)
             return new
 
     def delete(self, url, **kwargs):
@@ -606,9 +635,12 @@ class Client:
                 ),
                 RuntimeWarning,
             )
-        return self.response_handler(
+        logger.debug("Making a %s request with %s", method, request_kwargs)
+        response = self.response_handler(
             self, requests.request(method, **request_kwargs)
         )
+        logger.debug("Finished %s request with response: %s", method, response)
+        return response
 
 
 def poll_spawned_tasks(cfg, call_report, pulp_host=None):
@@ -658,6 +690,7 @@ def poll_task(cfg, href, pulp_host=None):
     poll_limit = 900
     poll_counter = 0
     json_client = Client(cfg, json_handler, pulp_host=pulp_host)
+    logger.debug("Polling task %s with poll_limit %s", href, poll_limit)
     while True:
         task = json_client.get(href)
         if cfg.pulp_version < Version("3"):
@@ -679,4 +712,7 @@ def poll_task(cfg, href, pulp_host=None):
             raise exceptions.TaskTimedOutError(
                 "Task {} is ongoing after {} polls.".format(href, poll_limit)
             )
+        logger.debug(
+            "Polling %s progress %s/%s", href, poll_counter, poll_limit
+        )
         sleep(2)

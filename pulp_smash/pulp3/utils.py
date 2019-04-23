@@ -8,6 +8,7 @@ from urllib.parse import urljoin, urlsplit
 from packaging.version import Version
 
 from pulp_smash import api, config, utils
+from pulp_smash.log import logger
 from pulp_smash.pulp3.constants import ORPHANS_PATH, STATUS_PATH
 
 
@@ -104,6 +105,7 @@ def download_content_unit(cfg, distribution, unit_path, **kwargs):
             unit_path,
         ),
     )
+    logger.debug("Downloading content %s", unit_url)
     return client.get(unit_url, **kwargs).content
 
 

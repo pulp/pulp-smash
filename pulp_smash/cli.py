@@ -13,6 +13,7 @@ import plumbum
 from packaging.version import Version
 
 from pulp_smash import exceptions
+from pulp_smash.log import logger
 
 
 # A dict mapping hostnames to *nix service managers.
@@ -42,6 +43,7 @@ def is_root(cfg, pulp_host=None):
 
 def echo_handler(completed_proc):
     """Immediately return ``completed_proc``."""
+    logger.debug("Process return code: %s", completed_proc.returncode)
     return completed_proc
 
 
@@ -52,6 +54,7 @@ def code_handler(completed_proc):
     See: :meth:`pulp_smash.cli.CompletedProcess.check_returncode`.
     """
     completed_proc.check_returncode()
+    logger.debug("Process return code: %s", completed_proc.returncode)
     return completed_proc
 
 
@@ -200,6 +203,16 @@ class Client:  # pylint:disable=too-few-public-methods
 
         self._is_root_cache = None
         self._machine = None
+        logger.debug("New %s", self)
+
+    def __str__(self):
+        """Client str representation."""
+        client_spec = {
+            "response_handler": self.response_handler,
+            "host": self.pulp_host,
+            "cfg": repr(self.cfg),
+        }
+        return "<cli.Client(%s)>" % client_spec
 
     @property
     def machine(self):
@@ -216,6 +229,7 @@ class Client:  # pylint:disable=too-few-public-methods
                 # The SshMachine is a wrapper around the host's "ssh" binary.
                 # Thus, it uses ~/.ssh/config, ~/.ssh/known_hosts, etc.
                 self._machine = plumbum.machines.SshMachine(hostname)
+            logger.debug("Initialized plumbum machine %s", self._machine)
         return self._machine
 
     @property
@@ -230,6 +244,7 @@ class Client:  # pylint:disable=too-few-public-methods
         """
         if self._is_root_cache is None:
             self._is_root_cache = is_root(self.cfg, self.pulp_host)
+        logger.debug("Is Superuser: %s", self._is_root_cache)
         return self._is_root_cache
 
     def run(self, args, sudo=False, **kwargs):
@@ -252,12 +267,14 @@ class Client:  # pylint:disable=too-few-public-methods
         # Let self.response_handler check return codes. See:
         # https://plumbum.readthedocs.io/en/latest/api/commands.html#plumbum.commands.base.BaseCommand.run
         kwargs.setdefault("retcode")
+        logger.debug("Running %s cmd (sudo:%s) - %s", args, sudo, kwargs)
 
         if sudo and args[0] != "sudo" and not self.is_superuser:
             args = ("sudo",) + tuple(args)
 
         code, stdout, stderr = self.machine[args[0]].run(args[1:], **kwargs)
         completed_process = CompletedProcess(args, code, stdout, stderr)
+        logger.debug("Finished %s command: %s", args, (code, stdout, stderr))
         return self.response_handler(completed_process)
 
 
@@ -766,7 +783,8 @@ class PackageManager:
         """
         try:
             self.name
-        except exceptions.NoKnownPackageManagerError:
+        except exceptions.NoKnownPackageManagerError as e:
+            logger.exception(e)
             raise exc(message)
 
     @staticmethod
@@ -929,7 +947,8 @@ class RegistryClient:
         """
         try:
             self.name
-        except exceptions.NoRegistryClientError:
+        except exceptions.NoRegistryClientError as e:
+            logger.exception(e)
             raise exc(message)
 
     def _get_registry_client(self):
