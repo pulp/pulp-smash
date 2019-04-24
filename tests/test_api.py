@@ -274,6 +274,7 @@ def _get_pulp_smash_config(**kwargs):
     kwargs.setdefault("pulp_auth", ["admin", "admin"])
     kwargs.setdefault("pulp_version", "1!0")
     kwargs.setdefault("pulp_selinux_enabled", True)
+    kwargs.setdefault("timeout", 1800)
     hosts = [
         config.PulpHost(
             hostname="example.com", roles={"api": {"scheme": "http"}}

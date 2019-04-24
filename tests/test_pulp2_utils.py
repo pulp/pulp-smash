@@ -107,6 +107,7 @@ class PulpAdminLoginTestCase(unittest.TestCase):
                 pulp_auth=["admin", "admin"],
                 pulp_version="1!0",
                 pulp_selinux_enabled=True,
+                timeout=1800,
                 hosts=[
                     config.PulpHost(
                         hostname="example.com", roles={"pulp cli": {}}

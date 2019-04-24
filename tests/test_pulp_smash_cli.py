@@ -55,6 +55,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
                 "selinux enabled": True,
                 "version": "2.13",
             },
+            "general": {"timeout": 1800},
             "hosts": [
                 {
                     "hostname": "pulp.example.com",
@@ -82,6 +83,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
                 "selinux enabled": True,
                 "version": "3.0",
             },
+            "general": {"timeout": 1800},
             "hosts": [
                 {
                     "hostname": "pulp3.example.com",
@@ -140,6 +142,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             "\n"  # pulp admin username
             "\n"  # pulp admin password
             "\n"  # pulp selinux enabled
+            "\n"  # task time out
             "pulp.example.com\n"  # host hostname
             "\n"  # host amqp broker
             "\n"  # host api scheme
@@ -160,6 +163,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             "\n"  # pulp admin username
             "\n"  # pulp admin password
             "\n"  # pulp selinux enabled
+            "\n"  # task time out
             "pulp.example.com\n"  # host hostname
             "\n"  # host amqp broker
             "\n"  # host api scheme
@@ -181,6 +185,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             "\n"  # pulp admin username
             "\n"  # pulp admin password
             "\n"  # pulp selinux enabled
+            "\n"  # task time out
             "pulp.example.com\n"  # host hostname
             "\n"  # host amqp broker
             "\n"  # host api scheme
@@ -203,6 +208,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             "username\n"  # pulp admin username
             "password\n"  # pulp admin password
             "n\n"  # pulp selinux enabled
+            "900\n"  # task time out
             "pulp.example.com\n"  # host hostname
             "rabbitmq\n"  # host amqp broker
             "http\n"  # host api scheme
@@ -215,6 +221,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
 
         self.expected_config_dict["pulp"]["auth"] = ["username", "password"]
         self.expected_config_dict["pulp"]["selinux enabled"] = False
+        self.expected_config_dict["general"]["timeout"] = 900
         host_roles = self.expected_config_dict["hosts"][0]["roles"]
         host_roles["amqp broker"]["service"] = "rabbitmq"
         host_roles["api"]["port"] = 1234
@@ -232,6 +239,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             "\n"  # user
             "\n"  # password
             "\n"  # selinux enabled?
+            "\n"  # task time out
             "pulp3.example.com\n"  # hostname
             "\n"  # api scheme
             "\n"  # api verify?
@@ -259,6 +267,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
             "username\n"  # user
             "password\n"  # password
             "n\n"  # selinux enabled
+            "900\n"  # task time out
             "pulp3.example.com\n"  # api hostname
             "http\n"  # api scheme
             "n\n"  # verify api SSL?
@@ -271,6 +280,7 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
 
         self.expected_config_dict_3["pulp"]["auth"] = ["username", "password"]
         self.expected_config_dict_3["pulp"]["selinux enabled"] = False
+        self.expected_config_dict_3["general"]["timeout"] = 900
         roles = self.expected_config_dict_3["hosts"][0]["roles"]
         roles["api"]["port"] = 1234
         roles["api"]["scheme"] = "http"
