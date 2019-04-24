@@ -1,5 +1,6 @@
 # coding=utf-8
 """The entry point for Pulp Smash's command line interface."""
+import contextlib
 import json
 import sys
 import warnings
@@ -379,7 +380,6 @@ def shell(ipython, _settingspath):  # pragma: no cover
     """
     # pylint:disable=R0914
     import code
-    import readline
     import rlcompleter
 
     # trick to to make subpackages available
@@ -414,8 +414,12 @@ def shell(ipython, _settingspath):  # pragma: no cover
     finally:
         _vars.update(locals())
 
-    readline.set_completer(rlcompleter.Completer(_vars).complete)
-    readline.parse_and_bind("tab: complete")
+    with contextlib.suppress(ImportError):
+        import readline
+
+        readline.set_completer(rlcompleter.Completer(_vars).complete)
+        readline.parse_and_bind("tab: complete")
+
     try:
         if ipython is True:
             from IPython import start_ipython
