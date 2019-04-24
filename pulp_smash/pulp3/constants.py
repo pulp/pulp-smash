@@ -18,6 +18,8 @@ BASE_PUBLISHER_PATH = urljoin(BASE_PATH, "publishers/")
 
 BASE_REMOTE_PATH = urljoin(BASE_PATH, "remotes/")
 
+BASE_PUBLICATION_PATH = urljoin(BASE_PATH, "publications/")
+
 CONTENT_PATH = urljoin(BASE_PATH, "content/")
 
 DISTRIBUTION_PATH = urljoin(BASE_PATH, "distributions/")
@@ -33,8 +35,6 @@ LAZY_DOWNLOAD_POLICIES = tuple(
 MEDIA_PATH = "/var/lib/pulp"
 
 ORPHANS_PATH = urljoin(BASE_PATH, "orphans/")
-
-PUBLICATIONS_PATH = urljoin(BASE_PATH, "publications/")
 
 REPO_PATH = urljoin(BASE_PATH, "repositories/")
 
