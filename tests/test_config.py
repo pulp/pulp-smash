@@ -18,44 +18,8 @@ PULP_SMASH_CONFIG = """
         "auth": ["username", "password"],
         "version": "2.12.1"
     },
+    "general": {"timeout": 1800},
     "hosts": [
-        {
-            "hostname": "first.example.com",
-            "roles": {
-                "amqp broker": {"service": "qpidd"},
-                "api": {"port": 1234, "scheme": "https", "verify": true},
-                "mongod": {},
-                "pulp cli": {},
-                "pulp celerybeat": {},
-                "pulp resource manager": {},
-                "pulp workers": {},
-                "shell": {"transport": "local"},
-                "squid": {}
-            }
-        },
-        {
-            "hostname": "second.example.com",
-            "roles": {
-                "api": {"port": 2345, "scheme": "https", "verify": false},
-                "pulp celerybeat": {},
-                "pulp resource manager": {},
-                "pulp workers": {},
-                "shell": {"transport": "ssh"},
-                "squid": {}
-            }
-        }
-    ]
-}
-"""
-
-# Identical to above, but s/hosts/systems/.
-OLD_PULP_SMASH_CONFIG = """
-{
-    "pulp": {
-        "auth": ["username", "password"],
-        "version": "2.12.1"
-    },
-    "systems": [
         {
             "hostname": "first.example.com",
             "roles": {
@@ -98,6 +62,7 @@ def _gen_attrs():
         "pulp_version": ".".join(
             str(random.randint(1, 150)) for _ in range(4)
         ),
+        "timeout": random.randint(1, 1800),
         "pulp_selinux_enabled": True,
         "hosts": [
             config.PulpHost(
@@ -179,17 +144,13 @@ class PulpSmashConfigFileTestCase(unittest.TestCase):
         """Set the environment variable."""
         os_environ = {"PULP_SMASH_CONFIG_FILE": utils.uuid4()}
         with mock.patch.dict(os.environ, os_environ, clear=True):
-            config_file = (
-                config.PulpSmashConfig._get_config_file()
-            )  # pylint:disable=protected-access
+            config_file = config.PulpSmashConfig._get_config_file()
         self.assertEqual(config_file, os_environ["PULP_SMASH_CONFIG_FILE"])
 
     def test_var_unset(self):
         """Do not set the environment variable."""
         with mock.patch.dict(os.environ, {}, clear=True):
-            config_file = (
-                config.PulpSmashConfig._get_config_file()
-            )  # pylint:disable=protected-access
+            config_file = config.PulpSmashConfig._get_config_file()
         self.assertEqual(config_file, "settings.json")
 
 
@@ -199,12 +160,6 @@ class LoadTestCase(unittest.TestCase):
     def test_load_config_file(self):
         """Ensure Pulp Smash can load the config file."""
         cfg = pulp_smash_config_load(PULP_SMASH_CONFIG)
-        self.do_validate(cfg)
-
-    def test_load_old_config_file(self):
-        """Ensure Pulp Smash can load the config file."""
-        with self.assertWarns(DeprecationWarning):
-            cfg = pulp_smash_config_load(OLD_PULP_SMASH_CONFIG)
         self.do_validate(cfg)
 
     def do_validate(self, cfg):

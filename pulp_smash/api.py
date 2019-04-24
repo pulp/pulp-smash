@@ -684,10 +684,12 @@ def poll_task(cfg, href, pulp_host=None):
     :raises pulp_smash.exceptions.TaskTimedOutError: If a task takes too
         long to complete.
     """
-    # 900 * 2s == 1800s == 30m
-    # NOTE: The timeout counter is synchronous. We query Pulp, then count down,
-    # then query pulp, then count down, etc. This is… dumb.
-    poll_limit = 900
+    # Read the timeout in seconds from the cfg, and divide by the sleep_time
+    # to see how many times we query Pulp.
+    # An example: Assuming timeout = 1800s, and sleep_time = 0.3s
+    # 1800s/0.3s = 6000
+    sleep_time = 0.3
+    poll_limit = int(cfg.timeout / sleep_time)
     poll_counter = 0
     json_client = Client(cfg, json_handler, pulp_host=pulp_host)
     logger.debug("Polling task %s with poll_limit %s", href, poll_limit)
@@ -715,4 +717,4 @@ def poll_task(cfg, href, pulp_host=None):
         logger.debug(
             "Polling %s progress %s/%s", href, poll_counter, poll_limit
         )
-        sleep(2)
+        sleep(sleep_time)

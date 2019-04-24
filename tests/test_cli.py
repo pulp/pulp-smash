@@ -374,5 +374,6 @@ def _get_pulp_smash_config(hosts):
         pulp_auth=["admin", "admin"],
         pulp_version="1!0",
         pulp_selinux_enabled=True,
+        timeout=1800,
         hosts=hosts,
     )

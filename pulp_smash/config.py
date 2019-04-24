@@ -104,6 +104,7 @@ JSON_CONFIG_SCHEMA = {
                     "items": {"$ref": "#/definitions/pulp 2 host"},
                 },
                 "pulp": {"$ref": "#/definitions/pulp"},
+                "general": {"$ref": "#/definitions/general"},
             },
         },
         {
@@ -117,6 +118,7 @@ JSON_CONFIG_SCHEMA = {
                     "items": {"$ref": "#/definitions/pulp 3 host"},
                 },
                 "pulp": {"$ref": "#/definitions/pulp"},
+                "general": {"$ref": "#/definitions/general"},
             },
         },
     ],
@@ -129,6 +131,14 @@ JSON_CONFIG_SCHEMA = {
                 "auth": {"type": "array", "maxItems": 2, "minItems": 2},
                 "version": {"type": "string"},
                 "selinux enabled": {"type": "boolean"},
+            },
+        },
+        "general": {
+            "additionalProperties": False,
+            "required": ["timeout"],
+            "type": "object",
+            "properties": {
+                "timeout": {"type": "number", "mininum": 1, "maximum": 1800}
             },
         },
         "pulp 2 host": {
@@ -375,12 +385,13 @@ class PulpSmashConfig:
     """
 
     def __init__(
-        self, pulp_auth, pulp_version, pulp_selinux_enabled, *, hosts
+        self, pulp_auth, pulp_version, pulp_selinux_enabled, timeout, *, hosts
     ):
         """Initialize this object with needed instance attributes."""
         self.pulp_auth = pulp_auth
         self.pulp_version = Version(pulp_version)
         self.pulp_selinux_enabled = pulp_selinux_enabled
+        self.timeout = timeout
         self.hosts = hosts
 
     def __repr__(self):
@@ -545,11 +556,14 @@ class PulpSmashConfig:
                 DeprecationWarning,
             )
             loaded_config["hosts"] = loaded_config.pop("systems")
+
+        timeout = loaded_config.get("general", {}).get("timeout", 1800)
+
         hosts = [PulpHost(**host) for host in loaded_config.get("hosts", [])]
 
         # Make object.
         return PulpSmashConfig(
-            pulp_auth, pulp_version, pulp_selinux_enabled, hosts=hosts
+            pulp_auth, pulp_version, pulp_selinux_enabled, timeout, hosts=hosts
         )
 
     @classmethod

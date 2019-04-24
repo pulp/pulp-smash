@@ -19,7 +19,6 @@ def _raise_settings_not_found():
         "create one."
     )
     result.exit_code = -1
-
     raise result
 
 
@@ -59,6 +58,7 @@ def settings_create(ctx):
 
     # Get information about Pulp.
     pulp_config = {"pulp": _get_pulp_properties()}
+    pulp_config["general"] = _get_task_timeout()
     pulp_config["hosts"] = [
         _get_host_properties(pulp_config["pulp"]["version"])
     ]
@@ -272,6 +272,34 @@ def _get_shell_role(hostname):
         "    ControlPath ~/.ssh/controlmasters/%C\n".format(hostname, ssh_user)
     )
     return {"transport": "ssh"}
+
+
+def _get_task_timeout():
+    """Get task timeout in seconds."""
+    timeout = click.prompt(
+        "Task time out in seconds? Min:1s Max:1800s.",
+        default=1800,
+        type=TaskTimeoutType(),
+    )
+    return {"timeout": timeout}
+
+
+class TaskTimeoutType(click.ParamType):
+    """Define the possible values for a Task timeout in seconds."""
+
+    name = "Task timeout"
+
+    def convert(self, value, param, ctx):
+        """Verify if value is within a certain range."""
+        value = int(value)
+        if not 1 <= value <= 1800:
+            self.fail(
+                "Task time out has to be between 1 and 1800. Provided value {}"
+                " is out of the range.".format(value),
+                param,
+                ctx,
+            )
+        return value
 
 
 class PulpVersionType(click.ParamType):
