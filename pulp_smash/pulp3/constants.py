@@ -42,4 +42,6 @@ STATUS_PATH = urljoin(BASE_PATH, "status/")
 
 TASKS_PATH = urljoin(BASE_PATH, "tasks/")
 
+UPLOAD_PATH = urljoin(BASE_PATH, "uploads/")
+
 WORKER_PATH = urljoin(BASE_PATH, "workers/")
