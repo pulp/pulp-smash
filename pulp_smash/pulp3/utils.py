@@ -78,10 +78,10 @@ def sync(cfg, remote, repo, **kwargs):
         to be synced.
     :param repo: A dict of information about the repository.
     :param kwargs: Keyword arguments to be merged in to the request data.
-    :returns: The server's response. Call ``.json()`` on the response to get
-        a call report.
+    :returns: The server's response. A dict of information about the just
+        created sync.
     """
-    client = api.Client(cfg, api.json_handler)
+    client = api.Client(cfg)
     data = {"repository": repo["_href"]}
     data.update(kwargs)
     return client.post(urljoin(remote["_href"], "sync/"), data)
