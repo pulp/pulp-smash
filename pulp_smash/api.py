@@ -688,7 +688,11 @@ def poll_task(cfg, href, pulp_host=None):
     # to see how many times we query Pulp.
     # An example: Assuming timeout = 1800s, and sleep_time = 0.3s
     # 1800s/0.3s = 6000
-    sleep_time = 0.3
+
+    if cfg.pulp_version < Version("3"):
+        sleep_time = 2
+    else:
+        sleep_time = 0.3
     poll_limit = int(cfg.timeout / sleep_time)
     poll_counter = 0
     json_client = Client(cfg, json_handler, pulp_host=pulp_host)
