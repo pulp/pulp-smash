@@ -889,12 +889,12 @@ class RegistryClient:
 
     For docker it is located in `/etc/docker/daemon.json` and content is::
 
-        {"insecure-registries": ["pulp_host:8080"]}
+        {"insecure-registries": ["pulp_host:24816"]}
 
     For podman it is located in `/etc/containers/registries.conf` with::
 
         [registries.insecure]
-        registries = ['pulp_host:8080']
+        registries = ['pulp_host:24816']
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the target
         host.

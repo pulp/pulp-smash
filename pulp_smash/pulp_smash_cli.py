@@ -151,7 +151,7 @@ def _get_v3_host_properties(pulp_version):
     }
 
     if not click.confirm(
-        "Will the content be served on same API server and port?", True
+        "Will the content be served on same API server and port?", False
     ):
         properties["roles"]["content"] = _get_content_role()
 
@@ -195,14 +195,22 @@ def _get_api_role(pulp_version):
         api_role["verify"] = False
 
     # Get "port"
-    click.echo(
-        "By default, Pulp Smash will communicate with Pulp's API on the port "
-        "number implied by the scheme. For example, if Pulp's API is "
-        "available over HTTPS, then Pulp Smash will communicate on port 443. "
-        "If Pulp's API is available on a non-standard port, like 8000, then "
-        "Pulp Smash needs to know about that."
+
+    if pulp_version < Version("3"):
+        default_port = 0
+        click.echo(
+            "By default, Pulp Smash will communicate with Pulp 2's API on the "
+            "port number implied by the scheme. For example, if Pulp 2's API "
+            "is available over HTTPS, then Pulp Smash will communicate on "
+            "port 443."
+            "If Pulp 2's API is available on a non-standard port, like 8000, "
+            "then Pulp Smash needs to know about that."
+        )
+    else:
+        default_port = 24817
+    port = click.prompt(
+        "Pulp API port number", default=default_port, type=click.INT
     )
-    port = click.prompt("Pulp API port number", default=0, type=click.INT)
     if port:
         api_role["port"] = port
 
@@ -239,7 +247,7 @@ def _get_content_role():
         content_role["verify"] = False
 
     port = click.prompt(
-        "Content Host port number", default=8080, type=click.INT
+        "Content Host port number", default=24816, type=click.INT
     )
     if port:
         content_role["port"] = port
