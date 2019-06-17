@@ -188,7 +188,9 @@ class Client:  # pylint:disable=too-few-public-methods
     .. _Plumbum: http://plumbum.readthedocs.io/en/latest/index.html
     """
 
-    def __init__(self, cfg, response_handler=None, pulp_host=None):
+    def __init__(
+        self, cfg, response_handler=None, pulp_host=None, local=False
+    ):
         """Initialize this object with needed instance attributes."""
         # How do we make requests?
         if not pulp_host:
@@ -196,6 +198,11 @@ class Client:  # pylint:disable=too-few-public-methods
                 pulp_host = cfg.get_hosts("pulp cli")[0]
             else:
                 pulp_host = cfg.get_hosts("shell")[0]
+
+        if local:
+            pulp_host = collections.namedtuple("Host", "hostname roles")
+            pulp_host.hostname = "localhost"
+            pulp_host.roles = {"shell": {"transport": "local"}}
 
         self.pulp_host = pulp_host
         self.response_handler = response_handler or code_handler
