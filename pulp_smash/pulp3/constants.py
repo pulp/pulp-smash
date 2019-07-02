@@ -24,13 +24,9 @@ BASE_PUBLICATION_PATH = urljoin(BASE_PATH, "publications/")
 
 CONTENT_PATH = urljoin(BASE_PATH, "content/")
 
-DOWNLOAD_POLICIES = ("immediate", "on_demand", "streamed")
+IMMEDIATE_DOWNLOAD_POLICIES = ("immediate",)
 
-JWT_PATH = urljoin(BASE_PATH, "jwt/")
-
-LAZY_DOWNLOAD_POLICIES = tuple(
-    [item for item in DOWNLOAD_POLICIES if item != "immediate"]
-)
+ON_DEMAND_DOWNLOAD_POLICIES = ("on_demand", "streamed")
 
 MEDIA_PATH = "/var/lib/pulp"
 
