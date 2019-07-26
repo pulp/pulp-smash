@@ -29,7 +29,7 @@ def _get_pulp_2_api_role():
         "properties": {
             "port": {"type": "integer", "minimum": 0, "maximum": 65535},
             "scheme": {"enum": ["http", "https"], "type": "string"},
-            "service": {"enum": ["httpd", "nginx"], "type": "string"},
+            "service": {"type": "string"},
             "verify": {"type": ["boolean", "string"]},
         },
     }
