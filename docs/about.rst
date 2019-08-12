@@ -56,6 +56,18 @@ Contributing
 Contributions are encouraged. The easiest way to contribute is to submit a pull
 request on GitHub, but patches are welcome no matter how they arrive.
 
+In a Python 3 virtual environment, in the root of Pulp Smash dir run the
+following command:
+
+.. code-block:: shell   
+
+    make install-dev
+
+This command will install Pulp Smash in developer mode and it will install
+all the required dependencies.
+Also, it will create a `pre-commit hook` to run the code formatting, and
+linters - the command `git commit` will trigger the `pre-commit` to run.
+
 Learning Pulp Smash
 ~~~~~~~~~~~~~~~~~~~
 
