@@ -236,7 +236,7 @@ class Client:  # pylint:disable=too-few-public-methods
             elif transport == "kubectl":
                 self._machine = plumbum.machines.local
                 chain = (
-                    self._machine["kubectl"]["get", "pods"]
+                    self._machine["sudo"]["kubectl", "get", "pods"]
                     | self._machine["grep"][
                         "-E", "-o", r"pulp-api-(\w+)-(\w+)"
                     ]
@@ -287,7 +287,7 @@ class Client:  # pylint:disable=too-few-public-methods
         logger.debug("Running %s cmd (sudo:%s) - %s", args, sudo, kwargs)
 
         if self._podname:
-            args = ("kubectl", "exec", self._podname, "--") + tuple(args)
+            args = ("sudo", "kubectl", "exec", self._podname, "--") + tuple(args)
 
         if sudo and args[0] != "sudo" and not self.is_superuser:
             args = ("sudo",) + tuple(args)
