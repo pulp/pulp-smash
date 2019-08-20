@@ -236,10 +236,10 @@ class Client:  # pylint:disable=too-few-public-methods
             elif transport == "kubectl":
                 self._machine = plumbum.machines.local
                 chain = (
-                    self._machine["sudo"]["kubectl", "get", "pods"]
-                    | self._machine["grep"][
+                    self._machine["sudo"].run("kubectl", "get", "pods")
+                    | self._machine["grep"].run(
                         "-E", "-o", r"pulp-api-(\w+)-(\w+)"
-                    ]
+                    )
                 )
                 self._podname = chain()
             else:  # transport == 'ssh'
