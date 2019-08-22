@@ -236,12 +236,12 @@ class Client:  # pylint:disable=too-few-public-methods
             elif transport == "kubectl":
                 self._machine = plumbum.machines.local
                 chain = (
-                    self._machine["kubectl"]["get", "pods"]
+                    self._machine["sudo"]["kubectl", "get", "pods"]
                     | self._machine["grep"][
                         "-E", "-o", r"pulp-api-(\w+)-(\w+)"
                     ]
                 )
-                self._podname = chain()
+                self._podname = chain().replace("\n", "")
             else:  # transport == 'ssh'
                 # The SshMachine is a wrapper around the host's "ssh" binary.
                 # Thus, it uses ~/.ssh/config, ~/.ssh/known_hosts, etc.
@@ -261,6 +261,8 @@ class Client:  # pylint:disable=too-few-public-methods
         """
         if self._is_root_cache is None:
             self._is_root_cache = is_root(self.cfg, self.pulp_host)
+            if self._podname:
+                self._is_root_cache = True
         logger.debug("Is Superuser: %s", self._is_root_cache)
         return self._is_root_cache
 
@@ -286,8 +288,14 @@ class Client:  # pylint:disable=too-few-public-methods
         kwargs.setdefault("retcode")
         logger.debug("Running %s cmd (sudo:%s) - %s", args, sudo, kwargs)
 
+        # Some tests call run without instantiating the plumbum machine.
+        if not self._machine:
+            self.machine
+
         if self._podname:
-            args = ("kubectl", "exec", self._podname, "--") + tuple(args)
+            args = ("sudo", "kubectl", "exec", self._podname, "--") + tuple(
+                args
+            )
 
         if sudo and args[0] != "sudo" and not self.is_superuser:
             args = ("sudo",) + tuple(args)
