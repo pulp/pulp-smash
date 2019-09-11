@@ -282,10 +282,10 @@ def get_artifact_paths(repo, version_href=None):
     for typed_content in get_content(repo, version_href).values():
         for content in typed_content:
             # Plugins can support zero, one, or many artifacts per content unit
-            if content.get("_artifact"):
-                artifact_paths.add(content["_artifact"])
-            elif content.get("_artifacts"):
-                for artifact in content["_artifacts"]:
+            if content.get("artifact"):
+                artifact_paths.add(content["artifact"])
+            elif content.get("artifacts"):
+                for artifact in content["artifacts"]:
                     artifact_paths.add(artifact)
             else:
                 continue
