@@ -81,9 +81,9 @@ def sync(cfg, remote, repo, **kwargs):
         created sync.
     """
     client = api.Client(cfg)
-    data = {"repository": repo["_href"]}
+    data = {"repository": repo["pulp_href"]}
     data.update(kwargs)
-    return client.post(urljoin(remote["_href"], "sync/"), data)
+    return client.post(urljoin(remote["pulp_href"], "sync/"), data)
 
 
 def download_content_unit(cfg, distribution, unit_path, **kwargs):
@@ -127,11 +127,13 @@ def publish(cfg, publisher, repo, version_href=None):
         publication.
     """
     if version_href is None:
-        body = {"repository": repo["_href"]}
+        body = {"repository": repo["pulp_href"]}
     else:
         body = {"repository_version": version_href}
     client = api.Client(cfg, api.json_handler)
-    call_report = client.post(urljoin(publisher["_href"], "publish/"), body)
+    call_report = client.post(
+        urljoin(publisher["pulp_href"], "publish/"), body
+    )
     # As of this writing, Pulp 3 only returns one task. If Pulp 3 starts
     # returning multiple tasks, this may need to be re-written.
     tasks = tuple(api.poll_spawned_tasks(cfg, call_report))
@@ -265,7 +267,9 @@ def get_versions(repo, params=None):
     client = api.Client(config.get_config(), api.page_handler)
     versions = client.get(repo["_versions_href"], params=params)
     versions.sort(
-        key=lambda version: int(urlsplit(version["_href"]).path.split("/")[-2])
+        key=lambda version: int(
+            urlsplit(version["pulp_href"]).path.split("/")[-2]
+        )
     )
     return versions
 
