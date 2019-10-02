@@ -79,7 +79,7 @@ def _check_call_report(call_report):
         )
 
 
-def _check_tasks(tasks, task_errors):
+def _check_tasks(cfg, tasks, task_errors):
     """Inspect each task's ``error``, ``exception`` and ``traceback`` fields.
 
     If any of these fields is non-null for any tasks, raise a
@@ -88,8 +88,11 @@ def _check_tasks(tasks, task_errors):
     for task in tasks:
         for field in task_errors:
             if task[field] is not None:
+                key = (
+                    "_href" if cfg.pulp_version < Version("3") else "pulp_href"
+                )
                 msg = "Task report {} contains a {}: {}\nFull task report: {}"
-                msg = msg.format(task["_href"], field, task[field], task)
+                msg = msg.format(task[key], field, task[field], task)
                 raise exceptions.TaskReportError(msg, task)
 
 
@@ -102,9 +105,9 @@ def _handle_202(cfg, response, pulp_host):
         logger.debug("Task call report: %s", call_report)
         if cfg.pulp_version < Version("3"):
             _check_call_report(call_report)
-            _check_tasks(tasks, ("error", "exception", "traceback"))
+            _check_tasks(cfg, tasks, ("error", "exception", "traceback"))
         else:
-            _check_tasks(tasks, ("error",))
+            _check_tasks(cfg, tasks, ("error",))
 
 
 def _walk_pages(cfg, page, pulp_host):
@@ -708,8 +711,11 @@ def poll_task(cfg, href, pulp_host=None):
             # iterate through children and yield their final states.
             yield task
             for spawned_task in task["spawned_tasks"]:
+                key = (
+                    "_href" if cfg.pulp_version < Version("3") else "pulp_href"
+                )
                 for descendant_tsk in poll_task(
-                    cfg, spawned_task["_href"], pulp_host
+                    cfg, spawned_task[key], pulp_host
                 ):
                     yield descendant_tsk
             break

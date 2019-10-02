@@ -55,8 +55,8 @@ class GenTestCase(unittest.TestCase):
         remote_href = "/pulp/api/v3/remotes/file/9/"
         repo_href = "/pulp/api/v3/repositories/11/"
         with mock.patch.object(api, "Client") as client:
-            remote = {"_href": remote_href}
-            repo = {"_href": repo_href}
+            remote = {"pulp_href": remote_href}
+            repo = {"pulp_href": repo_href}
             sync(None, remote, repo, mirror=True)
         data = {"repository": repo_href, "mirror": True}
         client.return_value.post.assert_called_once_with(
