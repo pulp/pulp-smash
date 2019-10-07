@@ -165,7 +165,7 @@ def _build_content_fetcher(content_field):
         :returns: A list of information about the content units present in a
             given repository version.
         """
-        version_href = version_href or repo["_latest_version_href"]
+        version_href = version_href or repo["latest_version_href"]
 
         if version_href is None:
             # Repository has no latest version, and therefore no content.
@@ -213,7 +213,7 @@ def _build_summary_fetcher(summary_field):
             latest repository version.
         :returns: The "content_summary" of the repo version.
         """
-        version_href = version_href or repo["_latest_version_href"]
+        version_href = version_href or repo["latest_version_href"]
 
         if version_href is None:
             # Repository has no latest version, and therefore no content.
@@ -265,7 +265,7 @@ def get_versions(repo, params=None):
     :returns: A sorted list of dicts of information about repository versions.
     """
     client = api.Client(config.get_config(), api.page_handler)
-    versions = client.get(repo["_versions_href"], params=params)
+    versions = client.get(repo["versions_href"], params=params)
     versions.sort(
         key=lambda version: int(
             urlsplit(version["pulp_href"]).path.split("/")[-2]
@@ -304,7 +304,7 @@ def delete_version(repo, version_href=None):
         deleted.
     :returns: A tuple. The tasks spawned by Pulp.
     """
-    version_href = version_href or repo["_latest_version_href"]
+    version_href = version_href or repo["latest_version_href"]
 
     if version_href is None:
         # Repository has no latest version.
