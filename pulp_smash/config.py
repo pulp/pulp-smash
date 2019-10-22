@@ -66,7 +66,7 @@ P2_REQUIRED_ROLES = {
 }
 """The set of roles that must be present in a functional Pulp 2 application."""
 
-P2_OPTIONAL_ROLES = {"pulp cli", "squid"}
+P2_OPTIONAL_ROLES = {"pulp cli", "squid", "custom"}
 """Additional roles that can be present in a Pulp 2 application."""
 
 P2_ROLES = P2_REQUIRED_ROLES.union(P2_OPTIONAL_ROLES)
@@ -84,7 +84,7 @@ P3_REQUIRED_ROLES = {
 }
 """The set of roles that must be present in a functional Pulp 3 application."""
 
-P3_OPTIONAL_ROLES = {"content"}
+P3_OPTIONAL_ROLES = {"content", "custom"}
 """Additional roles that can be present in a Pulp 3 application."""
 
 P3_ROLES = P3_REQUIRED_ROLES.union(P3_OPTIONAL_ROLES)
@@ -105,6 +105,7 @@ JSON_CONFIG_SCHEMA = {
                 },
                 "pulp": {"$ref": "#/definitions/pulp"},
                 "general": {"$ref": "#/definitions/general"},
+                "custom": {"$ref": "#/definitions/custom"},
             },
         },
         {
@@ -119,6 +120,7 @@ JSON_CONFIG_SCHEMA = {
                 },
                 "pulp": {"$ref": "#/definitions/pulp"},
                 "general": {"$ref": "#/definitions/general"},
+                "custom": {"$ref": "#/definitions/custom"},
             },
         },
     ],
@@ -133,6 +135,7 @@ JSON_CONFIG_SCHEMA = {
                 "selinux enabled": {"type": "boolean"},
             },
         },
+        "custom": {"type": "object"},
         "general": {
             "additionalProperties": False,
             "required": ["timeout"],
@@ -385,7 +388,14 @@ class PulpSmashConfig:
     """
 
     def __init__(
-        self, pulp_auth, pulp_version, pulp_selinux_enabled, timeout, *, hosts
+        self,
+        pulp_auth,
+        pulp_version,
+        pulp_selinux_enabled,
+        timeout,
+        *,
+        hosts,
+        custom=None
     ):
         """Initialize this object with needed instance attributes."""
         self.pulp_auth = pulp_auth
@@ -393,6 +403,7 @@ class PulpSmashConfig:
         self.pulp_selinux_enabled = pulp_selinux_enabled
         self.timeout = timeout
         self.hosts = hosts
+        self.custom = custom
 
     def __repr__(self):
         """Create string representation of the object."""
@@ -561,9 +572,16 @@ class PulpSmashConfig:
 
         hosts = [PulpHost(**host) for host in loaded_config.get("hosts", [])]
 
+        custom = loaded_config.get("custom", {})
+
         # Make object.
         return PulpSmashConfig(
-            pulp_auth, pulp_version, pulp_selinux_enabled, timeout, hosts=hosts
+            pulp_auth,
+            pulp_version,
+            pulp_selinux_enabled,
+            timeout,
+            hosts=hosts,
+            custom=custom,
         )
 
     @classmethod

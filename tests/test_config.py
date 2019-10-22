@@ -18,6 +18,7 @@ PULP_SMASH_CONFIG = """
         "auth": ["username", "password"],
         "version": "2.12.1"
     },
+    "custom": {"foo": "bar"},
     "general": {"timeout": 1800},
     "hosts": [
         {
@@ -63,6 +64,7 @@ def _gen_attrs():
             str(random.randint(1, 150)) for _ in range(4)
         ),
         "timeout": random.randint(1, 1800),
+        "custom": {},
         "pulp_selinux_enabled": True,
         "hosts": [
             config.PulpHost(
