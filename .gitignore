@@ -11,7 +11,12 @@ __pycache__/
 /build/
 /dist/
 /pulp_smash.egg-info/
+pip-wheel-metadata/
 
 # Coverage information
 /.coverage
 /htmlcov/
+
+# Code editor cache/preference files
+.idea/
+
