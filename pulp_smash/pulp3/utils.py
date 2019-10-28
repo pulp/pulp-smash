@@ -81,9 +81,46 @@ def sync(cfg, remote, repo, **kwargs):
         created sync.
     """
     client = api.Client(cfg)
-    data = {"repository": repo["pulp_href"]}
+    data = {"remote": remote["pulp_href"]}
     data.update(kwargs)
-    return client.post(urljoin(remote["pulp_href"], "sync/"), data)
+    return client.post(urljoin(repo["pulp_href"], "sync/"), data)
+
+
+def modify_repo(
+    cfg, repo, base_version=None, add_units=None, remove_units=None
+):
+    """Modify a repository.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        host.
+    :param repo: A dict of information about the repository.
+    :param base_version: If provided, use a specific repository version
+        instead of the latest one.
+    :param add_units: A list of dicts of information about the content
+        units to add.
+    :param remove_units: A list of dicts of information about the content
+        units to remove.
+    :returns: The server's response. A dict of information about the just
+        created modification operation.
+    """
+    client = api.Client(cfg)
+
+    params = {}
+    if add_units:
+        params["add_content_units"] = [
+            content["pulp_href"] for content in add_units
+        ]
+    if remove_units:
+        if remove_units == ["*"]:
+            params["remove_content_units"] = remove_units
+        else:
+            params["remove_content_units"] = [
+                content["pulp_href"] for content in remove_units
+            ]
+    if base_version:
+        params["base_version"] = base_version
+
+    return client.post(urljoin(repo["pulp_href"], "modify/"), params)
 
 
 def download_content_unit(cfg, distribution, unit_path, **kwargs):

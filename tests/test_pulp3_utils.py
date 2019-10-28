@@ -58,7 +58,7 @@ class GenTestCase(unittest.TestCase):
             remote = {"pulp_href": remote_href}
             repo = {"pulp_href": repo_href}
             sync(None, remote, repo, mirror=True)
-        data = {"repository": repo_href, "mirror": True}
+        data = {"remote": remote_href, "mirror": True}
         client.return_value.post.assert_called_once_with(
-            remote_href + "sync/", data
+            repo_href + "sync/", data
         )
