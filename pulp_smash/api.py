@@ -207,7 +207,7 @@ def page_handler(client, response):
 
 
 def task_handler(client, response):
-    """Wait tasks to complete and collect resources.
+    """Wait for tasks to complete and then collect resources.
 
     Do the following:
 
@@ -257,15 +257,18 @@ def task_handler(client, response):
 
     if response.request.method == "POST":
         # Task might have created new resources
-        created = done_task["created_resources"]
-        logger.debug("Task created resources: %s", created)
-        if len(created) == 1:  # Single resource href
-            return client.using_handler(json_handler).get(created[0])
-        if len(created) > 1:  # Multiple resource hrefs
-            return [
-                client.using_handler(json_handler).get(resource_href)
-                for resource_href in created
-            ]
+        if "created_resources" in done_task:
+            created = done_task["created_resources"]
+            logger.debug("Task created resources: %s", created)
+            if len(created) == 1:  # Single resource href
+                return client.using_handler(json_handler).get(created[0])
+            if len(created) > 1:  # Multiple resource hrefs
+                return [
+                    client.using_handler(json_handler).get(resource_href)
+                    for resource_href in created
+                ]
+        else:
+            return []
 
     if response.request.method in ["PUT", "PATCH"]:
         # Task might have updated resource so re-read and return it back
@@ -710,14 +713,17 @@ def poll_task(cfg, href, pulp_host=None):
             # This task has completed. Yield its final state, then recursively
             # iterate through children and yield their final states.
             yield task
-            for spawned_task in task["spawned_tasks"]:
-                key = (
-                    "_href" if cfg.pulp_version < Version("3") else "pulp_href"
-                )
-                for descendant_tsk in poll_task(
-                    cfg, spawned_task[key], pulp_host
-                ):
-                    yield descendant_tsk
+            if "spawned_tasks" in task:
+                for spawned_task in task["spawned_tasks"]:
+                    key = (
+                        "_href"
+                        if cfg.pulp_version < Version("3")
+                        else "pulp_href"
+                    )
+                    for descendant_tsk in poll_task(
+                        cfg, spawned_task[key], pulp_host
+                    ):
+                        yield descendant_tsk
             break
         poll_counter += 1
         if poll_counter > poll_limit:
