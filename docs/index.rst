@@ -28,4 +28,5 @@ Documentation contents:
     configuration
     about
     api
+    release
     changelog
