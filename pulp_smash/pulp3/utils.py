@@ -96,22 +96,9 @@ def download_content_unit(cfg, distribution, unit_path, **kwargs):
     :param kwargs: Extra arguments passed to requests.get.
     """
     client = api.Client(cfg, api.safe_handler)
-    unit_url = urljoin(get_served_content_url(cfg, distribution), unit_path)
+    unit_url = urljoin(distribution["base_url"] + "/", unit_path)
     logger.debug("Downloading content %s", unit_url)
     return client.get(unit_url, **kwargs).content
-
-
-def get_served_content_url(cfg, distribution):
-    """Return the served content url given a distribution.
-
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
-        host.
-    :param distribution: A dict of information about the distribution.
-    :returns: A URL where the content will be served given a distribution.
-    """
-    return urljoin(
-        cfg.get_content_host_base_url(), "//" + distribution["base_url"] + "/"
-    )
 
 
 def publish(cfg, publisher, repo, version_href=None):
