@@ -19,6 +19,7 @@ from packaging.version import Version
 from xdg import BaseDirectory
 
 from pulp_smash import exceptions
+from pulp_smash.constants import PULP_FIXTURES_BASE_URL
 
 
 def _get_pulp_2_api_role():
@@ -488,6 +489,13 @@ class PulpSmashConfig:
         except KeyError:
             pass
         return urlunsplit((scheme, netloc, "", "", ""))
+
+    def get_fixtures_url(self):
+        """Return fixtures URL."""
+        fixtures_origin = self.custom.get(
+            "fixtures_origin", PULP_FIXTURES_BASE_URL
+        )
+        return fixtures_origin
 
     def get_content_host(self):
         """Return content host if defined else returns api host."""
