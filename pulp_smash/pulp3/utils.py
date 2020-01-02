@@ -123,7 +123,7 @@ def modify_repo(
     return client.post(urljoin(repo["pulp_href"], "modify/"), params)
 
 
-def download_content_unit(cfg, distribution, unit_path, **kwargs):
+def download_content_unit(_cfg, distribution, unit_path, **kwargs):
     """Download the content unit from distribution base url.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
@@ -132,10 +132,9 @@ def download_content_unit(cfg, distribution, unit_path, **kwargs):
     :param unit_path: A string path to the unit to be downloaded.
     :param kwargs: Extra arguments passed to requests.get.
     """
-    client = api.Client(cfg, api.safe_handler)
     unit_url = urljoin(distribution["base_url"] + "/", unit_path)
     logger.debug("Downloading content %s", unit_url)
-    return client.get(unit_url, **kwargs).content
+    return utils.http_get(unit_url, **kwargs)
 
 
 def publish(cfg, publisher, repo, version_href=None):
