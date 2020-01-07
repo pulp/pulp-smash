@@ -24,8 +24,8 @@ setup(
     description="A library for testing Pulp",
     long_description=LONG_DESCRIPTION,
     url="https://github.com/PulpQE/pulp-smash",
-    author="Jeremy Audet",
-    author_email="ichimonji10@gmail.com",
+    author="Pulp Developers",
+    author_email="pulp-list@redhat.com",
     license="GPLv3",
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
