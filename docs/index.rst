@@ -1,7 +1,7 @@
 Pulp Smash
 ==========
 
-Pulp Smash is a toolkit for writing functional and integration tests for `Pulp`.
+Pulp Smash is a toolkit for writing functional and integration tests for `Pulp`_.
 
 Pulp Smash has a presence on the following websites:
 
@@ -9,7 +9,7 @@ Pulp Smash has a presence on the following websites:
 * A `Python package`_ is available on PyPi.
 * `Source code`_ and the issue tracker are available on GitHub.
 
-To see a test suite which uses Pulp Smash, see `Pulp 2 Tests`_.`
+To see a test suite which uses Pulp Smash, see `Pulp 2 Tests`_.
 
 .. _Documentation: https://pulp-smash.readthedocs.io
 .. _Pulp 2 Tests: https://github.com/PulpQE/pulp-2-tests/
