@@ -124,7 +124,7 @@ def modify_repo(
 
 
 def download_content_unit(_cfg, distribution, unit_path, **kwargs):
-    """Download the content unit from distribution base url.
+    """Download the content unit distribution using pulp-smash config.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
         host.
@@ -132,7 +132,13 @@ def download_content_unit(_cfg, distribution, unit_path, **kwargs):
     :param unit_path: A string path to the unit to be downloaded.
     :param kwargs: Extra arguments passed to requests.get.
     """
-    unit_url = urljoin(distribution["base_url"] + "/", unit_path)
+    url_fragments = [
+        _cfg.get_content_host_base_url(),
+        "pulp/content",
+        distribution["base_path"],
+        unit_path,
+    ]
+    unit_url = "/".join(url_fragments)
     logger.debug("Downloading content %s", unit_url)
     return utils.http_get(unit_url, **kwargs)
 
