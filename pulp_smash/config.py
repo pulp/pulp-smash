@@ -18,6 +18,8 @@ import jsonschema
 from packaging.version import Version
 from xdg import BaseDirectory
 
+from pulpcore.client.pulpcore import Configuration
+
 from pulp_smash import exceptions
 from pulp_smash.constants import PULP_FIXTURES_BASE_URL
 
@@ -511,6 +513,16 @@ class PulpSmashConfig:
             pulp_host=pulp_host,
             role="content" in pulp_host.roles and "content" or "api",
         )
+
+    def get_bindings_config(self):
+        """Return bindings settings."""
+        configuration = Configuration(
+            host=self.get_base_url(),
+            username=self.pulp_auth[0],
+            password=self.pulp_auth[1],
+        )
+        configuration.safe_chars_for_path_param = "/"
+        return configuration
 
     def get_requests_kwargs(self, pulp_host=None):
         """Get kwargs for use by the Requests functions.

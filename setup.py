@@ -45,6 +45,7 @@ setup(
         "jsonschema",
         "packaging",
         "plumbum",
+        "pulpcore-client",
         "pyxdg",
         "requests",
     ],
