@@ -210,6 +210,7 @@ class Client:  # pylint:disable=too-few-public-methods
 
         self._is_root_cache = None
         self._machine = None
+        self._transport = None
         self._podname = None
         logger.debug("New %s", self)
 
@@ -223,17 +224,26 @@ class Client:  # pylint:disable=too-few-public-methods
         return "<cli.Client(%s)>" % client_spec
 
     @property
+    def transport(self):
+        """Derive the transport protocol lazily."""
+        if self._transport is None:
+            self._transport = self.pulp_host.roles.get("shell", {}).get(
+                "transport"
+            )
+            if self._transport is None:
+                hostname = self.pulp_host.hostname
+                self._transport = (
+                    "local" if hostname == socket.getfqdn() else "ssh"
+                )
+        return self._transport
+
+    @property
     def machine(self):
         """Initialize the plumbum machine lazily."""
         if self._machine is None:
-            hostname = self.pulp_host.hostname
-            transport = self.pulp_host.roles.get("shell", {}).get("transport")
-            if transport is None:
-                transport = "local" if hostname == socket.getfqdn() else "ssh"
-
-            if transport == "local":
+            if self.transport == "local":
                 self._machine = plumbum.machines.local
-            elif transport == "kubectl":
+            elif self.transport == "kubectl":
                 self._machine = plumbum.machines.local
                 chain = (
                     self._machine["sudo"]["kubectl", "get", "pods"]
@@ -242,10 +252,20 @@ class Client:  # pylint:disable=too-few-public-methods
                     ]
                 )
                 self._podname = chain().replace("\n", "")
-            else:  # transport == 'ssh'
+            elif self.transport == "podman":
+                self._machine = plumbum.machines.local
+                self._podname = self.pulp_host.roles.get("shell", {}).get(
+                    "container", "pulp"
+                )
+            elif self.transport == "ssh":
                 # The SshMachine is a wrapper around the host's "ssh" binary.
                 # Thus, it uses ~/.ssh/config, ~/.ssh/known_hosts, etc.
+                hostname = self.pulp_host.hostname
                 self._machine = plumbum.machines.SshMachine(hostname)
+            else:
+                raise NotImplementedError(
+                    "Transport ({}) is not implemented.".format(self.transport)
+                )
             logger.debug("Initialized plumbum machine %s", self._machine)
         return self._machine
 
@@ -292,10 +312,12 @@ class Client:  # pylint:disable=too-few-public-methods
         if not self._machine:
             self.machine
 
-        if self._podname:
+        if self.transport == "kubectl":
             args = ("sudo", "kubectl", "exec", self._podname, "--") + tuple(
                 args
             )
+        elif self.transport == "podman":
+            args = ("podman", "exec", "-it", self._podname) + tuple(args)
 
         if sudo and args[0] != "sudo" and not self.is_superuser:
             args = ("sudo",) + tuple(args)
