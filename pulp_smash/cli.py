@@ -252,7 +252,7 @@ class Client:  # pylint:disable=too-few-public-methods
                     ]
                 )
                 self._podname = chain().replace("\n", "")
-            elif self.transport == "podman":
+            elif self.transport in ["docker", "podman"]:
                 self._machine = plumbum.machines.local
                 self._podname = self.pulp_host.roles.get("shell", {}).get(
                     "container", "pulp"
@@ -316,6 +316,8 @@ class Client:  # pylint:disable=too-few-public-methods
             args = ("sudo", "kubectl", "exec", self._podname, "--") + tuple(
                 args
             )
+        elif self.transport == "docker":
+            args = ("docker", "exec", "-i", self._podname) + tuple(args)
         elif self.transport == "podman":
             args = ("podman", "exec", "-it", self._podname) + tuple(args)
 
