@@ -1047,6 +1047,8 @@ class RegistryClient:
 
     pull = partialmethod(_dispatch_command, "pull")
     """Pulls image from registry."""
+    push = partialmethod(_dispatch_command, "push")
+    """Pushes image to registry."""
     login = partialmethod(_dispatch_command, "login")
     """Authenticate to a registry."""
     logout = partialmethod(_dispatch_command, "logout")
@@ -1059,3 +1061,5 @@ class RegistryClient:
     """List all pulled images."""
     rmi = partialmethod(_dispatch_command, "rmi")
     """removes pulled image."""
+    tag = partialmethod(_dispatch_command, "tag")
+    """tags image."""
