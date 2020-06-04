@@ -1,7 +1,7 @@
 """Values usable by multiple test modules."""
 
 
-PULP_FIXTURES_BASE_URL = "https://repos.fedorapeople.org/pulp/pulp/fixtures/"
+PULP_FIXTURES_BASE_URL = "https://fixtures.pulpproject.org/"
 """A URL at which generated `pulp fixtures`_ are hosted.
 
 .. _pulp fixtures: https://github.com/PulpQE/pulp-fixtures/
