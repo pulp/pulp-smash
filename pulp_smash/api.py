@@ -675,6 +675,16 @@ def poll_spawned_tasks(cfg, call_report, pulp_host=None):
             yield final_task_state
 
 
+def _get_sleep_time(cfg):
+    """Returns the default waiting time for polling tasks.
+
+    :param cfg: A :class:`pulp_smash.config.PulpSmashConfig` object.
+    """
+    if cfg.pulp_version < Version("3"):
+        return 2
+    return 0.3
+
+
 def poll_task(cfg, href, pulp_host=None):
     """Wait for a task and its children to complete. Yield response bodies.
 
@@ -695,10 +705,7 @@ def poll_task(cfg, href, pulp_host=None):
     # An example: Assuming timeout = 1800s, and sleep_time = 0.3s
     # 1800s/0.3s = 6000
 
-    if cfg.pulp_version < Version("3"):
-        sleep_time = 2
-    else:
-        sleep_time = 0.3
+    sleep_time = _get_sleep_time(cfg)
     poll_limit = int(cfg.timeout / sleep_time)
     poll_counter = 0
     json_client = Client(cfg, json_handler, pulp_host=pulp_host)
