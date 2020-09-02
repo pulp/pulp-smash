@@ -5,10 +5,12 @@ import warnings
 from urllib.parse import urljoin, urlsplit
 
 from packaging.version import Version
+from pulpcore.client.pulpcore import ApiClient, OrphansApi
 
 from pulp_smash import api, config, utils
 from pulp_smash.log import logger
-from pulp_smash.pulp3.constants import ORPHANS_PATH, STATUS_PATH
+from pulp_smash.pulp3.bindings import monitor_task
+from pulp_smash.pulp3.constants import STATUS_PATH
 
 
 def require_pulp_3(exc):
@@ -282,7 +284,11 @@ def delete_orphans(cfg=None):
     """
     if cfg is None:
         cfg = config.get_config()
-    api.Client(cfg, api.task_handler).delete(ORPHANS_PATH)
+
+    configuration = cfg.get_bindings_config()
+    core_client = ApiClient(configuration)
+    response = OrphansApi(core_client).delete()
+    monitor_task(response.task)
 
 
 def get_versions(repo, params=None):
