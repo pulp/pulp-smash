@@ -258,7 +258,7 @@ class PackageManagerTestCase(unittest.TestCase):
             ]
         )
 
-    def test_raise_no_known_package_manager(self,):
+    def test_raise_no_known_package_manager(self):
         """Test if invalid package manager throws exception."""
         with mock.patch.object(cli, "Client") as client:
             client.return_value.run.return_value.returncode = 1
@@ -268,7 +268,7 @@ class PackageManagerTestCase(unittest.TestCase):
             with self.assertRaises(NoKnownPackageManagerError):
                 self.assertIn(pkr_mgr.name, ("yum", "dnf"))
 
-    def test_raise_if_unsupported(self,):
+    def test_raise_if_unsupported(self):
         """Test if proper exception raises on raise_if_unsupported."""
         with mock.patch.object(cli, "Client") as client:
             client.return_value.run.return_value.returncode = 1

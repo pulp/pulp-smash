@@ -32,8 +32,10 @@ class MissingSettingsFileMixin:
         """Ensure show outputs proper settings file."""
         with self.cli_runner.isolated_filesystem():
             with mock.patch.object(pulp_smash_cli, "PulpSmashConfig") as psc:
-                psc.get_load_path.side_effect = exceptions.ConfigFileNotFoundError(  # noqa: E501
-                    "No config file found."
+                psc.get_load_path.side_effect = (
+                    exceptions.ConfigFileNotFoundError(  # noqa: E501
+                        "No config file found."
+                    )
                 )
                 result = self.cli_runner.invoke(
                     pulp_smash_cli.settings, [self.settings_subcommand]
@@ -122,8 +124,10 @@ class SettingsCreateTestCase(BasePulpSmashCliTestCase):
         with self.cli_runner.isolated_filesystem():
             with mock.patch.object(pulp_smash_cli, "PulpSmashConfig") as psc:
                 if glp_return_value is None:
-                    psc.get_load_path.side_effect = exceptions.ConfigFileNotFoundError(  # noqa: E501
-                        "Config not found."
+                    psc.get_load_path.side_effect = (
+                        exceptions.ConfigFileNotFoundError(  # noqa: E501
+                            "Config not found."
+                        )
                     )
                 else:
                     psc.get_load_path.return_value = glp_return_value
