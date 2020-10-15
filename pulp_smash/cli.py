@@ -319,7 +319,7 @@ class Client:  # pylint:disable=too-few-public-methods
         elif self.transport == "docker":
             args = ("docker", "exec", "-i", self._podname) + tuple(args)
         elif self.transport == "podman":
-            args = ("podman", "exec", "-it", self._podname) + tuple(args)
+            args = ("podman", "exec", "-i", self._podname) + tuple(args)
 
         if sudo and args[0] != "sudo" and not self.is_superuser:
             args = ("sudo",) + tuple(args)
