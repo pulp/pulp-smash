@@ -149,3 +149,26 @@ def ensure_teardownclass(testcase):
         stack.callback(testcase.tearDownClass)
         yield stack
         stack.pop_all()
+
+
+def get_pulp_setting(cli_client, setting_name):
+    """Retrieves the value of a Pulp setting from system under test."""
+    if cli_client.transport in ["docker", "podman", "kubectl"]:
+        manager = "pulpcore-manager"
+    else:
+        ps_output = cli_client.run(("ps", "ax")).stdout.splitlines()
+        for line in ps_output:
+            if "pulpcore" in line:
+                if "bin/python" in line.split()[4]:
+                    bin_dir = line.split()[4].rsplit("/", maxsplit=1)[0]
+        manager = "{}/pulpcore-manager".format(bin_dir)
+    command = (
+        "from django.conf import settings; print(repr(getattr(settings,"
+        "'{}', None)))".format(setting_name)
+    )
+    value = (
+        cli_client.run((manager, "shell", "-c", command))
+        .stdout.rstrip("\n")
+        .replace("'", "")
+    )
+    return value
