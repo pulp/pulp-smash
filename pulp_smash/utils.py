@@ -6,6 +6,7 @@ but the reverse should not be done.
 """
 import contextlib
 import hashlib
+import json
 import uuid
 from urllib.parse import urlparse
 
@@ -163,12 +164,9 @@ def get_pulp_setting(cli_client, setting_name):
                     bin_dir = line.split()[4].rsplit("/", maxsplit=1)[0]
         manager = "{}/pulpcore-manager".format(bin_dir)
     command = (
-        "from django.conf import settings; print(repr(getattr(settings,"
-        "'{}', None)))".format(setting_name)
+        "import json; from django.conf import settings;"
+        "print(json.dumps(getattr(settings,'{}', None)))".format(setting_name)
     )
-    value = (
-        cli_client.run((manager, "shell", "-c", command))
-        .stdout.rstrip("\n")
-        .replace("'", "")
-    )
+    json_value = cli_client.run((manager, "shell", "-c", command)).stdout.rstrip("\n")
+    value = json.loads(json_value)
     return value
