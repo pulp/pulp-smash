@@ -45,6 +45,7 @@ setup(
         "pulpcore-client",
         "pyxdg",
         "requests",
+        "pulpcore-client",
     ],
     entry_points={"console_scripts": ["pulp-smash=pulp_smash.pulp_smash_cli:pulp_smash"]},
     test_suite="tests",

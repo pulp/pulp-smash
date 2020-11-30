@@ -17,11 +17,6 @@ jobs:
       - name: Install dev requirements
         run: pip install -r dev_requirements.txt
 
-      - name: Run tests
-        run: |
-          python setup.py test
-          git clean -dfx
-
       # Lint code
       - name: Run black
         run: |
@@ -32,8 +27,4 @@ jobs:
       - name: Check manifest
         run: check-manifest
 
-      - run: make all
-
       - run: pre-commit run -a -v
-
-      - run: coveralls
