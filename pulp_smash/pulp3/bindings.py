@@ -1,8 +1,7 @@
 from unittest import TestCase
 from time import sleep
 
-from pulpcore.client.pulpcore import ApiClient, TasksApi
-
+from pulpcore.client.pulpcore import ApiClient, OrphansApi, TaskGroupsApi, TasksApi, TaskGroupsApi
 from pulp_smash.api import _get_sleep_time
 from pulp_smash.config import get_config
 
@@ -12,6 +11,7 @@ SLEEP_TIME = _get_sleep_time(cfg)
 configuration = cfg.get_bindings_config()
 pulpcore_client = ApiClient(configuration)
 tasks = TasksApi(pulpcore_client)
+task_groups = TaskGroupsApi(pulpcore_client)
 
 
 class PulpTestCase(TestCase):
@@ -41,6 +41,15 @@ class PulpTaskError(Exception):
         self.task = task
 
 
+class PulpTaskGroupError(Exception):
+    """Exception to describe task group errors."""
+
+    def __init__(self, task_group):
+        """Provide task info to exception."""
+        super().__init__(self, f"Pulp task group failed ({task_group})")
+        self.task_group = task_group
+
+
 def monitor_task(task_href):
     """Polls the Task API until the task is in a completed state.
 
@@ -59,7 +68,34 @@ def monitor_task(task_href):
         sleep(SLEEP_TIME)
         task = tasks.read(task_href)
 
-    if task.state == "completed":
-        return task.created_resources
+    if task.state != "completed":
+        raise PulpTaskError(task=task)
 
-    raise PulpTaskError(task=task)
+    return task
+
+
+def monitor_task_group(tg_href):
+    """Polls the task group tasks until the tasks are in a completed state.
+
+    Args:
+        tg_href(str): the href of the task group to monitor
+
+    Returns:
+        pulpcore.client.pulpcore.TaskGroup: the bindings TaskGroup object
+    """
+    tg = task_groups.read(tg_href)
+
+    while not tg.all_tasks_dispatched or (tg.waiting + tg.running) > 0:
+        sleep(SLEEP_TIME)
+        tg = task_groups.read(tg_href)
+
+    if (tg.failed + tg.skipped + tg.canceled) > 0:
+        raise PulpTaskGroupError(task_group=tg)
+
+    return tg
+
+
+def delete_orphans():
+    """Delete orphans through bindings."""
+    response = OrphansApi(pulpcore_client).delete()
+    monitor_task(response.task)
