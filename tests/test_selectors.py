@@ -94,16 +94,12 @@ class BugIsFixedTestCase(unittest.TestCase):
         for bug_status in selectors._TESTABLE_BUGS:
             if bug_status != "CLOSED - WONTFIX":
                 bug = selectors._Bug(bug_status, ver)
-                with mock.patch.object(
-                    selectors, "_get_bug", return_value=bug
-                ):
+                with mock.patch.object(selectors, "_get_bug", return_value=bug):
                     with self.subTest(bug_status=bug_status):
                         self.assertTrue(selectors.bug_is_fixed(None, ver))
             else:
                 bug = selectors._Bug(bug_status, ver)
-                with mock.patch.object(
-                    selectors, "_get_bug", return_value=bug
-                ):
+                with mock.patch.object(selectors, "_get_bug", return_value=bug):
                     with self.subTest(bug_status=bug_status):
                         self.assertFalse(selectors.bug_is_fixed(None, ver))
 

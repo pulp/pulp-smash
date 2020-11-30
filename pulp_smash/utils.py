@@ -100,9 +100,7 @@ def fips_is_supported(cfg, pulp_host=None):
     :return: True of False
     """
     try:
-        cli.Client(cfg, pulp_host=pulp_host).run(
-            ("sysctl", "crypto.fips_enabled")
-        )
+        cli.Client(cfg, pulp_host=pulp_host).run(("sysctl", "crypto.fips_enabled"))
     except exceptions.CalledProcessError as e:
         logger.exception(e)
         return False

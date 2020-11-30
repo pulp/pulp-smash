@@ -46,11 +46,9 @@ class CalledProcessError(Exception):
 
     def __str__(self):
         """Provide a human-friendly string representation of this exception."""
-        return (
-            "Command {} returned non-zero exit status {}.\n\n"
-            "stdout: {}\n\n"
-            "stderr: {}"
-        ).format(self.args_, self.returncode, self.stdout, self.stderr)
+        return ("Command {} returned non-zero exit status {}.\n\nstdout: {}\n\nstderr: {}").format(
+            self.args_, self.returncode, self.stdout, self.stderr
+        )
 
 
 class ConfigFileNotFoundError(Exception):

@@ -36,9 +36,7 @@ def is_root(cfg, pulp_host=None):
         instead of the first host with the ``pulp cli`` role.
     :returns: Either ``True`` or ``False``.
     """
-    return (
-        Client(cfg, pulp_host=pulp_host).run(("id", "-u")).stdout.strip()
-    ) == "0"
+    return (Client(cfg, pulp_host=pulp_host).run(("id", "-u")).stdout.strip()) == "0"
 
 
 def echo_handler(completed_proc):
@@ -188,9 +186,7 @@ class Client:  # pylint:disable=too-few-public-methods
     .. _Plumbum: http://plumbum.readthedocs.io/en/latest/index.html
     """
 
-    def __init__(
-        self, cfg, response_handler=None, pulp_host=None, local=False
-    ):
+    def __init__(self, cfg, response_handler=None, pulp_host=None, local=False):
         """Initialize this object with needed instance attributes."""
         # How do we make requests?
         if not pulp_host:
@@ -227,14 +223,10 @@ class Client:  # pylint:disable=too-few-public-methods
     def transport(self):
         """Derive the transport protocol lazily."""
         if self._transport is None:
-            self._transport = self.pulp_host.roles.get("shell", {}).get(
-                "transport"
-            )
+            self._transport = self.pulp_host.roles.get("shell", {}).get("transport")
             if self._transport is None:
                 hostname = self.pulp_host.hostname
-                self._transport = (
-                    "local" if hostname == socket.getfqdn() else "ssh"
-                )
+                self._transport = "local" if hostname == socket.getfqdn() else "ssh"
         return self._transport
 
     @property
@@ -247,16 +239,12 @@ class Client:  # pylint:disable=too-few-public-methods
                 self._machine = plumbum.machines.local
                 chain = (
                     self._machine["sudo"]["kubectl", "get", "pods"]
-                    | self._machine["grep"][
-                        "-E", "-o", r"pulp-api-(\w+)-(\w+)"
-                    ]
+                    | self._machine["grep"]["-E", "-o", r"pulp-api-(\w+)-(\w+)"]
                 )
                 self._podname = chain().replace("\n", "")
             elif self.transport in ["docker", "podman"]:
                 self._machine = plumbum.machines.local
-                self._podname = self.pulp_host.roles.get("shell", {}).get(
-                    "container", "pulp"
-                )
+                self._podname = self.pulp_host.roles.get("shell", {}).get("container", "pulp")
             elif self.transport == "ssh":
                 # The SshMachine is a wrapper around the host's "ssh" binary.
                 # Thus, it uses ~/.ssh/config, ~/.ssh/known_hosts, etc.
@@ -313,9 +301,7 @@ class Client:  # pylint:disable=too-few-public-methods
             self.machine
 
         if self.transport == "kubectl":
-            args = ("sudo", "kubectl", "exec", self._podname, "--") + tuple(
-                args
-            )
+            args = ("sudo", "kubectl", "exec", self._podname, "--") + tuple(args)
         elif self.transport == "docker":
             args = ("docker", "exec", "-i", self._podname) + tuple(args)
         elif self.transport == "podman":
@@ -395,12 +381,7 @@ class BaseServiceManager(metaclass=ABCMeta):
 
     @staticmethod
     def _start_sysv(client, services):
-        return tuple(
-            (
-                client.run(("service", service, "start"), sudo=True)
-                for service in services
-            )
-        )
+        return tuple((client.run(("service", service, "start"), sudo=True) for service in services))
 
     @staticmethod
     def _start_systemd(client, services):
@@ -409,12 +390,7 @@ class BaseServiceManager(metaclass=ABCMeta):
 
     @staticmethod
     def _stop_sysv(client, services):
-        return tuple(
-            (
-                client.run(("service", service, "stop"), sudo=True)
-                for service in services
-            )
-        )
+        return tuple((client.run(("service", service, "stop"), sudo=True) for service in services))
 
     @staticmethod
     def _stop_systemd(client, services):
@@ -424,10 +400,7 @@ class BaseServiceManager(metaclass=ABCMeta):
     @staticmethod
     def _restart_sysv(client, services):
         return tuple(
-            (
-                client.run(("service", service, "restart"), sudo=True)
-                for service in services
-            )
+            (client.run(("service", service, "restart"), sudo=True) for service in services)
         )
 
     @staticmethod
@@ -439,10 +412,7 @@ class BaseServiceManager(metaclass=ABCMeta):
     def _is_active_sysv(client, services):
         with contextlib.suppress(exceptions.CalledProcessError):
             return tuple(
-                (
-                    client.run(("service", service, "status"), sudo=True)
-                    for service in services
-                )
+                (client.run(("service", service, "status"), sudo=True) for service in services)
             )
         return False
 
@@ -544,26 +514,18 @@ class GlobalServiceManager(BaseServiceManager):
         services = set(services)
         result = {}
         for host in self._cfg.hosts:
-            intersection = services.intersection(
-                self._cfg.get_services(host.roles)
-            )
+            intersection = services.intersection(self._cfg.get_services(host.roles))
             if intersection:
                 client = self.get_client(pulp_host=host)
                 svc_mgr = self._get_service_manager(self._cfg, host)
                 if svc_mgr == "sysv":
                     with self._disable_selinux(client):
-                        result[host.hostname] = self._start_sysv(
-                            client, services
-                        )
+                        result[host.hostname] = self._start_sysv(client, services)
                 elif svc_mgr == "systemd":
-                    result[host.hostname] = self._start_systemd(
-                        client, services
-                    )
+                    result[host.hostname] = self._start_systemd(client, services)
                 else:
                     raise NotImplementedError(
-                        'Service manager "{}" not supported on "{}"'.format(
-                            svc_mgr, host.hostname
-                        )
+                        'Service manager "{}" not supported on "{}"'.format(svc_mgr, host.hostname)
                     )
         return result
 
@@ -577,25 +539,17 @@ class GlobalServiceManager(BaseServiceManager):
         services = set(services)
         result = {}
         for host in self._cfg.hosts:
-            intersection = services.intersection(
-                self._cfg.get_services(host.roles)
-            )
+            intersection = services.intersection(self._cfg.get_services(host.roles))
             if intersection:
                 client = self.get_client(pulp_host=host)
                 svc_mgr = self._get_service_manager(self._cfg, host)
                 if svc_mgr == "sysv":
                     with self._disable_selinux(client):
-                        result[host.hostname] = self._stop_sysv(
-                            client, services
-                        )
+                        result[host.hostname] = self._stop_sysv(client, services)
                 elif svc_mgr == "systemd":
-                    result[host.hostname] = self._stop_systemd(
-                        client, services
-                    )
+                    result[host.hostname] = self._stop_systemd(client, services)
                 else:
-                    raise NotImplementedError(
-                        "Service manager not supported: {}".format(svc_mgr)
-                    )
+                    raise NotImplementedError("Service manager not supported: {}".format(svc_mgr))
         return result
 
     def restart(self, services):
@@ -608,25 +562,17 @@ class GlobalServiceManager(BaseServiceManager):
         services = set(services)
         result = {}
         for host in self._cfg.hosts:
-            intersection = services.intersection(
-                self._cfg.get_services(host.roles)
-            )
+            intersection = services.intersection(self._cfg.get_services(host.roles))
             if intersection:
                 client = self.get_client(pulp_host=host)
                 svc_mgr = self._get_service_manager(self._cfg, host)
                 if svc_mgr == "sysv":
                     with self._disable_selinux(client):
-                        result[host.hostname] = self._restart_sysv(
-                            client, services
-                        )
+                        result[host.hostname] = self._restart_sysv(client, services)
                 elif svc_mgr == "systemd":
-                    result[host.hostname] = self._restart_systemd(
-                        client, services
-                    )
+                    result[host.hostname] = self._restart_systemd(client, services)
                 else:
-                    raise NotImplementedError(
-                        "Service manager not supported: {}".format(svc_mgr)
-                    )
+                    raise NotImplementedError("Service manager not supported: {}".format(svc_mgr))
         return result
 
     def is_active(self, services):
@@ -638,25 +584,17 @@ class GlobalServiceManager(BaseServiceManager):
         services = set(services)
         result = {}
         for host in self._cfg.hosts:
-            intersection = services.intersection(
-                self._cfg.get_services(host.roles)
-            )
+            intersection = services.intersection(self._cfg.get_services(host.roles))
             if intersection:
                 client = self.get_client(pulp_host=host)
                 svc_mgr = self._get_service_manager(self._cfg, host)
                 if svc_mgr == "sysv":
                     with self._disable_selinux(client):
-                        result[host.hostname] = self._is_active_sysv(
-                            client, services
-                        )
+                        result[host.hostname] = self._is_active_sysv(client, services)
                 elif svc_mgr == "systemd":
-                    result[host.hostname] = self._is_active_systemd(
-                        client, services
-                    )
+                    result[host.hostname] = self._is_active_systemd(client, services)
                 else:
-                    raise NotImplementedError(
-                        "Service manager not supported: {}".format(svc_mgr)
-                    )
+                    raise NotImplementedError("Service manager not supported: {}".format(svc_mgr))
         return result
 
 
@@ -716,9 +654,7 @@ class ServiceManager(BaseServiceManager):
         elif self._svc_mgr == "systemd":
             return self._start_systemd(self._client, services)
         else:
-            raise NotImplementedError(
-                "Service manager not supported: {}".format(self._svc_mgr)
-            )
+            raise NotImplementedError("Service manager not supported: {}".format(self._svc_mgr))
 
     def stop(self, services):
         """Stop the given services.
@@ -733,9 +669,7 @@ class ServiceManager(BaseServiceManager):
         elif self._svc_mgr == "systemd":
             return self._stop_systemd(self._client, services)
         else:
-            raise NotImplementedError(
-                "Service manager not supported: {}".format(self._svc_mgr)
-            )
+            raise NotImplementedError("Service manager not supported: {}".format(self._svc_mgr))
 
     def restart(self, services):
         """Restart the given services.
@@ -750,9 +684,7 @@ class ServiceManager(BaseServiceManager):
         elif self._svc_mgr == "systemd":
             return self._restart_systemd(self._client, services)
         else:
-            raise NotImplementedError(
-                "Service manager not supported: {}".format(self._svc_mgr)
-            )
+            raise NotImplementedError("Service manager not supported: {}".format(self._svc_mgr))
 
     def is_active(self, services):
         """Check whether given services are active.
@@ -766,9 +698,7 @@ class ServiceManager(BaseServiceManager):
         elif self._svc_mgr == "systemd":
             return self._is_active_systemd(self._client, services)
         else:
-            raise NotImplementedError(
-                "Service manager not supported: {}".format(self._svc_mgr)
-            )
+            raise NotImplementedError("Service manager not supported: {}".format(self._svc_mgr))
 
 
 class PackageManager:
@@ -896,9 +826,7 @@ class PackageManager:
     def _dnf_apply_erratum(self, erratum):
         """Apply erratum using dnf."""
         lines = (
-            self._client.run(
-                ("dnf", "--quiet", "updateinfo", "list", erratum), sudo=True
-            )
+            self._client.run(("dnf", "--quiet", "updateinfo", "list", erratum), sudo=True)
             .stdout.strip()
             .splitlines()
         )
@@ -1032,9 +960,7 @@ class RegistryClient:
         # Scheme should not be part of image path, if so, remove it.
         if args and args[0].startswith(("http://", "https://")):
             args = list(args)
-            args[0] = urlunsplit(urlsplit(args[0])._replace(scheme="")).strip(
-                "//"
-            )
+            args[0] = urlunsplit(urlsplit(args[0])._replace(scheme="")).strip("//")
 
         cmd = (self.name, command) + tuple(args)
         result = self._client.run(cmd, sudo=True)

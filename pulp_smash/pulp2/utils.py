@@ -43,8 +43,7 @@ class BaseAPICrudTestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         """Raise a deprecation warning."""
         warnings.warn(
-            "Avoid using BaseAPICrudTestCase. It is coupled to the unittest "
-            "test runner.",
+            "Avoid using BaseAPICrudTestCase. It is coupled to the unittest test runner.",
             DeprecationWarning,
         )
         super().__init__(*args, **kwargs)
@@ -57,9 +56,7 @@ class BaseAPICrudTestCase(unittest.TestCase):
         client = api.Client(config.get_config())
         cls.bodies = {"create": cls.create_body(), "update": cls.update_body()}
         cls.responses = {}
-        cls.responses["create"] = client.post(
-            REPOSITORY_PATH, cls.bodies["create"]
-        )
+        cls.responses["create"] = client.post(REPOSITORY_PATH, cls.bodies["create"])
         repo_href = cls.responses["create"].json()["_href"]
         cls.responses["update"] = client.put(repo_href, cls.bodies["update"])
         cls.responses["read"] = client.get(repo_href, params={"details": True})
@@ -253,9 +250,7 @@ def get_broker(cfg):
             return executable
     raise exceptions.NoKnownBrokerError(
         "Unable to determine the AMQP broker used by {}. It does not appear "
-        "to be any of {}.".format(
-            urlparse(cfg.get_base_url()).hostname, executables
-        )
+        "to be any of {}.".format(urlparse(cfg.get_base_url()).hostname, executables)
     )
 
 
@@ -300,9 +295,7 @@ def publish_repo(cfg, repo, json=None):
                 "not have exactly one distributor. Repository: {}".format(repo)
             )
         json = {"id": repo["distributors"][0]["id"]}
-    return api.Client(cfg).post(
-        urljoin(repo["_href"], "actions/publish/"), json
-    )
+    return api.Client(cfg).post(urljoin(repo["_href"], "actions/publish/"), json)
 
 
 def pulp_admin_login(cfg):
@@ -352,11 +345,7 @@ def require_pulp_2(exc):
     """
     cfg = config.get_config()
     if cfg.pulp_version < Version("2") or cfg.pulp_version >= Version("3"):
-        raise exc(
-            "These tests are for Pulp 2, but Pulp {} is under test.".format(
-                cfg.pulp_version
-            )
-        )
+        raise exc("These tests are for Pulp 2, but Pulp {} is under test.".format(cfg.pulp_version))
 
 
 def require_unit_types(required_unit_types, exc):
@@ -399,9 +388,7 @@ def reset_pulp(cfg):
     for index, _ in enumerate(cfg.get_hosts("api")):
         if index == 0:
             client.run(
-                (
-                    "runuser --shell /bin/sh apache --command pulp-manage-db"
-                ).split(),
+                ("runuser --shell /bin/sh apache --command pulp-manage-db").split(),
                 sudo=True,
             )
         client.run(("rm -rf /var/lib/pulp/content").split(), sudo=True)
@@ -449,11 +436,7 @@ def _get_squid_version(cfg):
     # The first line of output is 'Squid Cache: Version ...' for at least Squid
     # 3 and 4, and at least Fedora 24, Fedora 25, RHEL 6.8 and RHEL 7.3.
     phrase = "squid cache: version "
-    return Version(
-        resp.stdout.splitlines()[0]
-        .lower()[len(phrase) :]  # noqa: E203
-        .strip()
-    )
+    return Version(resp.stdout.splitlines()[0].lower()[len(phrase) :].strip())  # noqa: E203
 
 
 def search_units(cfg, repo, criteria=None, response_handler=None):

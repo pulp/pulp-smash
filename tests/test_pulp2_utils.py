@@ -108,11 +108,7 @@ class PulpAdminLoginTestCase(unittest.TestCase):
                 pulp_version="1!0",
                 pulp_selinux_enabled=True,
                 timeout=1800,
-                hosts=[
-                    config.PulpHost(
-                        hostname="example.com", roles={"pulp cli": {}}
-                    )
-                ],
+                hosts=[config.PulpHost(hostname="example.com", roles={"pulp cli": {}})],
             )
             response = pulp_admin_login(cfg)
             self.assertIs(response, client.return_value.run.return_value)
@@ -126,9 +122,7 @@ class SearchUnitsTestCase(unittest.TestCase):
         with mock.patch.object(api, "Client") as client:
             search_units(mock.Mock(), {"_href": "foo/bar/"})
         self.assertEqual(client.call_args[0][1], api.json_handler)
-        self.assertEqual(
-            client.return_value.post.call_args[0][1], {"criteria": {}}
-        )
+        self.assertEqual(client.return_value.post.call_args[0][1], {"criteria": {}})
 
 
 class SyncRepoTestCase(unittest.TestCase):

@@ -11,9 +11,7 @@ from packaging.version import Version
 
 # Add the Pulp Smash root directory to the system path. This allows references
 # such as :mod:`pulp_smash.whatever` to be processed correctly.
-ROOT_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), os.path.pardir)
-)
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 sys.path.insert(0, ROOT_DIR)
 
 # We pass the raw version string to Version() to ensure it is compliant with
@@ -68,10 +66,7 @@ texinfo_documents = [
         project + " Documentation",
         author,
         "PulpSmash",
-        (
-            "Pulp Smash is a Python library that facilitates functional "
-            "testing of Pulp."
-        ),
+        "Pulp Smash is a Python library that facilitates functional testing of Pulp.",
         "Miscellaneous",
     )
 ]

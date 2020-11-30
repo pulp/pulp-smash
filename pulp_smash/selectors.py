@@ -69,9 +69,7 @@ def _get_tpr(bug_json):
             return custom_field["value"]
     raise exceptions.BugTPRMissingError(
         'Bug {} has no custom field with ID {} ("Target Platform Release"). '
-        "Custom fields: {}".format(
-            bug_json["issue"]["id"], custom_field_id, custom_fields
-        )
+        "Custom fields: {}".format(bug_json["issue"]["id"], custom_field_id, custom_fields)
     )
 
 
@@ -114,9 +112,7 @@ def _get_bug(bug_id):
     #
     if not isinstance(bug_id, int):
         raise TypeError(
-            "Bug IDs should be integers. The given ID, {} is a {}.".format(
-                bug_id, type(bug_id)
-            )
+            "Bug IDs should be integers. The given ID, {} is a {}.".format(bug_id, type(bug_id))
         )
 
     # Let's return the bug from the cache if possible. ¶ We shouldn't need to
@@ -129,9 +125,7 @@ def _get_bug(bug_id):
         pass
 
     # The bug is not cached. Let's fetch, cache and return it.
-    response = requests.get(
-        "https://pulp.plan.io/issues/{}.json".format(bug_id)
-    )
+    response = requests.get("https://pulp.plan.io/issues/{}.json".format(bug_id))
     response.raise_for_status()
     bug_json = response.json()
     _BUG_STATUS_CACHE[bug_id] = _Bug(
@@ -167,9 +161,7 @@ def bug_is_fixed(bug_id, pulp_version):
     if not isinstance(pulp_version, Version):
         raise TypeError(
             "Pulp version should be an instance of Version. The given"
-            " Pulp version, {} is a {}.".format(
-                pulp_version, type(pulp_version)
-            )
+            " Pulp version, {} is a {}.".format(pulp_version, type(pulp_version))
         )
 
     # bug.target_platform_release has already been verified by Version().
@@ -185,10 +177,7 @@ def bug_is_fixed(bug_id, pulp_version):
     if pulp_version >= Version("3.0"):
         # If the pulp version under test is newer than 3.0 then, function will
         # return True even when the status of the issue is "CLOSED - WONTFIX".
-        if (
-            bug.status in _TESTABLE_BUGS
-            and bug.target_platform_release <= pulp_version
-        ):
+        if bug.status in _TESTABLE_BUGS and bug.target_platform_release <= pulp_version:
             return True
         return False
 

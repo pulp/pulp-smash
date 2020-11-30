@@ -27,9 +27,7 @@ class PulpTestCase(TestCase):
         running_tasks = tasks.list(state="running", name__contains="delete")
         while running_tasks.count:
             sleep(SLEEP_TIME)
-            running_tasks = tasks.list(
-                state="running", name__contains="delete"
-            )
+            running_tasks = tasks.list(state="running", name__contains="delete")
         return output
 
 

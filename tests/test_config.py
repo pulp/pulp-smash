@@ -60,9 +60,7 @@ def _gen_attrs():
     """
     return {
         "pulp_auth": [utils.uuid4() for _ in range(2)],
-        "pulp_version": ".".join(
-            str(random.randint(1, 150)) for _ in range(4)
-        ),
+        "pulp_version": ".".join(str(random.randint(1, 150)) for _ in range(4)),
         "timeout": random.randint(1, 1800),
         "custom": {},
         "pulp_selinux_enabled": True,
@@ -112,9 +110,7 @@ class ValidateConfigTestCase(unittest.TestCase):
 
     def test_valid_config(self):
         """A valid config does not raise an exception."""
-        self.assertIsNone(
-            config.validate_config(json.loads(PULP_SMASH_CONFIG))
-        )
+        self.assertIsNone(config.validate_config(json.loads(PULP_SMASH_CONFIG)))
 
     def test_invalid_config(self):
         """An invalid config raises an exception."""
@@ -134,8 +130,7 @@ class ValidateConfigTestCase(unittest.TestCase):
             config.validate_config(config_dict)
         self.assertEqual(
             err.exception.message,
-            "The following roles are not fulfilled by any hosts: api, pulp "
-            "workers",
+            "The following roles are not fulfilled by any hosts: api, pulp workers",
         )
 
 
@@ -255,9 +250,7 @@ class HelperMethodsTestCase(unittest.TestCase):
 
         roles["amqp broker"] = {"service": "qpidd"}
         with self.subTest("qpidd amqp broker service"):
-            self.assertEqual(
-                self.cfg.get_services(roles), expected_roles.union({"qpidd"})
-            )
+            self.assertEqual(self.cfg.get_services(roles), expected_roles.union({"qpidd"}))
 
         roles["amqp broker"] = {"service": "rabbitmq"}
         with self.subTest("rabbitmq amqp broker service"):
@@ -312,9 +305,7 @@ class ReprTestCase(unittest.TestCase):
             ", ".join(key + "=" + repr(val) for key, val in two_tuples)
             for two_tuples in itertools.permutations(self.attrs.items())
         )
-        targets = tuple(
-            "PulpSmashConfig({})".format(arglist) for arglist in kwargs_iter
-        )
+        targets = tuple("PulpSmashConfig({})".format(arglist) for arglist in kwargs_iter)
         self.assertIn(self.result, targets)
 
     def test_can_eval(self):
@@ -356,11 +347,7 @@ class GetConfigFileLoadPathTestCase(unittest.TestCase):
 def _get_written_json(mock_obj):
     """Return the JSON that has been written to a mock `open` object."""
     # json.dump() calls write() for each individual JSON token.
-    return json.loads(
-        "".join(
-            tuple(call_obj)[1][0] for call_obj in mock_obj().write.mock_calls
-        )
-    )
+    return json.loads("".join(tuple(call_obj)[1][0] for call_obj in mock_obj().write.mock_calls))
 
 
 def pulp_smash_config_load(config_str):
@@ -370,8 +357,6 @@ def pulp_smash_config_load(config_str):
     :return: A :class:`pulp_smash.config.PulpSmashConfig` object, populated
         from the configuration file.
     """
-    with mock.patch.object(
-        builtins, "open", mock.mock_open(read_data=config_str)
-    ):
+    with mock.patch.object(builtins, "open", mock.mock_open(read_data=config_str)):
         with mock.patch.object(config.PulpSmashConfig, "get_load_path"):
             return config.PulpSmashConfig.load()
