@@ -41,12 +41,8 @@ class SmartHandlerTestCase(unittest.TestCase):
         response.status_code = 202
         response._content = b'{"task": "1234"}'
         response.headers["Content-Type"] = "application/json"
-        with mock.patch.object(
-            api, "task_handler", lambda *_: "task_handler_called"
-        ):
-            self.assertEqual(
-                api.smart_handler(self.client, response), "task_handler_called"
-            )
+        with mock.patch.object(api, "task_handler", lambda *_: "task_handler_called"):
+            self.assertEqual(api.smart_handler(self.client, response), "task_handler_called")
 
     def test_page_handler_is_called_for_json(self, *_):
         """Assert page handler is called when json without a task."""
@@ -54,12 +50,8 @@ class SmartHandlerTestCase(unittest.TestCase):
         response.status_code = 201
         response._content = b'{"foo": "1234"}'
         response.headers["Content-Type"] = "application/json"
-        with mock.patch.object(
-            api, "page_handler", lambda *_: "page_handler_called"
-        ):
-            self.assertEqual(
-                api.smart_handler(self.client, response), "page_handler_called"
-            )
+        with mock.patch.object(api, "page_handler", lambda *_: "page_handler_called"):
+            self.assertEqual(api.smart_handler(self.client, response), "page_handler_called")
 
 
 class EchoHandlerTestCase(unittest.TestCase):
@@ -165,18 +157,14 @@ class PageHandlerTestCase(unittest.TestCase):
     def test_pulp_2_error(self):
         """Assert this handler can't be used with Pulp 2."""
         kwargs = {key: mock.Mock() for key in _HANDLER_ARGS}
-        kwargs["client"]._cfg.pulp_version = Version(
-            "2"
-        )  # pylint:disable=protected-access
+        kwargs["client"]._cfg.pulp_version = Version("2")  # pylint:disable=protected-access
         with self.assertRaises(ValueError):
             api.page_handler(**kwargs)
 
     def test_204_check_run(self):
         """Assert HTTP 204 responses are immediately returned."""
         kwargs = {key: mock.Mock() for key in _HANDLER_ARGS}
-        kwargs["client"]._cfg.pulp_version = Version(
-            "3"
-        )  # pylint:disable=protected-access
+        kwargs["client"]._cfg.pulp_version = Version("3")  # pylint:disable=protected-access
         with mock.patch.object(api, "json_handler") as json_handler:
             json_handler.return_value = mock.Mock()
             return_value = api.page_handler(**kwargs)
@@ -185,9 +173,7 @@ class PageHandlerTestCase(unittest.TestCase):
     def test_not_a_page(self):
         """Assert non-paginated responses are immediately returned."""
         kwargs = {key: mock.Mock() for key in _HANDLER_ARGS}
-        kwargs["client"]._cfg.pulp_version = Version(
-            "3"
-        )  # pylint:disable=protected-access
+        kwargs["client"]._cfg.pulp_version = Version("3")  # pylint:disable=protected-access
         with mock.patch.object(api, "json_handler") as json_handler:
             json_handler.return_value = {}
             return_value = api.page_handler(**kwargs)
@@ -196,9 +182,7 @@ class PageHandlerTestCase(unittest.TestCase):
     def test_is_a_page(self):
         """Assert paginated responses are collected."""
         kwargs = {key: mock.Mock() for key in _HANDLER_ARGS}
-        kwargs["client"]._cfg.pulp_version = Version(
-            "3"
-        )  # pylint:disable=protected-access
+        kwargs["client"]._cfg.pulp_version = Version("3")  # pylint:disable=protected-access
         with mock.patch.object(api, "json_handler") as json_handler:
             json_handler.return_value = {"results": None}
             with mock.patch.object(api, "_walk_pages") as walk_pages:
@@ -260,9 +244,7 @@ class ClientTestCase2(unittest.TestCase):
             with self.subTest(method=method):
                 with mock.patch.object(client, "request") as request:
                     getattr(client, method)("some url", json)
-                self.assertEqual(
-                    request.call_args[0], (method.upper(), "some url")
-                )
+                self.assertEqual(request.call_args[0], (method.upper(), "some url"))
                 self.assertIs(request.call_args[1]["json"], json)
 
 
@@ -275,10 +257,6 @@ def _get_pulp_smash_config(**kwargs):
     kwargs.setdefault("pulp_version", "1!0")
     kwargs.setdefault("pulp_selinux_enabled", True)
     kwargs.setdefault("timeout", 1800)
-    hosts = [
-        config.PulpHost(
-            hostname="example.com", roles={"api": {"scheme": "http"}}
-        )
-    ]
+    hosts = [config.PulpHost(hostname="example.com", roles={"api": {"scheme": "http"}})]
     kwargs.setdefault("hosts", hosts)
     return config.PulpSmashConfig(**kwargs)

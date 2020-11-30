@@ -143,9 +143,7 @@ JSON_CONFIG_SCHEMA = {
             "additionalProperties": False,
             "required": ["timeout"],
             "type": "object",
-            "properties": {
-                "timeout": {"type": "number", "mininum": 1, "maximum": 1800}
-            },
+            "properties": {"timeout": {"type": "number", "mininum": 1, "maximum": 1800}},
         },
         "pulp 2 host": {
             "additionalProperties": False,
@@ -160,21 +158,15 @@ JSON_CONFIG_SCHEMA = {
                     "required": ["shell"],
                     "type": "object",
                     "properties": {
-                        "amqp broker": {
-                            "$ref": "#/definitions/amqp broker role"
-                        },
+                        "amqp broker": {"$ref": "#/definitions/amqp broker role"},
                         "api": {"$ref": "#/definitions/pulp 2 api role"},
                         "mongod": {"$ref": "#/definitions/mongod role"},
-                        "pulp celerybeat": {
-                            "$ref": "#/definitions/pulp celerybeat role"
-                        },
+                        "pulp celerybeat": {"$ref": "#/definitions/pulp celerybeat role"},
                         "pulp cli": {"$ref": "#/definitions/pulp cli role"},
                         "pulp resource manager": {
                             "$ref": "#/definitions/pulp resource manager role"
                         },
-                        "pulp workers": {
-                            "$ref": "#/definitions/pulp workers role"
-                        },
+                        "pulp workers": {"$ref": "#/definitions/pulp workers role"},
                         "shell": {"$ref": "#/definitions/shell role"},
                         "squid": {"$ref": "#/definitions/squid role"},
                     },
@@ -195,15 +187,11 @@ JSON_CONFIG_SCHEMA = {
                     "type": "object",
                     "properties": {
                         "api": {"$ref": "#/definitions/pulp 3 api role"},
-                        "content": {
-                            "$ref": "#/definitions/pulp 3 content role"
-                        },
+                        "content": {"$ref": "#/definitions/pulp 3 content role"},
                         "pulp resource manager": {
                             "$ref": "#/definitions/pulp resource manager role"
                         },
-                        "pulp workers": {
-                            "$ref": "#/definitions/pulp workers role"
-                        },
+                        "pulp workers": {"$ref": "#/definitions/pulp workers role"},
                         "redis": {"$ref": "#/definitions/redis role"},
                         "shell": {"$ref": "#/definitions/shell role"},
                     },
@@ -213,9 +201,7 @@ JSON_CONFIG_SCHEMA = {
         "amqp broker role": {
             "required": ["service"],
             "type": "object",
-            "properties": {
-                "service": {"enum": list(P2_AMQP_SERVICES), "type": "string"}
-            },
+            "properties": {"service": {"enum": list(P2_AMQP_SERVICES), "type": "string"}},
         },
         "pulp 2 api role": _get_pulp_2_api_role(),
         "pulp 3 api role": _get_pulp_3_api_role(),
@@ -228,9 +214,7 @@ JSON_CONFIG_SCHEMA = {
         "redis role": {"type": "object"},
         "shell role": {
             "type": "object",
-            "properties": {
-                "transport": {"enum": ["local", "ssh"], "type": "string"}
-            },
+            "properties": {"transport": {"enum": ["local", "ssh"], "type": "string"}},
         },
         "squid role": {"type": "object"},
     },
@@ -240,11 +224,7 @@ JSON_CONFIG_SCHEMA = {
 
 def _public_attrs(obj):
     """Return a copy of the public elements in ``vars(obj)``."""
-    return {
-        key: val
-        for key, val in vars(obj).copy().items()
-        if not key.startswith("_")
-    }
+    return {key: val for key, val in vars(obj).copy().items() if not key.startswith("_")}
 
 
 def get_config():
@@ -391,14 +371,7 @@ class PulpSmashConfig:
     """
 
     def __init__(
-        self,
-        pulp_auth,
-        pulp_version,
-        pulp_selinux_enabled,
-        timeout,
-        *,
-        hosts,
-        custom=None
+        self, pulp_auth, pulp_version, pulp_selinux_enabled, timeout, *, hosts, custom=None
     ):
         """Initialize this object with needed instance attributes."""
         self.pulp_auth = pulp_auth
@@ -412,9 +385,7 @@ class PulpSmashConfig:
         """Create string representation of the object."""
         attrs = _public_attrs(self)
         attrs["pulp_version"] = str(attrs["pulp_version"])
-        str_kwargs = ", ".join(
-            "{}={}".format(key, repr(value)) for key, value in attrs.items()
-        )
+        str_kwargs = ", ".join("{}={}".format(key, repr(value)) for key, value in attrs.items())
         return "{}({})".format(type(self).__name__, str_kwargs)
 
     def get_hosts(self, role):
@@ -494,9 +465,7 @@ class PulpSmashConfig:
 
     def get_fixtures_url(self):
         """Return fixtures URL."""
-        fixtures_origin = self.custom.get(
-            "fixtures_origin", PULP_FIXTURES_BASE_URL
-        )
+        fixtures_origin = self.custom.get("fixtures_origin", PULP_FIXTURES_BASE_URL)
         return fixtures_origin
 
     def get_content_host(self):

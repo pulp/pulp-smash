@@ -15,8 +15,7 @@ from pulp_smash.config import PulpSmashConfig
 def _raise_settings_not_found():
     """Raise `click.ClickException` for settings file not found."""
     result = click.ClickException(
-        "there is no settings file. Use `pulp-smash settings create` to "
-        "create one."
+        "there is no settings file. Use `pulp-smash settings create` to create one."
     )
     result.exit_code = -1
     raise result
@@ -59,9 +58,7 @@ def settings_create(ctx):
     # Get information about Pulp.
     pulp_config = {"pulp": _get_pulp_properties()}
     pulp_config["general"] = _get_task_timeout()
-    pulp_config["hosts"] = [
-        _get_host_properties(pulp_config["pulp"]["version"])
-    ]
+    pulp_config["hosts"] = [_get_host_properties(pulp_config["pulp"]["version"])]
     pulp_config["pulp"]["version"] = str(pulp_config["pulp"]["version"])
     try:
         config.validate_config(pulp_config)  # This should NEVER fail!
@@ -81,9 +78,7 @@ def settings_create(ctx):
 
 def _get_pulp_properties():
     """Get information about the Pulp application as a whole."""
-    version = click.prompt(
-        "Which version of Pulp is under test?", type=PulpVersionType()
-    )
+    version = click.prompt("Which version of Pulp is under test?", type=PulpVersionType())
     username = click.prompt(
         "What is the Pulp administrative user's username?",
         default="admin",
@@ -97,9 +92,7 @@ def _get_pulp_properties():
     # We could make this default to "false" if version >= 3, but it seems
     # better to assume that Pulp is secure by default, and to annoy everyone
     # about Pulp 3's lack of security.
-    selinux_enabled = click.confirm(
-        "Is SELinux supported on the Pulp hosts?", default=True
-    )
+    selinux_enabled = click.confirm("Is SELinux supported on the Pulp hosts?", default=True)
     return {
         "auth": [username, password],
         "selinux enabled": selinux_enabled,
@@ -150,9 +143,7 @@ def _get_v3_host_properties(pulp_version):
         },
     }
 
-    if not click.confirm(
-        "Will the content be served on same API server and port?", False
-    ):
+    if not click.confirm("Will the content be served on same API server and port?", False):
         properties["roles"]["content"] = _get_content_role()
 
     return properties
@@ -184,12 +175,8 @@ def _get_api_role(pulp_version):
     )
 
     # Get "verify"
-    if api_role["scheme"] == "https" and click.confirm(
-        "Verify HTTPS?", default=True
-    ):
-        certificate_path = click.prompt(
-            "SSL certificate path", default="", type=click.Path()
-        )
+    if api_role["scheme"] == "https" and click.confirm("Verify HTTPS?", default=True):
+        certificate_path = click.prompt("SSL certificate path", default="", type=click.Path())
         api_role["verify"] = certificate_path if certificate_path else True
     else:
         api_role["verify"] = False
@@ -208,9 +195,7 @@ def _get_api_role(pulp_version):
         )
     else:
         default_port = 24817
-    port = click.prompt(
-        "Pulp API port number", default=default_port, type=click.INT
-    )
+    port = click.prompt("Pulp API port number", default=default_port, type=click.INT)
     if port:
         api_role["port"] = port
 
@@ -236,19 +221,13 @@ def _get_content_role():
     )
 
     # Get "verify"
-    if content_role["scheme"] == "https" and click.confirm(
-        "Verify HTTPS?", default=True
-    ):
-        certificate_path = click.prompt(
-            "SSL certificate path", default="", type=click.Path()
-        )
+    if content_role["scheme"] == "https" and click.confirm("Verify HTTPS?", default=True):
+        certificate_path = click.prompt("SSL certificate path", default="", type=click.Path())
         content_role["verify"] = certificate_path if certificate_path else True
     else:
         content_role["verify"] = False
 
-    port = click.prompt(
-        "Content Host port number", default=24816, type=click.INT
-    )
+    port = click.prompt("Content Host port number", default=24816, type=click.INT)
     if port:
         content_role["port"] = port
 
@@ -393,9 +372,7 @@ def settings_validate(ctx):
     try:
         config.validate_config(config_dict)
     except exceptions.ConfigValidationError as err:
-        raise click.ClickException(
-            "{} is invalid: ".format(path) + err.message
-        ) from err
+        raise click.ClickException("{} is invalid: ".format(path) + err.message) from err
 
 
 @pulp_smash.command()

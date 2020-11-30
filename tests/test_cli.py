@@ -51,10 +51,7 @@ class CompletedProcessTestCase(unittest.TestCase):
 
     def setUp(self):
         """Generate kwargs that can be used to instantiate a completed proc."""
-        self.kwargs = {
-            key: utils.uuid4()
-            for key in {"args", "returncode", "stdout", "stderr"}
-        }
+        self.kwargs = {key: utils.uuid4() for key in {"args", "returncode", "stdout", "stderr"}}
 
     def test_init(self):
         """Assert all constructor arguments are saved as instance attrs."""
@@ -103,9 +100,7 @@ class ClientTestCase(unittest.TestCase):
     def test_implicit_local_transport(self):
         """Assert it is possible to implicitly ask for a "local" transport."""
         cfg = _get_pulp_smash_config(
-            hosts=[
-                config.PulpHost(hostname=socket.getfqdn(), roles={"shell": {}})
-            ]
+            hosts=[config.PulpHost(hostname=socket.getfqdn(), roles={"shell": {}})]
         )
         self.assertIsInstance(cli.Client(cfg).machine, LocalMachine)
 
@@ -146,38 +141,26 @@ class ClientTestCase(unittest.TestCase):
             machine = mock.Mock()
             plumbum.machines.SshMachine.return_value = machine
             self.assertEqual(cli.Client(cfg).machine, machine)
-            plumbum.machines.SshMachine.assert_called_once_with(
-                cfg.hosts[0].hostname
-            )
+            plumbum.machines.SshMachine.assert_called_once_with(cfg.hosts[0].hostname)
 
     def test_explicit_pulp_host(self):
         """Assert it is possible to explicitly target a pulp cli PulpHost."""
         cfg = _get_pulp_smash_config(
             hosts=[
-                config.PulpHost(
-                    hostname=utils.uuid4(), roles={"pulp cli": {}}
-                ),
-                config.PulpHost(
-                    hostname=utils.uuid4(), roles={"pulp cli": {}}
-                ),
+                config.PulpHost(hostname=utils.uuid4(), roles={"pulp cli": {}}),
+                config.PulpHost(hostname=utils.uuid4(), roles={"pulp cli": {}}),
             ]
         )
         with mock.patch("pulp_smash.cli.plumbum") as plumbum:
             machine = mock.Mock()
             plumbum.machines.SshMachine.return_value = machine
-            self.assertEqual(
-                cli.Client(cfg, pulp_host=cfg.hosts[1]).machine, machine
-            )
-            plumbum.machines.SshMachine.assert_called_once_with(
-                cfg.hosts[1].hostname
-            )
+            self.assertEqual(cli.Client(cfg, pulp_host=cfg.hosts[1]).machine, machine)
+            plumbum.machines.SshMachine.assert_called_once_with(cfg.hosts[1].hostname)
 
     def test_run(self):
         """Test run commands."""
         cfg = _get_pulp_smash_config(
-            hosts=[
-                config.PulpHost(hostname=socket.getfqdn(), roles={"shell": {}})
-            ]
+            hosts=[config.PulpHost(hostname=socket.getfqdn(), roles={"shell": {}})]
         )
         client = cli.Client(cfg)
         with mock.patch.object(client, "_machine") as machine:
@@ -200,9 +183,7 @@ class ClientTestCase(unittest.TestCase):
     def test_run_as_sudo(self):
         """Test run commands as sudo."""
         cfg = _get_pulp_smash_config(
-            hosts=[
-                config.PulpHost(hostname=socket.getfqdn(), roles={"shell": {}})
-            ]
+            hosts=[config.PulpHost(hostname=socket.getfqdn(), roles={"shell": {}})]
         )
         client = cli.Client(cfg)
         with mock.patch.object(client, "_machine") as machine:
@@ -292,9 +273,7 @@ class PackageManagerTestCase(unittest.TestCase):
         """Test the property `name` returns the proper Package Manager."""
         for name in ("yum", "dnf"):
             pkr_mgr = cli.PackageManager(self.cfg)
-            with mock.patch.object(
-                pkr_mgr, "_get_package_manager", lambda *_, **__: name
-            ):
+            with mock.patch.object(pkr_mgr, "_get_package_manager", lambda *_, **__: name):
                 with self.subTest(name=name):
                     # asserts .name property gets the proper value
                     self.assertEqual(pkr_mgr.name, name)
@@ -305,9 +284,7 @@ class PackageManagerTestCase(unittest.TestCase):
             client.return_value.run.return_value.returncode = 0
             client.return_value.run.return_value.stdout = "installed"
             pkr_mgr = cli.PackageManager(self.cfg)
-            with mock.patch.object(
-                pkr_mgr, "_get_package_manager", lambda *_, **__: "dnf"
-            ):
+            with mock.patch.object(pkr_mgr, "_get_package_manager", lambda *_, **__: "dnf"):
                 response = pkr_mgr.install("fake-package-42")
                 self.assertEqual(response.stdout, "installed")
                 pkr_mgr._client.run.assert_called_once_with(
@@ -320,9 +297,7 @@ class PackageManagerTestCase(unittest.TestCase):
             client.return_value.run.return_value.returncode = 0
             client.return_value.run.return_value.stdout = "uninstalled"
             pkr_mgr = cli.PackageManager(self.cfg)
-            with mock.patch.object(
-                pkr_mgr, "_get_package_manager", lambda *_, **__: "dnf"
-            ):
+            with mock.patch.object(pkr_mgr, "_get_package_manager", lambda *_, **__: "dnf"):
                 response = pkr_mgr.uninstall("fake-package-42")
                 self.assertEqual(response.stdout, "uninstalled")
                 pkr_mgr._client.run.assert_called_once_with(
@@ -335,9 +310,7 @@ class PackageManagerTestCase(unittest.TestCase):
             client.return_value.run.return_value.returncode = 0
             client.return_value.run.return_value.stdout = "updated"
             pkr_mgr = cli.PackageManager(self.cfg)
-            with mock.patch.object(
-                pkr_mgr, "_get_package_manager", lambda *_, **__: "dnf"
-            ):
+            with mock.patch.object(pkr_mgr, "_get_package_manager", lambda *_, **__: "dnf"):
                 response = pkr_mgr.upgrade("fake-package-42")
                 self.assertEqual(response.stdout, "updated")
                 pkr_mgr._client.run.assert_called_once_with(
@@ -358,9 +331,7 @@ class PackageManagerTestCase(unittest.TestCase):
                     pkr_mgr, "_yum_apply_erratum"
                 ):
                     pkr_mgr.apply_erratum("1234:4567")
-                    method = getattr(
-                        pkr_mgr, "_{0}_apply_erratum".format(pkr_mgr.name)
-                    )
+                    method = getattr(pkr_mgr, "_{0}_apply_erratum".format(pkr_mgr.name))
                     method.assert_called_once_with("1234:4567")
 
 

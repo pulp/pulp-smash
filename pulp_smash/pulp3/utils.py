@@ -25,11 +25,7 @@ def require_pulp_3(exc):
     """
     cfg = config.get_config()
     if not Version("3") <= cfg.pulp_version < Version("4"):
-        raise exc(
-            "These tests are for Pulp 3, but Pulp {} is under test.".format(
-                cfg.pulp_version
-            )
-        )
+        raise exc("These tests are for Pulp 3, but Pulp {} is under test.".format(cfg.pulp_version))
 
 
 def require_pulp_plugins(required_plugins, exc):
@@ -48,9 +44,7 @@ def require_pulp_plugins(required_plugins, exc):
     missing_plugins = required_plugins - get_plugins()
     if missing_plugins:
         raise exc(
-            "The following plugins are required but not installed: {}".format(
-                missing_plugins
-            )
+            "The following plugins are required but not installed: {}".format(missing_plugins)
         )
 
 
@@ -86,9 +80,7 @@ def sync(cfg, remote, repo, **kwargs):
     return client.post(urljoin(repo["pulp_href"], "sync/"), data)
 
 
-def modify_repo(
-    cfg, repo, base_version=None, add_units=None, remove_units=None
-):
+def modify_repo(cfg, repo, base_version=None, add_units=None, remove_units=None):
     """Modify a repository.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
@@ -107,16 +99,12 @@ def modify_repo(
 
     params = {}
     if add_units:
-        params["add_content_units"] = [
-            content["pulp_href"] for content in add_units
-        ]
+        params["add_content_units"] = [content["pulp_href"] for content in add_units]
     if remove_units:
         if remove_units == ["*"]:
             params["remove_content_units"] = remove_units
         else:
-            params["remove_content_units"] = [
-                content["pulp_href"] for content in remove_units
-            ]
+            params["remove_content_units"] = [content["pulp_href"] for content in remove_units]
     if base_version:
         params["base_version"] = base_version
 
@@ -160,9 +148,7 @@ def publish(cfg, publisher, repo, version_href=None):
     else:
         body = {"repository_version": version_href}
     client = api.Client(cfg, api.json_handler)
-    call_report = client.post(
-        urljoin(publisher["pulp_href"], "publish/"), body
-    )
+    call_report = client.post(urljoin(publisher["pulp_href"], "publish/"), body)
     # As of this writing, Pulp 3 only returns one task. If Pulp 3 starts
     # returning multiple tasks, this may need to be re-written.
     tasks = tuple(api.poll_spawned_tasks(cfg, call_report))
@@ -204,9 +190,7 @@ def _build_content_fetcher(content_field):
         repo_version = client.get(version_href)
 
         content = defaultdict(list)
-        for content_type, content_dict in repo_version["content_summary"][
-            content_field
-        ].items():
+        for content_type, content_dict in repo_version["content_summary"][content_field].items():
             typed_content = client.get(content_dict["href"])
             content[content_type] = typed_content
         return content
@@ -215,12 +199,8 @@ def _build_content_fetcher(content_field):
 
 
 get_content = _build_content_fetcher("present")  # pylint:disable=invalid-name
-get_added_content = _build_content_fetcher(
-    "added"
-)  # pylint:disable=invalid-name
-get_removed_content = _build_content_fetcher(
-    "removed"
-)  # pylint:disable=invalid-name
+get_added_content = _build_content_fetcher("added")  # pylint:disable=invalid-name
+get_removed_content = _build_content_fetcher("removed")  # pylint:disable=invalid-name
 
 
 def _build_summary_fetcher(summary_field):
@@ -259,15 +239,9 @@ def _build_summary_fetcher(summary_field):
     return inner
 
 
-get_content_summary = _build_summary_fetcher(
-    "present"
-)  # pylint:disable=invalid-name
-get_added_content_summary = _build_summary_fetcher(
-    "added"
-)  # pylint:disable=invalid-name
-get_removed_content_summary = _build_summary_fetcher(
-    "removed"
-)  # pylint:disable=invalid-name
+get_content_summary = _build_summary_fetcher("present")  # pylint:disable=invalid-name
+get_added_content_summary = _build_summary_fetcher("added")  # pylint:disable=invalid-name
+get_removed_content_summary = _build_summary_fetcher("removed")  # pylint:disable=invalid-name
 
 
 def delete_orphans(cfg=None):
@@ -295,11 +269,7 @@ def get_versions(repo, params=None):
     """
     client = api.Client(config.get_config(), api.page_handler)
     versions = client.get(repo["versions_href"], params=params)
-    versions.sort(
-        key=lambda version: int(
-            urlsplit(version["pulp_href"]).path.split("/")[-2]
-        )
-    )
+    versions.sort(key=lambda version: int(urlsplit(version["pulp_href"]).path.split("/")[-2]))
     return versions
 
 

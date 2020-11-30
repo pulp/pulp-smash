@@ -26,9 +26,7 @@ CONSUMERS_ACTIONS_CONTENT_REGENERATE_APPLICABILITY_PATH = urljoin(
     http://docs.pulpproject.org/dev-guide/integration/rest-api/consumer/applicability.html
 """
 
-CONSUMERS_CONTENT_APPLICABILITY_PATH = urljoin(
-    CONSUMERS_PATH, "content/applicability/"
-)
+CONSUMERS_CONTENT_APPLICABILITY_PATH = urljoin(CONSUMERS_PATH, "content/applicability/")
 """See: `Content Applicability`_.
 
 .. _Content Applicability:

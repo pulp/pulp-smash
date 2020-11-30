@@ -25,23 +25,17 @@ _P3_TASK_END_STATES = ("canceled", "completed", "failed", "skipped")
 
 def check_pulp3_restriction(client):
     """Check if running system is running on Pulp3 otherwise raise error."""
-    if client._cfg.pulp_version < Version(
-        "3"
-    ) or client._cfg.pulp_version >= Version("4"):
+    if client._cfg.pulp_version < Version("3") or client._cfg.pulp_version >= Version("4"):
         raise ValueError(
             "This method is designed to handle responses returned by Pulp 3. "
             "However, the targeted Pulp application is declared as being "
-            "version {}. Please use a different response handler.".format(
-                client._cfg.pulp_version
-            )
+            "version {}. Please use a different response handler.".format(client._cfg.pulp_version)
         )
 
 
 def _check_http_202_content_type(response):
     """Issue a warning if the content-type is not application/json."""
-    if not (
-        response.headers.get("Content-Type", "").startswith("application/json")
-    ):
+    if not (response.headers.get("Content-Type", "").startswith("application/json")):
         _warn_http_202_content_type(response)
 
 
@@ -73,9 +67,7 @@ def _check_call_report(call_report):
     """
     if call_report["error"] is not None:
         raise exceptions.CallReportError(
-            "A call report contains an error. Full call report: {}".format(
-                call_report
-            )
+            "A call report contains an error. Full call report: {}".format(call_report)
         )
 
 
@@ -88,9 +80,7 @@ def _check_tasks(cfg, tasks, task_errors):
     for task in tasks:
         for field in task_errors:
             if task[field] is not None:
-                key = (
-                    "_href" if cfg.pulp_version < Version("3") else "pulp_href"
-                )
+                key = "_href" if cfg.pulp_version < Version("3") else "pulp_href"
                 msg = "Task report {} contains a {}: {}\nFull task report: {}"
                 msg = msg.format(task[key], field, task[field], task)
                 raise exceptions.TaskReportError(msg, task)
@@ -247,9 +237,7 @@ def task_handler(client, response):
     response_dict = json_handler(client, response)
     if "task" not in response_dict:
         raise exceptions.CallReportError(
-            "Response does not contains a task call_report: {}".format(
-                response_dict
-            )
+            "Response does not contains a task call_report: {}".format(response_dict)
         )
 
     # Get the final state of the done task
@@ -521,9 +509,7 @@ class Client:
     http://docs.python-requests.org/en/master/api/#requests.post
     """
 
-    def __init__(
-        self, cfg, response_handler=None, request_kwargs=None, pulp_host=None
-    ):
+    def __init__(self, cfg, response_handler=None, request_kwargs=None, pulp_host=None):
         """Initialize this object with needed instance attributes."""
         self._cfg = cfg
         self.response_handler = response_handler or smart_handler
@@ -565,9 +551,7 @@ class Client:
                 client.using_handler(other_handler).get(url)
 
         """
-        logger.debug(
-            "Switching %s to %s", self.response_handler, response_handler
-        )
+        logger.debug("Switching %s to %s", self.response_handler, response_handler)
         try:
             existing_client = self._using_handler_cache[response_handler]
             logger.debug("Reusing Existing Client: %s", existing_client)
@@ -642,9 +626,7 @@ class Client:
                 RuntimeWarning,
             )
         logger.debug("Making a %s request with %s", method, request_kwargs)
-        response = self.response_handler(
-            self, requests.request(method, **request_kwargs)
-        )
+        response = self.response_handler(self, requests.request(method, **request_kwargs))
         logger.debug("Finished %s request with response: %s", method, response)
         return response
 
@@ -722,14 +704,8 @@ def poll_task(cfg, href, pulp_host=None):
             yield task
             if "spawned_tasks" in task:
                 for spawned_task in task["spawned_tasks"]:
-                    key = (
-                        "_href"
-                        if cfg.pulp_version < Version("3")
-                        else "pulp_href"
-                    )
-                    for descendant_tsk in poll_task(
-                        cfg, spawned_task[key], pulp_host
-                    ):
+                    key = "_href" if cfg.pulp_version < Version("3") else "pulp_href"
+                    for descendant_tsk in poll_task(cfg, spawned_task[key], pulp_host):
                         yield descendant_tsk
             break
         poll_counter += 1
@@ -737,7 +713,5 @@ def poll_task(cfg, href, pulp_host=None):
             raise exceptions.TaskTimedOutError(
                 "Task {} is ongoing after {} polls.".format(href, poll_limit)
             )
-        logger.debug(
-            "Polling %s progress %s/%s", href, poll_counter, poll_limit
-        )
+        logger.debug("Polling %s progress %s/%s", href, poll_counter, poll_limit)
         sleep(sleep_time)
