@@ -49,20 +49,6 @@ setup(
         "pyxdg",
         "requests",
     ],
-    extras_require={
-        "dev": [
-            # For `make test-coverage`
-            "coveralls",
-            # For `make auto-format-code`
-            "pre-commit",
-            # For `make docs-html` and `make docs-clean`
-            "sphinx",
-            # For `make package`
-            "wheel",
-            # For `make publish`
-            "twine",
-        ]
-    },
     entry_points={
         "console_scripts": ["pulp-smash=pulp_smash.pulp_smash_cli:pulp_smash"]
     },

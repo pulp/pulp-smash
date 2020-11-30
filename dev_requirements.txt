@@ -1,0 +1,6 @@
+coveralls   # For `make test-coverage`
+pre-commit  # For `make auto-format-code`
+sphinx      # For `make docs-html` and `make docs-clean`
+wheel       # For `make package`
+twine       # For `make publish`
+black       # For pre-commit hooks
