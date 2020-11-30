@@ -7,3 +7,16 @@ build-backend = 'setuptools.build_meta'
 
 [tool.black]
 line-length = 100
+
+[tool.check-manifest]
+ignore = [
+    "CONTRIBUTING.rst",
+    "HISTORY.rst",
+    "dev_requirements.txt",
+    "Makefile",
+    ".pre-commit-config.yaml",
+    ".github/**",
+    "docs/**",
+    "scripts/**",
+    "tests/**",
+]
