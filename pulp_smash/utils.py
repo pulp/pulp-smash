@@ -163,7 +163,9 @@ def get_pulp_setting(cli_client, setting_name):
         manager = "{}/pulpcore-manager".format(bin_dir)
     command = (
         "import json; from django.conf import settings;"
-        "print(json.dumps(getattr(settings,'{}', None)))".format(setting_name)
+        "cfg_value = getattr(settings,'{}', None);"
+        "value = cfg_value if not isinstance(cfg_value, set) else list(cfg_value);"
+        "print(json.dumps(value))".format(setting_name)
     )
     json_value = cli_client.run((manager, "shell", "-c", command)).stdout.rstrip("\n")
     value = json.loads(json_value)
