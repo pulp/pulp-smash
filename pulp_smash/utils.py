@@ -75,7 +75,7 @@ def get_sha256_checksum(url):
     return _CHECKSUM_CACHE[url]
 
 
-def http_get(url, **kwargs):
+def http_get(url, verify=False, **kwargs):
     """Issue a HTTP request to the ``url`` and return the response content.
 
     This is useful for downloading file contents over HTTP[S].
@@ -84,7 +84,7 @@ def http_get(url, **kwargs):
     :param kwargs: additional kwargs to be passed to ``requests.get``.
     :returns: the response content of a GET request to ``url``.
     """
-    response = requests.get(url, **kwargs)
+    response = requests.get(url, verify=verify, **kwargs)
     response.raise_for_status()
     logger.debug("GET Request to %s finished with %s", url, response)
     return response.content
