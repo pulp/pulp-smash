@@ -300,6 +300,10 @@ class Client:  # pylint:disable=too-few-public-methods
         if not self._machine:
             self.machine
 
+        # sudo is not needed inside a container. It might not even be available.
+        if self.transport in ["kubectl", "docker", "podman"] and args[0] == "sudo":
+            args = args[1:]
+
         if self.transport == "kubectl":
             args = ("sudo", "kubectl", "exec", self._podname, "--") + tuple(args)
         elif self.transport == "docker":
