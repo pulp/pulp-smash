@@ -38,7 +38,7 @@ setup(
     ],
     packages=find_packages(include=["pulp_smash", "pulp_smash.*"]),
     install_requires=[
-        "click",
+        "click<8.0.0",
         "jsonschema",
         "packaging",
         "plumbum",
