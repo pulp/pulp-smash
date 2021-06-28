@@ -2,6 +2,12 @@ from unittest import TestCase
 from time import sleep
 
 from pulpcore.client.pulpcore import ApiClient, OrphansApi, TaskGroupsApi, TasksApi, TaskGroupsApi
+
+try:
+    from pulpcore.client.pulpcore import OrphansCleanupApi
+except ImportError:  # This is only available in pulpcore 3.14+
+    OrphansCleanupApi = None
+
 from pulp_smash.api import _get_sleep_time
 from pulp_smash.config import get_config
 
@@ -97,5 +103,8 @@ def monitor_task_group(tg_href):
 
 def delete_orphans():
     """Delete orphans through bindings."""
-    response = OrphansApi(pulpcore_client).delete()
+    if OrphansCleanupApi:
+        response = OrphansCleanupApi(pulpcore_client).cleanup({})
+    else:
+        response = OrphansApi(pulpcore_client).delete()
     monitor_task(response.task)
