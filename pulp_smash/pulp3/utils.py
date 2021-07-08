@@ -4,6 +4,8 @@ from collections import defaultdict
 import warnings
 from urllib.parse import urljoin, urlsplit
 
+import requests
+
 from packaging.version import Version
 
 from pulp_smash import api, config, utils
@@ -111,6 +113,23 @@ def modify_repo(cfg, repo, base_version=None, add_units=None, remove_units=None)
     return client.post(urljoin(repo["pulp_href"], "modify/"), params)
 
 
+def build_unit_url(_cfg, distribution, unit_path):
+    """Build a unit url that can be used to fetch content via a distribution.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        host.
+    :param distribution: A dict of information about the distribution.
+    :param unit_path: A string path to the unit to be downloaded.
+    """
+    url_fragments = [
+        _cfg.get_content_host_base_url(),
+        "pulp/content",
+        distribution["base_path"],
+        unit_path,
+    ]
+    return "/".join(url_fragments)
+
+
 def download_content_unit(_cfg, distribution, unit_path, **kwargs):
     """Download the content unit distribution using pulp-smash config.
 
@@ -120,15 +139,30 @@ def download_content_unit(_cfg, distribution, unit_path, **kwargs):
     :param unit_path: A string path to the unit to be downloaded.
     :param kwargs: Extra arguments passed to requests.get.
     """
-    url_fragments = [
-        _cfg.get_content_host_base_url(),
-        "pulp/content",
-        distribution["base_path"],
-        unit_path,
-    ]
-    unit_url = "/".join(url_fragments)
+    unit_url = build_unit_url(_cfg, distribution, unit_path)
     logger.debug("Downloading content %s", unit_url)
     return utils.http_get(unit_url, **kwargs)
+
+
+def download_content_unit_return_requests_response(_cfg, distribution, unit_path, **kwargs):
+    """Download the content unit distribution using pulp-smash config, returning the raw response.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        host.
+    :param distribution: A dict of information about the distribution.
+    :param unit_path: A string path to the unit to be downloaded.
+    :param kwargs: Extra arguments passed to requests.get.
+    """
+    unit_url = build_unit_url(_cfg, distribution, unit_path)
+    logger.debug("Downloading content %s", unit_url)
+
+    if "verify" not in kwargs:
+        kwargs["verify"] = False
+
+    response = requests.get(unit_url, **kwargs)
+    response.raise_for_status()
+    logger.debug("GET Request to %s finished with %s", unit_url, response)
+    return response
 
 
 def publish(cfg, publisher, repo, version_href=None):
