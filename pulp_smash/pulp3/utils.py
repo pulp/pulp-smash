@@ -1,14 +1,16 @@
 # coding=utf-8
 """Utility functions for Pulp 3 tests."""
 from collections import defaultdict
+import unittest
 import warnings
 from urllib.parse import urljoin, urlsplit
 
 import requests
 
+
 from packaging.version import Version
 
-from pulp_smash import api, config, utils
+from pulp_smash import api, cli, config, utils
 from pulp_smash.log import logger
 from pulp_smash.pulp3.constants import ORPHANS_PATH, STATUS_PATH
 
@@ -67,8 +69,7 @@ def get_plugins(cfg=None):
 def sync(cfg, remote, repo, **kwargs):
     """Sync a repository.
 
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
-        host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp host.
     :param remote: A dict of information about the remote of the repository
         to be synced.
     :param repo: A dict of information about the repository.
@@ -85,8 +86,7 @@ def sync(cfg, remote, repo, **kwargs):
 def modify_repo(cfg, repo, base_version=None, add_units=None, remove_units=None):
     """Modify a repository.
 
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
-        host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp host.
     :param repo: A dict of information about the repository.
     :param base_version: If provided, use a specific repository version
         instead of the latest one.
@@ -116,8 +116,7 @@ def modify_repo(cfg, repo, base_version=None, add_units=None, remove_units=None)
 def build_unit_url(_cfg, distribution, unit_path):
     """Build a unit url that can be used to fetch content via a distribution.
 
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
-        host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp host.
     :param distribution: A dict of information about the distribution.
     :param unit_path: A string path to the unit to be downloaded.
     """
@@ -133,8 +132,7 @@ def build_unit_url(_cfg, distribution, unit_path):
 def download_content_unit(_cfg, distribution, unit_path, **kwargs):
     """Download the content unit distribution using pulp-smash config.
 
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
-        host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp host.
     :param distribution: A dict of information about the distribution.
     :param unit_path: A string path to the unit to be downloaded.
     :param kwargs: Extra arguments passed to requests.get.
@@ -144,11 +142,38 @@ def download_content_unit(_cfg, distribution, unit_path, **kwargs):
     return utils.http_get(unit_url, **kwargs)
 
 
+def wget_download_on_host(url, destination, cfg=None):
+    """Use wget to recursively download a file or directory to the host running Pulp.
+
+    :param url: The path the recursively download using wget.
+    :param destination: Where wget should put the downloaded directory.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp host.
+    """
+    if not cfg:
+        cfg = config.get_config()
+
+    if cli.Client(cfg).run(("which", "wget")).returncode:
+        raise unittest.SkipTest(
+            "Cannot perform a download without 'wget' available on the system running Pulp."
+        )
+
+    cli.Client(cfg).run(
+        (
+            "wget",
+            "--recursive",
+            "--no-parent",
+            "--no-host-directories",
+            "--directory-prefix",
+            destination,
+            url,
+        )
+    )
+
+
 def download_content_unit_return_requests_response(_cfg, distribution, unit_path, **kwargs):
     """Download the content unit distribution using pulp-smash config, returning the raw response.
 
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
-        host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp host.
     :param distribution: A dict of information about the distribution.
     :param unit_path: A string path to the unit to be downloaded.
     :param kwargs: Extra arguments passed to requests.get.
@@ -168,8 +193,7 @@ def download_content_unit_return_requests_response(_cfg, distribution, unit_path
 def publish(cfg, publisher, repo, version_href=None):
     """Publish a repository.
 
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
-        host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp host.
     :param publisher: A dict of information about the publisher of the
         repository to be published.
     :param repo: A dict of information about the repository.
@@ -285,8 +309,7 @@ def delete_orphans(cfg=None):
     An orphaned content unit is a content unit that is not in any repository
     version.
 
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
-     host.
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp host.
     """
     if cfg is None:
         cfg = config.get_config()
@@ -333,8 +356,7 @@ def delete_version(repo, version_href=None):
     """Delete a given repository version.
 
     :param repo: A dict of information about the repository.
-    :param version_href: The repository version that should be
-        deleted.
+    :param version_href: The repository version that should be deleted.
     :returns: A tuple. The tasks spawned by Pulp.
     """
     version_href = version_href or repo["latest_version_href"]
