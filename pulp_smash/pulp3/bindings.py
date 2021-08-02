@@ -101,10 +101,12 @@ def monitor_task_group(tg_href):
     return tg
 
 
-def delete_orphans():
+def delete_orphans(orphan_protection_time=0):
     """Delete orphans through bindings."""
     if OrphansCleanupApi:
-        response = OrphansCleanupApi(pulpcore_client).cleanup({})
+        response = OrphansCleanupApi(pulpcore_client).cleanup(
+            {"orphan_protection_time": orphan_protection_time}
+        )
     else:
         response = OrphansApi(pulpcore_client).delete()
     monitor_task(response.task)
