@@ -356,6 +356,8 @@ class BaseServiceManager(metaclass=ABCMeta):
 
         client = Client(cfg, echo_handler, pulp_host=pulp_host)
         commands_managers = (
+            ("which s6-svc", "s6"),
+            ("test -x /bin/s6-svc", "s6"),
             ("which systemctl", "systemd"),
             ("which service", "sysv"),
             ("test -x /sbin/service", "sysv"),
@@ -393,6 +395,15 @@ class BaseServiceManager(metaclass=ABCMeta):
         return (client.run(cmd, sudo=True),)
 
     @staticmethod
+    def _start_s6(client, services):
+        return tuple(
+            (
+                client.run(("s6-svc", "-u", "/var/run/s6/services/{}".format(service)))
+                for service in services
+            )
+        )
+
+    @staticmethod
     def _stop_sysv(client, services):
         return tuple((client.run(("service", service, "stop"), sudo=True) for service in services))
 
@@ -400,6 +411,15 @@ class BaseServiceManager(metaclass=ABCMeta):
     def _stop_systemd(client, services):
         cmd = ("systemctl", "stop") + tuple(services)
         return (client.run(cmd, sudo=True),)
+
+    @staticmethod
+    def _stop_s6(client, services):
+        return tuple(
+            (
+                client.run(("s6-svc", "-d", "/var/run/s6/services/{}".format(service)))
+                for service in services
+            )
+        )
 
     @staticmethod
     def _restart_sysv(client, services):
@@ -411,6 +431,15 @@ class BaseServiceManager(metaclass=ABCMeta):
     def _restart_systemd(client, services):
         cmd = ("systemctl", "restart") + tuple(services)
         return (client.run(cmd, sudo=True),)
+
+    @staticmethod
+    def _restart_s6(client, services):
+        return tuple(
+            (
+                client.run(("s6-svc", "-k", "/var/run/s6/services/{}".format(service)))
+                for service in services
+            )
+        )
 
     @staticmethod
     def _is_active_sysv(client, services):
@@ -425,6 +454,19 @@ class BaseServiceManager(metaclass=ABCMeta):
         with contextlib.suppress(exceptions.CalledProcessError):
             cmd = ("systemctl", "is-active") + tuple(services)
             return (client.run(cmd, sudo=True),)
+        return False
+
+    def _is_active_s6(self, client, services):
+        def process_ps_output(command_output, service):
+            if command_output.stdout.find(service) > -1:
+                return True
+            else:
+                return False
+
+        with contextlib.suppress(exceptions.CalledProcessError):
+            return tuple(
+                (process_ps_output(client.run(("ps", "x")), service) for service in services)
+            )
         return False
 
     @abstractmethod
@@ -527,6 +569,8 @@ class GlobalServiceManager(BaseServiceManager):
                         result[host.hostname] = self._start_sysv(client, services)
                 elif svc_mgr == "systemd":
                     result[host.hostname] = self._start_systemd(client, services)
+                elif svc_mgr == "s6":
+                    result[host.hostname] = self._start_s6(client, services)
                 else:
                     raise NotImplementedError(
                         'Service manager "{}" not supported on "{}"'.format(svc_mgr, host.hostname)
@@ -552,6 +596,8 @@ class GlobalServiceManager(BaseServiceManager):
                         result[host.hostname] = self._stop_sysv(client, services)
                 elif svc_mgr == "systemd":
                     result[host.hostname] = self._stop_systemd(client, services)
+                elif svc_mgr == "s6":
+                    result[host.hostname] = self._stop_s6(client, services)
                 else:
                     raise NotImplementedError("Service manager not supported: {}".format(svc_mgr))
         return result
@@ -575,6 +621,8 @@ class GlobalServiceManager(BaseServiceManager):
                         result[host.hostname] = self._restart_sysv(client, services)
                 elif svc_mgr == "systemd":
                     result[host.hostname] = self._restart_systemd(client, services)
+                elif svc_mgr == "s6":
+                    result[host.hostname] = self._restart_s6(client, services)
                 else:
                     raise NotImplementedError("Service manager not supported: {}".format(svc_mgr))
         return result
@@ -597,6 +645,8 @@ class GlobalServiceManager(BaseServiceManager):
                         result[host.hostname] = self._is_active_sysv(client, services)
                 elif svc_mgr == "systemd":
                     result[host.hostname] = self._is_active_systemd(client, services)
+                elif svc_mgr == "s6":
+                    result[host.hostname] = self._is_active_s6(client, services)
                 else:
                     raise NotImplementedError("Service manager not supported: {}".format(svc_mgr))
         return result
@@ -657,6 +707,8 @@ class ServiceManager(BaseServiceManager):
                 return self._start_sysv(self._client, services)
         elif self._svc_mgr == "systemd":
             return self._start_systemd(self._client, services)
+        elif self._svc_mgr == "s6":
+            return self._start_s6(self._client, services)
         else:
             raise NotImplementedError("Service manager not supported: {}".format(self._svc_mgr))
 
@@ -672,6 +724,8 @@ class ServiceManager(BaseServiceManager):
                 return self._stop_sysv(self._client, services)
         elif self._svc_mgr == "systemd":
             return self._stop_systemd(self._client, services)
+        elif self._svc_mgr == "s6":
+            return self._stop_s6(self._client, services)
         else:
             raise NotImplementedError("Service manager not supported: {}".format(self._svc_mgr))
 
@@ -687,6 +741,8 @@ class ServiceManager(BaseServiceManager):
                 return self._restart_sysv(self._client, services)
         elif self._svc_mgr == "systemd":
             return self._restart_systemd(self._client, services)
+        elif self._svc_mgr == "s6":
+            return self._restart_s6(self._client, services)
         else:
             raise NotImplementedError("Service manager not supported: {}".format(self._svc_mgr))
 
@@ -701,6 +757,8 @@ class ServiceManager(BaseServiceManager):
                 return self._is_active_sysv(self._client, services)
         elif self._svc_mgr == "systemd":
             return self._is_active_systemd(self._client, services)
+        elif self._svc_mgr == "s6":
+            return self._is_active_s6(self._client, services)
         else:
             raise NotImplementedError("Service manager not supported: {}".format(self._svc_mgr))
 
