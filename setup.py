@@ -35,6 +35,7 @@ setup(
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Framework :: Pytest",
     ],
     packages=find_packages(include=["pulp_smash", "pulp_smash.*"]),
     install_requires=[
@@ -46,7 +47,11 @@ setup(
         "pyxdg",
         "requests",
         "pulpcore-client",
+        "trustme",
     ],
-    entry_points={"console_scripts": ["pulp-smash=pulp_smash.pulp_smash_cli:pulp_smash"]},
+    entry_points={
+        "console_scripts": ["pulp-smash=pulp_smash.pulp_smash_cli:pulp_smash"],
+        "pytest11": ["pulp_smash = pulp_smash.pulp3.pytest_plugin"],
+    },
     test_suite="tests",
 )

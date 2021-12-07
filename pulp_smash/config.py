@@ -295,6 +295,7 @@ class PulpSmashConfig:
     ...     pulp_auth=('username', 'password'),
     ...     pulp_version='2.12.2',
     ...     pulp_selinux_enabled=True,
+    ...     aiohttp_fixtures_origin="127.0.0.1",
     ...     hosts=[
     ...         PulpHost(
     ...             hostname='pulp1.example.com',
@@ -324,6 +325,7 @@ class PulpSmashConfig:
     ...     pulp_auth=('username', 'password'),
     ...     pulp_version='2.12.2',
     ...     pulp_selinux_enabled=True,
+    ...     aiohttp_fixtures_origin="127.0.0.1",
     ...     hosts=[
     ...         PulpHost(
     ...             hostname='pulp.example.com',
@@ -361,6 +363,8 @@ class PulpSmashConfig:
         ``packaging.version.Version`` class.
     :param pulp_selinux_enabled: A boolean. Determines whether selinux tests
         are enabled.
+    :param aiohttp_fixtures_origin: A string. Determines the origin where
+        aiohttp fixtures can be found.
     :param hosts: A list of the hosts comprising a Pulp application. Each
         element of the list should be a :class:`pulp_smash.config.PulpHost`
         object.
@@ -371,13 +375,22 @@ class PulpSmashConfig:
     """
 
     def __init__(
-        self, pulp_auth, pulp_version, pulp_selinux_enabled, timeout, *, hosts, custom=None
+        self,
+        pulp_auth,
+        pulp_version,
+        pulp_selinux_enabled,
+        timeout,
+        aiohttp_fixtures_origin,
+        *,
+        hosts,
+        custom=None
     ):
         """Initialize this object with needed instance attributes."""
         self.pulp_auth = pulp_auth
         self.pulp_version = Version(pulp_version)
         self.pulp_selinux_enabled = pulp_selinux_enabled
         self.timeout = timeout
+        self.aiohttp_fixtures_origin = aiohttp_fixtures_origin
         self.hosts = hosts
         self.custom = custom
 
@@ -546,6 +559,7 @@ class PulpSmashConfig:
         pulp_auth = pulp.get("auth", ["admin", "admin"])
         pulp_version = pulp.get("version", "1!0")
         pulp_selinux_enabled = pulp.get("selinux enabled", True)
+        aiohttp_fixtures_origin = pulp.get("aiohttp_fixtures_origin", "127.0.0.1")
         if "systems" in loaded_config:
             warnings.warn(
                 (
@@ -569,6 +583,7 @@ class PulpSmashConfig:
             pulp_version,
             pulp_selinux_enabled,
             timeout,
+            aiohttp_fixtures_origin,
             hosts=hosts,
             custom=custom,
         )
