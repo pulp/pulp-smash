@@ -1,0 +1,19 @@
+from aiohttp import web
+
+
+def add_file_system_route(app, fixtures_root):
+    new_routes = [web.static("/", fixtures_root.absolute(), show_index=True)]
+    app.add_routes(new_routes)
+
+
+def add_recording_route(app, fixtures_root):
+    requests = []
+
+    async def all_requests_handler(request):
+        requests.append(request)
+        path = fixtures_root / request.raw_path[1:]  # Strip off leading '/'
+        return web.FileResponse(path)
+
+    app.add_routes([web.get("/{tail:.*}", all_requests_handler)])
+
+    return requests
