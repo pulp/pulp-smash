@@ -39,6 +39,7 @@ setup(
     ],
     packages=find_packages(include=["pulp_smash", "pulp_smash.*"]),
     install_requires=[
+        "aiohttp",
         "click~=8.0.1",
         "jsonschema",
         "packaging",
