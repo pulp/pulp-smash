@@ -3,7 +3,6 @@ import threading
 import socket
 import ssl
 
-from dataclasses import dataclass
 from typing import Any
 
 from aiohttp import web
@@ -45,14 +44,22 @@ class ThreadedAiohttpServer(threading.Thread):
                 break
 
 
-@dataclass
 class ThreadedAiohttpServerData:
-    host: str
-    port: int
-    shutdown_event: Any
-    thread: Any
-    ssl_ctx: Any
-    requests_record: Any
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        shutdown_event: Any,
+        thread: Any,
+        ssl_ctx: Any,
+        requests_record: Any,
+    ):
+        self.host = host
+        self.port = port
+        self.shutdown_event = shutdown_event
+        self.thread = thread
+        self.ssl_ctx = ssl_ctx
+        self.requests_record = requests_record
 
     def make_url(self, path):
         if path[0] != "/":
