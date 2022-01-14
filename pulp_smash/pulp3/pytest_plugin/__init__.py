@@ -3,8 +3,6 @@ import threading
 import socket
 import ssl
 
-from typing import Any
-
 from aiohttp import web
 
 import pytest
@@ -47,12 +45,12 @@ class ThreadedAiohttpServer(threading.Thread):
 class ThreadedAiohttpServerData:
     def __init__(
         self,
-        host: str,
-        port: int,
-        shutdown_event: Any,
-        thread: Any,
-        ssl_ctx: Any,
-        requests_record: Any,
+        host,
+        port,
+        shutdown_event,
+        thread,
+        ssl_ctx,
+        requests_record,
     ):
         self.host = host
         self.port = port
