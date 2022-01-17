@@ -20,6 +20,17 @@ cfg = get_config()
 SLEEP_TIME = _get_sleep_time(cfg)
 
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "parallel: marks tests as safe to run in parallel",
+    )
+    config.addinivalue_line(
+        "markers",
+        "serial: marks tests as required to run serially without any other tests also running",
+    )
+
+
 class ThreadedAiohttpServer(threading.Thread):
     def __init__(self, shutdown_event, app, host, port, ssl_ctx):
         super().__init__()
