@@ -45,9 +45,10 @@ setup(
         "packaging",
         "plumbum",
         "pulpcore-client",
+        "pytest",
+        "pytest-xdist",
         "pyxdg",
         "requests",
-        "pulpcore-client",
         "trustme",
     ],
     entry_points={
