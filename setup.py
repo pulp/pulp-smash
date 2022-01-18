@@ -46,6 +46,7 @@ setup(
         "plumbum",
         "pulpcore-client",
         "pytest",
+        "pytest-custom_exit_code",
         "pytest-xdist",
         "pyxdg",
         "requests",
