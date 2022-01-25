@@ -5,8 +5,15 @@ from urllib.parse import urljoin
 from pulp_smash.api import (  # noqa: F401
     _P3_TASK_END_STATES as P3_TASK_END_STATES,
 )
+from pulp_smash.utils import get_pulp_setting
+from pulp_smash import cli, config
 
-BASE_PATH = "/pulp/api/v3/"
+cfg = config.get_config()
+cli_client = cli.Client(cfg)
+BASE_PATH = get_pulp_setting(cli_client, "API_ROOT")
+
+if BASE_PATH is None:
+    BASE_PATH = "/pulp/api/v3/"  # The version of Pulp must not yet have this setting
 
 API_DOCS_PATH = urljoin(BASE_PATH, "docs/")
 
