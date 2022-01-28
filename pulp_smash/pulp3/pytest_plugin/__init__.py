@@ -2,11 +2,14 @@ import asyncio
 import threading
 import socket
 import ssl
+import uuid
+
+import trustme
+import proxy
+import pytest
 
 from aiohttp import web
-
-import pytest
-import trustme
+from yarl import URL
 
 from pulp_smash.api import _get_sleep_time
 from pulp_smash.config import get_config
@@ -136,6 +139,104 @@ def gen_fixture_server(gen_threaded_aiohttp_server):
     yield _gen_fixture_server
 
 
+## Proxy Fixtures
+
+
+@pytest.fixture
+def http_proxy(unused_port):
+    host = cfg.aiohttp_fixtures_origin
+    port = unused_port()
+    proxypy_args = [
+        "--num-workers",
+        "4",
+        "--hostname",
+        host,
+        "--port",
+        str(port),
+    ]
+
+    proxy_data = ProxyData(host=host, port=port)
+
+    with proxy.Proxy(input_args=proxypy_args):
+        yield proxy_data
+
+
+@pytest.fixture
+def http_proxy_with_auth(unused_port):
+    host = cfg.aiohttp_fixtures_origin
+    port = unused_port()
+
+    username = str(uuid.uuid4())
+    password = str(uuid.uuid4())
+
+    proxypy_args = [
+        "--num-workers",
+        "4",
+        "--hostname",
+        host,
+        "--port",
+        str(port),
+        "--basic-auth",
+        f"{username}:{password}",
+    ]
+
+    proxy_data = ProxyData(host=host, port=port, username=username, password=password)
+
+    with proxy.Proxy(input_args=proxypy_args):
+        yield proxy_data
+
+
+@pytest.fixture
+def https_proxy(unused_port, proxy_tls_certificate_pem_path):
+    host = cfg.aiohttp_fixtures_origin
+    port = unused_port()
+
+    proxypy_args = [
+        "--num-workers",
+        "4",
+        "--hostname",
+        host,
+        "--port",
+        str(port),
+        "--cert-file",
+        proxy_tls_certificate_pem_path,  # contains both key and cert
+        "--key-file",
+        proxy_tls_certificate_pem_path,  # contains both key and cert
+    ]
+
+    proxy_data = ProxyData(host=host, port=port, ssl=True)  # TODO update me
+
+    with proxy.Proxy(input_args=proxypy_args):
+        yield proxy_data
+
+
+class ProxyData:
+    def __init__(self, *, host, port, username=None, password=None, ssl=False):
+        self.host = host
+        self.port = port
+
+        self.username = username
+        self.password = password
+
+        self.ssl = ssl
+
+        if ssl:
+            scheme = "https"
+        else:
+            scheme = "http"
+
+        self.proxy_url = str(
+            URL.build(
+                scheme=scheme,
+                host=self.host,
+                port=self.port,
+            )
+        )
+
+
+## Pulpcore Bindings Fixtures
+
+
 @pytest.fixture(scope="session")
 def pulpcore_client():
     configuration = cfg.get_bindings_config()
@@ -174,6 +275,27 @@ def tls_certificate(tls_certificate_authority):
     return tls_certificate_authority.issue_cert(
         cfg.aiohttp_fixtures_origin,
     )
+
+
+## Proxy TLS Fixtures
+
+
+@pytest.fixture(scope="session")
+def proxy_tls_certificate_authority():
+    return trustme.CA()
+
+
+@pytest.fixture
+def proxy_tls_certificate(client_tls_certificate_authority):
+    return client_tls_certificate_authority.issue_cert(
+        cfg.aiohttp_fixtures_origin,
+    )
+
+
+@pytest.fixture
+def proxy_tls_certificate_pem_path(proxy_tls_certificate):
+    with proxy_tls_certificate.private_key_and_cert_chain_pem.tempfile() as cert_pem:
+        yield cert_pem
 
 
 ## Client Side TLS Fixtures
