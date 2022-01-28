@@ -44,6 +44,7 @@ setup(
         "jsonschema",
         "packaging",
         "plumbum",
+        "proxy.py",
         "pulpcore-client",
         "pytest",
         "pytest-custom_exit_code",
