@@ -360,7 +360,23 @@ def gen_object_with_cleanup():
 
     def _gen_object_with_cleanup(api_client, data):
         new_obj = api_client.create(data)
-        obj_hrefs.append((api_client, new_obj.pulp_href))
+        try:
+            obj_hrefs.append((api_client, new_obj.pulp_href))
+        except AttributeError:
+            # This is a task and the real object href comes from monitoring it
+            task_data = monitor_task(new_obj.task)
+
+            num_created_resources = len(task_data.created_resources)
+            if num_created_resources != 1:
+                msg = (
+                    f"gen_object_with_cleanup can only handle tasks with exactly 1 "
+                    f"created_resource. this task has f{num_created_resources}"
+                )
+                raise NotImplementedError(msg)
+
+            new_obj = api_client.read(task_data.created_resources[0])
+            obj_hrefs.append((api_client, new_obj.pulp_href))
+
         return new_obj
 
     yield _gen_object_with_cleanup
