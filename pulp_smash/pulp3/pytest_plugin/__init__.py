@@ -32,6 +32,10 @@ def pytest_configure(config):
         "markers",
         "serial: marks tests as required to run serially without any other tests also running",
     )
+    config.addinivalue_line(
+        "markers",
+        "nightly: marks tests as intended to run during the nightly CI run",
+    )
 
 
 class ThreadedAiohttpServer(threading.Thread):
