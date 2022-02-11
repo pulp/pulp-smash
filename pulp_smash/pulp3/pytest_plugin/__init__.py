@@ -2,7 +2,9 @@ import asyncio
 import threading
 import socket
 import ssl
+import time
 import uuid
+import urllib3
 
 import trustme
 import proxy
@@ -17,11 +19,14 @@ from pulp_smash.config import get_config
 from pulp_smash.pulp3.bindings import delete_orphans, monitor_task
 from pulp_smash.pulp3.fixture_utils import add_recording_route
 
-from pulpcore.client.pulpcore import ApiClient, TasksApi
+from pulpcore.client.pulpcore import ApiClient, StatusApi, TasksApi
+from pulpcore.client.pulpcore.exceptions import ApiException
 
 
 cfg = get_config()
 SLEEP_TIME = _get_sleep_time(cfg)
+PULP_HOST = cfg.hosts[0]
+PULP_SERVICES = ("pulpcore-content", "pulpcore-api", "pulpcore-worker@1", "pulpcore-worker@2")
 
 
 def pytest_configure(config):
@@ -257,6 +262,57 @@ def cli_client(pulp_cfg):
     return cli.Client(pulp_cfg)
 
 
+@pytest.fixture(scope="session")
+def svc_mgr(pulp_cfg):
+    return cli.ServiceManager(pulp_cfg, PULP_HOST)
+
+
+@pytest.fixture
+def stop_and_check_services(status_api_client, svc_mgr):
+    """Stop services and wait up to 30 seconds to check if services have stopped."""
+
+    def _stop_and_check_services(pulp_services=None):
+        svc_mgr.stop(pulp_services or PULP_SERVICES)
+        for i in range(10):
+            time.sleep(3)
+            try:
+                status_api_client.status_read()
+            except (urllib3.exceptions.MaxRetryError, ApiException):
+                return True
+        return False
+
+    yield _stop_and_check_services
+
+
+@pytest.fixture
+def start_and_check_services(status_api_client, svc_mgr):
+    """Start services and wait up to 30 seconds to check if services have started."""
+
+    def _start_and_check_services(pulp_services=None):
+        svc_mgr.start(pulp_services or PULP_SERVICES)
+        for i in range(10):
+            time.sleep(3)
+            try:
+                status, http_code, _ = status_api_client.status_read_with_http_info()
+            except (urllib3.exceptions.MaxRetryError, ApiException):
+                # API is not responding
+                continue
+            else:
+                if (
+                    http_code == 200
+                    and len(status.online_workers) > 0
+                    and len(status.online_content_apps) > 0
+                    and status.database_connection.connected
+                ):
+                    return True
+                else:
+                    # sometimes it takes longer for the content app to start
+                    continue
+        return False
+
+    yield _start_and_check_services
+
+
 ## Pulpcore Bindings Fixtures
 
 
@@ -283,6 +339,11 @@ else:
     @pytest.fixture(scope="session")
     def task_schedules_api_client(pulpcore_client):
         return TaskSchedulesApi(pulpcore_client)
+
+
+@pytest.fixture
+def status_api_client(pulpcore_client):
+    return StatusApi(pulpcore_client)
 
 
 ## Orphan Handling Fixtures
