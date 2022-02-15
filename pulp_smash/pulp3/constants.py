@@ -10,7 +10,7 @@ from pulp_smash import cli, config
 
 cfg = config.get_config()
 cli_client = cli.Client(cfg)
-BASE_PATH = get_pulp_setting(cli_client, "API_ROOT")
+BASE_PATH = get_pulp_setting(cli_client, "V3_API_ROOT")
 
 if BASE_PATH is None:
     BASE_PATH = "/pulp/api/v3/"  # The version of Pulp must not yet have this setting
