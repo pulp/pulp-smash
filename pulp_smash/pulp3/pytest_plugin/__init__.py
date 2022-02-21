@@ -11,6 +11,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
+from pulp_smash import cli
 from pulp_smash.api import _get_sleep_time
 from pulp_smash.config import get_config
 from pulp_smash.pulp3.bindings import delete_orphans, monitor_task
@@ -238,18 +239,50 @@ class ProxyData:
         )
 
 
+# Infrastructure Fixtures
+
+
+@pytest.fixture(scope="session")
+def pulp_cfg():
+    return cfg
+
+
+@pytest.fixture(scope="session")
+def bindings_cfg(pulp_cfg):
+    return pulp_cfg.get_bindings_config()
+
+
+@pytest.fixture(scope="session")
+def cli_client(pulp_cfg):
+    return cli.Client(pulp_cfg)
+
+
 ## Pulpcore Bindings Fixtures
 
 
 @pytest.fixture(scope="session")
-def pulpcore_client():
-    configuration = cfg.get_bindings_config()
-    return ApiClient(configuration)
+def pulpcore_client(bindings_cfg):
+    return ApiClient(bindings_cfg)
 
 
 @pytest.fixture(scope="session")
 def tasks_api_client(pulpcore_client):
     return TasksApi(pulpcore_client)
+
+
+try:
+    from pulpcore.client.pulpcore import TaskSchedulesApi
+except ImportError:
+
+    @pytest.fixture(scope="session")
+    def task_schedules_api_client():
+        pytest.fail("`TaskSchedulesApi` is not available in the bindings.")
+
+else:
+
+    @pytest.fixture(scope="session")
+    def task_schedules_api_client(pulpcore_client):
+        return TaskSchedulesApi(pulpcore_client)
 
 
 ## Orphan Handling Fixtures
