@@ -19,7 +19,7 @@ from pulp_smash.config import get_config
 from pulp_smash.pulp3.bindings import delete_orphans, monitor_task
 from pulp_smash.pulp3.fixture_utils import add_recording_route
 
-from pulpcore.client.pulpcore import ApiClient, StatusApi, TasksApi
+from pulpcore.client.pulpcore import ApiClient, StatusApi, TasksApi, UsersApi, UsersRolesApi
 from pulpcore.client.pulpcore.exceptions import ApiException
 
 
@@ -346,6 +346,49 @@ def status_api_client(pulpcore_client):
     return StatusApi(pulpcore_client)
 
 
+@pytest.fixture
+def users_api_client(pulpcore_client):
+    return UsersApi(pulpcore_client)
+
+
+@pytest.fixture
+def users_roles_api_client(pulpcore_client):
+    return UsersRolesApi(pulpcore_client)
+
+
+@pytest.fixture
+def gen_user(bindings_cfg, users_api_client, users_roles_api_client, gen_object_with_cleanup):
+    class user_context:
+        def __init__(self, username=None, model_roles=None, object_roles=None):
+            self.username = username or str(uuid.uuid4())
+            self.password = str(uuid.uuid4())
+            self.user = gen_object_with_cleanup(
+                users_api_client, {"username": self.username, "password": self.password}
+            )
+            if model_roles:
+                for role in model_roles:
+                    users_roles_api_client.create(
+                        auth_user_href=self.user.pulp_href,
+                        user_role={"role": role, "content_object": None},
+                    )
+            if object_roles:
+                for role, content_object in object_roles:
+                    users_roles_api_client.create(
+                        auth_user_href=self.user.pulp_href,
+                        user_role={"role": role, "content_object": content_object},
+                    )
+
+        def __enter__(self):
+            self.saved_username, self.saved_password = bindings_cfg.username, bindings_cfg.password
+            bindings_cfg.username, bindings_cfg.password = self.username, self.password
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            bindings_cfg.username, bindings_cfg.password = self.saved_username, self.saved_password
+
+    return user_context
+
+
 ## Orphan Handling Fixtures
 
 
@@ -481,8 +524,12 @@ def gen_object_with_cleanup():
 
     delete_task_hrefs = []
     for api_client, pulp_href in obj_hrefs:
-        task_url = api_client.delete(pulp_href).task
-        delete_task_hrefs.append(task_url)
+        try:
+            task_url = api_client.delete(pulp_href).task
+            delete_task_hrefs.append(task_url)
+        except AttributeError:
+            # There was no delete task for this unit
+            pass
 
     for deleted_task_href in delete_task_hrefs:
         monitor_task(deleted_task_href)
