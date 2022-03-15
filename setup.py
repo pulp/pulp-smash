@@ -44,7 +44,7 @@ setup(
         "jsonschema",
         "packaging",
         "plumbum",
-        "proxy.py @ git+https://github.com/abhinavsingh/proxy.py.git@0629fc43e94ff39ccadd6db3bb4984bc92a3aa09#egg=proxy.py",  # Use 2.4.1 when it comes out https://github.com/abhinavsingh/proxy.py/issues/1086
+        "proxy.py~=2.4.1",
         "pulpcore-client",
         "pytest",
         "pytest-custom_exit_code",
