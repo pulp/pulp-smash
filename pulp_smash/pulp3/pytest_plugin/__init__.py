@@ -422,7 +422,9 @@ else:
 
 
 @pytest.fixture
-def delete_orphans_pre():
+def delete_orphans_pre(request):
+    if request.node.get_closest_marker("parallel") is not None:
+        raise pytest.UsageError("This test is not suitable to be marked parallel.")
     delete_orphans()
     yield
 
@@ -525,13 +527,36 @@ def ssl_ctx_req_client_auth(
 
 
 @pytest.fixture
-def gen_object_with_cleanup():
-    obj_hrefs = []
+def add_to_cleanup():
+    """Fixture to allow pulp objects to be deleted in reverse order after the test."""
+    obj_refs = []
 
+    def _add_to_cleanup(api_client, pulp_href):
+        obj_refs.append((api_client, pulp_href))
+
+    yield _add_to_cleanup
+
+    delete_task_hrefs = []
+    # Delete newest items first to avoid dependency lockups
+    for api_client, pulp_href in reversed(obj_refs):
+        try:
+            task_url = api_client.delete(pulp_href).task
+            delete_task_hrefs.append(task_url)
+        except Exception:
+            # There was no delete task for this unit or the unit may already have been deleted.
+            # Also we can never be sure which one is the right ApiException to catch.
+            pass
+
+    for deleted_task_href in delete_task_hrefs:
+        monitor_task(deleted_task_href)
+
+
+@pytest.fixture
+def gen_object_with_cleanup(add_to_cleanup):
     def _gen_object_with_cleanup(api_client, data):
         new_obj = api_client.create(data)
         try:
-            obj_hrefs.append((api_client, new_obj.pulp_href))
+            add_to_cleanup(api_client, new_obj.pulp_href)
         except AttributeError:
             # This is a task and the real object href comes from monitoring it
             task_data = monitor_task(new_obj.task)
@@ -545,20 +570,8 @@ def gen_object_with_cleanup():
                 raise NotImplementedError(msg)
 
             new_obj = api_client.read(task_data.created_resources[0])
-            obj_hrefs.append((api_client, new_obj.pulp_href))
+            add_to_cleanup(api_client, new_obj.pulp_href)
 
         return new_obj
 
-    yield _gen_object_with_cleanup
-
-    delete_task_hrefs = []
-    for api_client, pulp_href in obj_hrefs:
-        try:
-            task_url = api_client.delete(pulp_href).task
-            delete_task_hrefs.append(task_url)
-        except AttributeError:
-            # There was no delete task for this unit
-            pass
-
-    for deleted_task_href in delete_task_hrefs:
-        monitor_task(deleted_task_href)
+    return _gen_object_with_cleanup
