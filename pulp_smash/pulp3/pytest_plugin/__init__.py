@@ -19,8 +19,17 @@ from pulp_smash.config import get_config
 from pulp_smash.pulp3.bindings import delete_orphans, monitor_task
 from pulp_smash.pulp3.fixture_utils import add_recording_route
 
-from pulpcore.client.pulpcore import ApiClient, StatusApi, TasksApi
+from pulpcore.client.pulpcore import (
+    ApiClient,
+    ContentguardsApi,
+    DistributionsApi,
+    PublicationsApi,
+    RepositoriesApi,
+    StatusApi,
+    TasksApi,
+)
 from pulpcore.client.pulpcore.exceptions import ApiException
+from pulpcore.tests.functional.api.using_plugin.utils import gen_pulpcore_client
 
 
 cfg = get_config()
@@ -29,7 +38,67 @@ PULP_HOST = cfg.hosts[0]
 PULP_SERVICES = ("pulpcore-content", "pulpcore-api", "pulpcore-worker@1", "pulpcore-worker@2")
 
 
+## Pulp No Leftover Objs Feature
+
+
+def pytest_addoption(parser):
+    group = parser.getgroup("pulp-smash")
+    group.addoption(
+        "--pulp-no-leftovers",
+        action="store_true",
+        dest="pulp_no_leftovers",
+        help="Enable this to have Pulp plugins check for objects leftover by tests.",
+    )
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_check_for_leftover_pulp_objects(config):
+    pulpcore_client = gen_pulpcore_client()
+    tasks_api_client = TasksApi(pulpcore_client)
+
+    for task in tasks_api_client.list().results:
+        if task.state in ["running", "waiting"]:
+            raise Exception(f"This test left over a task in the running or waiting state.")
+
+    models_to_check = [
+        ContentguardsApi(pulpcore_client),
+        DistributionsApi(pulpcore_client),
+        PublicationsApi(pulpcore_client),
+        RepositoriesApi(pulpcore_client),
+    ]
+    for type_to_check in models_to_check:
+        if type_to_check.list().count > 0:
+            raise Exception(f"This test left over a {type_to_check}.")
+
+
+def pytest_addhooks(pluginmanager):
+    """Add the hooks that pulp-smash provides from the 'newhooks' module."""
+    from . import pulphooks
+
+    pluginmanager.add_hookspecs(pulphooks)
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_teardown(item):
+
+    yield  # We need the real pytest_runtest_teardown to run
+
+    if item.config.getoption("--pulp-no-leftovers"):
+        item.config.hook.pytest_check_for_leftover_pulp_objects(config=item.config)
+
+
+## pytest configuration
+
+
 def pytest_configure(config):
+
+    if (
+        config.getoption("--pulp-no-leftovers")
+        and config.pluginmanager.hasplugin("xdist")
+        and config.getoption("-n")
+    ):
+        raise Exception("The --pulp-no-leftovers cannot be used with -n from xdist")
+
     config.addinivalue_line(
         "markers",
         "parallel: marks tests as safe to run in parallel",
@@ -42,6 +111,9 @@ def pytest_configure(config):
         "markers",
         "nightly: marks tests as intended to run during the nightly CI run",
     )
+
+
+## Threaded local fixture servers
 
 
 class ThreadedAiohttpServer(threading.Thread):
