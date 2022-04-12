@@ -311,7 +311,9 @@ class Client:  # pylint:disable=too-few-public-methods
         elif self.transport == "podman":
             args = ("podman", "exec", "-i", self._podname) + tuple(args)
 
-        if sudo and args[0] != "sudo" and not self.is_superuser:
+        # docker still requires some commands to be executed as sudo; running docker without
+        # sudo in a rootless mode is supported as of 19.03.14
+        if sudo and args[0] != "sudo" and not self.is_superuser or self.transport == "docker":
             args = ("sudo",) + tuple(args)
 
         code, stdout, stderr = self.machine[args[0]].run(args[1:], **kwargs)
@@ -1025,7 +1027,7 @@ class RegistryClient:
             args[0] = urlunsplit(urlsplit(args[0])._replace(scheme="")).strip("//")
 
         cmd = (self.name, command) + tuple(args)
-        result = self._client.run(cmd, sudo=True)
+        result = self._client.run(cmd)
         try:
             # most of client responses are JSONable
             return json.loads(result.stdout)
