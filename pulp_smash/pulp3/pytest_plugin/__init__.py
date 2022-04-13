@@ -383,12 +383,12 @@ def start_and_check_services(status_api_client, svc_mgr):
 
 @pytest.fixture(scope="session")
 def pulpcore_client(bindings_cfg):
-    return ApiClient(bindings_cfg)
+    return pulpcore_bindings.ApiClient(bindings_cfg)
 
 
 @pytest.fixture(scope="session")
 def tasks_api_client(pulpcore_client):
-    return TasksApi(pulpcore_client)
+    return pulpcore_bindings.TasksApi(pulpcore_client)
 
 
 try:
@@ -408,7 +408,7 @@ else:
 
 @pytest.fixture
 def status_api_client(pulpcore_client):
-    return StatusApi(pulpcore_client)
+    return pulpcore_bindings.StatusApi(pulpcore_client)
 
 
 try:
