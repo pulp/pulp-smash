@@ -19,15 +19,7 @@ from pulp_smash.config import get_config
 from pulp_smash.pulp3.bindings import delete_orphans, monitor_task
 from pulp_smash.pulp3.fixture_utils import add_recording_route
 
-from pulpcore.client.pulpcore import (
-    ApiClient,
-    ContentguardsApi,
-    DistributionsApi,
-    PublicationsApi,
-    RepositoriesApi,
-    StatusApi,
-    TasksApi,
-)
+from pulpcore.client import pulpcore as pulpcore_bindings
 from pulpcore.client.pulpcore.exceptions import ApiException
 
 
@@ -52,22 +44,24 @@ def pytest_addoption(parser):
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_check_for_leftover_pulp_objects(config):
-    pulpcore_client = ApiClient(cfg.get_bindings_config())
-    tasks_api_client = TasksApi(pulpcore_client)
+    pulpcore_client = pulpcore_bindings.ApiClient(cfg.get_bindings_config())
+    tasks_api_client = pulpcore_bindings.TasksApi(pulpcore_client)
 
     for task in tasks_api_client.list().results:
         if task.state in ["running", "waiting"]:
             raise Exception(f"This test left over a task in the running or waiting state.")
 
-    models_to_check = [
-        ContentguardsApi(pulpcore_client),
-        DistributionsApi(pulpcore_client),
-        PublicationsApi(pulpcore_client),
-        RepositoriesApi(pulpcore_client),
+    apis_to_check = [
+        "ContentguardsApi",
+        "DistributionsApi",
+        "PublicationsApi",
+        "RepositoriesApi",
     ]
-    for type_to_check in models_to_check:
-        if type_to_check.list().count > 0:
-            raise Exception(f"This test left over a {type_to_check}.")
+    for api in apis_to_check:
+        if hasattr(pulpcore_bindings, api):
+            type_to_check = getattr(pulpcore_bindings, api)(pulpcore_client)
+            if type_to_check.list().count > 0:
+                raise Exception(f"This test left over a {type_to_check}.")
 
 
 def pytest_addhooks(pluginmanager):
