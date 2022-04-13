@@ -29,7 +29,6 @@ from pulpcore.client.pulpcore import (
     TasksApi,
 )
 from pulpcore.client.pulpcore.exceptions import ApiException
-from pulpcore.tests.functional.api.using_plugin.utils import gen_pulpcore_client
 
 
 cfg = get_config()
@@ -53,7 +52,7 @@ def pytest_addoption(parser):
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_check_for_leftover_pulp_objects(config):
-    pulpcore_client = gen_pulpcore_client()
+    pulpcore_client = ApiClient(cfg.get_bindings_config())
     tasks_api_client = TasksApi(pulpcore_client)
 
     for task in tasks_api_client.list().results:
