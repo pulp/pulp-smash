@@ -16,7 +16,7 @@ from yarl import URL
 from pulp_smash import cli
 from pulp_smash.api import _get_sleep_time
 from pulp_smash.config import get_config
-from pulp_smash.pulp3.bindings import delete_orphans, monitor_task
+from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.fixture_utils import add_recording_route
 
 from pulpcore.client import pulpcore as pulpcore_bindings
@@ -42,28 +42,6 @@ def pytest_addoption(parser):
     )
 
 
-@pytest.hookimpl(tryfirst=True)
-def pytest_check_for_leftover_pulp_objects(config):
-    pulpcore_client = pulpcore_bindings.ApiClient(cfg.get_bindings_config())
-    tasks_api_client = pulpcore_bindings.TasksApi(pulpcore_client)
-
-    for task in tasks_api_client.list().results:
-        if task.state in ["running", "waiting"]:
-            raise Exception(f"This test left over a task in the running or waiting state.")
-
-    apis_to_check = [
-        "ContentguardsApi",
-        "DistributionsApi",
-        "PublicationsApi",
-        "RepositoriesApi",
-    ]
-    for api in apis_to_check:
-        if hasattr(pulpcore_bindings, api):
-            type_to_check = getattr(pulpcore_bindings, api)(pulpcore_client)
-            if type_to_check.list().count > 0:
-                raise Exception(f"This test left over a {type_to_check}.")
-
-
 def pytest_addhooks(pluginmanager):
     """Add the hooks that pulp-smash provides from the 'newhooks' module."""
     from . import pulphooks
@@ -84,7 +62,6 @@ def pytest_runtest_teardown(item):
 
 
 def pytest_configure(config):
-
     if (
         config.getoption("--pulp-no-leftovers")
         and config.pluginmanager.hasplugin("xdist")
@@ -376,122 +353,6 @@ def start_and_check_services(status_api_client, svc_mgr):
         return False
 
     yield _start_and_check_services
-
-
-## Pulpcore Bindings Fixtures
-
-
-@pytest.fixture(scope="session")
-def pulpcore_client(bindings_cfg):
-    return pulpcore_bindings.ApiClient(bindings_cfg)
-
-
-@pytest.fixture(scope="session")
-def tasks_api_client(pulpcore_client):
-    return pulpcore_bindings.TasksApi(pulpcore_client)
-
-
-try:
-    from pulpcore.client.pulpcore import TaskSchedulesApi
-except ImportError:
-
-    @pytest.fixture(scope="session")
-    def task_schedules_api_client():
-        pytest.fail("`TaskSchedulesApi` is not available in the bindings.")
-
-else:
-
-    @pytest.fixture(scope="session")
-    def task_schedules_api_client(pulpcore_client):
-        return TaskSchedulesApi(pulpcore_client)
-
-
-@pytest.fixture
-def status_api_client(pulpcore_client):
-    return pulpcore_bindings.StatusApi(pulpcore_client)
-
-
-try:
-    from pulpcore.client.pulpcore import UsersApi, UsersRolesApi
-except ImportError:
-    pass
-else:
-
-    @pytest.fixture
-    def users_api_client(pulpcore_client):
-        return UsersApi(pulpcore_client)
-
-    @pytest.fixture
-    def users_roles_api_client(pulpcore_client):
-        return UsersRolesApi(pulpcore_client)
-
-    @pytest.fixture
-    def gen_user(bindings_cfg, users_api_client, users_roles_api_client, gen_object_with_cleanup):
-        class user_context:
-            def __init__(self, username=None, model_roles=None, object_roles=None):
-                self.username = username or str(uuid.uuid4())
-                self.password = str(uuid.uuid4())
-                self.user = gen_object_with_cleanup(
-                    users_api_client, {"username": self.username, "password": self.password}
-                )
-                if model_roles:
-                    for role in model_roles:
-                        users_roles_api_client.create(
-                            auth_user_href=self.user.pulp_href,
-                            user_role={"role": role, "content_object": None},
-                        )
-                if object_roles:
-                    for role, content_object in object_roles:
-                        users_roles_api_client.create(
-                            auth_user_href=self.user.pulp_href,
-                            user_role={"role": role, "content_object": content_object},
-                        )
-
-            def __enter__(self):
-                self.saved_username, self.saved_password = (
-                    bindings_cfg.username,
-                    bindings_cfg.password,
-                )
-                bindings_cfg.username, bindings_cfg.password = self.username, self.password
-                return self
-
-            def __exit__(self, exc_type, exc_value, traceback):
-                bindings_cfg.username, bindings_cfg.password = (
-                    self.saved_username,
-                    self.saved_password,
-                )
-
-        return user_context
-
-    @pytest.fixture(scope="session")
-    def anonymous_user(bindings_cfg):
-        class AnonymousUser:
-            def __enter__(self):
-                self.saved_username, self.saved_password = (
-                    bindings_cfg.username,
-                    bindings_cfg.password,
-                )
-                bindings_cfg.username, bindings_cfg.password = None, None
-                return self
-
-            def __exit__(self, exc_type, exc_value, traceback):
-                bindings_cfg.username, bindings_cfg.password = (
-                    self.saved_username,
-                    self.saved_password,
-                )
-
-        return AnonymousUser()
-
-
-## Orphan Handling Fixtures
-
-
-@pytest.fixture
-def delete_orphans_pre(request):
-    if request.node.get_closest_marker("parallel") is not None:
-        raise pytest.UsageError("This test is not suitable to be marked parallel.")
-    delete_orphans()
-    yield
 
 
 ## Server Side TLS Fixtures
