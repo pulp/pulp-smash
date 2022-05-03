@@ -19,7 +19,6 @@ from pulp_smash.config import get_config
 from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.fixture_utils import add_recording_route
 
-from pulpcore.client import pulpcore as pulpcore_bindings
 from pulpcore.client.pulpcore.exceptions import ApiException
 
 
