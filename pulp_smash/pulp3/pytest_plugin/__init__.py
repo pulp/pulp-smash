@@ -22,9 +22,6 @@ from pulp_smash.pulp3.fixture_utils import add_recording_route
 from pulpcore.client.pulpcore.exceptions import ApiException
 
 
-cfg = get_config()
-SLEEP_TIME = _get_sleep_time(cfg)
-PULP_HOST = cfg.hosts[0]
 PULP_SERVICES = ("pulpcore-content", "pulpcore-api", "pulpcore-worker@1", "pulpcore-worker@2")
 
 
@@ -150,11 +147,11 @@ def unused_port():
 
 
 @pytest.fixture
-def gen_threaded_aiohttp_server(unused_port):
+def gen_threaded_aiohttp_server(pulp_cfg, unused_port):
     fixture_servers_data = []
 
     def _gen_threaded_aiohttp_server(app, ssl_ctx, call_record):
-        host = cfg.aiohttp_fixtures_origin
+        host = pulp_cfg.aiohttp_fixtures_origin
         port = unused_port()
         shutdown_event = threading.Event()
         fixture_server = ThreadedAiohttpServer(shutdown_event, app, host, port, ssl_ctx)
@@ -194,8 +191,8 @@ def gen_fixture_server(gen_threaded_aiohttp_server):
 
 
 @pytest.fixture
-def http_proxy(unused_port):
-    host = cfg.aiohttp_fixtures_origin
+def http_proxy(pulp_cfg, unused_port):
+    host = pulp_cfg.aiohttp_fixtures_origin
     port = unused_port()
     proxypy_args = [
         "--num-workers",
@@ -213,8 +210,8 @@ def http_proxy(unused_port):
 
 
 @pytest.fixture
-def http_proxy_with_auth(unused_port):
-    host = cfg.aiohttp_fixtures_origin
+def http_proxy_with_auth(pulp_cfg, unused_port):
+    host = pulp_cfg.aiohttp_fixtures_origin
     port = unused_port()
 
     username = str(uuid.uuid4())
@@ -238,8 +235,8 @@ def http_proxy_with_auth(unused_port):
 
 
 @pytest.fixture
-def https_proxy(unused_port, proxy_tls_certificate_pem_path):
-    host = cfg.aiohttp_fixtures_origin
+def https_proxy(pulp_cfg, unused_port, proxy_tls_certificate_pem_path):
+    host = pulp_cfg.aiohttp_fixtures_origin
     port = unused_port()
 
     proxypy_args = [
@@ -290,7 +287,7 @@ class ProxyData:
 
 @pytest.fixture(scope="session")
 def pulp_cfg():
-    return cfg
+    return get_config()
 
 
 @pytest.fixture(scope="session")
@@ -305,6 +302,7 @@ def cli_client(pulp_cfg):
 
 @pytest.fixture(scope="session")
 def svc_mgr(pulp_cfg):
+    PULP_HOST = pulp_cfg.hosts[0]
     return cli.ServiceManager(pulp_cfg, PULP_HOST)
 
 
@@ -368,9 +366,9 @@ def tls_certificate_authority_cert(tls_certificate_authority):
 
 
 @pytest.fixture
-def tls_certificate(tls_certificate_authority):
+def tls_certificate(pulp_cfg, tls_certificate_authority):
     return tls_certificate_authority.issue_cert(
-        cfg.aiohttp_fixtures_origin,
+        pulp_cfg.aiohttp_fixtures_origin,
     )
 
 
@@ -383,9 +381,9 @@ def proxy_tls_certificate_authority():
 
 
 @pytest.fixture
-def proxy_tls_certificate(client_tls_certificate_authority):
+def proxy_tls_certificate(pulp_cfg, client_tls_certificate_authority):
     return client_tls_certificate_authority.issue_cert(
-        cfg.aiohttp_fixtures_origin,
+        pulp_cfg.aiohttp_fixtures_origin,
     )
 
 
@@ -410,9 +408,9 @@ def client_tls_certificate_authority_pem_path(client_tls_certificate_authority):
 
 
 @pytest.fixture
-def client_tls_certificate(client_tls_certificate_authority):
+def client_tls_certificate(pulp_cfg, client_tls_certificate_authority):
     return client_tls_certificate_authority.issue_cert(
-        cfg.aiohttp_fixtures_origin,
+        pulp_cfg.aiohttp_fixtures_origin,
     )
 
 
