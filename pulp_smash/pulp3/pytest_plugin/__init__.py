@@ -25,16 +25,20 @@ from pulpcore.client.pulpcore.exceptions import ApiException
 PULP_SERVICES = ("pulpcore-content", "pulpcore-api", "pulpcore-worker@1", "pulpcore-worker@2")
 
 
-## Pulp No Leftover Objs Feature
-
-
 def pytest_addoption(parser):
     group = parser.getgroup("pulp-smash")
     group.addoption(
         "--pulp-no-leftovers",
         action="store_true",
         dest="pulp_no_leftovers",
+        default=False,
         help="Enable this to have Pulp plugins check for objects leftover by tests.",
+    )
+    group.addoption(
+        "--nightly",
+        action="store_true",
+        default=False,
+        help="Enable to run nightly test.",
     )
 
 
@@ -52,6 +56,18 @@ def pytest_runtest_teardown(item):
 
     if item.config.getoption("--pulp-no-leftovers"):
         item.config.hook.pytest_check_for_leftover_pulp_objects(config=item.config)
+
+
+def pytest_collection_modifyitems(config, items):
+    # Skip nightly tests by default
+    # https://docs.pytest.org/en/7.1.x/example/simple.html#control-skipping-of-tests-according-to-command-line-option
+    if config.getoption("--nightly"):
+        # Run all tests unmodified
+        return
+    skip_nightly = pytest.mark.skip(reason="need --nightly option to run")
+    for item in items:
+        if "nightly" in item.keywords:
+            item.add_marker(skip_nightly)
 
 
 ## pytest configuration
