@@ -158,9 +158,8 @@ def execute_pulpcore_python(cli_client, command):
         ps_output = cli_client.run(("ps", "ax")).stdout.splitlines()
         bin_dir = "/usr/local/bin"
         for line in ps_output:
-            if "pulpcore" in line:
-                if "bin/python" in line.split()[4]:
-                    bin_dir = line.split()[4].rsplit("/", maxsplit=1)[0]
+            if "pulpcore" in line and "bin/python" in line:
+                bin_dir = line.split()[5].rsplit("/", maxsplit=1)[0]
         manager = "{}/pulpcore-manager".format(bin_dir)
     return cli_client.run((manager, "shell", "-c", command)).stdout.rstrip("\n")
 
