@@ -344,13 +344,16 @@ def start_and_check_services(status_api_client, svc_mgr):
     """Start services and wait up to 30 seconds to check if services have started."""
 
     def _start_and_check_services(pulp_services=None):
+        print("Starting services...")
+        print(pulp_services or PULP_SERVICES)
         svc_mgr.start(pulp_services or PULP_SERVICES)
-        for i in range(10):
+        for i in range(90):
             time.sleep(3)
             try:
                 status, http_code, _ = status_api_client.status_read_with_http_info()
-            except (urllib3.exceptions.MaxRetryError, ApiException):
+            except (urllib3.exceptions.MaxRetryError, ApiException) as e:
                 # API is not responding
+                print(f"API is not responding - {e}")
                 continue
             else:
                 if (
@@ -362,6 +365,7 @@ def start_and_check_services(status_api_client, svc_mgr):
                     return True
                 else:
                     # sometimes it takes longer for the content app to start
+                    print("Waiting for content app to start...")
                     continue
         return False
 

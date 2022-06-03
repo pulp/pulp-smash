@@ -343,6 +343,7 @@ class BaseServiceManager(metaclass=ABCMeta):
     def __init__(self):
         """Initialize variables expected by the helper methods."""
         self._on_jenkins = "JENKINS_HOME" in os.environ
+        print("==================================Smash==================================")
 
     @staticmethod
     def _get_service_manager(cfg, pulp_host):
@@ -367,6 +368,8 @@ class BaseServiceManager(metaclass=ABCMeta):
         for command, service_manager in commands_managers:
             if client.run(command.split()).returncode == 0:
                 _SERVICE_MANAGERS[pulp_host.hostname] = service_manager
+                logger.info(service_manager)
+                print(service_manager)
                 return service_manager
         raise exceptions.NoKnownServiceManagerError(
             "Unable to determine the service manager used by {}. It does not "
@@ -398,6 +401,8 @@ class BaseServiceManager(metaclass=ABCMeta):
 
     @staticmethod
     def _start_s6(client, services):
+        logger.info("Starting services with s6-svc")
+        print("Starting services with s6-svc")
         return tuple(
             (
                 client.run(("s6-svc", "-u", "/var/run/s6/services/{}".format(service)))
@@ -416,6 +421,8 @@ class BaseServiceManager(metaclass=ABCMeta):
 
     @staticmethod
     def _stop_s6(client, services):
+        logger.info("Stopping services with s6-svc")
+        print("Stopping services with s6-svc")
         return tuple(
             (
                 client.run(("s6-svc", "-d", "/var/run/s6/services/{}".format(service)))
@@ -436,6 +443,8 @@ class BaseServiceManager(metaclass=ABCMeta):
 
     @staticmethod
     def _restart_s6(client, services):
+        logger.info("Restarting services with s6-svc")
+        print("Restarting services with s6-svc")
         return tuple(
             (
                 client.run(("s6-svc", "-k", "/var/run/s6/services/{}".format(service)))
@@ -459,6 +468,9 @@ class BaseServiceManager(metaclass=ABCMeta):
         return False
 
     def _is_active_s6(self, client, services):
+        logger.info("Checking services with s6-svc")
+        print("Checking services with s6-svc")
+
         def process_ps_output(command_output, service):
             if command_output.stdout.find(service) > -1:
                 return True
@@ -572,6 +584,8 @@ class GlobalServiceManager(BaseServiceManager):
                 elif svc_mgr == "systemd":
                     result[host.hostname] = self._start_systemd(client, services)
                 elif svc_mgr == "s6":
+                    logger.info("s6-svc")
+                    print("s6-svc")
                     result[host.hostname] = self._start_s6(client, services)
                 else:
                     raise NotImplementedError(
