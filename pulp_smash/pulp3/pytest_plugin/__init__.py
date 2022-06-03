@@ -492,8 +492,8 @@ def add_to_cleanup():
 
 @pytest.fixture
 def gen_object_with_cleanup(add_to_cleanup):
-    def _gen_object_with_cleanup(api_client, data):
-        new_obj = api_client.create(data)
+    def _gen_object_with_cleanup(api_client, *args, **kwargs):
+        new_obj = api_client.create(*args, **kwargs)
         try:
             add_to_cleanup(api_client, new_obj.pulp_href)
         except AttributeError:
