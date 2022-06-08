@@ -500,16 +500,17 @@ def gen_object_with_cleanup(add_to_cleanup):
             # This is a task and the real object href comes from monitoring it
             task_data = monitor_task(new_obj.task)
 
-            num_created_resources = len(task_data.created_resources)
-            if num_created_resources != 1:
-                msg = (
-                    f"gen_object_with_cleanup can only handle tasks with exactly 1 "
-                    f"created_resource. this task has f{num_created_resources}"
-                )
-                raise NotImplementedError(msg)
+            for created_resource in task_data.created_resources:
+                try:
+                    new_obj = api_client.read(created_resource)
+                except Exception:
+                    pass  # This isn't the right created_resource for this api_client
+                else:
+                    add_to_cleanup(api_client, new_obj.pulp_href)
+                    return new_obj
 
-            new_obj = api_client.read(task_data.created_resources[0])
-            add_to_cleanup(api_client, new_obj.pulp_href)
+            msg = f"No appropriate created_resource could be found in task data {task_data}"
+            raise TypeError(msg)
 
         return new_obj
 
