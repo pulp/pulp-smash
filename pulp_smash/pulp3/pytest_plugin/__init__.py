@@ -93,6 +93,10 @@ def pytest_configure(config):
         "markers",
         "nightly: marks tests as intended to run during the nightly CI run",
     )
+    config.addinivalue_line(
+        "markers",
+        "pulp_on_localhost: marks tests that can only run on the same machine as all Pulp services",
+    )
 
 
 ## Threaded local fixture servers
