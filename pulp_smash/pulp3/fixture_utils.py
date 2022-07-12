@@ -12,7 +12,10 @@ def add_recording_route(app, fixtures_root):
     async def all_requests_handler(request):
         requests.append(request)
         path = fixtures_root / request.raw_path[1:]  # Strip off leading '/'
-        return web.FileResponse(path)
+        if path.is_file():
+            return web.FileResponse(path)
+        else:
+            raise web.HTTPFound()
 
     app.add_routes([web.get("/{tail:.*}", all_requests_handler)])
 
