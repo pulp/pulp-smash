@@ -15,7 +15,7 @@ def add_recording_route(app, fixtures_root):
         if path.is_file():
             return web.FileResponse(path)
         else:
-            raise web.HTTPFound()
+            raise web.HTTPNotFound()
 
     app.add_routes([web.get("/{tail:.*}", all_requests_handler)])
 
