@@ -358,8 +358,8 @@ class BaseServiceManager(metaclass=ABCMeta):
 
         client = Client(cfg, echo_handler, pulp_host=pulp_host)
         commands_managers = (
-            ("which s6-svc", "s6"),
-            ("test -x /bin/s6-svc", "s6"),
+            ("which s6-rc", "s6"),
+            ("test -x /bin/s6-rc", "s6"),
             ("which systemctl", "systemd"),
             ("which service", "sysv"),
             ("test -x /sbin/service", "sysv"),
@@ -399,10 +399,7 @@ class BaseServiceManager(metaclass=ABCMeta):
     @staticmethod
     def _start_s6(client, services):
         return tuple(
-            (
-                client.run(("s6-svc", "-u", "/var/run/s6/services/{}".format(service)))
-                for service in services
-            )
+            (client.run(("s6-rc", "-u", "change", "{}".format(service))) for service in services)
         )
 
     @staticmethod
@@ -417,10 +414,7 @@ class BaseServiceManager(metaclass=ABCMeta):
     @staticmethod
     def _stop_s6(client, services):
         return tuple(
-            (
-                client.run(("s6-svc", "-d", "/var/run/s6/services/{}".format(service)))
-                for service in services
-            )
+            (client.run(("s6-rc", "-d", "change", "{}".format(service))) for service in services)
         )
 
     @staticmethod
@@ -438,7 +432,7 @@ class BaseServiceManager(metaclass=ABCMeta):
     def _restart_s6(client, services):
         return tuple(
             (
-                client.run(("s6-svc", "-k", "/var/run/s6/services/{}".format(service)))
+                client.run(("s6-svc", "-k", "/var/run/s6-rc/servicedirs/{}".format(service)))
                 for service in services
             )
         )
