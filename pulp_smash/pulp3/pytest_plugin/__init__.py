@@ -468,26 +468,33 @@ def ssl_ctx_req_client_auth(
 @pytest.fixture
 def add_to_cleanup():
     """Fixture to allow pulp objects to be deleted in reverse order after the test."""
-    obj_refs = []
+    obj_refs = [[]]
+    current_index = 0
 
     def _add_to_cleanup(api_client, pulp_href):
-        obj_refs.append((api_client, pulp_href))
+        nonlocal current_index
+        obj_refs[current_index].append((api_client, pulp_href))
+        if hasattr(api_client, "wait_for_delete"):
+            obj_refs.append(list())
+            current_index = current_index + 1
 
     yield _add_to_cleanup
 
-    delete_task_hrefs = []
     # Delete newest items first to avoid dependency lockups
-    for api_client, pulp_href in reversed(obj_refs):
-        try:
-            task_url = api_client.delete(pulp_href).task
-            delete_task_hrefs.append(task_url)
-        except Exception:
-            # There was no delete task for this unit or the unit may already have been deleted.
-            # Also we can never be sure which one is the right ApiException to catch.
-            pass
+    for current_obj_refs in reversed(obj_refs):
+        delete_task_hrefs = []
+        for api_client, pulp_href in reversed(current_obj_refs):
+            try:
+                response = api_client.delete(pulp_href)
+                if hasattr(response, "task"):
+                    delete_task_hrefs.append(response.task)
+            except Exception:
+                # There was no delete task for this unit or the unit may already have been deleted.
+                # Also we can never be sure which one is the right ApiException to catch.
+                pass
 
-    for deleted_task_href in delete_task_hrefs:
-        monitor_task(deleted_task_href)
+        for deleted_task_href in delete_task_hrefs:
+            monitor_task(deleted_task_href)
 
 
 @pytest.fixture
