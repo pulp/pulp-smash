@@ -51,7 +51,6 @@ def pytest_addhooks(pluginmanager):
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_teardown(item):
-
     yield  # We need the real pytest_runtest_teardown to run
 
     if item.config.getoption("--pulp-no-leftovers"):
@@ -465,7 +464,7 @@ def ssl_ctx_req_client_auth(
 ## Object Cleanup fixtures
 
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def add_to_cleanup():
     """Fixture to allow pulp objects to be deleted in reverse order after the test."""
     obj_refs = []
@@ -490,7 +489,7 @@ def add_to_cleanup():
         monitor_task(deleted_task_href)
 
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def gen_object_with_cleanup(add_to_cleanup):
     def _gen_object_with_cleanup(api_client, *args, **kwargs):
         new_obj = api_client.create(*args, **kwargs)

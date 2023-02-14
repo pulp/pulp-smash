@@ -164,7 +164,6 @@ class ClientTestCase(unittest.TestCase):
         )
         client = cli.Client(cfg)
         with mock.patch.object(client, "_machine") as machine:
-
             machine.__getitem__.return_value = machine
             machine.run.return_value = (0, "ok", None)
 
@@ -187,7 +186,6 @@ class ClientTestCase(unittest.TestCase):
         )
         client = cli.Client(cfg)
         with mock.patch.object(client, "_machine") as machine:
-
             machine.__getitem__.return_value = machine
             machine.run.return_value = (0, "ok", None)
 
