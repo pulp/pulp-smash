@@ -965,6 +965,18 @@ class RegistryClient:
         if raise_if_unsupported is not None:
             self.raise_if_unsupported(*raise_if_unsupported)
 
+        if cfg.get_hosts("api")[0].roles["api"]["scheme"] == "http":
+            tls_verify = "--tls-verify=false"
+        else:
+            tls_verify = "--tls-verify=true"
+
+        self.pull = lambda *args: self._dispatch_command("pull", *args, tls_verify)
+        self.push = lambda *args: self._dispatch_command("push", *args, tls_verify)
+        self.manifest_push = lambda *args: self._dispatch_command(
+            "manifest", "push", *args, tls_verify
+        )
+        self.login = lambda *args: self._dispatch_command("login", *args, tls_verify)
+
     @property
     def name(self):
         """Return the name of the Registry Client."""
@@ -1029,12 +1041,6 @@ class RegistryClient:
             # Python 3.4 has no specific error for json module
             return result
 
-    pull = partialmethod(_dispatch_command, "pull")
-    """Pulls image from registry."""
-    push = partialmethod(_dispatch_command, "push")
-    """Pushes image to registry."""
-    login = partialmethod(_dispatch_command, "login")
-    """Authenticate to a registry."""
     logout = partialmethod(_dispatch_command, "logout")
     """Logs out of a registry."""
     inspect = partialmethod(_dispatch_command, "inspect")
