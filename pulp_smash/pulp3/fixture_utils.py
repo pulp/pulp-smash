@@ -1,4 +1,5 @@
 from aiohttp import web
+from multidict import CIMultiDict
 
 
 def add_file_system_route(app, fixtures_root):
@@ -13,7 +14,9 @@ def add_recording_route(app, fixtures_root):
         requests.append(request)
         path = fixtures_root / request.raw_path[1:]  # Strip off leading '/'
         if path.is_file():
-            return web.FileResponse(path)
+            return web.FileResponse(
+                path, headers=CIMultiDict({"content-type": "application/octet-stream"})
+            )
         else:
             raise web.HTTPNotFound()
 
