@@ -11,6 +11,7 @@ import proxy
 import pytest
 
 from aiohttp import web
+from contextlib import suppress
 from yarl import URL
 
 from pulp_smash import cli
@@ -486,7 +487,9 @@ def add_to_cleanup():
             pass
 
     for deleted_task_href in delete_task_hrefs:
-        monitor_task(deleted_task_href)
+        with suppress(ApiException):
+            # The task itself may be gone at this point (e.g. by being part of a deleted domain).
+            monitor_task(deleted_task_href)
 
 
 @pytest.fixture(scope="class")
